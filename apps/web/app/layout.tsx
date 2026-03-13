@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
+const inter = Inter({ subsets: ["latin", "cyrillic"] });
+
 export const metadata: Metadata = {
-  title: "НейроЭксперт — AIO-платформа для экспертов",
+  title: "НейроЭксперт — AI-система, которая превращает экспертизу в клиентов",
   description:
-    "Делаем экспертов видимыми для нейросетей и превращаем видимость в клиентов",
+    "Наговори 10 минут — получи клиентов из поиска и нейросетей. Без написания текстов, без SMM, без бюджета на рекламу.",
 };
 
 export default function RootLayout({
@@ -14,7 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru">
-      <body>{children}</body>
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }
