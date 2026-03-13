@@ -1,11 +1,28 @@
 import Link from "next/link";
 
-const FOCUS_NICHES = [
-  { icon: "🧠", name: "Психология", desc: "Психологи, психотерапевты, семейные консультанты" },
-  { icon: "⚖️", name: "Юриспруденция", desc: "Адвокаты, юристы, медиаторы" },
-  { icon: "🥗", name: "Нутрициология", desc: "Нутрициологи, диетологи, консультанты по питанию" },
-  { icon: "💰", name: "Финансы", desc: "Финансовые советники, инвестиционные консультанты" },
-  { icon: "📊", name: "Бизнес-консалтинг", desc: "Бизнес-тренеры, стратеги, менторы" },
+const ALL_NICHES = [
+  // 5 фокусных
+  { icon: "🧠", name: "Психология", focus: true },
+  { icon: "⚖️", name: "Юриспруденция", focus: true },
+  { icon: "🥗", name: "Нутрициология", focus: true },
+  { icon: "💰", name: "Финансы", focus: true },
+  { icon: "📊", name: "Бизнес-консалтинг", focus: true },
+  // 15 расширенных
+  { icon: "🏥", name: "Медицина", focus: false },
+  { icon: "💪", name: "Фитнес и спорт", focus: false },
+  { icon: "📚", name: "Образование", focus: false },
+  { icon: "📱", name: "Маркетинг и SMM", focus: false },
+  { icon: "💻", name: "IT и программирование", focus: false },
+  { icon: "🎨", name: "Дизайн и архитектура", focus: false },
+  { icon: "🏠", name: "Недвижимость", focus: false },
+  { icon: "👔", name: "Карьера и HR", focus: false },
+  { icon: "✨", name: "Косметология", focus: false },
+  { icon: "🗣️", name: "Логопедия", focus: false },
+  { icon: "🎯", name: "Коучинг", focus: false },
+  { icon: "🧮", name: "Бухгалтерия и аудит", focus: false },
+  { icon: "🐾", name: "Ветеринария", focus: false },
+  { icon: "🛡️", name: "Страхование", focus: false },
+  { icon: "✈️", name: "Туризм", focus: false },
 ];
 
 const STEPS = [
@@ -66,18 +83,18 @@ export default function LandingPage() {
             Мы находим вопросы, которые задают тысячи людей. Превращаем ваш голос
             в экспертный контент. Публикуем так, чтобы нейросети и поисковики его нашли.
           </p>
-          <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+          <div className="mt-10 flex flex-col items-center gap-4">
             <Link
               href="/audit"
-              className="rounded-lg bg-blue-600 px-8 py-4 text-lg font-semibold text-white shadow-lg hover:bg-blue-700 transition-colors"
+              className="rounded-lg bg-blue-600 px-10 py-4 text-lg font-semibold text-white shadow-lg hover:bg-blue-700 transition-colors"
             >
               Бесплатный аудит AI-видимости
             </Link>
             <Link
               href="/register"
-              className="rounded-lg border border-gray-600 px-8 py-4 text-lg font-semibold text-white hover:border-gray-400 transition-colors"
+              className="text-sm text-gray-400 hover:text-gray-200 transition-colors"
             >
-              Начать бесплатно
+              Уже знаете, что хотите? Регистрация &rarr;
             </Link>
           </div>
         </div>
@@ -150,15 +167,18 @@ export default function LandingPage() {
             Платформа подходит практикующим специалистам, которые хотят получать
             клиентов без ведения соцсетей и бюджета на рекламу.
           </p>
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
-            {FOCUS_NICHES.map((niche) => (
+          <div className="mt-12 grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
+            {ALL_NICHES.map((niche) => (
               <div
                 key={niche.name}
-                className="rounded-xl border border-gray-200 p-6 text-center hover:border-blue-300 hover:shadow-md transition-all"
+                className={`rounded-xl border p-5 text-center transition-all hover:shadow-md ${
+                  niche.focus
+                    ? "border-blue-300 bg-blue-50 hover:border-blue-400"
+                    : "border-gray-200 hover:border-blue-300"
+                }`}
               >
-                <span className="text-4xl">{niche.icon}</span>
-                <h3 className="mt-3 font-semibold text-gray-900">{niche.name}</h3>
-                <p className="mt-1 text-sm text-gray-500">{niche.desc}</p>
+                <span className="text-3xl">{niche.icon}</span>
+                <h3 className="mt-2 text-sm font-semibold text-gray-900">{niche.name}</h3>
               </div>
             ))}
           </div>
@@ -175,18 +195,12 @@ export default function LandingPage() {
             Бесплатный аудит покажет вопросы с максимальным спросом и слабыми ответами
             нейросетей — ваши точки роста.
           </p>
-          <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+          <div className="mt-8 flex flex-col items-center gap-4">
             <Link
               href="/audit"
-              className="rounded-lg bg-white px-8 py-4 text-lg font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
+              className="rounded-lg bg-white px-10 py-4 text-lg font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
             >
-              Пройти бесплатный аудит
-            </Link>
-            <Link
-              href="/register"
-              className="rounded-lg border border-blue-300 px-8 py-4 text-lg font-semibold text-white hover:border-white transition-colors"
-            >
-              Создать аккаунт
+              Узнать свои точки роста
             </Link>
           </div>
         </div>
