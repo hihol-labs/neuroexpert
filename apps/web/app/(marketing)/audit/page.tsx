@@ -26,12 +26,32 @@ const NICHES = [
   { id: "a0000000-0000-0000-0000-000000000020", name: "Туризм и путешествия", icon: "✈️", focus: false },
 ];
 
+const MARKER_LABELS = [
+  { key: "has_expert_name" as const, label: "Имя эксперта" },
+  { key: "has_specific_examples" as const, label: "Примеры из практики" },
+  { key: "has_source_link" as const, label: "Ссылка на источник" },
+  { key: "has_specific_numbers" as const, label: "Конкретные цифры" },
+];
+
+interface PlatformResult {
+  platform: string;
+  ai_response: string;
+  gap_score: number;
+  markers: {
+    has_expert_name: boolean;
+    has_specific_examples: boolean;
+    has_source_link: boolean;
+    has_specific_numbers: boolean;
+  };
+  weakness: string;
+}
+
 interface Gap {
   id: string;
   question: string;
   monthly_volume: number;
-  gap_score: number;
-  ai_response: string;
+  avg_gap_score: number;
+  platforms: PlatformResult[];
 }
 
 type Step = "select" | "loading" | "results" | "error";
@@ -41,6 +61,7 @@ export default function AuditPage() {
   const [nicheName, setNicheName] = useState("");
   const [gaps, setGaps] = useState<Gap[]>([]);
   const [error, setError] = useState("");
+  const [expandedPlatform, setExpandedPlatform] = useState<string | null>(null);
 
   async function handleNicheSelect(nicheId: string, name: string) {
     setNicheName(name);
@@ -75,6 +96,10 @@ export default function AuditPage() {
     }
   }
 
+  function togglePlatform(key: string) {
+    setExpandedPlatform(expandedPlatform === key ? null : key);
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <header className="bg-gray-900">
@@ -101,8 +126,8 @@ export default function AuditPage() {
                   Бесплатный аудит AI-видимости
                 </h1>
                 <p className="mt-4 text-lg text-gray-600">
-                  Выберите свою нишу — мы покажем вопросы, на которые нейросети
-                  дают слабые ответы. Это ваши точки роста.
+                  Выберите свою нишу — мы проверим ответы нейросетей на
+                  популярные вопросы и найдём дыры.
                 </p>
               </div>
               <div className="mt-12 grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
@@ -131,10 +156,11 @@ export default function AuditPage() {
             <div className="flex flex-col items-center justify-center py-20">
               <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
               <p className="mt-6 text-lg text-gray-600">
-                Анализируем нишу «{nicheName}»...
+                Анализируем нишу &laquo;{nicheName}&raquo;...
               </p>
               <p className="mt-2 text-sm text-gray-400">
-                Ищем вопросы со слабыми ответами нейросетей
+                Задаём вопросы нейросетям и проверяем качество ответов. Это
+                займёт 10-20 секунд.
               </p>
             </div>
           )}
@@ -150,30 +176,28 @@ export default function AuditPage() {
                   {nicheName}
                 </h1>
                 <p className="mt-2 text-gray-600">
-                  {gaps.length} {gaps.length === 1 ? "дыра" : "дыры"} в ответах
-                  нейросетей — ваши точки роста
+                  {gaps.length} {gaps.length === 1 ? "вопрос" : "вопроса"} проверено по{" "}
+                  {gaps[0]?.platforms?.length || 0} AI-платформам
                 </p>
               </div>
 
-              <div className="mt-10 space-y-6">
+              <div className="mt-10 space-y-8">
                 {gaps.map((gap, i) => (
                   <div
                     key={gap.id}
                     className="rounded-2xl border border-gray-200 p-6"
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3">
-                          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 text-sm font-bold text-red-600">
-                            {i + 1}
-                          </span>
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {gap.question}
-                          </h3>
-                        </div>
-                      </div>
+                    {/* Question header */}
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100 text-sm font-bold text-red-600">
+                        {i + 1}
+                      </span>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {gap.question}
+                      </h3>
                     </div>
 
+                    {/* Metrics */}
                     <div className="mt-4 flex gap-6">
                       <div className="text-center">
                         <p className="text-2xl font-bold text-gray-900">
@@ -183,22 +207,101 @@ export default function AuditPage() {
                       </div>
                       <div className="text-center">
                         <p className="text-2xl font-bold text-red-600">
-                          {gap.gap_score}/10
+                          {gap.avg_gap_score}/10
                         </p>
-                        <p className="text-xs text-gray-500">слабость AI</p>
+                        <p className="text-xs text-gray-500">
+                          слабость ответа
+                        </p>
                       </div>
                     </div>
 
-                    {gap.ai_response && (
-                      <div className="mt-4 rounded-lg bg-gray-50 p-4">
-                        <p className="text-xs font-medium text-gray-500 mb-2">
-                          Текущий ответ ChatGPT:
-                        </p>
-                        <p className="text-sm text-gray-600 line-clamp-4">
-                          {gap.ai_response}
-                        </p>
-                      </div>
-                    )}
+                    {/* Platform comparison table */}
+                    <div className="mt-5 overflow-hidden rounded-lg border border-gray-200">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">
+                            <th className="px-4 py-2">Платформа</th>
+                            {MARKER_LABELS.map((m) => (
+                              <th key={m.key} className="px-2 py-2 text-center">
+                                {m.label}
+                              </th>
+                            ))}
+                            <th className="px-3 py-2 text-center">Балл</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {gap.platforms.map((p) => {
+                            const key = `${gap.id}-${p.platform}`;
+                            const isExpanded = expandedPlatform === key;
+                            return (
+                              <>
+                                <tr
+                                  key={key}
+                                  className="cursor-pointer hover:bg-gray-50 transition-colors"
+                                  onClick={() => togglePlatform(key)}
+                                >
+                                  <td className="px-4 py-3 font-medium text-gray-900">
+                                    <span className="inline-flex items-center gap-1">
+                                      <span className={`text-gray-400 text-xs transition-transform ${isExpanded ? "rotate-90" : ""}`}>&#9654;</span>
+                                      {p.platform}
+                                    </span>
+                                  </td>
+                                  {MARKER_LABELS.map((m) => (
+                                    <td
+                                      key={m.key}
+                                      className="px-2 py-3 text-center"
+                                    >
+                                      <span
+                                        className={
+                                          p.markers[m.key]
+                                            ? "text-green-600"
+                                            : "text-red-500"
+                                        }
+                                      >
+                                        {p.markers[m.key] ? "✓" : "✗"}
+                                      </span>
+                                    </td>
+                                  ))}
+                                  <td className="px-3 py-3 text-center">
+                                    <span
+                                      className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+                                        p.gap_score >= 8
+                                          ? "bg-red-100 text-red-700"
+                                          : p.gap_score >= 5
+                                          ? "bg-yellow-100 text-yellow-700"
+                                          : "bg-green-100 text-green-700"
+                                      }`}
+                                    >
+                                      {p.gap_score}
+                                    </span>
+                                  </td>
+                                </tr>
+                                {isExpanded && (
+                                  <tr key={`${key}-detail`}>
+                                    <td
+                                      colSpan={6}
+                                      className="bg-gray-50 px-4 py-3"
+                                    >
+                                      {p.weakness && (
+                                        <p className="text-sm text-orange-600 font-medium mb-2">
+                                          {p.weakness}
+                                        </p>
+                                      )}
+                                      <p className="text-xs font-medium text-gray-500 mb-1">
+                                        Ответ {p.platform} (в реальном времени):
+                                      </p>
+                                      <p className="text-sm text-gray-600 whitespace-pre-line">
+                                        {p.ai_response}
+                                      </p>
+                                    </td>
+                                  </tr>
+                                )}
+                              </>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -209,10 +312,10 @@ export default function AuditPage() {
                   Хотите занять эти позиции?
                 </h2>
                 <p className="mt-2 text-blue-100">
-                  Наговорите ответ за 10 минут — мы опубликуем экспертную статью,
-                  которую будут цитировать нейросети.
+                  Наговорите ответ за 10 минут — мы опубликуем экспертную
+                  статью, которую будут цитировать нейросети.
                 </p>
-                <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                <div className="mt-6">
                   <Link
                     href="/register"
                     className="rounded-lg bg-white px-8 py-3 text-base font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
