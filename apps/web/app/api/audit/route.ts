@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import { createAdminClient } from "@/lib/supabase/admin";
 
-// Simple in-memory rate limiter: 2 requests per minute per IP
+export const maxDuration = 60;
+
+// Rate limiter: 2 requests per minute per IP
 const rateLimitMap = new Map<string, number[]>();
 
 function isRateLimited(ip: string): boolean {
@@ -13,9 +14,7 @@ function isRateLimited(ip: string): boolean {
   const timestamps = rateLimitMap.get(ip) || [];
   const recent = timestamps.filter((t) => now - t < windowMs);
 
-  if (recent.length >= maxRequests) {
-    return true;
-  }
+  if (recent.length >= maxRequests) return true;
 
   recent.push(now);
   rateLimitMap.set(ip, recent);
@@ -23,7 +22,7 @@ function isRateLimited(ip: string): boolean {
 }
 
 // ============================================================
-// Multi-platform AI check
+// Types
 // ============================================================
 
 interface GapMarkers {
@@ -54,7 +53,56 @@ async function createProxiedFetch(): Promise<FetchFn | undefined> {
     fetch(url, { ...init, dispatcher });
 }
 
-const ANALYSIS_PROMPT = `Ты анализируешь ответ AI на вопрос пользователя. Проверяешь объективные структурные маркеры — не оцениваешь качество, а проверяешь факты. Ответь JSON.`;
+// ============================================================
+// Step 1: Generate real questions for a niche via LLM
+// ============================================================
+
+interface GeneratedQuestion {
+  question: string;
+  search_intent: string;
+}
+
+async function generateQuestions(
+  openai: OpenAI,
+  nicheName: string,
+  count: number,
+): Promise<GeneratedQuestion[]> {
+  const r = await openai.chat.completions.create({
+    model: process.env.OPENAI_MODEL_BULK || "gpt-4o-mini",
+    max_tokens: 800,
+    temperature: 0.3,
+    response_format: { type: "json_object" },
+    messages: [
+      {
+        role: "system",
+        content: `Ты — SEO-аналитик. Генерируй реальные поисковые запросы, которые люди задают в Яндексе и Google по теме "${nicheName}". Выбирай вопросы с высоким коммерческим или информационным интентом, на которые нейросети дают слабые ответы (без имён экспертов, без конкретики). Ответь JSON.`,
+      },
+      {
+        role: "user",
+        content: `Сгенерируй ${count} самых популярных и коммерчески важных вопросов для ниши "${nicheName}".
+
+Требования:
+- Вопросы должны быть на русском языке
+- Каждый вопрос — реальный поисковый запрос (как люди пишут в поиске)
+- Выбирай вопросы, на которые ИИ обычно даёт поверхностные ответы без экспертизы
+- search_intent: "informational" | "commercial" | "transactional"
+
+JSON: {"questions": [{"question": "...", "search_intent": "..."}]}`,
+      },
+    ],
+  });
+
+  const parsed = JSON.parse(r.choices[0]?.message?.content || '{"questions":[]}') as {
+    questions: GeneratedQuestion[];
+  };
+  return parsed.questions.slice(0, count);
+}
+
+// ============================================================
+// Step 2: Check AI platforms
+// ============================================================
+
+const ANALYSIS_PROMPT = `Ты анализируешь ответ AI на вопрос пользователя. Проверяешь объективные структурные маркеры — не оцениваешь качество, а проверяешь факты. Ответь строго JSON.`;
 
 function buildAnalysisUserPrompt(question: string, aiResponse: string): string {
   return `ВОПРОС: ${question}
@@ -68,8 +116,12 @@ ${aiResponse}
 3. has_source_link — есть ли URL-ссылка на источник? (true/false)
 4. has_specific_numbers — есть ли конкретные цифры, сроки, дозировки, проценты? (true/false)
 
-Рассчитай gap_score: (количество false / 4) * 10, округли до целого.
-Напиши weakness — 1 предложение о главной слабости ответа.
+Рассчитай gap_score от 0 до 10:
+- Каждый false = +2.5 балла
+- gap_score = количество false × 2.5, округли до целого
+- Минимум 0 (все true), максимум 10 (все false)
+
+Напиши weakness — 1 предложение о главной слабости ответа на русском.
 
 JSON: {"has_expert_name":bool,"has_specific_examples":bool,"has_source_link":bool,"has_specific_numbers":bool,"gap_score":number,"weakness":"..."}`;
 }
@@ -77,10 +129,10 @@ JSON: {"has_expert_name":bool,"has_specific_examples":bool,"has_source_link":boo
 async function analyzeWithOpenAI(
   analyzer: OpenAI,
   question: string,
-  aiResponse: string
+  aiResponse: string,
 ): Promise<GapMarkers> {
   const r = await analyzer.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: process.env.OPENAI_MODEL_BULK || "gpt-4o-mini",
     max_tokens: 300,
     temperature: 0,
     response_format: { type: "json_object" },
@@ -95,7 +147,7 @@ async function analyzeWithOpenAI(
 // --- ChatGPT ---
 async function checkChatGPT(
   question: string,
-  proxiedFetch?: FetchFn
+  proxiedFetch?: FetchFn,
 ): Promise<PlatformResult | null> {
   if (!process.env.OPENAI_API_KEY) return null;
 
@@ -120,7 +172,7 @@ async function checkChatGPT(
 // --- Perplexity ---
 async function checkPerplexity(
   question: string,
-  proxiedFetch?: FetchFn
+  proxiedFetch?: FetchFn,
 ): Promise<PlatformResult | null> {
   if (!process.env.PERPLEXITY_API_KEY) return null;
 
@@ -138,7 +190,6 @@ async function checkPerplexity(
 
   const aiResponse = chatResponse.choices[0]?.message?.content || "";
 
-  // Use OpenAI for analysis (Perplexity doesn't support json_object)
   const analyzer = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
     ...(proxiedFetch && { fetch: proxiedFetch }),
@@ -148,10 +199,9 @@ async function checkPerplexity(
   return { platform: "Perplexity", ai_response: aiResponse, markers };
 }
 
-// --- YandexGPT (no proxy needed — works from Russia) ---
+// --- YandexGPT ---
 async function checkYandexGPT(
   question: string,
-  proxiedFetch?: FetchFn
 ): Promise<PlatformResult | null> {
   if (!process.env.YANDEX_API_KEY || !process.env.YANDEX_FOLDER_ID) return null;
 
@@ -171,7 +221,7 @@ async function checkYandexGPT(
         completionOptions: { maxTokens: 500, temperature: 0.7 },
         messages: [{ role: "user", text: question }],
       }),
-    }
+    },
   );
 
   if (!response.ok) return null;
@@ -181,11 +231,7 @@ async function checkYandexGPT(
   };
   const aiResponse = data.result.alternatives[0]?.message?.text || "";
 
-  // Use OpenAI for analysis
-  const analyzer = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    ...(proxiedFetch && { fetch: proxiedFetch }),
-  });
+  const analyzer = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const markers = await analyzeWithOpenAI(analyzer, question, aiResponse);
 
   return { platform: "YandexGPT", ai_response: aiResponse, markers };
@@ -194,15 +240,14 @@ async function checkYandexGPT(
 // --- GigaChat ---
 async function checkGigaChat(
   question: string,
-  proxiedFetch?: FetchFn
 ): Promise<PlatformResult | null> {
-  if (!process.env.GIGACHAT_CLIENT_ID || !process.env.GIGACHAT_CLIENT_SECRET) return null;
+  if (!process.env.GIGACHAT_CLIENT_ID || !process.env.GIGACHAT_CLIENT_SECRET)
+    return null;
 
   const credentials = Buffer.from(
-    `${process.env.GIGACHAT_CLIENT_ID}:${process.env.GIGACHAT_CLIENT_SECRET}`
+    `${process.env.GIGACHAT_CLIENT_ID}:${process.env.GIGACHAT_CLIENT_SECRET}`,
   ).toString("base64");
 
-  // OAuth2 token
   const authResponse = await fetch(
     "https://ngw.devices.sberbank.ru:9443/api/v2/oauth",
     {
@@ -214,7 +259,7 @@ async function checkGigaChat(
         RqUID: crypto.randomUUID(),
       },
       body: "scope=GIGACHAT_API_PERS",
-    }
+    },
   );
 
   if (!authResponse.ok) return null;
@@ -234,7 +279,7 @@ async function checkGigaChat(
         temperature: 0.7,
         messages: [{ role: "user", content: question }],
       }),
-    }
+    },
   );
 
   if (!chatResponse.ok) return null;
@@ -243,14 +288,38 @@ async function checkGigaChat(
   };
   const aiResponse = chatData.choices[0]?.message?.content || "";
 
-  const analyzer = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    ...(proxiedFetch && { fetch: proxiedFetch }),
-  });
+  const analyzer = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const markers = await analyzeWithOpenAI(analyzer, question, aiResponse);
 
   return { platform: "GigaChat", ai_response: aiResponse, markers };
 }
+
+// ============================================================
+// Niche list (static — matches seed niches)
+// ============================================================
+
+const NICHE_NAMES: Record<string, string> = {
+  "a0000000-0000-0000-0000-000000000001": "Психология и психотерапия",
+  "a0000000-0000-0000-0000-000000000002": "Юриспруденция",
+  "a0000000-0000-0000-0000-000000000003": "Нутрициология",
+  "a0000000-0000-0000-0000-000000000004": "Финансы и инвестиции",
+  "a0000000-0000-0000-0000-000000000005": "Бизнес-консалтинг",
+  "a0000000-0000-0000-0000-000000000006": "Медицина и здоровье",
+  "a0000000-0000-0000-0000-000000000007": "Фитнес и спорт",
+  "a0000000-0000-0000-0000-000000000008": "Образование и репетиторство",
+  "a0000000-0000-0000-0000-000000000009": "Маркетинг и SMM",
+  "a0000000-0000-0000-0000-000000000010": "IT и программирование",
+  "a0000000-0000-0000-0000-000000000011": "Дизайн и архитектура",
+  "a0000000-0000-0000-0000-000000000012": "Недвижимость",
+  "a0000000-0000-0000-0000-000000000013": "Карьера и HR",
+  "a0000000-0000-0000-0000-000000000014": "Косметология и эстетика",
+  "a0000000-0000-0000-0000-000000000015": "Логопедия и дефектология",
+  "a0000000-0000-0000-0000-000000000016": "Коучинг и саморазвитие",
+  "a0000000-0000-0000-0000-000000000017": "Бухгалтерия и аудит",
+  "a0000000-0000-0000-0000-000000000018": "Ветеринария",
+  "a0000000-0000-0000-0000-000000000019": "Страхование",
+  "a0000000-0000-0000-0000-000000000020": "Туризм и путешествия",
+};
 
 // ============================================================
 // Main handler
@@ -265,7 +334,7 @@ export async function POST(request: NextRequest) {
   if (isRateLimited(ip)) {
     return NextResponse.json(
       { error: "Слишком много запросов. Подождите минуту." },
-      { status: 429 }
+      { status: 429 },
     );
   }
 
@@ -278,85 +347,77 @@ export async function POST(request: NextRequest) {
 
   const { niche_id, type = "free" } = body;
 
-  if (!niche_id) {
-    return NextResponse.json({ error: "niche_id is required" }, { status: 400 });
-  }
-
-  if (type !== "free" && type !== "paid") {
-    return NextResponse.json({ error: "type must be 'free' or 'paid'" }, { status: 400 });
-  }
-
-  const supabase = createAdminClient();
-
-  const { data: nicheData, error: nicheError } = await supabase
-    .from("niches")
-    .select("id, name")
-    .eq("id", niche_id)
-    .single();
-
-  if (nicheError || !nicheData) {
+  if (!niche_id || !NICHE_NAMES[niche_id]) {
     return NextResponse.json({ error: "Ниша не найдена" }, { status: 404 });
   }
 
-  const nicheName = (nicheData as { id: string; name: string }).name;
-
-  const limit = type === "free" ? 3 : 10;
-
-  const { data: questionsData, error: questionsError } = await supabase
-    .from("questions")
-    .select("id, question_text, monthly_volume")
-    .eq("niche_id", niche_id)
-    .order("monthly_volume", { ascending: false })
-    .limit(limit);
-
-  if (questionsError) {
-    return NextResponse.json({ error: "Ошибка запроса" }, { status: 500 });
+  if (!process.env.OPENAI_API_KEY) {
+    return NextResponse.json(
+      { error: "AI-сервис временно недоступен" },
+      { status: 503 },
+    );
   }
 
-  const questions = (questionsData || []) as Array<{
-    id: string;
-    question_text: string;
-    monthly_volume: number;
-  }>;
+  const nicheName = NICHE_NAMES[niche_id];
+  const questionCount = type === "free" ? 3 : 10;
+
+  const proxiedFetch = await createProxiedFetch();
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+    ...(proxiedFetch && { fetch: proxiedFetch }),
+  });
+
+  // Step 1: Generate real questions dynamically
+  let questions: GeneratedQuestion[];
+  try {
+    questions = await generateQuestions(openai, nicheName, questionCount);
+  } catch (err) {
+    console.error("[audit] Failed to generate questions:", err);
+    return NextResponse.json(
+      { error: "Не удалось сгенерировать вопросы" },
+      { status: 500 },
+    );
+  }
 
   if (questions.length === 0) {
     return NextResponse.json({ niche: nicheName, type, gaps: [] });
   }
 
-  const proxiedFetch = await createProxiedFetch();
-
-  // Check all available platforms
-  const checkers = [checkChatGPT, checkPerplexity, checkYandexGPT, checkGigaChat];
+  // Step 2: For each question, check AI platforms in real-time
+  const checkers: Array<
+    (q: string, pf?: FetchFn) => Promise<PlatformResult | null>
+  > = [checkChatGPT, checkPerplexity, checkYandexGPT, checkGigaChat];
 
   const gaps = await Promise.all(
-    questions.map(async (q) => {
-      // Run all platform checks in parallel
+    questions.map(async (q, idx) => {
       const results = await Promise.all(
         checkers.map(async (checker) => {
           try {
-            return await checker(q.question_text, proxiedFetch);
+            return await checker(q.question, proxiedFetch);
           } catch (err) {
-            console.error(`Platform check error for "${q.question_text}":`, err);
+            console.error(
+              `[audit] Platform check error for "${q.question}":`,
+              err,
+            );
             return null;
           }
-        })
+        }),
       );
 
       const platforms = results.filter(Boolean) as PlatformResult[];
 
-      // Calculate average gap_score across platforms
       const avgGapScore =
         platforms.length > 0
           ? Math.round(
               platforms.reduce((sum, p) => sum + p.markers.gap_score, 0) /
-                platforms.length
+                platforms.length,
             )
           : 0;
 
       return {
-        id: q.id,
-        question: q.question_text,
-        monthly_volume: q.monthly_volume,
+        id: `gen-${idx}`,
+        question: q.question,
+        search_intent: q.search_intent,
         avg_gap_score: avgGapScore,
         platforms: platforms.map((p) => ({
           platform: p.platform,
@@ -371,7 +432,7 @@ export async function POST(request: NextRequest) {
           weakness: p.markers.weakness,
         })),
       };
-    })
+    }),
   );
 
   gaps.sort((a, b) => b.avg_gap_score - a.avg_gap_score);

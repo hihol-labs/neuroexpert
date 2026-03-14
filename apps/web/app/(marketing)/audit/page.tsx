@@ -49,7 +49,7 @@ interface PlatformResult {
 interface Gap {
   id: string;
   question: string;
-  monthly_volume: number;
+  search_intent?: string;
   avg_gap_score: number;
   platforms: PlatformResult[];
 }
@@ -159,8 +159,8 @@ export default function AuditPage() {
                 Анализируем нишу &laquo;{nicheName}&raquo;...
               </p>
               <p className="mt-2 text-sm text-gray-400">
-                Задаём вопросы нейросетям и проверяем качество ответов. Это
-                займёт 10-20 секунд.
+                Генерируем актуальные вопросы, задаём их нейросетям и
+                анализируем качество ответов. Это займёт 15-30 секунд.
               </p>
             </div>
           )}
@@ -198,21 +198,30 @@ export default function AuditPage() {
                     </div>
 
                     {/* Metrics */}
-                    <div className="mt-4 flex gap-6">
+                    <div className="mt-4 flex items-center gap-6">
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-gray-900">
-                          {gap.monthly_volume?.toLocaleString("ru-RU") || "—"}
-                        </p>
-                        <p className="text-xs text-gray-500">запросов/мес</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-red-600">
+                        <p className={`text-2xl font-bold ${
+                          gap.avg_gap_score >= 8 ? "text-red-600" :
+                          gap.avg_gap_score >= 5 ? "text-yellow-600" :
+                          "text-green-600"
+                        }`}>
                           {gap.avg_gap_score}/10
                         </p>
                         <p className="text-xs text-gray-500">
-                          слабость ответа
+                          слабость ответа AI
                         </p>
                       </div>
+                      {gap.search_intent && (
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          gap.search_intent === "commercial" ? "bg-green-100 text-green-800" :
+                          gap.search_intent === "transactional" ? "bg-purple-100 text-purple-800" :
+                          "bg-blue-100 text-blue-800"
+                        }`}>
+                          {gap.search_intent === "commercial" ? "Коммерческий" :
+                           gap.search_intent === "transactional" ? "Транзакционный" :
+                           "Информационный"}
+                        </span>
+                      )}
                     </div>
 
                     {/* Platform comparison table */}
