@@ -1,5 +1,5 @@
 import type { Bot } from "grammy";
-import { supabase } from "../supabase.js";
+import { supabase } from "../supabase";
 
 export function registerStatusCommand(bot: Bot): void {
   bot.command("status", async (ctx) => {
@@ -8,7 +8,7 @@ export function registerStatusCommand(bot: Bot): void {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("id, full_name, subscription_tier, trust_score, niche_id, niches!inner(name)")
+      .select("id, full_name, subscription_tier, trust_score")
       .eq("telegram_id", telegramId)
       .single();
 
@@ -16,6 +16,16 @@ export function registerStatusCommand(bot: Bot): void {
       await ctx.reply("Сначала зарегистрируйтесь: /start");
       return;
     }
+
+    // Получаем ниши эксперта
+    const { data: expertNiches } = await supabase
+      .from("expert_niches")
+      .select("niche_id, niches(name, icon)")
+      .eq("expert_id", profile.id);
+
+    const nicheNames = expertNiches
+      ?.map((en: any) => `${en.niches?.icon ?? ""} ${en.niches?.name}`)
+      .join(", ") ?? "Не выбраны";
 
     // Считаем статистику
     const [ordersResult, contentResult, voiceResult] = await Promise.all([
@@ -34,7 +44,6 @@ export function registerStatusCommand(bot: Bot): void {
         .eq("expert_id", profile.id),
     ]);
 
-    const nicheName = (profile as any).niches?.name ?? "Не выбрана";
     const totalOrders = ordersResult.count ?? 0;
     const publishedContent = contentResult.count ?? 0;
     const totalVoice = voiceResult.count ?? 0;
@@ -51,7 +60,7 @@ export function registerStatusCommand(bot: Bot): void {
     await ctx.reply(
       `Ваш профиль:\n\n` +
         `Имя: ${profile.full_name}\n` +
-        `Ниша: ${nicheName}\n` +
+        `Ниши: ${nicheNames}\n` +
         `Тариф: ${tierNames[profile.subscription_tier] ?? profile.subscription_tier}\n` +
         `Trust Score: ${profile.trust_score}/100\n\n` +
         `Статистика:\n` +

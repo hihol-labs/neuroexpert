@@ -1,6 +1,16 @@
 import type { Bot, Context } from "grammy";
-import { supabase } from "../supabase.js";
-import { nicheKeyboard } from "../keyboards.js";
+import { supabase } from "../supabase";
+import { nicheKeyboard, changeNichesKeyboard } from "../keyboards";
+import { NICHES } from "shared";
+
+/** Получает выбранные ниши эксперта */
+async function getSelectedNiches(profileId: string): Promise<string[]> {
+  const { data } = await supabase
+    .from("expert_niches")
+    .select("niche_id")
+    .eq("expert_id", profileId);
+  return data?.map((row) => row.niche_id) ?? [];
+}
 
 export function registerCommands(bot: Bot): void {
   bot.command("start", async (ctx) => {
@@ -24,24 +34,34 @@ export function registerCommands(bot: Bot): void {
     // Проверяем, есть ли уже профиль по telegram_id
     const { data: existing } = await supabase
       .from("profiles")
-      .select("id, full_name, niche_id, onboarding_completed")
+      .select("id, full_name, onboarding_completed")
       .eq("telegram_id", telegramId)
       .single();
 
     if (existing) {
-      if (!existing.niche_id) {
+      const selectedIds = await getSelectedNiches(existing.id);
+
+      if (selectedIds.length === 0) {
         await ctx.reply(
-          `С возвращением, ${firstName}! Выберите свою нишу:`,
+          `С возвращением, ${firstName}! Выберите ниши (до 3):`,
           { reply_markup: nicheKeyboard() },
         );
         return;
       }
+
+      const nicheNames = selectedIds
+        .map((id) => NICHES.find((n) => n.id === id))
+        .filter(Boolean)
+        .map((n) => `${n!.icon} ${n!.name}`);
+
       await ctx.reply(
         `Привет, ${existing.full_name}! Вы уже зарегистрированы.\n\n` +
+          `Ваши ниши: ${nicheNames.join(", ")}\n\n` +
           "Команды:\n" +
           "/orders — ваши заказы\n" +
           "/record — записать голосовое\n" +
           "/status — статистика",
+        { reply_markup: changeNichesKeyboard() },
       );
       return;
     }
@@ -82,7 +102,7 @@ export function registerCommands(bot: Bot): void {
     await ctx.reply(
       `Добро пожаловать в НейроЭксперт, ${firstName}!\n\n` +
         "Я помогу вам стать видимым для AI-платформ. " +
-        "Для начала выберите вашу нишу:",
+        "Для начала выберите ваши ниши (до 3):",
       { reply_markup: nicheKeyboard() },
     );
   });
@@ -102,12 +122,23 @@ async function handleLinkAccount(
       telegram_username: username ?? null,
     })
     .eq("id", token)
-    .select("full_name")
+    .select("id, full_name")
     .single();
 
   if (error || !profile) {
     await ctx.reply(
       "Не удалось привязать аккаунт. Убедитесь, что ссылка актуальна.",
+    );
+    return;
+  }
+
+  const selectedIds = await getSelectedNiches(profile.id);
+
+  if (selectedIds.length === 0) {
+    await ctx.reply(
+      `Аккаунт привязан! Привет, ${profile.full_name}!\n\n` +
+        "Выберите ваши ниши (до 3):",
+      { reply_markup: nicheKeyboard() },
     );
     return;
   }

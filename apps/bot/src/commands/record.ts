@@ -1,5 +1,5 @@
 import type { Bot } from "grammy";
-import { supabase } from "../supabase.js";
+import { supabase } from "../supabase";
 
 export function registerRecordCommand(bot: Bot): void {
   bot.command("record", async (ctx) => {

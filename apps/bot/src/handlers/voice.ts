@@ -1,5 +1,5 @@
 import type { Bot } from "grammy";
-import { supabase } from "../supabase.js";
+import { supabase } from "../supabase";
 import { getSTT } from "shared";
 
 export function registerVoiceHandler(bot: Bot): void {

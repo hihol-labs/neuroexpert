@@ -1,4 +1,4 @@
-import { bot } from "./bot.js";
+import { bot } from "./bot";
 
 async function main() {
   const webhookUrl = process.env.TELEGRAM_WEBHOOK_URL;

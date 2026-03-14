@@ -1,30 +1,38 @@
 import type { Bot } from "grammy";
-import { supabase } from "../supabase.js";
-import { nicheKeyboard, contentReviewKeyboard } from "../keyboards.js";
+import { supabase } from "../supabase";
+import { nicheKeyboard, otherNichesKeyboard } from "../keyboards";
 import { NICHES } from "shared";
 
+const MAX_NICHES = 3;
+
+/** Получает выбранные ниши эксперта */
+async function getSelectedNiches(profileId: string): Promise<string[]> {
+  const { data } = await supabase
+    .from("expert_niches")
+    .select("niche_id")
+    .eq("expert_id", profileId);
+  return data?.map((row) => row.niche_id) ?? [];
+}
+
+/** Получает profile.id по telegram_id */
+async function getProfileId(telegramId: number): Promise<string | null> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("telegram_id", telegramId)
+    .single();
+  return data?.id ?? null;
+}
+
 export function registerCallbackHandler(bot: Bot): void {
-  // Выбор ниши
-  bot.callbackQuery(/^select_niche:(.+)$/, async (ctx) => {
+  // Toggle ниши (выбрать / снять)
+  bot.callbackQuery(/^toggle_niche:(.+)$/, async (ctx) => {
     const nicheId = ctx.match[1];
     const telegramId = ctx.from.id;
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("telegram_id", telegramId)
-      .single();
-
-    if (!profile) {
+    const profileId = await getProfileId(telegramId);
+    if (!profileId) {
       await ctx.answerCallbackQuery({ text: "Профиль не найден" });
-      return;
-    }
-
-    if (nicheId === "other") {
-      await ctx.answerCallbackQuery();
-      await ctx.editMessageText(
-        "Напишите название вашей ниши текстом, и мы добавим её.",
-      );
       return;
     }
 
@@ -34,15 +42,155 @@ export function registerCallbackHandler(bot: Bot): void {
       return;
     }
 
+    const selectedIds = await getSelectedNiches(profileId);
+    const isSelected = selectedIds.includes(nicheId);
+
+    if (isSelected) {
+      // Убираем нишу
+      await supabase
+        .from("expert_niches")
+        .delete()
+        .eq("expert_id", profileId)
+        .eq("niche_id", nicheId);
+      selectedIds.splice(selectedIds.indexOf(nicheId), 1);
+      await ctx.answerCallbackQuery({ text: `Убрана: ${niche.name}` });
+    } else {
+      if (selectedIds.length >= MAX_NICHES) {
+        await ctx.answerCallbackQuery({ text: `Максимум ${MAX_NICHES} ниши`, show_alert: true });
+        return;
+      }
+      // Добавляем нишу
+      await supabase
+        .from("expert_niches")
+        .insert({ expert_id: profileId, niche_id: nicheId });
+      selectedIds.push(nicheId);
+      await ctx.answerCallbackQuery({ text: `Выбрана: ${niche.name}` });
+    }
+
+    // Определяем, какую клавиатуру показывать (фокусные или другие)
+    const isFocusNiche = NICHES.find((n) => n.id === nicheId)?.isFocus;
+    const keyboard = isFocusNiche
+      ? nicheKeyboard(selectedIds)
+      : otherNichesKeyboard(selectedIds);
+
+    const selectedNames = selectedIds
+      .map((id) => NICHES.find((n) => n.id === id))
+      .filter(Boolean)
+      .map((n) => `${n!.icon} ${n!.name}`);
+
+    const text = selectedNames.length > 0
+      ? `Выберите ниши (до ${MAX_NICHES}):\n\nВыбрано: ${selectedNames.join(", ")}`
+      : `Выберите ниши (до ${MAX_NICHES}):`;
+
+    await ctx.editMessageText(text, { reply_markup: keyboard });
+  });
+
+  // Изменить ниши (из /start для зарегистрированных)
+  bot.callbackQuery("change_niches", async (ctx) => {
+    const profileId = await getProfileId(ctx.from.id);
+    if (!profileId) {
+      await ctx.answerCallbackQuery({ text: "Профиль не найден" });
+      return;
+    }
+
+    const selectedIds = await getSelectedNiches(profileId);
+    await ctx.answerCallbackQuery();
+
+    const selectedNames = selectedIds
+      .map((id) => NICHES.find((n) => n.id === id))
+      .filter(Boolean)
+      .map((n) => `${n!.icon} ${n!.name}`);
+
+    const text = selectedNames.length > 0
+      ? `Выберите ниши (до ${MAX_NICHES}):\n\nВыбрано: ${selectedNames.join(", ")}`
+      : `Выберите ниши (до ${MAX_NICHES}):`;
+
+    await ctx.editMessageText(text, { reply_markup: nicheKeyboard(selectedIds) });
+  });
+
+  // Лимит достигнут — нажатие на неактивную кнопку
+  bot.callbackQuery("niche_limit", async (ctx) => {
+    await ctx.answerCallbackQuery({
+      text: `Максимум ${MAX_NICHES} ниши. Снимите одну, чтобы выбрать другую.`,
+      show_alert: true,
+    });
+  });
+
+  // Показать другие ниши
+  bot.callbackQuery("show_other_niches", async (ctx) => {
+    const profileId = await getProfileId(ctx.from.id);
+    if (!profileId) {
+      await ctx.answerCallbackQuery({ text: "Профиль не найден" });
+      return;
+    }
+
+    const selectedIds = await getSelectedNiches(profileId);
+    await ctx.answerCallbackQuery();
+
+    const selectedNames = selectedIds
+      .map((id) => NICHES.find((n) => n.id === id))
+      .filter(Boolean)
+      .map((n) => `${n!.icon} ${n!.name}`);
+
+    const text = selectedNames.length > 0
+      ? `Выберите ниши (до ${MAX_NICHES}):\n\nВыбрано: ${selectedNames.join(", ")}`
+      : `Выберите ниши (до ${MAX_NICHES}):`;
+
+    await ctx.editMessageText(text, { reply_markup: otherNichesKeyboard(selectedIds) });
+  });
+
+  // Показать основные ниши (назад)
+  bot.callbackQuery("show_focus_niches", async (ctx) => {
+    const profileId = await getProfileId(ctx.from.id);
+    if (!profileId) {
+      await ctx.answerCallbackQuery({ text: "Профиль не найден" });
+      return;
+    }
+
+    const selectedIds = await getSelectedNiches(profileId);
+    await ctx.answerCallbackQuery();
+
+    const selectedNames = selectedIds
+      .map((id) => NICHES.find((n) => n.id === id))
+      .filter(Boolean)
+      .map((n) => `${n!.icon} ${n!.name}`);
+
+    const text = selectedNames.length > 0
+      ? `Выберите ниши (до ${MAX_NICHES}):\n\nВыбрано: ${selectedNames.join(", ")}`
+      : `Выберите ниши (до ${MAX_NICHES}):`;
+
+    await ctx.editMessageText(text, { reply_markup: nicheKeyboard(selectedIds) });
+  });
+
+  // Подтвердить выбор ниш
+  bot.callbackQuery("confirm_niches", async (ctx) => {
+    const profileId = await getProfileId(ctx.from.id);
+    if (!profileId) {
+      await ctx.answerCallbackQuery({ text: "Профиль не найден" });
+      return;
+    }
+
+    const selectedIds = await getSelectedNiches(profileId);
+    if (selectedIds.length === 0) {
+      await ctx.answerCallbackQuery({ text: "Выберите хотя бы одну нишу", show_alert: true });
+      return;
+    }
+
+    // Обновляем основную нишу в profiles для обратной совместимости
     await supabase
       .from("profiles")
-      .update({ niche_id: nicheId })
-      .eq("id", profile.id);
+      .update({ niche_id: selectedIds[0] })
+      .eq("id", profileId);
 
-    await ctx.answerCallbackQuery({ text: `Выбрана: ${niche.name}` });
+    const selectedNames = selectedIds
+      .map((id) => NICHES.find((n) => n.id === id))
+      .filter(Boolean)
+      .map((n) => `${n!.icon} ${n!.name}`);
+
+    await ctx.answerCallbackQuery({ text: "Ниши сохранены!" });
     await ctx.editMessageText(
-      `Отлично! Ваша ниша: ${niche.icon} ${niche.name}\n\n` +
-        "Теперь вы будете получать заказы по вашей теме.\n\n" +
+      `Отлично! Ваши ниши:\n${selectedNames.join("\n")}\n\n` +
+        "Теперь вы будете получать заказы по вашим темам.\n\n" +
         "/orders — посмотреть заказы\n" +
         "/record — записать голосовое\n" +
         "/status — ваш профиль",
@@ -52,15 +200,9 @@ export function registerCallbackHandler(bot: Bot): void {
   // Принять заказ
   bot.callbackQuery(/^accept_order:(.+)$/, async (ctx) => {
     const orderId = ctx.match[1];
-    const telegramId = ctx.from.id;
+    const profileId = await getProfileId(ctx.from.id);
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("telegram_id", telegramId)
-      .single();
-
-    if (!profile) {
+    if (!profileId) {
       await ctx.answerCallbackQuery({ text: "Профиль не найден" });
       return;
     }
@@ -69,7 +211,7 @@ export function registerCallbackHandler(bot: Bot): void {
       .from("orders")
       .update({ status: "accepted" })
       .eq("id", orderId)
-      .eq("expert_id", profile.id)
+      .eq("expert_id", profileId)
       .eq("status", "pending");
 
     if (error) {
@@ -89,15 +231,9 @@ export function registerCallbackHandler(bot: Bot): void {
   // Пропустить заказ
   bot.callbackQuery(/^skip_order:(.+)$/, async (ctx) => {
     const orderId = ctx.match[1];
-    const telegramId = ctx.from.id;
+    const profileId = await getProfileId(ctx.from.id);
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("telegram_id", telegramId)
-      .single();
-
-    if (!profile) {
+    if (!profileId) {
       await ctx.answerCallbackQuery({ text: "Профиль не найден" });
       return;
     }
@@ -106,7 +242,7 @@ export function registerCallbackHandler(bot: Bot): void {
       .from("orders")
       .update({ status: "rejected" })
       .eq("id", orderId)
-      .eq("expert_id", profile.id)
+      .eq("expert_id", profileId)
       .eq("status", "pending");
 
     if (error) {

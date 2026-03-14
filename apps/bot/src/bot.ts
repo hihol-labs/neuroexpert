@@ -1,13 +1,21 @@
 import { Bot, GrammyError, HttpError, type Context, type NextFunction } from "grammy";
-import { registerCommands } from "./commands/start.js";
-import { registerOrdersCommand } from "./commands/orders.js";
-import { registerRecordCommand } from "./commands/record.js";
-import { registerStatusCommand } from "./commands/status.js";
-import { registerVoiceHandler } from "./handlers/voice.js";
-import { registerCallbackHandler } from "./handlers/callback.js";
+import { registerCommands } from "./commands/start";
+import { registerOrdersCommand } from "./commands/orders";
+import { registerRecordCommand } from "./commands/record";
+import { registerStatusCommand } from "./commands/status";
+import { registerVoiceHandler } from "./handlers/voice";
+import { registerCallbackHandler } from "./handlers/callback";
 
 /** Настраивает бот: middleware, команды, хендлеры, error handler */
 export function setupBot(bot: Bot): Bot {
+  // Устанавливаем меню команд в Telegram
+  bot.api.setMyCommands([
+    { command: "start", description: "Начать работу" },
+    { command: "orders", description: "Мои заказы" },
+    { command: "record", description: "Записать голосовое" },
+    { command: "status", description: "Моя статистика" },
+  ]).catch((err) => console.error("[bot] Failed to set commands menu:", err));
+
   // Logging middleware
   bot.use(async (ctx: Context, next: NextFunction) => {
     const start = Date.now();

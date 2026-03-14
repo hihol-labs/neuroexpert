@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getBotInstance } from "../../../../lib/bot-instance.js";
+import { getBotInstance } from "@/lib/bot-instance";
 
 const secret = process.env.TELEGRAM_WEBHOOK_SECRET || "";
 

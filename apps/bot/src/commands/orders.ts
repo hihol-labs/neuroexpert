@@ -1,6 +1,6 @@
 import type { Bot } from "grammy";
-import { supabase } from "../supabase.js";
-import { orderKeyboard } from "../keyboards.js";
+import { supabase } from "../supabase";
+import { orderKeyboard } from "../keyboards";
 
 export function registerOrdersCommand(bot: Bot): void {
   bot.command("orders", async (ctx) => {

@@ -1,0 +1,18 @@
+// AIO Article Structure Template — целевые параметры статьи
+
+export const ARTICLE_STRUCTURE = {
+  MIN_WORD_COUNT: 2900,
+  MAX_WORD_COUNT: 3500,
+  TLDR_WORDS_MIN: 40,
+  TLDR_WORDS_MAX: 60,
+  PASSAGE_MIN: 6,
+  PASSAGE_MAX: 10,
+  PASSAGE_WORDS_MIN: 120,
+  PASSAGE_WORDS_MAX: 180,
+  REQUIRED_TABLE: true,
+  REQUIRED_NUMBERED_LIST: true,
+  EXTERNAL_SOURCES_MIN: 2,
+  EXTERNAL_SOURCES_MAX: 3,
+} as const;
+
+export type ArticleStructure = typeof ARTICLE_STRUCTURE;

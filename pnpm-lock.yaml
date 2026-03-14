@@ -97,6 +97,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@supabase/supabase-js':
+        specifier: ^2.99.1
+        version: 2.99.1
       shared:
         specifier: workspace:*
         version: link:../../packages/shared

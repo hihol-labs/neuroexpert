@@ -1,16 +1,54 @@
 import { InlineKeyboard } from "grammy";
 import { NICHES } from "shared";
 
-export function nicheKeyboard(): InlineKeyboard {
+const MAX_NICHES = 3;
+
+export function nicheKeyboard(selectedIds: string[] = []): InlineKeyboard {
   const kb = new InlineKeyboard();
   const focusNiches = NICHES.filter((n) => n.isFocus);
+  const atLimit = selectedIds.length >= MAX_NICHES;
 
   for (const niche of focusNiches) {
-    kb.text(`${niche.icon} ${niche.name}`, `select_niche:${niche.id}`).row();
+    const isSelected = selectedIds.includes(niche.id);
+    const label = isSelected ? `✅ ${niche.icon} ${niche.name}` : `${niche.icon} ${niche.name}`;
+    // Если лимит и не выбрана — показываем, но callback будет noop
+    const callback = atLimit && !isSelected ? `niche_limit` : `toggle_niche:${niche.id}`;
+    kb.text(label, callback).row();
   }
-  kb.text("Другая ниша...", "select_niche:other").row();
+
+  kb.text("Другие ниши...", "show_other_niches").row();
+
+  if (selectedIds.length > 0) {
+    kb.text(`Готово (${selectedIds.length}/${MAX_NICHES})`, "confirm_niches").row();
+  }
 
   return kb;
+}
+
+export function otherNichesKeyboard(selectedIds: string[] = []): InlineKeyboard {
+  const kb = new InlineKeyboard();
+  const otherNiches = NICHES.filter((n) => !n.isFocus);
+  const atLimit = selectedIds.length >= MAX_NICHES;
+
+  for (const niche of otherNiches) {
+    const isSelected = selectedIds.includes(niche.id);
+    const label = isSelected ? `✅ ${niche.icon} ${niche.name}` : `${niche.icon} ${niche.name}`;
+    const callback = atLimit && !isSelected ? `niche_limit` : `toggle_niche:${niche.id}`;
+    kb.text(label, callback).row();
+  }
+
+  kb.text("← Основные ниши", "show_focus_niches").row();
+
+  if (selectedIds.length > 0) {
+    kb.text(`Готово (${selectedIds.length}/${MAX_NICHES})`, "confirm_niches").row();
+  }
+
+  return kb;
+}
+
+export function changeNichesKeyboard(): InlineKeyboard {
+  return new InlineKeyboard()
+    .text("Изменить ниши", "change_niches");
 }
 
 export function orderKeyboard(orderId: string): InlineKeyboard {
