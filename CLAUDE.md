@@ -48,7 +48,7 @@ packages/
 | 7   | Публичные страницы (SSR + SEO) | ✅     |
 | 8   | Дашборд эксперта              | ✅     |
 | 9   | Сбор спроса + поиск дыр       | ✅     |
-| 10  | Оплата (ЮKassa)               | ⬜     |
+| 10  | Оплата (ЮKassa)               | ✅     |
 | 11  | Трекинг + аналитика           | ⬜     |
 | 12  | Scanner + финализация         | ⬜     |
 
@@ -65,6 +65,8 @@ packages/
 - Шаг 8: Dashboard layout (sidebar + mobile hamburger + auth guard), /dashboard (метрики: опубликовано, заявки, Trust Score, тариф + последние 5 заказов/заявок + CTA), /orders (таблица с фильтрами + accept/skip), /content (список пакетов со статусами), /content/[id] (5 вкладок: Telegram/SEO/Cards/Reels/FAQ + meta_title/description + save/publish/delete), /leads (таблица с фильтрами), /profile (основная инфо + E-E-A-T: alumni_of/works_for/knows_about теги/years_experience + Telegram привязка + is_published). UI компоненты: Button, Input, Textarea, Card, Badge, Table.
 
 - Шаг 9: Сбор спроса (wordstat.ts XMLRiver API + serpapi.ts PAA), ai-prober.ts (probe AI с маркерами + LLM gap_score), collect-demand (seed_keywords → Wordstat → upsert questions → find_gaps), find-gaps (LLM фильтрация → probeAI × 2 платформы → gap_score → generate_orders), expand-query (LLM query fanout → sub_queries), generate-orders (по tier → orders + Telegram «Новые заказы!» + подзапросы)
+
+- Шаг 10: ЮKassa интеграция (lib/yukassa.ts HTTP клиент, lib/subscription.ts tier config + лимиты + комиссии), /pricing (4 карточки с понятным текстом + сравнительная таблица 14 строк + B2B + ROI блок), /api/webhooks/yukassa (payment.succeeded/canceled/refund → payments + subscription update), /api/subscribe (create payment + save_payment_method), /billing (текущий тариф + upgrade/downgrade + история платежей)
 
 ## Мониторинг AIO (еженедельно после публикации)
 
