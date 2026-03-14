@@ -11,7 +11,7 @@
 | 2 | БД: схема, миграции, RLS, seed | ✅ |
 | 3 | Auth + лендинг | ✅ |
 | 4 | LLM/STT слой + аудит | ✅ |
-| 5 | Telegram-бот | ⬜ |
+| 5 | Telegram-бот | ✅ |
 | 6 | Генерация контента (Worker) | ⬜ |
 | 7 | Публичные страницы (SSR + SEO) | ⬜ |
 | 8 | Дашборд эксперта | ⬜ |
@@ -26,6 +26,7 @@
 - Шаг 2: 15 таблиц (001), RLS (002), pg_cron (003), 20 ниш (004), 300 seed-вопросов (005), TypeScript-типы (database.ts), константы (constants.ts)
 - Шаг 3: Supabase clients (browser/server/admin), middleware (dashboard protected), auth pages (login magic link, register + niche select), auth callback, auth trigger (006), лендинг (hero, 2 канала, 3 шага, 20 ниш, CTA с воронкой на аудит)
 - Шаг 4: LLM-слой (Claude, OpenAI, YandexGPT, GigaChat) с фабрикой + fallback, STT-слой (Whisper, Yandex SpeechKit), промпты (gap-analysis с 4 маркерами, filter), аудит-страница (выбор 20 ниш → loading → мультиплатформенная таблица сравнения с раскрытием по клику → CTA), API /api/audit (POST, rate limit 2/мин, real-time запросы к AI через прокси, поддержка ChatGPT/Perplexity/YandexGPT/GigaChat), error/not-found страницы, страница-заглушка /pricing
+- Шаг 5: Telegram-бот (grammY), команды (/start регистрация + привязка, /orders заказы с кнопками, /record инструкция, /status дашборд), голосовые сообщения (скачивание → STT → voice_recordings → job generate_content), callback-хендлеры (accept/skip/approve/edit), webhook endpoint (Next.js API route), Supabase service_role клиент
 
 ## Проблемы
 

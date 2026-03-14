@@ -16,6 +16,8 @@
     "openai": "^6.27.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "bot": "workspace:*",
+    "grammy": "^1.35.0",
     "shared": "workspace:*",
     "undici": "^7.24.1"
   },
