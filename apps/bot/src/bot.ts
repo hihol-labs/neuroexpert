@@ -5,6 +5,7 @@ import { registerRecordCommand } from "./commands/record";
 import { registerStatusCommand } from "./commands/status";
 import { registerVoiceHandler } from "./handlers/voice";
 import { registerCallbackHandler } from "./handlers/callback";
+import { registerLeadsHandler } from "./handlers/leads";
 
 /** Настраивает бот: middleware, команды, хендлеры, error handler */
 export function setupBot(bot: Bot): Bot {
@@ -39,6 +40,7 @@ export function setupBot(bot: Bot): Bot {
   // Register handlers
   registerVoiceHandler(bot);
   registerCallbackHandler(bot);
+  registerLeadsHandler(bot);
 
   // Error handler
   bot.catch((err: any) => {

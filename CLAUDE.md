@@ -1,10 +1,69 @@
-# НейроЭксперт — Progress
+# НейроЭксперт
 
-## Completed Steps
+> ВСЕГДА читай этот файл ПЕРВЫМ перед любой работой.
+> После каждого шага — обнови статус.
 
-- Step 1: Monorepo setup, Turborepo, pnpm workspaces
-- Step 2: Supabase schema (15 tables), RLS, seed data
-- Step 3: Auth, middleware, landing
-- Step 4: LLM/STT layer, prompts, audit page, real-time multi-platform audit
-- Step 5: Telegram bot (grammy), voice, webhook
-- Step 6: Content generation (5 formats), worker queue, validation pipeline
+Отвечай всегда на русском языке.
+
+## Стек
+
+- **Monorepo:** Turborepo + pnpm workspaces
+- **Frontend:** Next.js 14 (App Router), React, TailwindCSS
+- **Telegram-бот:** grammY, webhook + polling mode
+- **Worker:** Node.js, polling таблицы jobs из Supabase
+- **БД:** Supabase self-hosted (PostgreSQL 15+, Auth, Storage)
+- **LLM:** абстрактный слой (Claude primary, OpenAI fallback) — `packages/shared/src/llm/`
+- **STT:** абстрактный слой (Whisper primary, YandexSTT fallback) — `packages/shared/src/transcription/`
+- **Язык:** TypeScript strict mode во всех пакетах
+
+## Структура
+
+```text
+apps/
+  web/       — Next.js фронтенд
+  bot/       — Telegram-бот (grammY)
+  worker/    — Background jobs worker
+packages/
+  shared/    — типы, LLM, STT, промпты, константы
+  supabase/  — миграции, seed
+```
+
+## Правила
+
+- SQL-миграции: `packages/supabase/migrations/` с порядковой нумерацией
+- Общие типы и утилиты: `packages/shared/`
+- `.env.local` в корне — локальные переменные
+- Бот использует Supabase client с service_role key
+
+## Статус
+
+| Шаг | Описание                      | Статус |
+|-----|-------------------------------|--------|
+| 1   | Monorepo + инфраструктура     | ✅     |
+| 2   | БД: схема, миграции, RLS, seed | ✅     |
+| 3   | Auth + лендинг                | ✅     |
+| 4   | LLM/STT слой + аудит         | ✅     |
+| 5   | Telegram-бот                  | ✅     |
+| 6   | Генерация контента (Worker)   | ✅     |
+| 7   | Публичные страницы (SSR + SEO) | ✅     |
+| 8   | Дашборд эксперта              | ⬜     |
+| 9   | Сбор спроса + поиск дыр       | ⬜     |
+| 10  | Оплата (ЮKassa)               | ⬜     |
+| 11  | Трекинг + аналитика           | ⬜     |
+| 12  | Scanner + финализация         | ⬜     |
+
+## Что работает
+
+- Шаг 1: Monorepo (turbo + pnpm), apps/web (Next.js 14 + Tailwind), apps/bot, apps/worker, packages/shared, packages/supabase, docker (compose + Dockerfiles + nginx), .env.example
+- Шаг 2: 15 таблиц (001), RLS (002), pg_cron (003), 20 ниш (004), 300 seed-вопросов (005), TypeScript-типы (database.ts), константы (constants.ts)
+- Шаг 3: Supabase clients (browser/server/admin), middleware (dashboard protected), auth pages (login magic link, register + niche select), auth callback, auth trigger (006), лендинг (hero, 2 канала, 3 шага, 20 ниш, CTA с воронкой на аудит)
+- Шаг 4: LLM-слой (Claude, OpenAI, YandexGPT, GigaChat) с фабрикой + fallback, STT-слой (Whisper, Yandex SpeechKit), промпты (gap-analysis с 4 маркерами, filter), аудит-страница (выбор 20 ниш → loading → мультиплатформенная таблица сравнения с раскрытием по клику → CTA), API /api/audit (POST, rate limit 2/мин, real-time запросы к AI через прокси, поддержка ChatGPT/Perplexity/YandexGPT/GigaChat), error/not-found страницы, страница-заглушка /pricing
+- Шаг 5: Telegram-бот (grammY), команды (/start регистрация + привязка, /orders заказы с кнопками, /record инструкция, /status дашборд), голосовые сообщения (скачивание → STT → voice_recordings → job generate_content), callback-хендлеры (accept/skip/approve/edit), webhook endpoint (Next.js API route), Supabase service_role клиент
+- Шаг 6: Worker polling loop (5 сек, retry до 3 раз), generate_content (5 параллельных LLM-вызовов → telegram post, SEO-статья 2900+ слов, карточки, Reels-сценарий, FAQ), validate_content (проверка word_count/TL;DR/таблица/passage_count, автодоработка LLM до 2 раз), generate_orders (по нишам + subscription tier), content-structure.ts (AIO-параметры), 5 промптов content-gen.ts, query-fanout.ts, Web Audio запись (/content/new), /api/voice route, миграции (007_expert_niches, 008_cron_generate_orders)
+- Шаг 7: Публичные SSR-страницы (/experts каталог с фильтрами, /experts/[slug] профиль с E-E-A-T, /experts/[slug]/[articleSlug] статья с TL;DR + таблицы + FAQ-аккордеон + источники + аудиоплеер + форма заявки), Schema.org JSON-LD (Article + Person + FAQPage + BreadcrumbList + HowTo автодетекция), SEO (meta, OG, canonical), robots.ts (GPTBot/ClaudeBot/PerplexityBot/YandexBot/Googlebot/bingbot), sitemap.ts (динамический), /api/leads (POST + rate limit 5/мин + Telegram-уведомление с кнопками), /api/publish (status→published + ISR revalidation + crosspost_social job + sharing notification), bot leads handler (accept/reject lead)
+
+## Известные проблемы
+
+- OpenAI API заблокирован по геолокации (РФ) — используется HTTP-прокси через undici ProxyAgent (OPENAI_PROXY_URL в .env.local)
+- Next.js dev server в WSL слушает только localhost — добавлен флаг `-H 0.0.0.0` в package.json, доступ через IP WSL
+- `.next` кэш периодически ломается при переключении build/dev — удалять `rm -rf apps/web/.next` перед запуском
