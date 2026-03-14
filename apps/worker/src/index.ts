@@ -1,27 +1,34 @@
 import { supabase } from "./supabase.js";
-import { handleGenerateContent } from "./jobs/generate-content.js";
-import { handleValidateContent } from "./jobs/validate-content.js";
 import { handleCollectDemand } from "./jobs/collect-demand.js";
 import { handleFindGaps } from "./jobs/find-gaps.js";
 import { handleExpandQuery } from "./jobs/expand-query.js";
 import { handleGenerateOrders } from "./jobs/generate-orders.js";
+import { handleTranscribe } from "./jobs/transcribe.js";
+import { handleGenerateContent } from "./jobs/generate-content.js";
+import { handleValidateContent } from "./jobs/validate-content.js";
 import { handleTrackCitations } from "./jobs/track-citations.js";
 import { handleTrackSerp } from "./jobs/track-serp.js";
 import { handleCalculateTrustScore } from "./jobs/calculate-trust-score.js";
 import { handleSubmitSitemap } from "./jobs/submit-sitemap.js";
 import { handleRefreshContent } from "./jobs/refresh-content.js";
 import { handleCheckCwv } from "./jobs/check-cwv.js";
+import { handleCrosspost } from "./jobs/crosspost.js";
+import { handleCrosspostSocial } from "./jobs/crosspost-social.js";
+import { handleSendEmailDigest } from "./jobs/send-email-digest.js";
+import { handleOptimizeImages } from "./jobs/optimize-images.js";
 
 const POLL_INTERVAL = Number(process.env.WORKER_POLL_INTERVAL_MS) || 5000;
 const MAX_RETRIES = 3;
 
 type JobHandler = (payload: Record<string, unknown>) => Promise<unknown>;
 
+// Все обработчики — реальная логика
 const handlers: Record<string, JobHandler> = {
   collect_demand: handleCollectDemand,
   find_gaps: handleFindGaps,
   expand_query: handleExpandQuery,
   generate_orders: handleGenerateOrders,
+  transcribe: handleTranscribe,
   generate_content: handleGenerateContent,
   validate_content: handleValidateContent,
   track_citations: handleTrackCitations,
@@ -30,20 +37,11 @@ const handlers: Record<string, JobHandler> = {
   submit_sitemap: handleSubmitSitemap,
   refresh_content: handleRefreshContent,
   check_cwv: handleCheckCwv,
+  crosspost: handleCrosspost,
+  crosspost_social: handleCrosspostSocial,
+  send_email_digest: handleSendEmailDigest,
+  optimize_images: handleOptimizeImages,
 };
-
-// Заглушки
-const STUB_TYPES = [
-  "transcribe", "crosspost", "crosspost_social",
-  "send_email_digest", "optimize_images",
-];
-
-for (const type of STUB_TYPES) {
-  handlers[type] = async (payload) => {
-    console.log(`[worker] Stub handler for '${type}':`, JSON.stringify(payload).slice(0, 200));
-    return { stub: true };
-  };
-}
 
 async function pollAndProcess(): Promise<void> {
   const { data: jobs, error: fetchErr } = await supabase
@@ -127,10 +125,8 @@ async function processJob(job: Record<string, unknown>): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const realHandlers = Object.keys(handlers).filter((t) => !STUB_TYPES.includes(t));
   console.log("[worker] Starting...");
-  console.log(`[worker] Active handlers: ${realHandlers.join(", ")}`);
-  console.log(`[worker] Stub handlers: ${STUB_TYPES.length} types`);
+  console.log(`[worker] ${Object.keys(handlers).length} handlers: ${Object.keys(handlers).join(", ")}`);
   console.log(`[worker] Poll interval: ${POLL_INTERVAL}ms`);
 
   while (true) {

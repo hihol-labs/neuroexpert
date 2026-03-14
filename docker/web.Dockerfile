@@ -14,6 +14,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
 COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
 COPY . .
+# Create empty .env.local so Next.js build doesn't fail
+RUN touch apps/web/.env.local
 RUN pnpm --filter shared build
 RUN pnpm --filter web build
 

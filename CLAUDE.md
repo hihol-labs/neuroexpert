@@ -5,6 +5,8 @@
 
 Отвечай всегда на русском языке.
 
+## MVP ЗАВЕРШЁН
+
 ## Стек
 
 - **Monorepo:** Turborepo + pnpm workspaces
@@ -50,7 +52,7 @@ packages/
 | 9   | Сбор спроса + поиск дыр       | ✅     |
 | 10  | Оплата (ЮKassa)               | ✅     |
 | 11  | Трекинг + аналитика           | ✅     |
-| 12  | Scanner + финализация         | ⬜     |
+| 12  | Scanner + финализация         | ✅     |
 
 ## Что работает
 
@@ -70,6 +72,8 @@ packages/
 
 - Шаг 11: track-citations (probeAI → citation_checks + Share of Voice), track-serp (SerpAPI → serp_positions), calculate-trust-score (формула citations×2 + position×1.5 + content×1 + leads×3), submit-sitemap (GSC + Yandex Webmaster + Bing), refresh-content (>90 дней → needs_refresh + Telegram), check-cwv (PageSpeed API → cwv_metrics + алерты), services/bing-webmaster + pagespeed. /analytics (Trust Score + Share of Voice + Recharts LineChart цитирования + CWV таблица + цитирование по статьям + рекомендации), /api/email-subscribe. Worker: 12 active handlers, 5 stubs.
 
+- Шаг 12: AI Visibility Scanner (/scan форма + /api/scan POST rate limit 3/час + /scan/[slug] SSR с OG-тегами), кросспост (crosspost.ts Дзен/Хабр + crosspost-social.ts Telegram/VK/отзовики + Telegram-уведомления), email-digest (send-email-digest.ts через Resend API батчами до 50), resend service (services/resend.ts), transcribe (STT → voice_recordings → generate_content job), optimize-images (sharp → WebP ≤ 150KB), миграция 009 (scan_results + referrer_id), реферальная программа (/?ref={slug} → localStorage → signUp metadata), loading.tsx для 7 дашборд-страниц, PWA manifest + /api/pwa-icon (192/512 динамическая генерация), favicon/apple-icon/OG-image (Next.js ImageResponse), README.md, .env.example актуален. Worker: 17 active handlers, 0 stubs. pnpm build OK.
+
 ## Мониторинг AIO (еженедельно после публикации)
 
 Запуск: `npx tsx --env-file=.env.local scripts/validate-aio.ts`
@@ -83,3 +87,44 @@ packages/
 - OpenAI API заблокирован по геолокации (РФ) — используется HTTP-прокси через undici ProxyAgent (OPENAI_PROXY_URL в .env.local)
 - Next.js dev server в WSL слушает только localhost — добавлен флаг `-H 0.0.0.0` в package.json, доступ через IP WSL
 - `.next` кэш периодически ломается при переключении build/dev — удалять `rm -rf apps/web/.next` перед запуском
+- scan_results таблица не в generated Database типах — используется type assertion в API/SSR. Пересгенерировать типы после применения миграции 009.
+
+## Шпаргалка
+
+| Действие | Команда |
+|----------|---------|
+| Коммит + пуш | `git add -A && git commit -m "msg" && git push` |
+| Dev web | `pnpm --filter web dev` |
+| Dev bot | `pnpm --filter bot dev` |
+| Dev worker | `pnpm --filter worker dev` |
+| Build всё | `pnpm build` |
+| Build shared | `pnpm --filter shared build` |
+| Docker build | `docker-compose build` |
+| Docker up | `docker-compose up -d` |
+| Docker logs | `docker-compose logs -f web` |
+| Docker restart | `docker-compose restart web` |
+| Docker down | `docker-compose down` |
+| Docker rebuild | `docker-compose build --no-cache` |
+| Healthcheck | `curl http://localhost:3000/api/health` |
+| Миграция push | `npx supabase db push --db-url $SUPABASE_DB_URL` |
+| Миграция diff | `npx supabase db diff -f migration_name` |
+| Миграция reset | `npx supabase db reset` |
+| AIO мониторинг | `npx ts-node scripts/validate-aio.ts` |
+| Тест audit API | `curl -X POST localhost:3000/api/audit -H "Content-Type: application/json" -d '{"niche_id":"...","type":"free"}'` |
+| Откат коммита | `git reset --soft HEAD~1` |
+| Починить ошибку | `Вот ошибка: [лог]. Исправь.` |
+| Не забегай | `Стоп. Только шаг N. Не забегай вперёд.` |
+
+## Советы
+
+1. **Claude.md — читай первым.** Одна строка в начале промпта. Обновляй после шага (✅ + что работает).
+2. **Не забегай.** Claude Code начал шаг 5, а ты на 3? → «Стоп. Только шаг 3.»
+3. **pnpm build после каждого шага.** Не собирается — не коммить.
+4. **20 ниш = живые.** Каждая показывает реальные дыры. Никаких «данные собираются».
+5. **AIO ≠ единственное обещание.** «Клиенты из поиска И нейросетей». SEO — полноценный канал.
+6. **Мониторинг AIO — фоном.** После шага 7: `validate-aio.ts` раз в неделю. Не блокирует.
+7. **Seed-данные ~400₽.** 300–400 вопросов для 20 ниш. Не экономь.
+8. **Статья ≥ 2900 слов — обязательно.** Данные SE Ranking: +60% цитирований. validate-content.ts не пропустит короткие.
+9. **TL;DR — первый абзац.** Featured Snippets мигрируют в ChatGPT почти 100%. Не пропускай.
+10. **CWV: FCP < 0.4 сек.** Проверяй после шага 7. Медленная страница = -3x цитирований.
+11. **Первые 72 часа после публикации — критичны.** Шеринг в Telegram-чаты создаёт поведенческие факторы. Не откладывай crosspost_social.
