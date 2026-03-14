@@ -11,13 +11,14 @@
   "dependencies": {
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.99.1",
+    "bot": "workspace:*",
+    "grammy": "^1.35.0",
     "https-proxy-agent": "^8.0.0",
     "next": "^14.2.21",
     "openai": "^6.27.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "bot": "workspace:*",
-    "grammy": "^1.35.0",
+    "recharts": "^3.8.0",
     "shared": "workspace:*",
     "undici": "^7.24.1"
   },

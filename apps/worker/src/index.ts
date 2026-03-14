@@ -5,13 +5,18 @@ import { handleCollectDemand } from "./jobs/collect-demand.js";
 import { handleFindGaps } from "./jobs/find-gaps.js";
 import { handleExpandQuery } from "./jobs/expand-query.js";
 import { handleGenerateOrders } from "./jobs/generate-orders.js";
+import { handleTrackCitations } from "./jobs/track-citations.js";
+import { handleTrackSerp } from "./jobs/track-serp.js";
+import { handleCalculateTrustScore } from "./jobs/calculate-trust-score.js";
+import { handleSubmitSitemap } from "./jobs/submit-sitemap.js";
+import { handleRefreshContent } from "./jobs/refresh-content.js";
+import { handleCheckCwv } from "./jobs/check-cwv.js";
 
 const POLL_INTERVAL = Number(process.env.WORKER_POLL_INTERVAL_MS) || 5000;
 const MAX_RETRIES = 3;
 
 type JobHandler = (payload: Record<string, unknown>) => Promise<unknown>;
 
-// Реальные обработчики
 const handlers: Record<string, JobHandler> = {
   collect_demand: handleCollectDemand,
   find_gaps: handleFindGaps,
@@ -19,14 +24,18 @@ const handlers: Record<string, JobHandler> = {
   generate_orders: handleGenerateOrders,
   generate_content: handleGenerateContent,
   validate_content: handleValidateContent,
+  track_citations: handleTrackCitations,
+  track_serp: handleTrackSerp,
+  calculate_trust_score: handleCalculateTrustScore,
+  submit_sitemap: handleSubmitSitemap,
+  refresh_content: handleRefreshContent,
+  check_cwv: handleCheckCwv,
 };
 
-// Заглушки для типов задач, которые ещё не реализованы
+// Заглушки
 const STUB_TYPES = [
-  "transcribe",
-  "track_citations", "track_serp", "submit_sitemap",
-  "crosspost", "crosspost_social", "calculate_trust_score",
-  "send_email_digest", "refresh_content", "check_cwv", "optimize_images",
+  "transcribe", "crosspost", "crosspost_social",
+  "send_email_digest", "optimize_images",
 ];
 
 for (const type of STUB_TYPES) {
@@ -37,11 +46,9 @@ for (const type of STUB_TYPES) {
 }
 
 async function pollAndProcess(): Promise<void> {
-  // Атомарный захват задачи: пробуем RPC
   const { data: jobs, error: fetchErr } = await supabase
     .rpc("claim_job", { handler_types: Object.keys(handlers) });
 
-  // Если RPC не существует — fallback
   if (fetchErr?.code === "42883") {
     await pollFallback();
     return;
@@ -53,7 +60,6 @@ async function pollAndProcess(): Promise<void> {
   }
 
   if (!jobs || (Array.isArray(jobs) && jobs.length === 0)) return;
-
   const job = Array.isArray(jobs) ? jobs[0] : jobs;
   await processJob(job);
 }
@@ -76,21 +82,15 @@ async function pollFallback(): Promise<void> {
     return;
   }
 
-  // Атомарный захват
   const { data: claimed, error: claimErr } = await supabase
     .from("jobs")
-    .update({
-      status: "processing",
-      started_at: new Date().toISOString(),
-      attempts: job.attempts + 1,
-    })
+    .update({ status: "processing", started_at: new Date().toISOString(), attempts: job.attempts + 1 })
     .eq("id", job.id)
     .eq("status", "pending")
     .select()
     .single();
 
   if (claimErr || !claimed) return;
-
   await processJob(claimed);
 }
 
@@ -104,45 +104,25 @@ async function processJob(job: Record<string, unknown>): Promise<void> {
 
   const handler = handlers[jobType];
   if (!handler) {
-    await supabase
-      .from("jobs")
-      .update({ status: "failed", error: `No handler: ${jobType}`, completed_at: new Date().toISOString() })
-      .eq("id", jobId);
+    await supabase.from("jobs").update({ status: "failed", error: `No handler: ${jobType}`, completed_at: new Date().toISOString() }).eq("id", jobId);
     return;
   }
 
   try {
     const result = await handler(payload);
-
-    await supabase
-      .from("jobs")
-      .update({
-        status: "completed",
-        result: result as Record<string, unknown>,
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", jobId);
-
+    await supabase.from("jobs").update({ status: "completed", result: result as Record<string, unknown>, completed_at: new Date().toISOString() }).eq("id", jobId);
     console.log(`[worker] ${jobType} (${jobId}) completed`);
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
     console.error(`[worker] ${jobType} (${jobId}) failed:`, errorMessage);
-
     const maxAttempts = (job.max_attempts as number) ?? MAX_RETRIES;
     const shouldRetry = attempts < maxAttempts;
-
-    await supabase
-      .from("jobs")
-      .update({
-        status: shouldRetry ? "pending" : "failed",
-        error: errorMessage,
-        ...(shouldRetry ? {} : { completed_at: new Date().toISOString() }),
-      })
-      .eq("id", jobId);
-
-    if (shouldRetry) {
-      console.log(`[worker] ${jobType} (${jobId}) will retry (${attempts}/${maxAttempts})`);
-    }
+    await supabase.from("jobs").update({
+      status: shouldRetry ? "pending" : "failed",
+      error: errorMessage,
+      ...(shouldRetry ? {} : { completed_at: new Date().toISOString() }),
+    }).eq("id", jobId);
+    if (shouldRetry) console.log(`[worker] ${jobType} (${jobId}) will retry (${attempts}/${maxAttempts})`);
   }
 }
 
@@ -154,11 +134,7 @@ async function main(): Promise<void> {
   console.log(`[worker] Poll interval: ${POLL_INTERVAL}ms`);
 
   while (true) {
-    try {
-      await pollAndProcess();
-    } catch (err) {
-      console.error("[worker] Unexpected error:", err);
-    }
+    try { await pollAndProcess(); } catch (err) { console.error("[worker] Unexpected error:", err); }
     await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL));
   }
 }
