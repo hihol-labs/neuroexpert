@@ -5,7 +5,7 @@
 
 Отвечай всегда на русском языке.
 
-## MVP ЗАВЕРШЁН
+## MVP ЗАВЕРШЁН — ЗАДЕПЛОЕН НА PRODUCTION
 
 ## Стек
 
@@ -53,6 +53,7 @@ packages/
 | 10  | Оплата (ЮKassa)               | ✅     |
 | 11  | Трекинг + аналитика           | ✅     |
 | 12  | Scanner + финализация         | ✅     |
+| 13  | Production deploy             | ✅     |
 
 ## Что работает
 
@@ -74,6 +75,21 @@ packages/
 
 - Шаг 12: AI Visibility Scanner (/scan форма + /api/scan POST rate limit 3/час + /scan/[slug] SSR с OG-тегами), кросспост (crosspost.ts Дзен/Хабр + crosspost-social.ts Telegram/VK/отзовики + Telegram-уведомления), email-digest (send-email-digest.ts через Resend API батчами до 50), resend service (services/resend.ts), transcribe (STT → voice_recordings → generate_content job), optimize-images (sharp → WebP ≤ 150KB), миграция 009 (scan_results + referrer_id), реферальная программа (/?ref={slug} → localStorage → signUp metadata), loading.tsx для 7 дашборд-страниц, PWA manifest + /api/pwa-icon (192/512 динамическая генерация), favicon/apple-icon/OG-image (Next.js ImageResponse), README.md, .env.example актуален. Worker: 17 active handlers, 0 stubs. pnpm build OK.
 
+- Шаг 13 (Deploy): Production на `155.212.185.216`, домен `neuroexpertise.ru`. Supabase self-hosted (PostgreSQL 15 + PostgREST + GoTrue Auth + Storage + Kong API Gateway). 8 Docker-контейнеров: supabase-db, supabase-rest, supabase-auth, supabase-storage, supabase-kong, web, bot, worker. Nginx reverse proxy (SSL Let's Encrypt), Supabase API через path `/supabase/`. Docker multi-stage builds (web.Dockerfile включает bot deps для webhook route). `scripts/generate-env.sh` (генерация JWT ключей anon/service_role), `scripts/deploy.sh` (автодеплой), `docker/supabase/init/00-roles.sh` (init DB ролей), `docker/supabase/kong.yml` (API gateway routing). LLM: OpenAI через HTTPS-прокси (РФ). Все 9 миграций применены, 20 ниш + 300 вопросов засеяны. Healthcheck: `curl -sk https://neuroexpertise.ru/api/health` → 200 OK.
+
+## Остаётся сделать (post-deploy)
+
+- [ ] Добавить DNS-запись `supabase.neuroexpertise.ru → 155.212.185.216` (пока API работает через path `/supabase/`)
+- [ ] Перегенерировать API-ключи (OpenAI, Telegram) — были отправлены в чат
+- [ ] Увеличить RAM сервера до 8 ГБ (сейчас 5.8 ГБ, свободно ~2 ГБ)
+- [ ] Настроить SMTP для Supabase Auth (сейчас autoconfirm=true, magic link не отправляется)
+- [ ] Установить pg_cron расширение в PostgreSQL (миграции 003 и 008 не применились — cron jobs можно запускать через worker)
+- [ ] Подключить ЮKassa (YUKASSA_SHOP_ID + SECRET_KEY в .env)
+- [ ] Подключить Resend (RESEND_API_KEY для email-рассылок)
+- [ ] Подключить SerpAPI + XMLRiver (для сбора спроса)
+- [ ] Подключить GSC / Яндекс.Вебмастер / Bing (для индексации)
+- [ ] Пересгенерировать Database типы после миграции 009 (scan_results)
+
 ## Мониторинг AIO (еженедельно после публикации)
 
 Запуск: `npx tsx --env-file=.env.local scripts/validate-aio.ts`
@@ -84,10 +100,24 @@ packages/
 
 ## Известные проблемы
 
-- OpenAI API заблокирован по геолокации (РФ) — используется HTTP-прокси через undici ProxyAgent (OPENAI_PROXY_URL в .env.local)
+- OpenAI API заблокирован по геолокации (РФ) — используется HTTP-прокси через undici ProxyAgent (OPENAI_PROXY_URL в .env)
 - Next.js dev server в WSL слушает только localhost — добавлен флаг `-H 0.0.0.0` в package.json, доступ через IP WSL
 - `.next` кэш периодически ломается при переключении build/dev — удалять `rm -rf apps/web/.next` перед запуском
-- scan_results таблица не в generated Database типах — используется type assertion в API/SSR. Пересгенерировать типы после применения миграции 009.
+- scan_results таблица не в generated Database типах — используется type assertion в API/SSR. Пересгенерировать типы после применения миграции 009
+- pg_cron не установлен в self-hosted PostgreSQL (миграции 003, 008 не применились) — cron-задачи выполняются через worker
+- Системный nginx на сервере занимает порты 80/443, Coolify Traefik не запускается — используем nginx vhost `/etc/nginx/sites-available/neuroexpertise.ru`
+- Supabase Auth работает с `autoconfirm=true` (без SMTP) — magic link не отправляется, пользователи подтверждаются автоматически
+
+## Production
+
+- **Сервер:** `root@155.212.185.216` (3 CPU, 6 ГБ RAM, 60 ГБ NVMe)
+- **Домен:** `neuroexpertise.ru` (SSL Let's Encrypt, auto-renew)
+- **Проект:** `/opt/neuroexpert/`
+- **Env:** `/opt/neuroexpert/.env` (НЕ коммитить!)
+- **Nginx:** `/etc/nginx/sites-available/neuroexpertise.ru`
+- **Docker compose:** `docker/docker-compose.prod.yml`
+- **Supabase API:** `https://neuroexpertise.ru/supabase/` (Kong → PostgREST/GoTrue/Storage)
+- **Контейнеры:** 8 шт (supabase-db, supabase-rest, supabase-auth, supabase-storage, supabase-kong, web, bot, worker)
 
 ## Шпаргалка
 
@@ -99,21 +129,19 @@ packages/
 | Dev worker | `pnpm --filter worker dev` |
 | Build всё | `pnpm build` |
 | Build shared | `pnpm --filter shared build` |
-| Docker build | `docker-compose build` |
-| Docker up | `docker-compose up -d` |
-| Docker logs | `docker-compose logs -f web` |
-| Docker restart | `docker-compose restart web` |
-| Docker down | `docker-compose down` |
-| Docker rebuild | `docker-compose build --no-cache` |
-| Healthcheck | `curl http://localhost:3000/api/health` |
+| Docker build (dev) | `docker-compose build` |
+| Docker up (dev) | `docker-compose up -d` |
+| Healthcheck (dev) | `curl http://localhost:3000/api/health` |
+| Healthcheck (prod) | `curl -sk https://neuroexpertise.ru/api/health` |
+| Prod deploy | `rsync ... && ssh root@155.212.185.216 "cd /opt/neuroexpert && docker compose -f docker/docker-compose.prod.yml --env-file .env build web && docker compose -f docker/docker-compose.prod.yml --env-file .env up -d web"` |
+| Prod logs | `ssh root@155.212.185.216 "cd /opt/neuroexpert && docker compose -f docker/docker-compose.prod.yml --env-file .env logs -f web"` |
+| Prod restart | `ssh root@155.212.185.216 "cd /opt/neuroexpert && docker compose -f docker/docker-compose.prod.yml --env-file .env restart web"` |
+| Prod status | `ssh root@155.212.185.216 "cd /opt/neuroexpert && docker compose -f docker/docker-compose.prod.yml --env-file .env ps"` |
+| Prod миграция | `ssh root@155.212.185.216 "docker exec -i docker-supabase-db-1 psql -U postgres -d postgres < packages/supabase/migrations/NNN.sql"` |
 | Миграция push | `npx supabase db push --db-url $SUPABASE_DB_URL` |
-| Миграция diff | `npx supabase db diff -f migration_name` |
-| Миграция reset | `npx supabase db reset` |
-| AIO мониторинг | `npx ts-node scripts/validate-aio.ts` |
+| AIO мониторинг | `npx tsx --env-file=.env.local scripts/validate-aio.ts` |
 | Тест audit API | `curl -X POST localhost:3000/api/audit -H "Content-Type: application/json" -d '{"niche_id":"...","type":"free"}'` |
 | Откат коммита | `git reset --soft HEAD~1` |
-| Починить ошибку | `Вот ошибка: [лог]. Исправь.` |
-| Не забегай | `Стоп. Только шаг N. Не забегай вперёд.` |
 
 ## Советы
 
