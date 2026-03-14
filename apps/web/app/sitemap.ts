@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
+export const dynamic = "force-dynamic";
+
 function getAdmin() {
   return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

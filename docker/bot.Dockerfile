@@ -20,6 +20,11 @@ RUN pnpm --filter bot build
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-COPY --from=builder /app/apps/bot/dist ./dist
+COPY --from=builder /app/apps/bot/dist ./apps/bot/dist
+COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
+COPY --from=builder /app/packages/shared/package.json ./packages/shared/
 COPY --from=builder /app/node_modules ./node_modules
-CMD ["node", "dist/index.js"]
+COPY --from=builder /app/apps/bot/node_modules ./apps/bot/node_modules
+COPY --from=builder /app/apps/bot/package.json ./apps/bot/
+COPY --from=builder /app/package.json ./
+CMD ["node", "apps/bot/dist/index.js"]

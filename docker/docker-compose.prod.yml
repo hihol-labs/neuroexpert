@@ -126,16 +126,10 @@ services:
       KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
     volumes:
       - ./supabase/kong.yml:/var/lib/kong/kong.yml:ro
+    ports:
+      - "127.0.0.1:8100:8000"
     networks:
       - neuro-internal
-      - coolify
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.neuro-supabase.rule=Host(`supabase.neuroexpertise.ru`)"
-      - "traefik.http.routers.neuro-supabase.entrypoints=https"
-      - "traefik.http.routers.neuro-supabase.tls=true"
-      - "traefik.http.routers.neuro-supabase.tls.certresolver=letsencrypt"
-      - "traefik.http.services.neuro-supabase.loadbalancer.server.port=8000"
     restart: unless-stopped
 
   # ===== WEB (Next.js) =====
@@ -143,30 +137,23 @@ services:
     build:
       context: ..
       dockerfile: docker/web.Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
     depends_on:
       supabase-kong:
         condition: service_started
+    ports:
+      - "127.0.0.1:3100:3000"
     env_file: ../.env
     environment:
       - NODE_ENV=production
       - HOSTNAME=0.0.0.0
     networks:
       - neuro-internal
-      - coolify
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.neuro-web.rule=Host(`neuroexpertise.ru`)"
-      - "traefik.http.routers.neuro-web.entrypoints=https"
-      - "traefik.http.routers.neuro-web.tls=true"
-      - "traefik.http.routers.neuro-web.tls.certresolver=letsencrypt"
-      - "traefik.http.services.neuro-web.loadbalancer.server.port=3000"
-      # HTTP -> HTTPS redirect
-      - "traefik.http.routers.neuro-web-http.rule=Host(`neuroexpertise.ru`)"
-      - "traefik.http.routers.neuro-web-http.entrypoints=http"
-      - "traefik.http.routers.neuro-web-http.middlewares=neuro-https-redirect"
-      - "traefik.http.middlewares.neuro-https-redirect.redirectscheme.scheme=https"
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -209,5 +196,3 @@ volumes:
 networks:
   neuro-internal:
     driver: bridge
-  coolify:
-    external: true

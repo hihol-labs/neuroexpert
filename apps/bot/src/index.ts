@@ -8,6 +8,8 @@ async function main() {
     const secret = process.env.TELEGRAM_WEBHOOK_SECRET || "";
     await bot.api.setWebhook(webhookUrl, { secret_token: secret });
     console.log(`[bot] Webhook set to ${webhookUrl}`);
+    // Keep process alive — Docker will restart if it exits
+    setInterval(() => {}, 60_000);
   } else {
     // Development: use long polling
     await bot.api.deleteWebhook();

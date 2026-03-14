@@ -1,0 +1,10 @@
+node_modules
+.next
+dist
+.git
+.env
+.env.local
+*.tsbuildinfo
+apps/web/.next
+apps/bot/dist
+apps/worker/dist

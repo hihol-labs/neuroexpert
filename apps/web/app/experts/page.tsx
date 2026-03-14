@@ -15,6 +15,7 @@ export const metadata: Metadata = {
   description: "Найдите эксперта в своей нише — психология, юриспруденция, нутрициология, финансы и другие направления",
 };
 
+export const dynamic = "force-dynamic";
 export const revalidate = 600;
 
 interface SearchParams {

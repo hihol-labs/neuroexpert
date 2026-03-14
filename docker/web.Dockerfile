@@ -5,6 +5,7 @@ FROM base AS deps
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY apps/web/package.json ./apps/web/
+COPY apps/bot/package.json ./apps/bot/
 COPY packages/shared/package.json ./packages/shared/
 RUN pnpm install --frozen-lockfile
 
@@ -12,11 +13,22 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
+COPY --from=deps /app/apps/bot/node_modules ./apps/bot/node_modules
 COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
 COPY . .
-# Create empty .env.local so Next.js build doesn't fail
-RUN touch apps/web/.env.local
+# Remove worker to avoid pulling its deps into type-check
+RUN rm -rf apps/worker
+# Remove symlink and create empty .env.local so Next.js build doesn't fail
+RUN rm -f apps/web/.env.local && touch apps/web/.env.local
 RUN pnpm --filter shared build
+RUN pnpm --filter bot build
+# Next.js needs NEXT_PUBLIC_* at build time for static pages
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ARG NEXT_PUBLIC_APP_URL
+ENV NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 RUN pnpm --filter web build
 
 FROM base AS runner

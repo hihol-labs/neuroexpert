@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getBotInstance } from "@/lib/bot-instance";
+
+export const dynamic = "force-dynamic";
 
 const secret = process.env.TELEGRAM_WEBHOOK_SECRET || "";
 
@@ -12,6 +13,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const { getBotInstance } = await import("@/lib/bot-instance");
     const body = await req.json();
     const bot = getBotInstance();
     await bot.handleUpdate(body);

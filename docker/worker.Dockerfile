@@ -21,6 +21,11 @@ RUN pnpm --filter worker build
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-COPY --from=builder /app/apps/worker/dist ./dist
+COPY --from=builder /app/apps/worker/dist ./apps/worker/dist
+COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
+COPY --from=builder /app/packages/shared/package.json ./packages/shared/
 COPY --from=builder /app/node_modules ./node_modules
-CMD ["node", "dist/index.js"]
+COPY --from=builder /app/apps/worker/node_modules ./apps/worker/node_modules
+COPY --from=builder /app/apps/worker/package.json ./apps/worker/
+COPY --from=builder /app/package.json ./
+CMD ["node", "apps/worker/dist/index.js"]
