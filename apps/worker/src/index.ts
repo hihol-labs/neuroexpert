@@ -1,7 +1,10 @@
 import { supabase } from "./supabase.js";
-import { handleGenerateOrders } from "./handlers/generate-orders.js";
 import { handleGenerateContent } from "./jobs/generate-content.js";
 import { handleValidateContent } from "./jobs/validate-content.js";
+import { handleCollectDemand } from "./jobs/collect-demand.js";
+import { handleFindGaps } from "./jobs/find-gaps.js";
+import { handleExpandQuery } from "./jobs/expand-query.js";
+import { handleGenerateOrders } from "./jobs/generate-orders.js";
 
 const POLL_INTERVAL = Number(process.env.WORKER_POLL_INTERVAL_MS) || 5000;
 const MAX_RETRIES = 3;
@@ -10,6 +13,9 @@ type JobHandler = (payload: Record<string, unknown>) => Promise<unknown>;
 
 // Реальные обработчики
 const handlers: Record<string, JobHandler> = {
+  collect_demand: handleCollectDemand,
+  find_gaps: handleFindGaps,
+  expand_query: handleExpandQuery,
   generate_orders: handleGenerateOrders,
   generate_content: handleGenerateContent,
   validate_content: handleValidateContent,
@@ -17,7 +23,7 @@ const handlers: Record<string, JobHandler> = {
 
 // Заглушки для типов задач, которые ещё не реализованы
 const STUB_TYPES = [
-  "collect_demand", "find_gaps", "expand_query", "transcribe",
+  "transcribe",
   "track_citations", "track_serp", "submit_sitemap",
   "crosspost", "crosspost_social", "calculate_trust_score",
   "send_email_digest", "refresh_content", "check_cwv", "optimize_images",
