@@ -39,11 +39,19 @@ export const NICHES: Niche[] = [
 // ============================================================
 // Тарифы подписки
 // ============================================================
+export type ContentFormat = 'telegram_post' | 'seo_article' | 'cards' | 'reels_script' | 'faq';
+
+export const ALL_FORMATS: ContentFormat[] = ['telegram_post', 'seo_article', 'cards', 'reels_script', 'faq'];
+
 export interface SubscriptionTier {
   id: string;
   name: string;
   price: number; // рублей/мес
   ordersPerWeek: number;
+  packagesPerMonth: number;
+  commission: number;
+  formats: ContentFormat[];
+  exportableFormats: ContentFormat[];
   features: string[];
 }
 
@@ -52,43 +60,67 @@ export const SUBSCRIPTION_TIERS: Record<string, SubscriptionTier> = {
     id: 'free',
     name: 'Free',
     price: 0,
-    ordersPerWeek: 0,
-    features: ['Бесплатный аудит (3 дыры)', 'Просмотр каталога'],
+    ordersPerWeek: 3,
+    packagesPerMonth: 3,
+    commission: 0.15,
+    formats: ['telegram_post', 'seo_article'],
+    exportableFormats: ['telegram_post'],
+    features: ['3 пакета/мес', '2 формата (пост + SEO-статья)', 'Экспорт Telegram-поста', 'Комиссия 15%'],
   },
   starter: {
     id: 'starter',
     name: 'Starter',
-    price: 2990,
-    ordersPerWeek: 3,
-    features: ['3 заказа/неделю', '5 форматов контента', 'Публикация на платформе', 'Базовая аналитика'],
+    price: 1490,
+    ordersPerWeek: 10,
+    packagesPerMonth: Infinity,
+    commission: 0.07,
+    formats: ALL_FORMATS,
+    exportableFormats: ALL_FORMATS,
+    features: ['10 вопросов/неделю', '5 форматов контента', 'Полный экспорт', 'Комиссия 7%'],
   },
   pro: {
     id: 'pro',
     name: 'Pro',
-    price: 5990,
-    ordersPerWeek: 7,
-    features: ['7 заказов/неделю', 'AI Citation Tracker', 'Приоритетная генерация', 'Email-дайджест'],
+    price: 2990,
+    ordersPerWeek: Infinity,
+    packagesPerMonth: Infinity,
+    commission: 0.03,
+    formats: ALL_FORMATS,
+    exportableFormats: ALL_FORMATS,
+    features: ['Безлимит вопросов', 'Кросспост на площадки', 'Помощь с распространением', 'Комиссия 3%'],
   },
   expert: {
     id: 'expert',
     name: 'Expert',
-    price: 9990,
-    ordersPerWeek: 15,
-    features: ['15 заказов/неделю', 'SERP мониторинг', 'Кросспост Дзен/vc.ru', 'Приоритетная поддержка'],
+    price: 4990,
+    ordersPerWeek: Infinity,
+    packagesPerMonth: Infinity,
+    commission: 0,
+    formats: ALL_FORMATS,
+    exportableFormats: ALL_FORMATS,
+    features: ['Всё из Pro', 'AI Citation Tracker', 'Анализ конкурентов', 'Комиссия 0%'],
   },
   business: {
     id: 'business',
     name: 'Business',
-    price: 19990,
-    ordersPerWeek: 30,
-    features: ['30 заказов/неделю', 'Мультиэксперт', 'API доступ', 'Персональный менеджер'],
+    price: 24990,
+    ordersPerWeek: Infinity,
+    packagesPerMonth: Infinity,
+    commission: 0,
+    formats: ALL_FORMATS,
+    exportableFormats: ALL_FORMATS,
+    features: ['Мультиэксперт (до 5)', 'API доступ', 'Персональный менеджер'],
   },
   enterprise: {
     id: 'enterprise',
     name: 'Enterprise',
-    price: 49990,
-    ordersPerWeek: 100,
-    features: ['Безлимитные заказы', 'White-label', 'SLA', 'Выделенная инфраструктура'],
+    price: 99990,
+    ordersPerWeek: Infinity,
+    packagesPerMonth: Infinity,
+    commission: 0,
+    formats: ALL_FORMATS,
+    exportableFormats: ALL_FORMATS,
+    features: ['Безлимит', 'White-label', 'SLA', 'Выделенная инфраструктура'],
   },
 } as const;
 
