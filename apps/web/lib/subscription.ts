@@ -123,15 +123,7 @@ export function getTierConfig(tier: string) {
   return TIER_CONFIG[tier as TierName] ?? TIER_CONFIG.free;
 }
 
-export function checkOrderLimit(tier: string, currentWeekOrders: number): { allowed: boolean; limit: number } {
-  const config = getTierConfig(tier);
-  return {
-    allowed: currentWeekOrders < config.ordersPerWeek,
-    limit: config.ordersPerWeek,
-  };
-}
-
-export function checkMonthlyPackageLimit(tier: string, currentMonthPackages: number): { allowed: boolean; limit: number } {
+export function checkPackageLimit(tier: string, currentMonthPackages: number): { allowed: boolean; limit: number } {
   const config = getTierConfig(tier);
   return {
     allowed: currentMonthPackages < config.packagesPerMonth,

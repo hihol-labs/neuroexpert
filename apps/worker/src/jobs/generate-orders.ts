@@ -69,15 +69,19 @@ export async function handleGenerateOrders(payload: Record<string, unknown>): Pr
 
   const expertsToNotify: Array<{ telegramId: number; count: number; sampleQuestions: string[] }> = [];
 
+  // Показываем ВСЕ подходящие темы без лимита (лимит на accept, не на показ)
+  // Это бесплатно — эксперт видит возможности и мотивируется на апгрейд
+  const MAX_TOPICS_PER_EXPERT = 20; // Максимум тем на показ за неделю
+
   for (const expert of experts) {
     const tier = SUBSCRIPTION_TIERS[expert.subscription_tier];
-    if (!tier || tier.ordersPerWeek === 0) continue;
+    if (!tier) continue;
 
     let count = 0;
     const samples: string[] = [];
 
     for (const q of questions) {
-      if (count >= tier.ordersPerWeek) break;
+      if (count >= MAX_TOPICS_PER_EXPERT) break;
       const key = `${expert.id}:${q.id}`;
       if (existingSet.has(key)) continue;
 

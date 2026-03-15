@@ -47,8 +47,7 @@ export interface SubscriptionTier {
   id: string;
   name: string;
   price: number; // рублей/мес
-  ordersPerWeek: number;
-  packagesPerMonth: number;
+  packagesPerMonth: number; // лимит контент-пакетов (темы показываются без лимита)
   commission: number;
   formats: ContentFormat[];
   exportableFormats: ContentFormat[];
@@ -60,7 +59,6 @@ export const SUBSCRIPTION_TIERS: Record<string, SubscriptionTier> = {
     id: 'free',
     name: 'Free',
     price: 0,
-    ordersPerWeek: 3,
     packagesPerMonth: 3,
     commission: 0.15,
     formats: ['telegram_post', 'seo_article'],
@@ -71,7 +69,6 @@ export const SUBSCRIPTION_TIERS: Record<string, SubscriptionTier> = {
     id: 'starter',
     name: 'Starter',
     price: 1490,
-    ordersPerWeek: 10,
     packagesPerMonth: Infinity,
     commission: 0.07,
     formats: ALL_FORMATS,
@@ -82,7 +79,6 @@ export const SUBSCRIPTION_TIERS: Record<string, SubscriptionTier> = {
     id: 'pro',
     name: 'Pro',
     price: 2990,
-    ordersPerWeek: Infinity,
     packagesPerMonth: Infinity,
     commission: 0.03,
     formats: ALL_FORMATS,
@@ -93,7 +89,6 @@ export const SUBSCRIPTION_TIERS: Record<string, SubscriptionTier> = {
     id: 'expert',
     name: 'Expert',
     price: 4990,
-    ordersPerWeek: Infinity,
     packagesPerMonth: Infinity,
     commission: 0,
     formats: ALL_FORMATS,
@@ -104,7 +99,6 @@ export const SUBSCRIPTION_TIERS: Record<string, SubscriptionTier> = {
     id: 'business',
     name: 'Business',
     price: 24990,
-    ordersPerWeek: Infinity,
     packagesPerMonth: Infinity,
     commission: 0,
     formats: ALL_FORMATS,
@@ -115,7 +109,6 @@ export const SUBSCRIPTION_TIERS: Record<string, SubscriptionTier> = {
     id: 'enterprise',
     name: 'Enterprise',
     price: 99990,
-    ordersPerWeek: Infinity,
     packagesPerMonth: Infinity,
     commission: 0,
     formats: ALL_FORMATS,
