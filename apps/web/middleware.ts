@@ -5,6 +5,8 @@ const PUBLIC_ROUTES = [
   "/",
   "/audit",
   "/pricing",
+  "/for-experts",
+  "/how-it-works",
   "/login",
   "/register",
 ];

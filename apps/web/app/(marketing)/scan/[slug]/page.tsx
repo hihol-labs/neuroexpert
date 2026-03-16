@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Metadata } from "next";
+import { MarketingHeader } from "@/components/marketing/nav";
 
 interface ScanRow {
   slug: string;
@@ -89,19 +90,7 @@ export default async function ScanResultPage({
 
   return (
     <div className="min-h-screen bg-white">
-      <header className="bg-gray-900">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <Link href="/" className="text-xl font-bold text-white">
-            НейроЭксперт
-          </Link>
-          <Link
-            href="/register"
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
-          >
-            Увеличить видимость
-          </Link>
-        </nav>
-      </header>
+      <MarketingHeader />
 
       <section className="py-16">
         <div className="mx-auto max-w-3xl px-6">
