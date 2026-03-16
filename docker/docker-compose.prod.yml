@@ -130,6 +130,7 @@ services:
       - "127.0.0.1:8100:8000"
     networks:
       - neuro-internal
+      - coolify
     restart: unless-stopped
 
   # ===== WEB (Next.js) =====
@@ -153,6 +154,7 @@ services:
       - NEXT_PUBLIC_SUPABASE_URL=http://supabase-kong:8000
     networks:
       - neuro-internal
+      - coolify
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/api/health"]
       interval: 30s
@@ -199,3 +201,5 @@ volumes:
 networks:
   neuro-internal:
     driver: bridge
+  coolify:
+    external: true
