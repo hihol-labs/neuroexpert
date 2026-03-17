@@ -104,7 +104,7 @@ export default function LandingPage() {
               <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   href="/audit"
-                  className="group relative rounded-2xl px-10 py-4 text-lg font-semibold text-white overflow-hidden transition-transform hover:scale-105"
+                  className="group relative rounded-2xl px-10 py-4 text-lg font-semibold text-white overflow-hidden transition-all hover:scale-105 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.3)] hover:shadow-[0_0_25px_rgba(34,211,238,0.5)]"
                 >
                   <span className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl" />
                   <span className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -113,7 +113,7 @@ export default function LandingPage() {
                 </Link>
                 <Link
                   href="/register"
-                  className="rounded-2xl border border-white/15 bg-white/5 px-10 py-4 text-lg font-semibold text-white backdrop-blur-md hover:bg-white/10 hover:border-white/25 transition-all"
+                  className="rounded-2xl border border-cyan-400/30 bg-white/5 px-10 py-4 text-lg font-semibold text-white backdrop-blur-md shadow-[0_0_10px_rgba(34,211,238,0.15)] hover:bg-white/10 hover:border-cyan-400/60 hover:shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-all"
                 >
                   Регистрация
                 </Link>

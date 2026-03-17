@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 120" fill="none">
+  <defs>
+    <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22D3EE"/>
+      <stop offset="50%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#A855F7"/>
+    </linearGradient>
+    <linearGradient id="g2v" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#22D3EE"/>
+      <stop offset="100%" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <clipPath id="leftH">
+      <rect x="5" y="5" width="47" height="110"/>
+    </clipPath>
+    <clipPath id="rightH">
+      <rect x="52" y="5" width="50" height="110"/>
+    </clipPath>
+    <filter id="glow2">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <g filter="url(#glow2)">
+    <!-- Левая половина — органический мозг -->
+    <g clip-path="url(#leftH)">
+      <path d="M52 22 C44 14, 30 14, 22 26 C14 36, 12 42, 14 52 C10 55, 8 62, 12 68 C8 74, 12 86, 22 90 C30 96, 42 98, 48 90 L52 88"
+            stroke="#22D3EE" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <!-- Извилины -->
+      <path d="M32 30 C38 34, 42 40, 40 50" stroke="#22D3EE" stroke-width="1.5" fill="none" opacity="0.5" stroke-linecap="round"/>
+      <path d="M24 48 C30 52, 36 58, 34 66" stroke="#22D3EE" stroke-width="1.5" fill="none" opacity="0.5" stroke-linecap="round"/>
+      <path d="M28 72 C34 74, 40 78, 42 84" stroke="#22D3EE" stroke-width="1.5" fill="none" opacity="0.5" stroke-linecap="round"/>
+      <path d="M18 60 C24 58, 30 62, 28 68" stroke="#22D3EE" stroke-width="1.2" fill="none" opacity="0.35" stroke-linecap="round"/>
+    </g>
+
+    <!-- Правая половина — хаотичный пучок нейронов -->
+    <g clip-path="url(#rightH)">
+      <!-- Хаотичные связи -->
+      <path d="M55 28 C62 35, 58 48, 68 52" stroke="#8B5CF6" stroke-width="0.9" opacity="0.35" fill="none"/>
+      <path d="M72 22 C65 38, 78 45, 70 58" stroke="#A855F7" stroke-width="0.8" opacity="0.3" fill="none"/>
+      <path d="M88 32 C82 42, 90 55, 80 62" stroke="#8B5CF6" stroke-width="0.7" opacity="0.25" fill="none"/>
+      <path d="M60 60 C68 68, 58 78, 65 85" stroke="#A855F7" stroke-width="0.8" opacity="0.3" fill="none"/>
+      <path d="M82 55 C75 65, 85 75, 78 88" stroke="#8B5CF6" stroke-width="0.7" opacity="0.25" fill="none"/>
+
+      <line x1="55" y1="28" x2="72" y2="22" stroke="#8B5CF6" stroke-width="1.0" opacity="0.4"/>
+      <line x1="72" y1="22" x2="88" y2="32" stroke="#8B5CF6" stroke-width="0.9" opacity="0.35"/>
+      <line x1="55" y1="28" x2="60" y2="48" stroke="#A855F7" stroke-width="1.0" opacity="0.4"/>
+      <line x1="72" y1="22" x2="78" y2="42" stroke="#8B5CF6" stroke-width="0.9" opacity="0.35"/>
+      <line x1="88" y1="32" x2="92" y2="48" stroke="#3B82F6" stroke-width="0.8" opacity="0.3"/>
+      <line x1="60" y1="48" x2="78" y2="42" stroke="#8B5CF6" stroke-width="0.9" opacity="0.35"/>
+      <line x1="78" y1="42" x2="92" y2="48" stroke="#3B82F6" stroke-width="0.8" opacity="0.3"/>
+      <line x1="60" y1="48" x2="68" y2="62" stroke="#A855F7" stroke-width="1.0" opacity="0.4"/>
+      <line x1="78" y1="42" x2="82" y2="62" stroke="#8B5CF6" stroke-width="0.9" opacity="0.35"/>
+      <line x1="68" y1="62" x2="82" y2="62" stroke="#A855F7" stroke-width="0.8" opacity="0.3"/>
+      <line x1="68" y1="62" x2="58" y2="80" stroke="#8B5CF6" stroke-width="0.9" opacity="0.35"/>
+      <line x1="82" y1="62" x2="90" y2="78" stroke="#A855F7" stroke-width="0.8" opacity="0.3"/>
+      <line x1="58" y1="80" x2="72" y2="88" stroke="#A855F7" stroke-width="0.9" opacity="0.35"/>
+      <line x1="90" y1="78" x2="72" y2="88" stroke="#8B5CF6" stroke-width="0.8" opacity="0.3"/>
+      <line x1="58" y1="80" x2="55" y2="95" stroke="#8B5CF6" stroke-width="0.7" opacity="0.25"/>
+      <line x1="72" y1="88" x2="85" y2="98" stroke="#A855F7" stroke-width="0.7" opacity="0.25"/>
+
+      <!-- Узлы -->
+      <circle cx="55" cy="28" r="3.5" fill="#8B5CF6"/>
+      <circle cx="72" cy="22" r="3" fill="#A855F7"/>
+      <circle cx="88" cy="32" r="2.5" fill="#3B82F6"/>
+      <circle cx="60" cy="48" r="3.5" fill="#A855F7"/>
+      <circle cx="78" cy="42" r="3" fill="#8B5CF6"/>
+      <circle cx="92" cy="48" r="2" fill="#3B82F6"/>
+      <circle cx="68" cy="62" r="3.5" fill="#A855F7"/>
+      <circle cx="82" cy="62" r="3" fill="#8B5CF6"/>
+      <circle cx="58" cy="80" r="3" fill="#8B5CF6"/>
+      <circle cx="90" cy="78" r="2.5" fill="#A855F7"/>
+      <circle cx="72" cy="88" r="3" fill="#A855F7"/>
+      <circle cx="55" cy="95" r="2" fill="#8B5CF6"/>
+      <circle cx="85" cy="98" r="2" fill="#A855F7"/>
+      <!-- Мелкие -->
+      <circle cx="65" cy="35" r="1.5" fill="#8B5CF6" opacity="0.6"/>
+      <circle cx="95" cy="60" r="1.5" fill="#3B82F6" opacity="0.5"/>
+      <circle cx="53" cy="65" r="1.3" fill="#A855F7" opacity="0.5"/>
+
+      <!-- Свечение -->
+      <circle cx="68" cy="62" r="10" fill="#A855F7" opacity="0.08"/>
+      <circle cx="60" cy="48" r="9" fill="#8B5CF6" opacity="0.08"/>
+    </g>
+
+    <!-- Линия перехода -->
+    <line x1="52" y1="18" x2="52" y2="96" stroke="url(#g2)" stroke-width="1.2" opacity="0.25" stroke-dasharray="2 4"/>
+  </g>
+
+  <!-- Текст -->
+  <text x="115" y="52" font-family="Inter, system-ui, sans-serif" font-size="28" font-weight="700" fill="#1E293B" letter-spacing="-0.5">Нейро</text>
+  <text x="115" y="85" font-family="Inter, system-ui, sans-serif" font-size="28" font-weight="300" fill="url(#g2v)" letter-spacing="-0.5">Эксперт</text>
+</svg>

@@ -118,10 +118,16 @@ export function NeuralBackground({ className = "", nodeCount = 90, hubCount = 6 
           node.radius += (node.baseRadius - node.radius) * 0.05;
         }
 
-        node.vx *= 0.99;
-        node.vy *= 0.99;
+        // Ambient drift — slow organic movement even without mouse
+        const driftAngle = node.pulsePhase * 0.7;
+        const driftForce = node.isHub ? 0.0015 : 0.003;
+        node.vx += Math.cos(driftAngle) * driftForce;
+        node.vy += Math.sin(driftAngle) * driftForce;
+
+        node.vx *= 0.985;
+        node.vy *= 0.985;
         const speed = Math.sqrt(node.vx * node.vx + node.vy * node.vy);
-        const maxSpeed = node.isHub ? 0.8 : 1.5;
+        const maxSpeed = node.isHub ? 0.5 : 1.0;
         if (speed > maxSpeed) {
           node.vx = (node.vx / speed) * maxSpeed;
           node.vy = (node.vy / speed) * maxSpeed;

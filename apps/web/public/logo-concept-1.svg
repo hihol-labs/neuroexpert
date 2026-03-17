@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" fill="none">
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22D3EE"/>
+      <stop offset="50%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#A855F7"/>
+    </linearGradient>
+    <linearGradient id="g1v" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#22D3EE"/>
+      <stop offset="100%" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <filter id="glow1">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <g filter="url(#glow1)">
+    <!-- Буква Н — основные штрихи -->
+    <line x1="18" y1="18" x2="18" y2="102" stroke="url(#g1)" stroke-width="3.5" stroke-linecap="round"/>
+    <line x1="68" y1="18" x2="68" y2="102" stroke="url(#g1)" stroke-width="3.5" stroke-linecap="round"/>
+    <!-- Перемычка-синапс -->
+    <path d="M18 58 C28 44, 36 72, 43 52 S58 68, 68 58" stroke="url(#g1)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+
+    <!-- Узлы на концах Н -->
+    <circle cx="18" cy="18" r="5" fill="#22D3EE"/>
+    <circle cx="18" cy="102" r="5" fill="#3B82F6"/>
+    <circle cx="68" cy="18" r="5" fill="#3B82F6"/>
+    <circle cx="68" cy="102" r="5" fill="#A855F7"/>
+    <circle cx="43" cy="52" r="4" fill="url(#g1)"/>
+
+    <!-- Хаотичные ответвления от буквы Н -->
+    <line x1="18" y1="18" x2="5" y2="8" stroke="#22D3EE" stroke-width="0.8" opacity="0.4"/>
+    <circle cx="5" cy="8" r="1.8" fill="#22D3EE" opacity="0.6"/>
+    <line x1="18" y1="18" x2="32" y2="10" stroke="#22D3EE" stroke-width="0.7" opacity="0.3"/>
+    <circle cx="32" cy="10" r="1.5" fill="#22D3EE" opacity="0.5"/>
+
+    <line x1="68" y1="18" x2="82" y2="8" stroke="#3B82F6" stroke-width="0.8" opacity="0.4"/>
+    <circle cx="82" cy="8" r="1.8" fill="#3B82F6" opacity="0.6"/>
+    <line x1="68" y1="18" x2="80" y2="30" stroke="#3B82F6" stroke-width="0.7" opacity="0.3"/>
+    <circle cx="80" cy="30" r="1.5" fill="#3B82F6" opacity="0.5"/>
+
+    <line x1="43" y1="52" x2="30" y2="40" stroke="#22D3EE" stroke-width="0.7" opacity="0.3"/>
+    <line x1="43" y1="52" x2="56" y2="42" stroke="#3B82F6" stroke-width="0.7" opacity="0.3"/>
+    <line x1="43" y1="52" x2="43" y2="38" stroke="#3B82F6" stroke-width="0.6" opacity="0.25"/>
+    <circle cx="43" cy="38" r="1.3" fill="#3B82F6" opacity="0.5"/>
+
+    <line x1="18" y1="102" x2="5" y2="108" stroke="#3B82F6" stroke-width="0.8" opacity="0.4"/>
+    <circle cx="5" cy="108" r="1.8" fill="#3B82F6" opacity="0.6"/>
+    <line x1="18" y1="75" x2="6" y2="72" stroke="#22D3EE" stroke-width="0.6" opacity="0.25"/>
+    <circle cx="6" cy="72" r="1.3" fill="#22D3EE" opacity="0.4"/>
+
+    <line x1="68" y1="102" x2="82" y2="110" stroke="#A855F7" stroke-width="0.8" opacity="0.4"/>
+    <circle cx="82" cy="110" r="1.8" fill="#A855F7" opacity="0.6"/>
+    <line x1="68" y1="80" x2="80" y2="78" stroke="#8B5CF6" stroke-width="0.6" opacity="0.25"/>
+    <circle cx="80" cy="78" r="1.3" fill="#8B5CF6" opacity="0.4"/>
+
+    <!-- Кривая связь между ответвлениями -->
+    <path d="M5 8 Q15 -2, 32 10" stroke="#22D3EE" stroke-width="0.5" opacity="0.2" fill="none"/>
+    <path d="M82 8 Q85 20, 80 30" stroke="#3B82F6" stroke-width="0.5" opacity="0.2" fill="none"/>
+    <path d="M5 108 Q-2 90, 6 72" stroke="#3B82F6" stroke-width="0.5" opacity="0.2" fill="none"/>
+
+    <!-- Свечение узлов -->
+    <circle cx="18" cy="18" r="10" fill="#22D3EE" opacity="0.1"/>
+    <circle cx="68" cy="18" r="10" fill="#3B82F6" opacity="0.1"/>
+    <circle cx="18" cy="102" r="10" fill="#3B82F6" opacity="0.1"/>
+    <circle cx="68" cy="102" r="10" fill="#A855F7" opacity="0.1"/>
+    <circle cx="43" cy="52" r="8" fill="#3B82F6" opacity="0.12"/>
+  </g>
+
+  <!-- Текст -->
+  <text x="98" y="52" font-family="Inter, system-ui, sans-serif" font-size="28" font-weight="700" fill="#1E293B" letter-spacing="-0.5">Нейро</text>
+  <text x="98" y="85" font-family="Inter, system-ui, sans-serif" font-size="28" font-weight="300" fill="url(#g1v)" letter-spacing="-0.5">Эксперт</text>
+</svg>

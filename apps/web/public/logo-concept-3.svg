@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 120" fill="none">
+  <defs>
+    <linearGradient id="g3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22D3EE"/>
+      <stop offset="50%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#A855F7"/>
+    </linearGradient>
+    <linearGradient id="g3v" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#22D3EE"/>
+      <stop offset="100%" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <filter id="glow3">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="glowSoft">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Фон -->
+  <rect width="480" height="120" rx="12" fill="#040714"/>
+
+  <!-- Фоновое свечение кластера -->
+  <ellipse cx="52" cy="60" rx="44" ry="48" fill="#3B82F6" opacity="0.06" filter="url(#glowSoft)"/>
+
+  <g filter="url(#glow3)">
+    <!-- Хаотичные связи -->
+    <path d="M18 18 Q35 45, 62 32" stroke="#22D3EE" stroke-width="0.8" opacity="0.3" fill="none"/>
+    <path d="M85 22 Q60 55, 28 78" stroke="#8B5CF6" stroke-width="0.7" opacity="0.25" fill="none"/>
+    <path d="M12 70 Q40 50, 78 88" stroke="#3B82F6" stroke-width="0.6" opacity="0.2" fill="none"/>
+    <path d="M72 14 Q42 30, 20 52" stroke="#22D3EE" stroke-width="0.7" opacity="0.25" fill="none"/>
+    <path d="M90 55 Q55 70, 15 95" stroke="#A855F7" stroke-width="0.6" opacity="0.2" fill="none"/>
+
+    <line x1="30" y1="25" x2="52" y2="48" stroke="#22D3EE" stroke-width="1.1" opacity="0.45"/>
+    <line x1="52" y1="48" x2="75" y2="35" stroke="#3B82F6" stroke-width="1.0" opacity="0.4"/>
+    <line x1="52" y1="48" x2="38" y2="72" stroke="#8B5CF6" stroke-width="1.1" opacity="0.45"/>
+    <line x1="52" y1="48" x2="70" y2="68" stroke="#A855F7" stroke-width="1.0" opacity="0.4"/>
+    <line x1="38" y1="72" x2="70" y2="68" stroke="#8B5CF6" stroke-width="0.9" opacity="0.35"/>
+    <line x1="30" y1="25" x2="18" y2="48" stroke="#22D3EE" stroke-width="0.9" opacity="0.35"/>
+    <line x1="75" y1="35" x2="88" y2="55" stroke="#3B82F6" stroke-width="0.9" opacity="0.35"/>
+    <line x1="18" y1="48" x2="38" y2="72" stroke="#22D3EE" stroke-width="0.8" opacity="0.3"/>
+    <line x1="88" y1="55" x2="70" y2="68" stroke="#A855F7" stroke-width="0.8" opacity="0.3"/>
+    <line x1="30" y1="25" x2="75" y2="35" stroke="#3B82F6" stroke-width="0.7" opacity="0.25"/>
+
+    <line x1="18" y1="18" x2="30" y2="25" stroke="#22D3EE" stroke-width="1.2" opacity="0.5"/>
+    <line x1="62" y1="20" x2="75" y2="35" stroke="#3B82F6" stroke-width="1.0" opacity="0.4"/>
+    <line x1="85" y1="22" x2="75" y2="35" stroke="#3B82F6" stroke-width="0.9" opacity="0.35"/>
+    <line x1="18" y1="48" x2="10" y2="62" stroke="#22D3EE" stroke-width="0.9" opacity="0.35"/>
+    <line x1="38" y1="72" x2="25" y2="90" stroke="#8B5CF6" stroke-width="1.0" opacity="0.4"/>
+    <line x1="38" y1="72" x2="52" y2="92" stroke="#A855F7" stroke-width="0.9" opacity="0.35"/>
+    <line x1="70" y1="68" x2="82" y2="85" stroke="#A855F7" stroke-width="1.0" opacity="0.4"/>
+    <line x1="88" y1="55" x2="95" y2="42" stroke="#3B82F6" stroke-width="0.8" opacity="0.3"/>
+    <line x1="52" y1="48" x2="45" y2="30" stroke="#22D3EE" stroke-width="0.7" opacity="0.25"/>
+    <line x1="52" y1="48" x2="62" y2="20" stroke="#3B82F6" stroke-width="0.7" opacity="0.25"/>
+    <line x1="10" y1="62" x2="15" y2="82" stroke="#22D3EE" stroke-width="0.6" opacity="0.2"/>
+    <line x1="82" y1="85" x2="90" y2="98" stroke="#A855F7" stroke-width="0.6" opacity="0.2"/>
+    <line x1="95" y1="42" x2="92" y2="28" stroke="#3B82F6" stroke-width="0.5" opacity="0.15"/>
+
+    <path d="M30 25 C22 38, 28 55, 38 72" stroke="#22D3EE" stroke-width="0.7" opacity="0.2" fill="none"/>
+    <path d="M75 35 C80 50, 78 62, 70 68" stroke="#8B5CF6" stroke-width="0.7" opacity="0.2" fill="none"/>
+    <path d="M62 20 C58 35, 56 42, 52 48" stroke="#3B82F6" stroke-width="0.6" opacity="0.18" fill="none"/>
+
+    <!-- Узлы -->
+    <circle cx="52" cy="48" r="12" fill="#3B82F6" opacity="0.1"/>
+    <circle cx="38" cy="72" r="9" fill="#8B5CF6" opacity="0.08"/>
+    <circle cx="75" cy="35" r="9" fill="#3B82F6" opacity="0.08"/>
+    <circle cx="30" cy="25" r="8" fill="#22D3EE" opacity="0.08"/>
+    <circle cx="70" cy="68" r="8" fill="#A855F7" opacity="0.08"/>
+
+    <circle cx="52" cy="48" r="6.5" fill="url(#g3)"/>
+    <circle cx="52" cy="48" r="3.5" fill="#FFFFFF" opacity="0.9"/>
+
+    <circle cx="30" cy="25" r="4" fill="#22D3EE"/>
+    <circle cx="75" cy="35" r="4" fill="#3B82F6"/>
+    <circle cx="38" cy="72" r="4.5" fill="#8B5CF6"/>
+    <circle cx="70" cy="68" r="4" fill="#A855F7"/>
+    <circle cx="18" cy="48" r="3.5" fill="#22D3EE"/>
+    <circle cx="88" cy="55" r="3.5" fill="#3B82F6"/>
+
+    <circle cx="62" cy="20" r="3" fill="#3B82F6"/>
+    <circle cx="85" cy="22" r="2.5" fill="#3B82F6"/>
+    <circle cx="25" cy="90" r="3" fill="#8B5CF6"/>
+    <circle cx="82" cy="85" r="3" fill="#A855F7"/>
+    <circle cx="52" cy="92" r="2.5" fill="#A855F7"/>
+    <circle cx="10" cy="62" r="2.5" fill="#22D3EE"/>
+    <circle cx="95" cy="42" r="2.5" fill="#3B82F6"/>
+    <circle cx="45" cy="30" r="2" fill="#22D3EE"/>
+
+    <circle cx="18" cy="18" r="2" fill="#22D3EE"/>
+    <circle cx="15" cy="82" r="1.8" fill="#22D3EE"/>
+    <circle cx="90" cy="98" r="1.8" fill="#A855F7"/>
+    <circle cx="92" cy="28" r="1.5" fill="#3B82F6"/>
+    <circle cx="72" cy="14" r="1.5" fill="#22D3EE"/>
+    <circle cx="8" cy="38" r="1.3" fill="#22D3EE"/>
+    <circle cx="96" cy="72" r="1.3" fill="#A855F7"/>
+    <circle cx="55" cy="105" r="1.3" fill="#A855F7"/>
+    <circle cx="42" cy="12" r="1.2" fill="#22D3EE"/>
+
+    <circle cx="50" cy="46" r="1.8" fill="#FFFFFF" opacity="0.5"/>
+    <circle cx="28" cy="23" r="1.2" fill="#FFFFFF" opacity="0.5"/>
+    <circle cx="73" cy="33" r="1.2" fill="#FFFFFF" opacity="0.5"/>
+    <circle cx="36" cy="70" r="1.2" fill="#FFFFFF" opacity="0.5"/>
+    <circle cx="68" cy="66" r="1.2" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+
+  <!-- Текст -->
+  <text x="115" y="50" font-family="Inter, system-ui, sans-serif" font-size="30" font-weight="700" fill="#FFFFFF" letter-spacing="-0.5">НейроЭксперт</text>
+
+  <!-- Разделитель -->
+  <line x1="115" y1="62" x2="310" y2="62" stroke="url(#g3)" stroke-width="1" opacity="0.4"/>
+
+  <!-- Слоган -->
+  <text x="115" y="80" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="400" fill="#64748B" letter-spacing="0.5">Экспертиза, которую цитируют</text>
+</svg>
