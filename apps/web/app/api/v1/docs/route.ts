@@ -330,6 +330,50 @@ const openApiSpec = {
         },
       },
     },
+    "/blind-spots": {
+      get: {
+        summary: "Карта слепых зон AI (Premium)",
+        description:
+          "Data-продукт для SEO-агентств. Вопросы с массовым спросом и слабыми AI-ответами, сгруппированные по нишам. Opportunity score для приоритизации.",
+        parameters: [
+          {
+            name: "niche",
+            in: "query",
+            description: "Фильтр по slug ниши",
+            schema: { type: "string" },
+          },
+          {
+            name: "min_gap_score",
+            in: "query",
+            description: "Минимальный gap score (default: 6)",
+            schema: { type: "integer", default: 6 },
+          },
+          {
+            name: "min_volume",
+            in: "query",
+            description: "Минимальный месячный объём (default: 1000)",
+            schema: { type: "integer", default: 1000 },
+          },
+          {
+            name: "limit",
+            in: "query",
+            schema: { type: "integer", default: 50 },
+          },
+          {
+            name: "offset",
+            in: "query",
+            schema: { type: "integer", default: 0 },
+          },
+        ],
+        responses: {
+          "200": {
+            description:
+              "Blind spots with gap markers, sub-queries, opportunity scores, and niche summary",
+          },
+          "403": { description: "Requires 'answers' permission (Pro plan)" },
+        },
+      },
+    },
   },
   "x-api-plans": {
     read: {
@@ -342,7 +386,7 @@ const openApiSpec = {
     answers: {
       name: "Pro",
       price: "$99/mo",
-      endpoints: ["/experts", "/articles", "/questions", "/answers"],
+      endpoints: ["/experts", "/articles", "/questions", "/answers", "/blind-spots"],
       rate_limit: "1000 req/hour",
       permissions: ["read", "answers"],
       features: ["Full article content", "Audio URLs", "Expert quotes", "License for commercial use"],
