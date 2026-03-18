@@ -28,6 +28,8 @@ interface SearchParams {
   sort?: string;
   min_exp?: string;
   min_score?: string;
+  max_price?: string;
+  min_rating?: string;
 }
 
 async function getExperts(searchParams: SearchParams) {
@@ -73,6 +75,16 @@ async function getExperts(searchParams: SearchParams) {
   // Filter by min trust score
   if (searchParams.min_score) {
     query = query.gte("trust_score", parseFloat(searchParams.min_score));
+  }
+
+  // Filter by max price
+  if (searchParams.max_price) {
+    query = query.lte("consultation_price", parseInt(searchParams.max_price, 10));
+  }
+
+  // Filter by min rating
+  if (searchParams.min_rating) {
+    query = query.gte("avg_rating", parseFloat(searchParams.min_rating));
   }
 
   // Sort
@@ -127,7 +139,7 @@ async function getExperts(searchParams: SearchParams) {
 
   // Featured experts (separate query, only if no filters applied)
   let featured: typeof sortedExperts = [];
-  if (!searchParams.q && !searchParams.niche && !searchParams.min_exp && !searchParams.min_score) {
+  if (!searchParams.q && !searchParams.niche && !searchParams.min_exp && !searchParams.min_score && !searchParams.max_price && !searchParams.min_rating) {
     const { data: featuredData } = await supabase
       .from("profiles")
       .select(

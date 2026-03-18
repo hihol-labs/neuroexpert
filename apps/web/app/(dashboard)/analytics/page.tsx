@@ -12,9 +12,80 @@ const supabase = createClient(
 );
 
 interface CitationByWeek { week: string; count: number }
-interface ArticleCitation { title: string; chatgpt: boolean; yandexgpt: boolean; serpGoogle: number | null; serpYandex: number | null }
+interface ArticleCitation { title: string; chatgpt: boolean; yandexgpt: boolean; gigachat: boolean; perplexity: boolean; serpGoogle: number | null; serpYandex: number | null }
 interface CWVEntry { url: string; lcp: number | null; fcp: number | null; cls: number | null; score: number | null; passing: boolean }
 interface Recommendation { type: "update" | "record"; text: string }
+interface CompetitorComparison { your_mentions: number; competitor_mentions: number; competitor_name: string }
+
+function CompetitorCompare({ yourMentions }: { yourMentions: number }) {
+  const [competitor, setCompetitor] = useState("");
+  const [result, setResult] = useState<CompetitorComparison | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleCompare = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!competitor.trim()) return;
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: competitor.trim() }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setResult({
+          your_mentions: yourMentions,
+          competitor_mentions: data.mentioned_count ?? 0,
+          competitor_name: competitor.trim(),
+        });
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl border p-6 mb-8">
+      <h2 className="font-semibold text-gray-900 mb-3">Сравнение с конкурентом</h2>
+      <form onSubmit={handleCompare} className="flex gap-3 mb-4">
+        <input
+          type="text"
+          value={competitor}
+          onChange={(e) => setCompetitor(e.target.value)}
+          placeholder="Имя или бренд конкурента"
+          className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none"
+        />
+        <button
+          type="submit"
+          disabled={loading}
+          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+        >
+          {loading ? "..." : "Сравнить"}
+        </button>
+      </form>
+
+      {result && (
+        <div className="grid grid-cols-3 gap-4 items-center text-center">
+          <div>
+            <p className="text-3xl font-bold text-blue-600">{result.your_mentions}</p>
+            <p className="text-xs text-gray-500 mt-1">Ваши цитирования</p>
+          </div>
+          <div>
+            <span className="text-xl font-bold text-gray-300">vs</span>
+          </div>
+          <div>
+            <p className="text-3xl font-bold text-red-500">{result.competitor_mentions}</p>
+            <p className="text-xs text-gray-500 mt-1">{result.competitor_name}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function AnalyticsPage() {
   const [trustScore, setTrustScore] = useState(0);
@@ -68,14 +139,19 @@ export default function AnalyticsPage() {
       );
 
       // Articles citation table
-      const articleMap = new Map<string, { title: string; chatgpt: boolean; yandexgpt: boolean }>();
+      const articleMap = new Map<string, { title: string; chatgpt: boolean; yandexgpt: boolean; gigachat: boolean; perplexity: boolean }>();
       for (const c of citations) {
         const title = (c.content_packages as unknown as { title: string })?.title ?? "";
         const key = c.content_id as string;
-        if (!articleMap.has(key)) articleMap.set(key, { title, chatgpt: false, yandexgpt: false });
+        if (!articleMap.has(key)) articleMap.set(key, { title, chatgpt: false, yandexgpt: false, gigachat: false, perplexity: false });
         const entry = articleMap.get(key)!;
-        if (c.is_cited && c.ai_platform === "chatgpt") entry.chatgpt = true;
-        if (c.is_cited && c.ai_platform === "yandexgpt") entry.yandexgpt = true;
+        if (c.is_cited) {
+          const platform = c.ai_platform as string;
+          if (platform === "chatgpt") entry.chatgpt = true;
+          else if (platform === "yandexgpt") entry.yandexgpt = true;
+          else if (platform === "gigachat") entry.gigachat = true;
+          else if (platform === "perplexity") entry.perplexity = true;
+        }
       }
       setArticles(Array.from(articleMap.values()).map((a) => ({ ...a, serpGoogle: null, serpYandex: null })));
     }
@@ -263,6 +339,8 @@ export default function AnalyticsPage() {
                   <th className="px-3 py-2 text-left font-medium text-gray-500">Статья</th>
                   <th className="px-3 py-2 text-center font-medium text-gray-500">ChatGPT</th>
                   <th className="px-3 py-2 text-center font-medium text-gray-500">YandexGPT</th>
+                  <th className="px-3 py-2 text-center font-medium text-gray-500">GigaChat</th>
+                  <th className="px-3 py-2 text-center font-medium text-gray-500">Perplexity</th>
                 </tr>
               </thead>
               <tbody>
@@ -271,6 +349,8 @@ export default function AnalyticsPage() {
                     <td className="px-3 py-2 text-gray-900 truncate max-w-xs">{a.title}</td>
                     <td className="px-3 py-2 text-center">{a.chatgpt ? <span className="text-green-600">&#10003;</span> : <span className="text-red-400">&#10007;</span>}</td>
                     <td className="px-3 py-2 text-center">{a.yandexgpt ? <span className="text-green-600">&#10003;</span> : <span className="text-red-400">&#10007;</span>}</td>
+                    <td className="px-3 py-2 text-center">{a.gigachat ? <span className="text-green-600">&#10003;</span> : <span className="text-gray-300">—</span>}</td>
+                    <td className="px-3 py-2 text-center">{a.perplexity ? <span className="text-green-600">&#10003;</span> : <span className="text-gray-300">—</span>}</td>
                   </tr>
                 ))}
               </tbody>
@@ -278,6 +358,9 @@ export default function AnalyticsPage() {
           </div>
         </div>
       )}
+
+      {/* B2B: Competitor comparison */}
+      <CompetitorCompare yourMentions={citationsByWeek.reduce((s, w) => s + w.count, 0)} />
 
       {/* Recommendations */}
       {recommendations.length > 0 && (

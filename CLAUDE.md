@@ -56,6 +56,7 @@ packages/
 | 13  | Production deploy             | ✅     |
 | 14  | Маркетинговый лендинг         | ✅     |
 | 15  | Marketplace + B2B + Knowledge API | ✅     |
+| 16  | Citation Network + Knowledge Graph + API Licensing | ✅     |
 
 ## Что работает
 
@@ -92,6 +93,14 @@ packages/
   - **Воронка**: аудит показывает estimated_monthly_volume, регистрация показывает «0₽ + 15% комиссия», карточки заказов показывают ответ AI + 4 маркера + кнопка «Я отвечу лучше».
   - **Реферальная механика**: middleware сохраняет ?ref= в cookie (30 дней), register читает cookie, auth trigger (миграция 011) привязывает referrer_id.
   - **Миграции**: 010 (reviews + tracking_token + is_featured), 011 (auth trigger referral), 012 (teams + bookings + expert_schedule + api_keys), 013 (has_specific_numbers). Все применены на production.
+  - Задеплоено на production. pnpm build OK.
+
+- Шаг 16 (Citation Network + Knowledge Graph + API Licensing):
+  - **Knowledge Graph**: каталог вопросов /questions (фильтр по нише, volume, кол-во ответов), страница вопроса /questions/[slug] (агрегация всех экспертов на один вопрос + sub_queries + related questions), кросс-ссылки между экспертами на странице статьи («Другие эксперты по этой теме»), API /api/v1/questions (фильтры, gap-маркеры, пагинация).
+  - **Citation Network**: страница ниши /niches/[slug] (эксперты + вопросы + статьи + смежные ниши), кросс-нишевая навигация (20 ниш с маппингом смежных направлений), платформенные метрики на лендинге (реальные: эксперты/статьи/цитирования из БД через /api/platform-stats).
+  - **Knowledge API Licensing**: /api/v1/answers (Premium — полный контент + аудио + цитаты + credentials + лицензия), 3 тарифа API (Read free / Pro $99/mo / Enterprise custom), permission-based access (read/answers/all), attribution_format в каждом ответе.
+  - **Marketplace**: фильтры по цене и рейтингу в каталоге, split-payment ЮKassa (YUKASSA_MARKETPLACE=true → transfers[] с автокомиссией), Yclients интеграция (yclients_url → кнопка «Записаться онлайн»), миграция 014 (yukassa_account_id + yclients_url).
+  - **Analytics**: таблица цитирований расширена до 4 платформ (ChatGPT, YandexGPT, GigaChat, Perplexity), блок сравнения с конкурентом в дашборде.
   - Задеплоено на production. pnpm build OK.
 
 ## Остаётся сделать (post-deploy)

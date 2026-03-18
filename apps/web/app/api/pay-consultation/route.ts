@@ -72,7 +72,60 @@ export async function POST(request: NextRequest) {
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://neuroexpertise.ru";
 
-    // Create YuKassa payment
+    // Create YuKassa payment with split (marketplace mode)
+    // If YUKASSA_MARKETPLACE=true, uses split-payment to auto-transfer to expert
+    const isMarketplace = process.env.YUKASSA_MARKETPLACE === "true";
+    const expertPayout = consultationAmount - platformFee;
+
+    const paymentBody: Record<string, unknown> = {
+      amount: {
+        value: consultationAmount.toFixed(2),
+        currency: "RUB",
+      },
+      confirmation: {
+        type: "redirect",
+        return_url: lead_id
+          ? `${appUrl}/track/${lead_id}`
+          : `${appUrl}/experts`,
+      },
+      capture: true,
+      description: `Консультация: ${expert.full_name}`,
+      metadata: {
+        type: "consultation",
+        expert_id,
+        lead_id: lead_id || null,
+        platform_fee: platformFee,
+        expert_payout: expertPayout,
+        commission_rate: commission,
+      },
+    };
+
+    // Split-payment: автоматический перевод эксперту (ЮKassa Маркетплейс)
+    if (isMarketplace && expertPayout > 0) {
+      // Expert's YuKassa account ID stored in profile
+      const { data: expertProfile } = await admin
+        .from("profiles")
+        .select("yukassa_account_id")
+        .eq("id", expert_id)
+        .single();
+
+      if (expertProfile?.yukassa_account_id) {
+        paymentBody.transfers = [
+          {
+            account_id: expertProfile.yukassa_account_id,
+            amount: {
+              value: expertPayout.toFixed(2),
+              currency: "RUB",
+            },
+            platform_fee_amount: {
+              value: platformFee.toFixed(2),
+              currency: "RUB",
+            },
+          },
+        ];
+      }
+    }
+
     const paymentRes = await fetch("https://api.yookassa.ru/v3/payments", {
       method: "POST",
       headers: {
@@ -80,27 +133,7 @@ export async function POST(request: NextRequest) {
         Authorization: `Basic ${Buffer.from(`${shopId}:${secretKey}`).toString("base64")}`,
         "Idempotence-Key": `consultation-${expert_id}-${Date.now()}`,
       },
-      body: JSON.stringify({
-        amount: {
-          value: consultationAmount.toFixed(2),
-          currency: "RUB",
-        },
-        confirmation: {
-          type: "redirect",
-          return_url: lead_id
-            ? `${appUrl}/track/${lead_id}`
-            : `${appUrl}/experts`,
-        },
-        capture: true,
-        description: `Консультация: ${expert.full_name}`,
-        metadata: {
-          type: "consultation",
-          expert_id,
-          lead_id: lead_id || null,
-          platform_fee: platformFee,
-          expert_payout: consultationAmount - platformFee,
-        },
-      }),
+      body: JSON.stringify(paymentBody),
     });
 
     if (!paymentRes.ok) {

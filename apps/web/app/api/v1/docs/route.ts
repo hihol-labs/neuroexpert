@@ -232,6 +232,129 @@ const openApiSpec = {
         },
       },
     },
+    "/questions": {
+      get: {
+        summary: "Список вопросов",
+        description:
+          "Вопросы с массовым спросом, gap-анализ AI-ответов, количество экспертных ответов.",
+        parameters: [
+          {
+            name: "q",
+            in: "query",
+            description: "Поиск по тексту вопроса",
+            schema: { type: "string" },
+          },
+          {
+            name: "niche",
+            in: "query",
+            description: "Фильтр по slug ниши",
+            schema: { type: "string" },
+          },
+          {
+            name: "min_gap_score",
+            in: "query",
+            description: "Минимальный gap score (0-10)",
+            schema: { type: "integer" },
+          },
+          {
+            name: "has_answers",
+            in: "query",
+            description: "Только с/без экспертных ответов",
+            schema: { type: "string", enum: ["true", "false"] },
+          },
+          {
+            name: "limit",
+            in: "query",
+            schema: { type: "integer", default: 20 },
+          },
+          {
+            name: "offset",
+            in: "query",
+            schema: { type: "integer", default: 0 },
+          },
+        ],
+        responses: {
+          "200": { description: "Список вопросов с gap-маркерами" },
+          "401": { description: "API key required" },
+        },
+      },
+    },
+    "/answers": {
+      get: {
+        summary: "Verified Expert Answers (Premium)",
+        description:
+          "Полный контент экспертных ответов с аудио, цитатами и лицензией. Требует permission 'answers'.",
+        parameters: [
+          {
+            name: "question_id",
+            in: "query",
+            description: "UUID вопроса",
+            schema: { type: "string" },
+          },
+          {
+            name: "niche",
+            in: "query",
+            description: "Фильтр по slug ниши",
+            schema: { type: "string" },
+          },
+          {
+            name: "q",
+            in: "query",
+            description: "Поиск по заголовку",
+            schema: { type: "string" },
+          },
+          {
+            name: "verified",
+            in: "query",
+            description: "Только верифицированные эксперты (default: true)",
+            schema: { type: "string", enum: ["true", "false"] },
+          },
+          {
+            name: "limit",
+            in: "query",
+            schema: { type: "integer", default: 10 },
+          },
+          {
+            name: "offset",
+            in: "query",
+            schema: { type: "integer", default: 0 },
+          },
+        ],
+        responses: {
+          "200": {
+            description:
+              "Verified answers with full article, FAQ, audio URL, expert credentials, and license info",
+          },
+          "401": { description: "API key required" },
+          "403": { description: "Permission 'answers' required (Premium plan)" },
+        },
+      },
+    },
+  },
+  "x-api-plans": {
+    read: {
+      name: "Read",
+      price: "Free",
+      endpoints: ["/experts", "/articles", "/questions"],
+      rate_limit: "100 req/hour",
+      permissions: ["read"],
+    },
+    answers: {
+      name: "Pro",
+      price: "$99/mo",
+      endpoints: ["/experts", "/articles", "/questions", "/answers"],
+      rate_limit: "1000 req/hour",
+      permissions: ["read", "answers"],
+      features: ["Full article content", "Audio URLs", "Expert quotes", "License for commercial use"],
+    },
+    enterprise: {
+      name: "Enterprise",
+      price: "Custom",
+      endpoints: ["All"],
+      rate_limit: "Custom",
+      permissions: ["all"],
+      features: ["Dedicated support", "SLA 99.9%", "Custom integrations", "Bulk export"],
+    },
   },
 };
 

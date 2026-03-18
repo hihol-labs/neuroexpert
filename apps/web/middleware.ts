@@ -15,6 +15,8 @@ const PUBLIC_ROUTES = [
 
 const PUBLIC_PREFIXES = [
   "/experts",
+  "/questions",
+  "/niches",
   "/scan",
   "/track",
   "/compare",

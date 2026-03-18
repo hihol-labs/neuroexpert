@@ -334,6 +334,21 @@ export default async function ExpertProfilePage({ params }: Props) {
           <BookingForm expertId={expert.id} expertName={expert.full_name} />
         </section>
 
+        {/* Yclients booking */}
+        {expert.yclients_url && (
+          <div className="mt-4 border rounded-xl p-4 text-center">
+            <p className="text-sm text-gray-600 mb-2">Онлайн-запись через Yclients</p>
+            <a
+              href={expert.yclients_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block rounded-lg bg-green-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-green-700 transition-colors"
+            >
+              Записаться онлайн
+            </a>
+          </div>
+        )}
+
         {/* CTA */}
         {expert.consultation_url && (
           <div className="mt-8 bg-blue-600 rounded-xl p-6 text-center text-white">

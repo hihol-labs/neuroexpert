@@ -68,7 +68,35 @@ async function getArticleData(expertSlug: string, articleSlug: string) {
     .eq("expert_id", expert.id)
     .eq("status", "published");
 
-  return { expert, article, related: related ?? [], niche, pubCount: pubCount ?? 0 };
+  // Похожие вопросы (sub_queries из expand_query)
+  let relatedQuestions: Array<{ query_text: string }> = [];
+  if (article.question_id) {
+    const { data: subQueries } = await supabase
+      .from("sub_queries")
+      .select("query_text")
+      .eq("parent_question_id", article.question_id)
+      .limit(5);
+    relatedQuestions = subQueries ?? [];
+  }
+
+  // Other experts who answered the same question (cross-linking)
+  let otherExperts: Array<{ expert_name: string; expert_slug: string; article_slug: string; article_title: string }> = [];
+  if (article.question_id) {
+    const { data: others } = await supabase
+      .from("content_packages")
+      .select("title, slug, profiles!inner(full_name, slug)")
+      .eq("question_id", article.question_id)
+      .eq("status", "published")
+      .neq("expert_id", expert.id)
+      .limit(5);
+
+    otherExperts = (others ?? []).map((o) => {
+      const p = o.profiles as unknown as { full_name: string; slug: string };
+      return { expert_name: p.full_name, expert_slug: p.slug, article_slug: o.slug, article_title: o.title };
+    });
+  }
+
+  return { expert, article, related: related ?? [], relatedQuestions, otherExperts, niche, pubCount: pubCount ?? 0 };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -141,7 +169,7 @@ export default async function ArticlePage({ params }: Props) {
   const data = await getArticleData(params.slug, params.articleSlug);
   if (!data) notFound();
 
-  const { expert, article, related, niche, pubCount } = data;
+  const { expert, article, related, relatedQuestions, otherExperts, niche, pubCount } = data;
   const questionText = (article.questions as unknown as { question_text: string } | null)?.question_text ?? article.title;
   const faqItems = (article.format_faq as Array<{ question: string; answer: string }>) ?? [];
   const tldr = extractTldr(article.format_seo_article ?? "");
@@ -323,6 +351,47 @@ export default async function ArticlePage({ params }: Props) {
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {/* Other experts on the same question */}
+        {otherExperts.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
+              Другие эксперты по этой теме
+            </h2>
+            <div className="space-y-2">
+              {otherExperts.map((oe) => (
+                <Link
+                  key={`${oe.expert_slug}-${oe.article_slug}`}
+                  href={`/experts/${oe.expert_slug}/${oe.article_slug}`}
+                  className="flex items-center gap-3 border rounded-lg px-4 py-3 hover:border-blue-300 transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-bold text-blue-600 flex-shrink-0">
+                    {oe.expert_name.charAt(0)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900">{oe.expert_name}</p>
+                    <p className="text-xs text-gray-500 truncate">{oe.article_title}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Похожие вопросы */}
+        {relatedQuestions.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Люди также спрашивают</h2>
+            <div className="space-y-2">
+              {relatedQuestions.map((rq, i) => (
+                <div key={i} className="flex items-start gap-2 rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700">
+                  <span className="text-blue-500 flex-shrink-0 mt-0.5">?</span>
+                  <span>{rq.query_text}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

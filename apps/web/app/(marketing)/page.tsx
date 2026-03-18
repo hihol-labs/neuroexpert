@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
 import { NeuralBackground } from "@/components/marketing/neural-bg";
 
@@ -52,6 +52,48 @@ function FadeIn({ children, className = "", delay = 0 }: { children: React.React
     return () => obs.disconnect();
   }, [delay]);
   return <div ref={ref} className={className} style={{ opacity: 0, transform: "translateY(30px)", transition: "all 0.8s cubic-bezier(0.16, 1, 0.3, 1)" }}>{children}</div>;
+}
+
+function PlatformStatsSection() {
+  const [stats, setStats] = useState<{ experts: number; articles: number; citations: number; niches: number } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/platform-stats")
+      .then((r) => r.json())
+      .then(setStats)
+      .catch(() => {});
+  }, []);
+
+  if (!stats || (stats.experts === 0 && stats.articles === 0)) return null;
+
+  const items = [
+    { value: stats.experts, label: "экспертов на платформе" },
+    { value: stats.articles, label: "опубликованных статей" },
+    { value: stats.citations, label: "цитирований в AI" },
+    { value: stats.niches, label: "профессиональных ниш" },
+  ].filter((s) => s.value > 0);
+
+  if (items.length === 0) return null;
+
+  return (
+    <section className="py-8">
+      <div className="mx-auto max-w-4xl px-6">
+        <div className="rounded-3xl border border-purple-500/15 bg-[#04080f]/60 p-6 backdrop-blur-xl">
+          <p className="text-center text-xs text-gray-500 uppercase tracking-wider mb-4">Платформа в цифрах</p>
+          <div className={`grid gap-6 ${items.length <= 3 ? "md:grid-cols-3" : "md:grid-cols-4"}`}>
+            {items.map((s) => (
+              <div key={s.label} className="text-center">
+                <div className="text-3xl font-bold text-purple-400 [text-shadow:_0_0_20px_rgba(168,85,247,0.4)]">
+                  {s.value.toLocaleString("ru-RU")}
+                </div>
+                <p className="mt-1 text-xs text-gray-400">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export default function LandingPage() {
@@ -140,6 +182,9 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        {/* ===== PLATFORM STATS ===== */}
+        <PlatformStatsSection />
 
         {/* ===== ДВА КАНАЛА ===== */}
         <section className="py-24">

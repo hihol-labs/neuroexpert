@@ -24,6 +24,8 @@ export function ExpertFilters({ niches }: Props) {
   const currentSort = searchParams.get("sort") || "trust_score";
   const currentMinExp = searchParams.get("min_exp") || "";
   const currentMinScore = searchParams.get("min_score") || "";
+  const currentMaxPrice = searchParams.get("max_price") || "";
+  const currentMinRating = searchParams.get("min_rating") || "";
 
   const updateParams = useCallback(
     (updates: Record<string, string>) => {
@@ -106,6 +108,31 @@ export function ExpertFilters({ niches }: Props) {
           <option value="25">от 25</option>
           <option value="50">от 50</option>
           <option value="100">от 100</option>
+        </select>
+
+        {/* Max price */}
+        <select
+          value={currentMaxPrice}
+          onChange={(e) => updateParams({ max_price: e.target.value })}
+          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+        >
+          <option value="">Цена: любая</option>
+          <option value="2000">до 2 000 ₽</option>
+          <option value="5000">до 5 000 ₽</option>
+          <option value="10000">до 10 000 ₽</option>
+          <option value="20000">до 20 000 ₽</option>
+        </select>
+
+        {/* Min rating */}
+        <select
+          value={currentMinRating}
+          onChange={(e) => updateParams({ min_rating: e.target.value })}
+          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+        >
+          <option value="">Рейтинг: любой</option>
+          <option value="3">от 3 ★</option>
+          <option value="4">от 4 ★</option>
+          <option value="4.5">от 4.5 ★</option>
         </select>
 
         {isPending && (
