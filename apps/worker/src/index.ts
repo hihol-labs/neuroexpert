@@ -16,6 +16,7 @@ import { handleCrosspost } from "./jobs/crosspost.js";
 import { handleCrosspostSocial } from "./jobs/crosspost-social.js";
 import { handleSendEmailDigest } from "./jobs/send-email-digest.js";
 import { handleOptimizeImages } from "./jobs/optimize-images.js";
+import { handleTrackGeoServices } from "./jobs/track-geo-services.js";
 
 const POLL_INTERVAL = Number(process.env.WORKER_POLL_INTERVAL_MS) || 5000;
 const MAX_RETRIES = 3;
@@ -41,6 +42,7 @@ const handlers: Record<string, JobHandler> = {
   crosspost_social: handleCrosspostSocial,
   send_email_digest: handleSendEmailDigest,
   optimize_images: handleOptimizeImages,
+  track_geo_services: handleTrackGeoServices,
 };
 
 async function pollAndProcess(): Promise<void> {

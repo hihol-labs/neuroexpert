@@ -95,6 +95,7 @@ export default function AnalyticsPage() {
   const [cwv, setCwv] = useState<CWVEntry[]>([]);
   const [staleCount, setStaleCount] = useState(0);
   const [leads30d, setLeads30d] = useState(0);
+  const [topPages, setTopPages] = useState<Array<{ title: string; slug: string; leads: number; cited: number }>>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
 
   useEffect(() => {
@@ -221,6 +222,48 @@ export default function AnalyticsPage() {
       .select("id", { count: "exact", head: true })
       .eq("expert_id", user.id)
       .gte("created_at", thirtyAgo);
+
+    // Top 5 pages (by leads + citations)
+    const { data: allPkgs } = await supabase
+      .from("content_packages")
+      .select("id, title, slug")
+      .eq("expert_id", user.id)
+      .eq("status", "published")
+      .limit(50);
+
+    if (allPkgs?.length) {
+      const pkgIds = allPkgs.map((p) => p.id);
+      const { data: pkgLeads } = await supabase
+        .from("leads")
+        .select("content_id")
+        .in("content_id", pkgIds);
+      const { data: pkgCitations } = await supabase
+        .from("citation_checks")
+        .select("content_id")
+        .in("content_id", pkgIds)
+        .eq("is_cited", true);
+
+      const leadMap: Record<string, number> = {};
+      const citeMap: Record<string, number> = {};
+      for (const l of pkgLeads ?? []) {
+        if (l.content_id) leadMap[l.content_id] = (leadMap[l.content_id] || 0) + 1;
+      }
+      for (const c of pkgCitations ?? []) {
+        if (c.content_id) citeMap[c.content_id] = (citeMap[c.content_id] || 0) + 1;
+      }
+
+      const ranked = allPkgs
+        .map((p) => ({
+          title: p.title as string,
+          slug: p.slug as string,
+          leads: leadMap[p.id] || 0,
+          cited: citeMap[p.id] || 0,
+        }))
+        .sort((a, b) => (b.leads * 3 + b.cited) - (a.leads * 3 + a.cited))
+        .slice(0, 5);
+
+      setTopPages(ranked);
+    }
     setLeads30d(leads ?? 0);
 
     // Recommendations
@@ -292,6 +335,29 @@ export default function AnalyticsPage() {
               <Line type="monotone" dataKey="count" stroke="#2563eb" strokeWidth={2} dot={{ r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Top 5 pages */}
+      {topPages.length > 0 && (
+        <div className="bg-white rounded-xl border p-6 mb-8">
+          <h2 className="font-semibold text-gray-900 mb-4">Топ-5 страниц</h2>
+          <div className="space-y-3">
+            {topPages.map((p, i) => (
+              <div key={p.slug} className="flex items-center gap-3">
+                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${i === 0 ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-500"}`}>
+                  {i + 1}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{p.title}</p>
+                </div>
+                <div className="flex gap-4 text-xs text-gray-500 flex-shrink-0">
+                  <span>{p.leads} заявок</span>
+                  <span>{p.cited} цитирований</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

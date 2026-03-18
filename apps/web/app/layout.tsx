@@ -22,6 +22,13 @@ export default function RootLayout({
       <head>
         <meta name="theme-color" content="#2563eb" />
         <link rel="apple-touch-icon" href="/apple-icon" />
+        {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && (
+          <script
+            defer
+            data-domain={process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN}
+            src={`${process.env.NEXT_PUBLIC_PLAUSIBLE_HOST || "https://plausible.io"}/js/script.js`}
+          />
+        )}
         {process.env.NEXT_PUBLIC_YANDEX_METRIKA_ID && (
           <script
             dangerouslySetInnerHTML={{

@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     // Verify ownership
     const { data: pkg } = await admin
       .from("content_packages")
-      .select("id, expert_id, title, slug, status, profiles!inner(slug, telegram_id)")
+      .select("id, expert_id, title, slug, status, profiles!inner(slug, telegram_id, niche_id, niches(slug))")
       .eq("id", content_id)
       .single();
 
@@ -76,10 +76,12 @@ export async function POST(request: NextRequest) {
     revalidatePath("/experts");
     revalidatePath("/sitemap.xml");
 
-    // Telegram sharing notification
-    const telegramId = (pkg.profiles as unknown as { telegram_id: number | null }).telegram_id;
+    // Telegram sharing notification with niche-specific channels
+    const profile = pkg.profiles as unknown as { telegram_id: number | null; niches: { slug: string } | null };
+    const telegramId = profile.telegram_id;
+    const nicheSlug = profile.niches?.slug;
     if (telegramId) {
-      await sendSharingNotification(telegramId, pkg.title ?? "", publishedUrl);
+      await sendSharingNotification(telegramId, pkg.title ?? "", publishedUrl, nicheSlug ?? undefined);
     }
 
     return NextResponse.json({ ok: true, url: publishedUrl });
@@ -89,9 +91,23 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function sendSharingNotification(telegramId: number, title: string, url: string): Promise<void> {
+async function sendSharingNotification(telegramId: number, title: string, url: string, nicheSlug?: string): Promise<void> {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   if (!botToken) return;
+
+  // Get niche-specific channels
+  let channelLines: string[] = [];
+  if (nicheSlug) {
+    const { getNicheChannels } = await import("@/lib/niche-channels");
+    const channels = getNicheChannels(nicheSlug);
+    if (channels.length > 0) {
+      channelLines = [
+        "",
+        "📢 Рекомендуемые чаты для вашей ниши:",
+        ...channels.map((c) => `  • ${c.name}`),
+      ];
+    }
+  }
 
   const text = [
     "🎉 Статья опубликована!",
@@ -100,16 +116,30 @@ async function sendSharingNotification(telegramId: number, title: string, url: s
     `🔗 ${url}`,
     "",
     "Поделитесь в первые 3 дня — это важно для индексации!",
+    ...channelLines,
   ].join("\n");
+
+  // Build keyboard with niche-specific share buttons
+  const shareButtons: Array<{ text: string; url: string }> = [
+    { text: "📤 Шеринг в чаты", url: `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}` },
+  ];
+
+  if (nicheSlug) {
+    const { getNicheChannels } = await import("@/lib/niche-channels");
+    const channels = getNicheChannels(nicheSlug);
+    for (const ch of channels.slice(0, 2)) {
+      shareButtons.push({
+        text: `📢 ${ch.name}`,
+        url: `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}&to=${encodeURIComponent(ch.url.replace("https://t.me/", ""))}`,
+      });
+    }
+  }
 
   const keyboard = {
     inline_keyboard: [
-      [
-        { text: "📤 Шеринг в чаты", url: `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}` },
-      ],
-      [
-        { text: "📋 Копировать пост", callback_data: `copy_post:${url}` },
-      ],
+      shareButtons.slice(0, 1).map((b) => ({ text: b.text, url: b.url })),
+      ...shareButtons.slice(1).map((b) => [{ text: b.text, url: b.url }]),
+      [{ text: "📋 Копировать пост", callback_data: `copy_post:${url}` }],
     ],
   };
 

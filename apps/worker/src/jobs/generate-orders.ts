@@ -55,12 +55,14 @@ export async function handleGenerateOrders(payload: Record<string, unknown>): Pr
   );
 
   const expiresAt = new Date(now.getTime() + 7 * 86400000).toISOString();
+  const TOP_PRIORITY_COUNT = 10; // Топ-10 = «Высокий приоритет»
   const ordersToInsert: Array<{
     expert_id: string;
     question_id: string;
     status: string;
     week_number: number;
     expires_at: string;
+    is_priority: boolean;
   }> = [];
 
   // Собираем подзапросы для уведомлений
@@ -91,6 +93,7 @@ export async function handleGenerateOrders(payload: Record<string, unknown>): Pr
         status: "pending",
         week_number: weekNumber,
         expires_at: expiresAt,
+        is_priority: count < TOP_PRIORITY_COUNT,
       });
       existingSet.add(key);
       if (samples.length < 3) samples.push(q.question_text);

@@ -1,6 +1,7 @@
 import { supabase } from "../supabase.js";
 import { fetchWordstat } from "../services/wordstat.js";
 import { fetchPAA } from "../services/serpapi.js";
+import { fetchYandexKyuQuestions } from "../services/yandex-kyu.js";
 
 function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-zа-яё0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").slice(0, 120);
@@ -53,6 +54,18 @@ export async function handleCollectDemand(payload: Record<string, unknown>): Pro
       }
     } catch (err) {
       console.error(`[collect_demand] SerpAPI failed for "${keyword}":`, err instanceof Error ? err.message : err);
+    }
+
+    // Яндекс Кью
+    try {
+      const kyuQuestions = await fetchYandexKyuQuestions(keyword);
+      for (const q of kyuQuestions) {
+        if (!allQuestions.has(q.toLowerCase())) {
+          allQuestions.set(q.toLowerCase(), 800); // Кью без объёма — ставим среднее
+        }
+      }
+    } catch (err) {
+      console.error(`[collect_demand] Yandex Kyu failed for "${keyword}":`, err instanceof Error ? err.message : err);
     }
 
     // Rate limiting

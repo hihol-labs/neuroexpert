@@ -100,7 +100,12 @@ packages/
   - **Citation Network**: страница ниши /niches/[slug] (эксперты + вопросы + статьи + смежные ниши), кросс-нишевая навигация (20 ниш с маппингом смежных направлений), платформенные метрики на лендинге (реальные: эксперты/статьи/цитирования из БД через /api/platform-stats).
   - **Knowledge API Licensing**: /api/v1/answers (Premium — полный контент + аудио + цитаты + credentials + лицензия), 3 тарифа API (Read free / Pro $99/mo / Enterprise custom), permission-based access (read/answers/all), attribution_format в каждом ответе.
   - **Marketplace**: фильтры по цене и рейтингу в каталоге, split-payment ЮKassa (YUKASSA_MARKETPLACE=true → transfers[] с автокомиссией), Yclients интеграция (yclients_url → кнопка «Записаться онлайн»), миграция 014 (yukassa_account_id + yclients_url).
-  - **Analytics**: таблица цитирований расширена до 4 платформ (ChatGPT, YandexGPT, GigaChat, Perplexity), блок сравнения с конкурентом в дашборде.
+  - **Analytics**: таблица цитирований расширена до 4 платформ (ChatGPT, YandexGPT, GigaChat, Perplexity), блок сравнения с конкурентом в дашборде, топ-5 страниц (по leads + citations), cosine similarity (Jaccard > 0.7) в track-citations.
+  - **GEO-сервисы**: Pixel Tools (`pixel-tools.ts` — мониторинг упоминаний + тональность), GptFox (`gptfox.ts` — позиции в ChatGPT + конкуренты), комбинированный job `track_geo_services`. Worker: 18 active handlers.
+  - **Voice Engine**: AI-ассистент с уточняющими вопросами после записи (/api/voice-followup → анализ транскрипта → 2-3 конкретных вопроса → «Дозаписать» / «Пропустить»), `buildFollowUpQuestionsPrompt()`.
+  - **Demand**: Яндекс Кью как 3-й источник вопросов (`yandex-kyu.ts` → SerpAPI site:yandex.ru/q), топ-10 заказов с badge «Высокий приоритет» (is_priority), badge «AI даёт неточный ответ» для gap_score 8-10, конкурентный анализ в карточке заказа (extractMentionedExperts из AI-ответа), миграция 015 (is_priority).
+  - **Лидогенерация**: email-форма работает (action + method + redirect), email-отписка (GET /api/email-subscribe?email=&expert_id=), маппинг ниш → Telegram-чаты (niche-channels.ts, 12 ниш), publish уведомление с нишевыми каналами.
+  - **Аналитика**: Plausible (layout.tsx), топ-5 страниц в дашборде.
   - Задеплоено на production. pnpm build OK.
 
 ## Остаётся сделать (post-deploy)
@@ -137,6 +142,18 @@ packages/
 - [ ] Подключить PageSpeed API — мониторинг Core Web Vitals
   - `PAGESPEED_API_KEY=...`
   - (получить: console.cloud.google.com → PageSpeed Insights API)
+- [ ] Подключить Pixel Tools — мониторинг упоминаний бренда в нейросетях + тональность
+  - `PIXEL_TOOLS_API_KEY=...`
+  - (получить: pixeltools.ru)
+- [ ] Подключить GptFox.io — трекинг позиций бренда в ChatGPT + конкуренты
+  - `GPTFOX_API_KEY=...`
+  - (получить: gptfox.io)
+- [ ] Подключить Plausible — self-hosted аналитика без cookies (152-ФЗ)
+  - `NEXT_PUBLIC_PLAUSIBLE_DOMAIN=neuroexpertise.ru`
+  - `NEXT_PUBLIC_PLAUSIBLE_HOST=https://plausible.yourdomain.com`
+- [ ] Подключить ЮKassa маркетплейс — split-payment для консультаций
+  - `YUKASSA_MARKETPLACE=true`
+  - Экспертам: `yukassa_account_id` в профиле
 
 ## Тарифная модель
 

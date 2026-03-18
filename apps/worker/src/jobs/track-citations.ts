@@ -46,8 +46,14 @@ export async function handleTrackCitations(payload: Record<string, unknown>): Pr
         ) : false;
         const hasNeuroexpert = responseLower.includes("neuroexpert") || responseLower.includes("нейроэксперт");
 
-        const isCited = hasName || hasUrl || hasNeuroexpert;
-        const citationType = hasName ? "name" : hasUrl ? "url" : hasNeuroexpert ? "content_match" : "none";
+        // Cosine similarity (word-level Jaccard as lightweight proxy)
+        const similarityScore = computeTextSimilarity(
+          pkg.title as string || question,
+          result.response,
+        );
+
+        const isCited = hasName || hasUrl || hasNeuroexpert || similarityScore > 0.7;
+        const citationType = hasName ? "name" : hasUrl ? "url" : hasNeuroexpert ? "content_match" : similarityScore > 0.7 ? "content_match" : "none";
 
         await supabase.from("citation_checks").insert({
           content_id: pkg.id,
@@ -57,6 +63,7 @@ export async function handleTrackCitations(payload: Record<string, unknown>): Pr
           ai_response: result.response.slice(0, 5000),
           is_cited: isCited,
           citation_type: citationType,
+          similarity_score: similarityScore,
         });
 
         checked++;
@@ -70,4 +77,29 @@ export async function handleTrackCitations(payload: Record<string, unknown>): Pr
 
   console.log(`[track_citations] Checked ${checked} citations for expert ${expertId}`);
   return { checked };
+}
+
+// Lightweight text similarity: word-level Jaccard coefficient
+function computeTextSimilarity(a: string, b: string): number {
+  const tokenize = (text: string): Set<string> => {
+    return new Set(
+      text
+        .toLowerCase()
+        .replace(/[^a-zа-яёА-ЯЁ0-9\s]/gi, "")
+        .split(/\s+/)
+        .filter((w) => w.length > 3),
+    );
+  };
+
+  const setA = tokenize(a);
+  const setB = tokenize(b);
+  if (setA.size === 0 || setB.size === 0) return 0;
+
+  let intersection = 0;
+  for (const word of setA) {
+    if (setB.has(word)) intersection++;
+  }
+
+  const union = setA.size + setB.size - intersection;
+  return union > 0 ? intersection / union : 0;
 }

@@ -37,6 +37,22 @@ const MARKER_LABELS: Record<string, { label: string; good: string; bad: string }
   },
 };
 
+function extractMentionedExperts(text: string): string[] {
+  if (!text) return [];
+  const names = new Set<string>();
+  const patterns = [
+    /(?:по мнению|как отмечает|как считает|как говорит|рекомендует)\s+([А-ЯЁ][а-яё]+\s+[А-ЯЁ][а-яё]+)/gi,
+    /(?:доктор|профессор|к\.м\.н|д\.м\.н|кандидат|академик)\s+([А-ЯЁ][а-яё]+(?:\s+[А-ЯЁ][а-яё]+)?)/gi,
+    /(?:Dr\.|Professor)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/gi,
+  ];
+  for (const p of patterns) {
+    for (const m of text.matchAll(p)) {
+      if (m[1] && m[1].length > 3) names.add(m[1].trim());
+    }
+  }
+  return Array.from(names).slice(0, 3);
+}
+
 export default async function OrdersPage({
   searchParams,
 }: {
@@ -53,7 +69,7 @@ export default async function OrdersPage({
   let query = supabase
     .from("orders")
     .select(
-      "id, status, week_number, expires_at, created_at, questions(question_text, gap_score, monthly_volume, ai_response_chatgpt, ai_response_yandexgpt, has_expert_name, has_specific_examples, has_specific_numbers, has_source_link)",
+      "id, status, week_number, expires_at, created_at, is_priority, questions(question_text, gap_score, monthly_volume, ai_response_chatgpt, ai_response_yandexgpt, has_expert_name, has_specific_examples, has_specific_numbers, has_source_link)",
     )
     .eq("expert_id", user.id)
     .order("created_at", { ascending: false });
@@ -112,16 +128,31 @@ export default async function OrdersPage({
               (q?.ai_response_chatgpt as string) ||
               (q?.ai_response_yandexgpt as string) ||
               "";
+            // Extract competitor names from AI response
+            const competitorNames = extractMentionedExperts(aiResponse);
             const isPending = o.status === "pending";
+            const isPriority = o.is_priority as boolean;
 
             return (
               <div
                 key={o.id as string}
-                className="bg-white border rounded-xl overflow-hidden"
+                className={`bg-white border rounded-xl overflow-hidden ${isPriority ? "border-blue-200 ring-1 ring-blue-100" : ""}`}
               >
                 {/* Header */}
                 <div className="px-6 py-4 border-b flex items-start justify-between gap-4">
                   <div className="min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      {gapScore >= 8 && (
+                        <span className="text-xs font-medium bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
+                          AI даёт неточный ответ
+                        </span>
+                      )}
+                      {isPriority && gapScore < 8 && (
+                        <span className="text-xs font-medium bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                          Высокий приоритет
+                        </span>
+                      )}
+                    </div>
                     <h3 className="font-semibold text-gray-900 text-lg">
                       {questionText}
                     </h3>
@@ -191,11 +222,22 @@ export default async function OrdersPage({
                       )}
                     </div>
 
+                    {/* Competitor insight */}
+                    {competitorNames.length > 0 && (
+                      <div className="mt-3 bg-orange-50 border border-orange-100 rounded-lg px-3 py-2">
+                        <p className="text-sm text-orange-800">
+                          Сейчас по этому запросу цитируется:{" "}
+                          <strong>{competitorNames.join(", ")}</strong>.
+                          Ваш ответ с конкретными примерами из практики может занять эту позицию.
+                        </p>
+                      </div>
+                    )}
+
                     {/* Motivation line */}
-                    {gapScore >= 6 && (
+                    {gapScore >= 6 && competitorNames.length === 0 && (
                       <p className="mt-3 text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
-                        Нейросеть даёт слабый ответ — ваш экспертный опыт
-                        значительно ценнее. Наговорите 5-10 минут, и тысячи
+                        Нейросеть даёт слабый ответ без упоминания экспертов — ваш
+                        опыт значительно ценнее. Наговорите 5-10 минут, и тысячи
                         людей получат качественный ответ.
                       </p>
                     )}
