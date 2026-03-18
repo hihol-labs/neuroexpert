@@ -2,7 +2,12 @@ import { supabase } from "../supabase.js";
 import { probeAI } from "../services/ai-prober.js";
 import { getLLM, SYSTEM_PROMPT_FILTER, buildFilterPrompt, type FilteredQuestion } from "shared";
 
-const PLATFORMS: Array<"chatgpt" | "yandexgpt"> = ["chatgpt", "yandexgpt"];
+const PLATFORMS: Array<"chatgpt" | "yandexgpt" | "gigachat" | "perplexity"> = [
+  "chatgpt",
+  "yandexgpt",
+  ...(process.env.GIGACHAT_API_KEY ? ["gigachat" as const] : []),
+  ...(process.env.PERPLEXITY_API_KEY ? ["perplexity" as const] : []),
+];
 const MAX_QUESTIONS = 50;
 
 export async function handleFindGaps(payload: Record<string, unknown>): Promise<{ analyzed: number }> {
@@ -75,6 +80,7 @@ export async function handleFindGaps(payload: Record<string, unknown>): Promise<
         updates.has_expert_name = result.hasExpertName;
         updates.has_specific_examples = result.hasSpecificExamples;
         updates.has_source_link = result.hasSourceLink;
+        updates.has_specific_numbers = result.hasSpecificNumbers;
         updates.gap_score = result.gapScore;
       } catch (err) {
         console.error(`[find_gaps] Probe ${platform} failed for "${q.question_text.slice(0, 50)}":`, err instanceof Error ? err.message : err);

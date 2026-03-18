@@ -155,37 +155,7 @@ async function checkYandexGPT(query: string): Promise<PlatformVisibility | null>
   };
 }
 
-export async function POST(request: NextRequest) {
-  const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip") ||
-    "unknown";
-
-  if (isRateLimited(ip)) {
-    return NextResponse.json(
-      { error: "Лимит проверок: 3 в час. Попробуйте позже." },
-      { status: 429 },
-    );
-  }
-
-  let body: { query?: string };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  const query = body.query?.trim();
-  if (!query || query.length < 2 || query.length > 200) {
-    return NextResponse.json(
-      { error: "Введите имя, бренд или сайт (2-200 символов)" },
-      { status: 400 },
-    );
-  }
-
-  const proxiedFetch = await createProxiedFetch();
-  const slug = slugify(query);
-
+async function scanAllPlatforms(query: string, proxiedFetch?: FetchFn): Promise<PlatformVisibility[]> {
   const checkers = [
     checkChatGPT(query, proxiedFetch),
     checkPerplexity(query, proxiedFetch),
@@ -201,33 +171,88 @@ export async function POST(request: NextRequest) {
     }),
   );
 
-  const platforms = results.filter(Boolean) as PlatformVisibility[];
-  const mentionedCount = platforms.filter((p) => p.mentioned).length;
-  const visibilityPercent = platforms.length > 0
-    ? Math.round((mentionedCount / platforms.length) * 100)
+  return results.filter(Boolean) as PlatformVisibility[];
+}
+
+export async function POST(request: NextRequest) {
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown";
+
+  if (isRateLimited(ip)) {
+    return NextResponse.json(
+      { error: "Лимит проверок: 3 в час. Попробуйте позже." },
+      { status: 429 },
+    );
+  }
+
+  let body: { query?: string; competitor?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const query = body.query?.trim();
+  if (!query || query.length < 2 || query.length > 200) {
+    return NextResponse.json(
+      { error: "Введите имя, бренд или сайт (2-200 символов)" },
+      { status: 400 },
+    );
+  }
+
+  const competitorQuery = body.competitor?.trim() || null;
+  const proxiedFetch = await createProxiedFetch();
+  const slug = slugify(query);
+
+  // Scan main query
+  const mainResults = await scanAllPlatforms(query, proxiedFetch);
+
+  // Scan competitor if provided
+  let competitorResults: PlatformVisibility[] | null = null;
+  let competitorVisibility = 0;
+  if (competitorQuery && competitorQuery.length >= 2) {
+    competitorResults = await scanAllPlatforms(competitorQuery, proxiedFetch);
+    const compMentioned = competitorResults.filter((p) => p.mentioned).length;
+    competitorVisibility = competitorResults.length > 0
+      ? Math.round((compMentioned / competitorResults.length) * 100)
+      : 0;
+  }
+
+  const mentionedCount = mainResults.filter((p) => p.mentioned).length;
+  const visibilityPercent = mainResults.length > 0
+    ? Math.round((mentionedCount / mainResults.length) * 100)
     : 0;
 
-  const scanResult: ScanResult = {
+  const scanResult = {
     query,
     slug,
-    platforms,
+    platforms: mainResults,
     visibility_percent: visibilityPercent,
-    total_platforms: platforms.length,
+    total_platforms: mainResults.length,
     mentioned_count: mentionedCount,
+    ...(competitorQuery && {
+      competitor: {
+        query: competitorQuery,
+        platforms: competitorResults,
+        visibility_percent: competitorVisibility,
+        mentioned_count: competitorResults?.filter((p) => p.mentioned).length ?? 0,
+      },
+    }),
   };
 
   // Save to DB for SSR page
   const supabase = createAdminClient();
-  // scan_results table added in migration 009, not yet in generated types
   await (supabase as unknown as { from: (t: string) => { upsert: (v: Record<string, unknown>, o: { onConflict: string }) => Promise<unknown> } })
     .from("scan_results")
     .upsert(
       {
         slug,
         query,
-        platforms,
+        platforms: scanResult,
         visibility_percent: visibilityPercent,
-        total_platforms: platforms.length,
+        total_platforms: mainResults.length,
         mentioned_count: mentionedCount,
         scanned_at: new Date().toISOString(),
       },

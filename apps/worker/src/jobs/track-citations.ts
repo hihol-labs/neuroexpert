@@ -1,7 +1,12 @@
 import { supabase } from "../supabase.js";
 import { probeAI } from "../services/ai-prober.js";
 
-const PLATFORMS: Array<"chatgpt" | "yandexgpt"> = ["chatgpt", "yandexgpt"];
+const PLATFORMS: Array<"chatgpt" | "yandexgpt" | "gigachat" | "perplexity"> = [
+  "chatgpt",
+  "yandexgpt",
+  ...(process.env.GIGACHAT_API_KEY ? ["gigachat" as const] : []),
+  ...(process.env.PERPLEXITY_API_KEY ? ["perplexity" as const] : []),
+];
 
 export async function handleTrackCitations(payload: Record<string, unknown>): Promise<{ checked: number }> {
   const expertId = payload.expert_id as string;

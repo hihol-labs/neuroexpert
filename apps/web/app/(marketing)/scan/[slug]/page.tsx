@@ -4,15 +4,34 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { Metadata } from "next";
 import { MarketingHeader } from "@/components/marketing/nav";
 
+interface PlatformVis {
+  platform: string;
+  mentioned: boolean;
+  context: string;
+  sentiment: string;
+}
+
+interface CompetitorData {
+  query: string;
+  platforms: PlatformVis[];
+  visibility_percent: number;
+  mentioned_count: number;
+}
+
+interface ScanData {
+  query: string;
+  slug: string;
+  platforms: PlatformVis[];
+  visibility_percent: number;
+  total_platforms: number;
+  mentioned_count: number;
+  competitor?: CompetitorData;
+}
+
 interface ScanRow {
   slug: string;
   query: string;
-  platforms: Array<{
-    platform: string;
-    mentioned: boolean;
-    context: string;
-    sentiment: string;
-  }>;
+  platforms: ScanData;
   visibility_percent: number;
   total_platforms: number;
   mentioned_count: number;
@@ -21,7 +40,6 @@ interface ScanRow {
 
 async function getScanResult(slug: string): Promise<ScanRow | null> {
   const supabase = createAdminClient();
-  // scan_results table added in migration 009, not yet in generated types
   const client = supabase as unknown as {
     from: (t: string) => {
       select: (s: string) => {
@@ -31,7 +49,11 @@ async function getScanResult(slug: string): Promise<ScanRow | null> {
       };
     };
   };
-  const { data } = await client.from("scan_results").select("*").eq("slug", slug).single();
+  const { data } = await client
+    .from("scan_results")
+    .select("*")
+    .eq("slug", slug)
+    .single();
   return data;
 }
 
@@ -45,7 +67,7 @@ export async function generateMetadata({
   if (!result) return { title: "Результат не найден" };
 
   const title = `${result.query} — AI Visibility: ${result.visibility_percent}%`;
-  const description = `${result.query} упоминается в ${result.mentioned_count} из ${result.total_platforms} AI-платформ. Проверьте свою видимость на НейроЭксперт.`;
+  const description = `${result.query} упоминается в ${result.mentioned_count} из ${result.total_platforms} AI-платформ.`;
 
   return {
     title,
@@ -57,12 +79,43 @@ export async function generateMetadata({
       url: `https://neuroexpertise.ru/scan/${slug}`,
       siteName: "НейроЭксперт",
     },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-    },
   };
+}
+
+function VisibilityBadge({
+  percent,
+  size = "large",
+}: {
+  percent: number;
+  size?: "large" | "small";
+}) {
+  const color =
+    percent >= 66
+      ? "text-green-600"
+      : percent >= 33
+        ? "text-yellow-600"
+        : "text-red-600";
+  const bg =
+    percent >= 66
+      ? "bg-green-100"
+      : percent >= 33
+        ? "bg-yellow-100"
+        : "bg-red-100";
+
+  if (size === "small") {
+    return (
+      <span className={`inline-block rounded-full ${bg} px-3 py-1`}>
+        <span className={`text-lg font-bold ${color}`}>{percent}%</span>
+      </span>
+    );
+  }
+
+  return (
+    <div className={`inline-flex items-center gap-3 rounded-2xl ${bg} px-8 py-5`}>
+      <span className={`text-5xl font-bold ${color}`}>{percent}%</span>
+      <span className="text-left text-sm text-gray-600">AI-видимость</span>
+    </div>
+  );
 }
 
 export default async function ScanResultPage({
@@ -74,19 +127,24 @@ export default async function ScanResultPage({
   const result = await getScanResult(slug);
   if (!result) notFound();
 
-  const visibilityColor =
-    result.visibility_percent >= 66
-      ? "text-green-600"
-      : result.visibility_percent >= 33
-        ? "text-yellow-600"
-        : "text-red-600";
+  // Parse stored data — platforms field now contains full scan data
+  const scanData: ScanData =
+    typeof result.platforms === "object" && "query" in (result.platforms as ScanData)
+      ? (result.platforms as unknown as ScanData)
+      : {
+          query: result.query,
+          slug: result.slug,
+          platforms: result.platforms as unknown as PlatformVis[],
+          visibility_percent: result.visibility_percent,
+          total_platforms: result.total_platforms,
+          mentioned_count: result.mentioned_count,
+        };
 
-  const visibilityBg =
-    result.visibility_percent >= 66
-      ? "bg-green-100"
-      : result.visibility_percent >= 33
-        ? "bg-yellow-100"
-        : "bg-red-100";
+  const mainPlatforms: PlatformVis[] = Array.isArray(scanData.platforms)
+    ? scanData.platforms
+    : [];
+  const competitor = scanData.competitor ?? null;
+  const hasComparison = competitor !== null && competitor.platforms?.length > 0;
 
   return (
     <div className="min-h-screen bg-white">
@@ -102,23 +160,98 @@ export default async function ScanResultPage({
             <h1 className="mt-3 text-3xl font-bold text-gray-900">
               {result.query}
             </h1>
-            <div
-              className={`mt-6 inline-flex items-center gap-3 rounded-2xl ${visibilityBg} px-8 py-5`}
-            >
-              <span className={`text-5xl font-bold ${visibilityColor}`}>
-                {result.visibility_percent}%
-              </span>
-              <span className="text-left text-sm text-gray-600">
-                AI-видимость
-                <br />
-                {result.mentioned_count} из {result.total_platforms} платформ
-              </span>
+            <div className="mt-6">
+              <VisibilityBadge percent={result.visibility_percent} />
             </div>
+            <p className="mt-2 text-sm text-gray-500">
+              {result.mentioned_count} из {result.total_platforms} платформ
+            </p>
           </div>
+
+          {/* Comparison block */}
+          {hasComparison && (
+            <div className="mt-10 rounded-2xl border-2 border-blue-100 bg-blue-50/30 p-6">
+              <h2 className="text-lg font-bold text-gray-900 text-center mb-6">
+                Сравнение видимости
+              </h2>
+              <div className="grid grid-cols-3 gap-4 items-center">
+                {/* You */}
+                <div className="text-center">
+                  <p className="text-sm font-medium text-gray-600 mb-2 truncate">
+                    {result.query}
+                  </p>
+                  <VisibilityBadge
+                    percent={result.visibility_percent}
+                    size="small"
+                  />
+                </div>
+
+                {/* VS */}
+                <div className="text-center">
+                  <span className="text-2xl font-bold text-gray-300">vs</span>
+                </div>
+
+                {/* Competitor */}
+                <div className="text-center">
+                  <p className="text-sm font-medium text-gray-600 mb-2 truncate">
+                    {competitor!.query}
+                  </p>
+                  <VisibilityBadge
+                    percent={competitor!.visibility_percent}
+                    size="small"
+                  />
+                </div>
+              </div>
+
+              {/* Per-platform comparison */}
+              <div className="mt-6 space-y-2">
+                {mainPlatforms.map((p) => {
+                  const compPlatform = competitor!.platforms?.find(
+                    (cp) => cp.platform === p.platform,
+                  );
+                  return (
+                    <div
+                      key={p.platform}
+                      className="flex items-center justify-between bg-white rounded-lg px-4 py-3 border"
+                    >
+                      <span className="text-sm font-medium text-gray-700 w-24">
+                        {p.platform}
+                      </span>
+                      <span
+                        className={`text-sm font-medium ${p.mentioned ? "text-green-600" : "text-red-500"}`}
+                      >
+                        {p.mentioned ? "✓ Вы" : "✗ Вы"}
+                      </span>
+                      <span className="text-gray-300">|</span>
+                      <span
+                        className={`text-sm font-medium ${compPlatform?.mentioned ? "text-green-600" : "text-red-500"}`}
+                      >
+                        {compPlatform?.mentioned
+                          ? "✓ Конкурент"
+                          : "✗ Конкурент"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Gap message */}
+              {result.visibility_percent < (competitor?.visibility_percent ?? 0) && (
+                <p className="mt-4 text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg px-4 py-3 text-center">
+                  Конкурент опережает вас на{" "}
+                  {(competitor?.visibility_percent ?? 0) - result.visibility_percent}%.
+                  Самое время начать публиковать экспертный контент.
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Platform details */}
           <div className="mt-12 space-y-4">
-            {result.platforms.map((p) => (
+            <h2 className="text-lg font-semibold text-gray-900">
+              Детали по платформам
+            </h2>
+            {mainPlatforms.map((p) => (
               <div
                 key={p.platform}
                 className="rounded-xl border border-gray-200 p-5"

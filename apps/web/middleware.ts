@@ -6,7 +6,9 @@ const PUBLIC_ROUTES = [
   "/audit",
   "/pricing",
   "/for-experts",
+  "/for-business",
   "/how-it-works",
+  "/find-expert",
   "/login",
   "/register",
 ];
@@ -14,6 +16,8 @@ const PUBLIC_ROUTES = [
 const PUBLIC_PREFIXES = [
   "/experts",
   "/scan",
+  "/track",
+  "/compare",
   "/api",
   "/auth",
   "/_next",
@@ -26,7 +30,22 @@ function isPublic(pathname: string) {
 }
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, searchParams } = request.nextUrl;
+
+  // Handle referral parameter — save to cookie
+  const ref = searchParams.get("ref");
+  if (ref) {
+    const response = isPublic(pathname)
+      ? NextResponse.next()
+      : NextResponse.next({ request: { headers: request.headers } });
+    response.cookies.set("ref", ref, {
+      maxAge: 30 * 24 * 60 * 60, // 30 days
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+    });
+    if (isPublic(pathname)) return response;
+  }
 
   if (isPublic(pathname)) {
     return NextResponse.next();

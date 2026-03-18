@@ -21,6 +21,16 @@ function RegisterForm() {
     if (ref) {
       localStorage.setItem("neuroexpert_ref", ref);
     }
+    // Also check cookie (set by middleware from any page with ?ref=)
+    if (!ref) {
+      const cookieRef = document.cookie
+        .split("; ")
+        .find((c) => c.startsWith("ref="))
+        ?.split("=")[1];
+      if (cookieRef && !localStorage.getItem("neuroexpert_ref")) {
+        localStorage.setItem("neuroexpert_ref", cookieRef);
+      }
+    }
   }, [ref]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -74,8 +84,13 @@ function RegisterForm() {
       <div className="mb-8 text-center">
         <h1 className="text-2xl font-bold text-gray-900">Регистрация</h1>
         <p className="mt-2 text-gray-600">
-          Создайте аккаунт эксперта и начните получать клиентов
+          Начните бесплатно — платите только когда зарабатываете
         </p>
+        <div className="mt-3 flex flex-wrap justify-center gap-3 text-xs text-gray-500">
+          <span className="bg-green-50 text-green-700 px-2 py-1 rounded-full">0₽ / мес</span>
+          <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-full">3 темы / неделя</span>
+          <span className="bg-purple-50 text-purple-700 px-2 py-1 rounded-full">15% комиссия с клиентов</span>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">

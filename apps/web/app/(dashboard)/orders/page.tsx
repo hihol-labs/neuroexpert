@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { Badge } from "@/components/ui/badge";
-import { Table, Th, Td } from "@/components/ui/table";
 
 function getSupabase() {
   return createSupabaseClient(
@@ -11,18 +10,51 @@ function getSupabase() {
   );
 }
 
-interface SearchParams { status?: string }
+interface SearchParams {
+  status?: string;
+}
 
-export default async function OrdersPage({ searchParams }: { searchParams: SearchParams }) {
+const MARKER_LABELS: Record<string, { label: string; good: string; bad: string }> = {
+  has_expert_name: {
+    label: "Имя эксперта",
+    good: "Упоминает конкретного специалиста",
+    bad: "Нет ссылки на реального эксперта",
+  },
+  has_specific_examples: {
+    label: "Примеры из практики",
+    good: "Есть конкретные кейсы",
+    bad: "Только общие фразы, без примеров",
+  },
+  has_specific_numbers: {
+    label: "Цифры и сроки",
+    good: "Указаны конкретные данные",
+    bad: "Размытые формулировки без цифр",
+  },
+  has_source_link: {
+    label: "Ссылка на источник",
+    good: "Есть URL на источник",
+    bad: "Нет ссылок на первоисточники",
+  },
+};
+
+export default async function OrdersPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
   const { createClient } = await import("@/lib/supabase/server");
   const authClient = createClient();
-  const { data: { user } } = await authClient.auth.getUser();
+  const {
+    data: { user },
+  } = await authClient.auth.getUser();
   if (!user) return null;
 
   const supabase = getSupabase();
   let query = supabase
     .from("orders")
-    .select("id, status, week_number, expires_at, created_at, questions(question_text, gap_score, monthly_volume)")
+    .select(
+      "id, status, week_number, expires_at, created_at, questions(question_text, gap_score, monthly_volume, ai_response_chatgpt, ai_response_yandexgpt, has_expert_name, has_specific_examples, has_specific_numbers, has_source_link)",
+    )
     .eq("expert_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -32,7 +64,15 @@ export default async function OrdersPage({ searchParams }: { searchParams: Searc
 
   const { data: orders } = await query.limit(50);
 
-  const statuses = ["pending", "accepted", "recording", "processing", "review", "published", "rejected"];
+  const statuses = [
+    "pending",
+    "accepted",
+    "recording",
+    "processing",
+    "review",
+    "published",
+    "rejected",
+  ];
 
   return (
     <div>
@@ -40,61 +80,175 @@ export default async function OrdersPage({ searchParams }: { searchParams: Searc
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2 mb-6">
-        <Link href="/orders" className={`px-3 py-1.5 rounded-full text-sm border ${!searchParams.status ? "bg-blue-600 text-white border-blue-600" : "text-gray-700 border-gray-300 hover:border-blue-300"}`}>
+        <Link
+          href="/orders"
+          className={`px-3 py-1.5 rounded-full text-sm border ${!searchParams.status ? "bg-blue-600 text-white border-blue-600" : "text-gray-700 border-gray-300 hover:border-blue-300"}`}
+        >
           Все
         </Link>
         {statuses.map((s) => (
-          <Link key={s} href={`/orders?status=${s}`} className={`px-3 py-1.5 rounded-full text-sm border ${searchParams.status === s ? "bg-blue-600 text-white border-blue-600" : "text-gray-700 border-gray-300 hover:border-blue-300"}`}>
+          <Link
+            key={s}
+            href={`/orders?status=${s}`}
+            className={`px-3 py-1.5 rounded-full text-sm border ${searchParams.status === s ? "bg-blue-600 text-white border-blue-600" : "text-gray-700 border-gray-300 hover:border-blue-300"}`}
+          >
             {s}
           </Link>
         ))}
       </div>
 
       {!orders?.length ? (
-        <p className="text-gray-500 py-12 text-center">Заказов пока нет. Они обновляются каждый понедельник.</p>
+        <p className="text-gray-500 py-12 text-center">
+          Заказов пока нет. Они обновляются каждый понедельник.
+        </p>
       ) : (
-        <div className="bg-white rounded-xl border">
-          <Table>
-            <thead>
-              <tr>
-                <Th>Вопрос</Th>
-                <Th>Gap Score</Th>
-                <Th>Частотность</Th>
-                <Th>Статус</Th>
-                <Th>Действия</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((o: Record<string, unknown>) => {
-                const q = o.questions as Record<string, unknown> | null;
-                return (
-                  <tr key={o.id as string}>
-                    <Td className="max-w-xs truncate">{(q?.question_text as string) ?? "—"}</Td>
-                    <Td>{(q?.gap_score as number) ?? "—"}</Td>
-                    <Td>{(q?.monthly_volume as number)?.toLocaleString() ?? "—"}</Td>
-                    <Td><Badge status={o.status as string} /></Td>
-                    <Td>
-                      {o.status === "pending" && (
-                        <div className="flex gap-2">
-                          <form action="/api/orders/accept" method="POST">
-                            <input type="hidden" name="order_id" value={o.id as string} />
-                            <button className="text-sm text-blue-600 hover:underline">Принять</button>
-                          </form>
-                          <form action="/api/orders/skip" method="POST">
-                            <input type="hidden" name="order_id" value={o.id as string} />
-                            <button className="text-sm text-red-600 hover:underline">Пропустить</button>
-                          </form>
-                        </div>
+        <div className="space-y-4">
+          {orders.map((o: Record<string, unknown>) => {
+            const q = o.questions as Record<string, unknown> | null;
+            const questionText = (q?.question_text as string) ?? "—";
+            const gapScore = (q?.gap_score as number) ?? 0;
+            const volume = (q?.monthly_volume as number) ?? 0;
+            const aiResponse =
+              (q?.ai_response_chatgpt as string) ||
+              (q?.ai_response_yandexgpt as string) ||
+              "";
+            const isPending = o.status === "pending";
+
+            return (
+              <div
+                key={o.id as string}
+                className="bg-white border rounded-xl overflow-hidden"
+              >
+                {/* Header */}
+                <div className="px-6 py-4 border-b flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-gray-900 text-lg">
+                      {questionText}
+                    </h3>
+                    <div className="flex gap-4 mt-1 text-sm text-gray-500">
+                      <span>
+                        Gap Score:{" "}
+                        <span
+                          className={`font-medium ${gapScore >= 7 ? "text-red-600" : gapScore >= 4 ? "text-yellow-600" : "text-green-600"}`}
+                        >
+                          {gapScore}/10
+                        </span>
+                      </span>
+                      <span>{volume.toLocaleString()} запросов/мес</span>
+                    </div>
+                  </div>
+                  <Badge status={o.status as string} />
+                </div>
+
+                {/* AI Response preview — shown for pending orders */}
+                {isPending && aiResponse && (
+                  <div className="px-6 py-4 bg-gray-50 border-b">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                      Текущий ответ нейросети
+                    </p>
+                    <div className="bg-white border rounded-lg p-4 text-sm text-gray-700 max-h-48 overflow-y-auto leading-relaxed">
+                      {aiResponse.slice(0, 800)}
+                      {aiResponse.length > 800 && (
+                        <span className="text-gray-400">...</span>
                       )}
-                      {o.status === "accepted" && (
-                        <Link href="/content/new" className="text-sm text-blue-600 hover:underline">Записать</Link>
+                    </div>
+
+                    {/* Markers checklist */}
+                    <div className="grid grid-cols-2 gap-2 mt-3">
+                      {Object.entries(MARKER_LABELS).map(
+                        ([key, { label, good, bad }]) => {
+                          const value = q?.[key] as boolean | null;
+                          const isWeak = value === false || value === null;
+                          return (
+                            <div
+                              key={key}
+                              className={`flex items-start gap-2 rounded-lg px-3 py-2 text-xs ${
+                                isWeak
+                                  ? "bg-red-50 border border-red-100"
+                                  : "bg-green-50 border border-green-100"
+                              }`}
+                            >
+                              <span
+                                className={`mt-0.5 flex-shrink-0 ${isWeak ? "text-red-500" : "text-green-500"}`}
+                              >
+                                {isWeak ? "✗" : "✓"}
+                              </span>
+                              <div>
+                                <span
+                                  className={`font-medium ${isWeak ? "text-red-700" : "text-green-700"}`}
+                                >
+                                  {label}
+                                </span>
+                                <p
+                                  className={`mt-0.5 ${isWeak ? "text-red-600" : "text-green-600"}`}
+                                >
+                                  {isWeak ? bad : good}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        },
                       )}
-                    </Td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </Table>
+                    </div>
+
+                    {/* Motivation line */}
+                    {gapScore >= 6 && (
+                      <p className="mt-3 text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                        Нейросеть даёт слабый ответ — ваш экспертный опыт
+                        значительно ценнее. Наговорите 5-10 минут, и тысячи
+                        людей получат качественный ответ.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="px-6 py-3 flex items-center justify-between">
+                  <span className="text-xs text-gray-400">
+                    {o.created_at
+                      ? new Date(o.created_at as string).toLocaleDateString(
+                          "ru-RU",
+                        )
+                      : ""}
+                  </span>
+
+                  {isPending && (
+                    <div className="flex gap-3">
+                      <form action="/api/orders/skip" method="POST">
+                        <input
+                          type="hidden"
+                          name="order_id"
+                          value={o.id as string}
+                        />
+                        <button className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                          Пропустить
+                        </button>
+                      </form>
+                      <form action="/api/orders/accept" method="POST">
+                        <input
+                          type="hidden"
+                          name="order_id"
+                          value={o.id as string}
+                        />
+                        <button className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                          Я отвечу лучше
+                        </button>
+                      </form>
+                    </div>
+                  )}
+
+                  {o.status === "accepted" && (
+                    <Link
+                      href="/content/new"
+                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                    >
+                      Записать ответ
+                    </Link>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

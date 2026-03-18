@@ -52,6 +52,7 @@ interface Gap {
   question: string;
   search_intent?: string;
   avg_gap_score: number;
+  estimated_monthly_volume?: number;
   platforms: PlatformResult[];
 }
 
@@ -200,6 +201,16 @@ export default function AuditPage() {
                           слабость ответа AI
                         </p>
                       </div>
+                      {gap.estimated_monthly_volume && (
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-cyan-400">
+                            {gap.estimated_monthly_volume.toLocaleString("ru-RU")}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            запросов/мес
+                          </p>
+                        </div>
+                      )}
                       {gap.search_intent && (
                         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                           gap.search_intent === "commercial" ? "bg-green-500/20 text-green-300" :

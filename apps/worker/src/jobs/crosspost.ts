@@ -5,6 +5,7 @@ import { supabase } from "../supabase.js";
 
 const DZEN_TOKEN = process.env.DZEN_API_TOKEN || "";
 const HABR_TOKEN = process.env.HABR_API_TOKEN || "";
+const VCRU_TOKEN = process.env.VCRU_API_TOKEN || "";
 
 interface CrosspostResult {
   platform: string;
@@ -87,6 +88,36 @@ export async function handleCrosspost(payload: Record<string, unknown>): Promise
     results.push({ platform: "habr", status: "prepared" });
   }
 
+  // vc.ru
+  if (VCRU_TOKEN) {
+    try {
+      const res = await fetch("https://api.vc.ru/v2.8/entry/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Device-Token": VCRU_TOKEN,
+        },
+        body: JSON.stringify({
+          title: pkg.title,
+          text: pkg.format_seo_article,
+          subsite_id: 199124, // "Карьера" — можно менять
+          entry: { source_url: pkg.published_url },
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        results.push({ platform: "vcru", status: "posted", url: data.result?.url });
+      } else {
+        results.push({ platform: "vcru", status: "failed", error: `HTTP ${res.status}` });
+      }
+    } catch (err) {
+      results.push({ platform: "vcru", status: "failed", error: err instanceof Error ? err.message : "unknown" });
+    }
+  } else {
+    results.push({ platform: "vcru", status: "prepared" });
+  }
+
   // Яндекс Кью — нет публичного API, подготавливаем пост
   results.push({ platform: "yandex_kyu", status: "prepared" });
 
@@ -115,6 +146,7 @@ async function notifyManualCrosspost(expertId: string, expertName: string, title
   const platformNames: Record<string, string> = {
     dzen: "Яндекс Дзен",
     habr: "Хабр",
+    vcru: "vc.ru",
     yandex_kyu: "Яндекс Кью",
   };
 

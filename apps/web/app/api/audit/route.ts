@@ -414,11 +414,19 @@ export async function POST(request: NextRequest) {
             )
           : 0;
 
+      // Estimated monthly volume based on search intent
+      const estimatedVolume: Record<string, number> = {
+        transactional: 3000,
+        commercial: 5000,
+        informational: 8000,
+      };
+
       return {
         id: `gen-${idx}`,
         question: q.question,
         search_intent: q.search_intent,
         avg_gap_score: avgGapScore,
+        estimated_monthly_volume: estimatedVolume[q.search_intent] ?? 5000,
         platforms: platforms.map((p) => ({
           platform: p.platform,
           ai_response: p.ai_response,

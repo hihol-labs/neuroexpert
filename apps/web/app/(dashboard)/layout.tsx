@@ -9,6 +9,8 @@ const NAV_ITEMS = [
   { href: "/orders", label: "Заказы", icon: "📋" },
   { href: "/content", label: "Контент", icon: "📝" },
   { href: "/leads", label: "Заявки", icon: "📩" },
+  { href: "/team", label: "Команда", icon: "👥" },
+  { href: "/api-keys", label: "API", icon: "🔑" },
   { href: "/profile", label: "Профиль", icon: "👤" },
 ];
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { randomBytes } from "crypto";
 
 function getAdmin() {
   return createSupabaseClient(
@@ -17,18 +18,27 @@ function checkRateLimit(ip: string): boolean {
   const window = 60_000;
   const max = 5;
 
-  const timestamps = rateLimitMap.get(ip)?.filter((t) => now - t < window) ?? [];
+  const timestamps =
+    rateLimitMap.get(ip)?.filter((t) => now - t < window) ?? [];
   if (timestamps.length >= max) return false;
   timestamps.push(now);
   rateLimitMap.set(ip, timestamps);
   return true;
 }
 
+function generateTrackingToken(): string {
+  return randomBytes(16).toString("hex");
+}
+
 export async function POST(request: NextRequest) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
 
   if (!checkRateLimit(ip)) {
-    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+    return NextResponse.json(
+      { error: "Rate limit exceeded" },
+      { status: 429 },
+    );
   }
 
   try {
@@ -38,12 +48,17 @@ export async function POST(request: NextRequest) {
     if (contentType.includes("application/json")) {
       body = await request.json();
     } else {
-      // Form submission
       const formData = await request.formData();
       body = Object.fromEntries(formData) as Record<string, string>;
     }
 
-    const { expert_id, content_id, client_name, client_contact, client_message } = body;
+    const {
+      expert_id,
+      content_id,
+      client_name,
+      client_contact,
+      client_message,
+    } = body;
 
     if (!expert_id || !client_name || !client_contact) {
       return NextResponse.json(
@@ -53,6 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     const admin = getAdmin();
+    const trackingToken = generateTrackingToken();
 
     const { data: lead, error } = await admin
       .from("leads")
@@ -65,13 +81,17 @@ export async function POST(request: NextRequest) {
         source: "page_button",
         referrer: request.headers.get("referer") || null,
         status: "new",
+        tracking_token: trackingToken,
       })
       .select("id")
       .single();
 
     if (error) {
       console.error("[leads] Insert error:", error);
-      return NextResponse.json({ error: "Failed to create lead" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Failed to create lead" },
+        { status: 500 },
+      );
     }
 
     // Telegram notification to expert
@@ -91,16 +111,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // If form submission, redirect back
+    // If form submission, redirect to tracking page
     if (!contentType.includes("application/json")) {
-      const referer = request.headers.get("referer") || "/";
-      return NextResponse.redirect(new URL(referer, request.url));
+      const appUrl =
+        process.env.NEXT_PUBLIC_APP_URL || "https://neuroexpertise.ru";
+      return NextResponse.redirect(
+        new URL(`/track/${trackingToken}`, appUrl),
+      );
     }
 
-    return NextResponse.json({ ok: true, lead_id: lead.id });
+    return NextResponse.json({
+      ok: true,
+      lead_id: lead.id,
+      tracking_token: trackingToken,
+      tracking_url: `/track/${trackingToken}`,
+    });
   } catch (err) {
     console.error("[leads] Error:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 
@@ -135,7 +166,11 @@ async function sendTelegramNotification(
     await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: telegramId, text, reply_markup: keyboard }),
+      body: JSON.stringify({
+        chat_id: telegramId,
+        text,
+        reply_markup: keyboard,
+      }),
     });
   } catch (err) {
     console.error("[leads] Telegram notification failed:", err);

@@ -5,6 +5,7 @@ import { useState } from "react";
 
 const NAV_LINKS = [
   { href: "/for-experts", label: "Зачем эксперту" },
+  { href: "/for-business", label: "Для бизнеса" },
   { href: "/how-it-works", label: "Как это работает" },
   { href: "/pricing", label: "Тарифы" },
   { href: "/audit", label: "Бесплатный аудит" },
@@ -165,6 +166,9 @@ export function MarketingFooter() {
           <div className="flex flex-wrap justify-center gap-6">
             <Link href="/for-experts" className="text-sm text-gray-500 hover:text-gray-300 transition-colors">
               Зачем эксперту
+            </Link>
+            <Link href="/for-business" className="text-sm text-gray-500 hover:text-gray-300 transition-colors">
+              Для бизнеса
             </Link>
             <Link href="/how-it-works" className="text-sm text-gray-500 hover:text-gray-300 transition-colors">
               Как это работает

@@ -2,8 +2,10 @@ import { supabase } from "../supabase.js";
 import {
   getLLM,
   SYSTEM_PROMPT_CONTENT,
+  SYSTEM_PROMPT_MINIMAL,
   buildTelegramPostPrompt,
   buildSeoArticlePrompt,
+  buildMinimalArticlePrompt,
   buildCardsPrompt,
   buildReelsScriptPrompt,
   buildFaqPrompt,
@@ -85,6 +87,7 @@ export async function handleGenerateContent(payload: Record<string, unknown>): P
   const voiceId = payload.voice_recording_id as string ?? payload.voice_id as string;
   const expertId = payload.expert_id as string;
   const orderId = (payload.order_id as string) ?? null;
+  const processingMode = (payload.processing_mode as string) ?? "full"; // "full" | "minimal"
 
   if (!voiceId || !expertId) {
     throw new Error("voice_recording_id and expert_id are required");
@@ -133,16 +136,49 @@ export async function handleGenerateContent(payload: Record<string, unknown>): P
     questionText,
   };
 
-  console.log(`[generate_content] Generating 5 formats for expert ${expertId}`);
+  const isMinimal = processingMode === "minimal";
+  console.log(`[generate_content] Generating ${isMinimal ? "minimal" : "5 formats"} for expert ${expertId}`);
 
-  // Генерация 5 форматов параллельно
-  const [telegramPost, seoArticle, cards, reelsScript, faq] = await Promise.all([
-    callLLM(buildTelegramPostPrompt(params)),
-    callLLM(buildSeoArticlePrompt(params), { maxTokens: 8192 }),
-    callLLMJson<Array<{ title: string; text: string }>>(buildCardsPrompt(params)),
-    callLLM(buildReelsScriptPrompt(params)),
-    callLLMJson<Array<{ question: string; answer: string }>>(buildFaqPrompt(params)),
-  ]);
+  // Генерация контента
+  let telegramPost: string;
+  let seoArticle: string;
+  let cards: Array<{ title: string; text: string }>;
+  let reelsScript: string;
+  let faq: Array<{ question: string; answer: string }>;
+
+  if (isMinimal) {
+    // Режим минимальной обработки: только чистка текста
+    const { primary, fallback } = getLLM();
+    try {
+      seoArticle = await primary.generateText(buildMinimalArticlePrompt(params), {
+        systemPrompt: SYSTEM_PROMPT_MINIMAL,
+        maxTokens: 8192,
+        temperature: 0.3,
+      });
+    } catch {
+      seoArticle = await fallback.generateText(buildMinimalArticlePrompt(params), {
+        systemPrompt: SYSTEM_PROMPT_MINIMAL,
+        maxTokens: 8192,
+        temperature: 0.3,
+      });
+    }
+    // Остальные форматы генерируем стандартно
+    [telegramPost, cards, reelsScript, faq] = await Promise.all([
+      callLLM(buildTelegramPostPrompt(params)),
+      callLLMJson<Array<{ title: string; text: string }>>(buildCardsPrompt(params)),
+      callLLM(buildReelsScriptPrompt(params)),
+      callLLMJson<Array<{ question: string; answer: string }>>(buildFaqPrompt(params)),
+    ]);
+  } else {
+    // Полная обработка: 5 форматов параллельно
+    [telegramPost, seoArticle, cards, reelsScript, faq] = await Promise.all([
+      callLLM(buildTelegramPostPrompt(params)),
+      callLLM(buildSeoArticlePrompt(params), { maxTokens: 8192 }),
+      callLLMJson<Array<{ title: string; text: string }>>(buildCardsPrompt(params)),
+      callLLM(buildReelsScriptPrompt(params)),
+      callLLMJson<Array<{ question: string; answer: string }>>(buildFaqPrompt(params)),
+    ]);
+  }
 
   // Извлекаем мета из SEO-статьи
   const meta = extractMeta(seoArticle);

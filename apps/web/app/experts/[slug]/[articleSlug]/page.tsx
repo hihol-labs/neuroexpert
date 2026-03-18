@@ -329,7 +329,14 @@ export default async function ArticlePage({ params }: Props) {
         {/* CTA: Записаться */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white mb-8" id="booking">
           <h2 className="text-xl font-bold mb-2">Записаться к эксперту</h2>
-          <p className="text-blue-100 text-sm mb-4">Оставьте заявку — {expert.full_name} свяжется с вами</p>
+          <p className="text-blue-100 text-sm mb-4">
+            Оставьте заявку — {expert.full_name} свяжется с вами
+            {expert.consultation_price && (
+              <span className="ml-2 font-medium text-white">
+                от {expert.consultation_price.toLocaleString("ru-RU")} ₽
+              </span>
+            )}
+          </p>
           <form action="/api/leads" method="POST" className="space-y-3">
             <input type="hidden" name="expert_id" value={expert.id} />
             <input type="hidden" name="content_id" value={article.id} />

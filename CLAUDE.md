@@ -55,6 +55,7 @@ packages/
 | 12  | Scanner + финализация         | ✅     |
 | 13  | Production deploy             | ✅     |
 | 14  | Маркетинговый лендинг         | ✅     |
+| 15  | Marketplace + B2B + Knowledge API | ✅     |
 
 ## Что работает
 
@@ -80,6 +81,19 @@ packages/
 
 - Шаг 14 (Лендинг): Новый маркетинговый сайт — marketing layout (`apps/web/app/(marketing)/layout.tsx`) с навигацией (`components/marketing/nav.tsx`), нейросетевой анимацией фона (`components/marketing/neural-bg.tsx`). Переделана главная страница (hero, USP, шаги, ниши, CTA). Новые страницы: /for-experts (для экспертов), /how-it-works (как это работает). Обновлены /pricing, /audit, /scan. Тёмная тема: login page с neural background, audit page glassmorphism redesign, навигация со scroll-aware фоном и улучшенным мобильным меню. Лого-концепты (3 варианта SVG/PNG). Задеплоено на production.
 
+- Шаг 15 (Marketplace + B2B + Knowledge API):
+  - **Marketplace**: продвинутые фильтры каталога (поиск по имени/квалификации, сортировка по 5 параметрам, фильтры по опыту/Trust Score), отзывы и рейтинги (таблица reviews + триггер пересчёта avg_rating + API + форма), верификация экспертов (badge ✓ на аватаре/профиле), сравнение экспертов (/compare side-by-side таблица + чекбоксы + CompareBar), трекинг заявок (/track/[token] с timeline статусов), booking/запись к эксперту (таблица bookings + expert_schedule + API слотов + BookingForm), smart matching (/find-expert + /api/match с формулой ранжирования), премиум-плейсмент (платные тарифы +5..25 баллов), рекомендуемые эксперты (is_featured + секция на каталоге), оплата консультации клиентом (/api/pay-consultation через ЮKassa с автокомиссией по тарифу).
+  - **B2B**: лендинг /for-business (тёмная тема, 6 преимуществ, 10 отраслей, тарифы Business/Enterprise, форма заявки → Telegram), API /api/b2b-leads, B2B-дашборд /team (управление командой экспертов, invite/remove по email, сводные метрики), AI Visibility Scanner с режимом сравнения (вы vs конкурент по 3 платформам).
+  - **Knowledge API**: публичные JSON-эндпоинты /api/v1/experts и /api/v1/articles (фильтры, пагинация), управление API-ключами /api-keys (генерация ne_..., SHA-256, rate limit per key, макс. 5), OpenAPI 3.0 документация /api/v1/docs, аутентификация Bearer/query.
+  - **AI probing**: расширен до 4 платформ (ChatGPT, YandexGPT, GigaChat, Perplexity), 4-й маркер has_specific_numbers (8 regex-паттернов), функция queryPerplexity (прямой вызов Perplexity API).
+  - **Кросспост**: добавлен vc.ru (api.vc.ru/v2.8).
+  - **Аналитика**: Яндекс.Метрика (tag.js + webvisor + trackHash) через NEXT_PUBLIC_YANDEX_METRIKA_ID.
+  - **Контент**: режим минимальной обработки (SYSTEM_PROMPT_MINIMAL + buildMinimalArticlePrompt — только чистка паразитов, 90% авторский текст).
+  - **Воронка**: аудит показывает estimated_monthly_volume, регистрация показывает «0₽ + 15% комиссия», карточки заказов показывают ответ AI + 4 маркера + кнопка «Я отвечу лучше».
+  - **Реферальная механика**: middleware сохраняет ?ref= в cookie (30 дней), register читает cookie, auth trigger (миграция 011) привязывает referrer_id.
+  - **Миграции**: 010 (reviews + tracking_token + is_featured), 011 (auth trigger referral), 012 (teams + bookings + expert_schedule + api_keys), 013 (has_specific_numbers). Все применены на production.
+  - Задеплоено на production. pnpm build OK.
+
 ## Остаётся сделать (post-deploy)
 
 - [ ] Добавить DNS-запись `supabase.neuroexpertise.ru → 155.212.185.216` (пока API работает через path `/supabase/`)
@@ -92,6 +106,28 @@ packages/
 - [ ] Подключить SerpAPI + XMLRiver (для сбора спроса)
 - [ ] Подключить GSC / Яндекс.Вебмастер / Bing (для индексации)
 - [ ] Пересгенерировать Database типы после миграции 009 (scan_results)
+- [ ] Подключить Perplexity API — для probing и трекинга цитирований в Perplexity
+  - `PERPLEXITY_API_KEY=pplx-...` (получить: perplexity.ai/settings/api)
+- [ ] Подключить GigaChat API — для probing и трекинга цитирований в GigaChat
+  - `GIGACHAT_CLIENT_ID=...`
+  - `GIGACHAT_CLIENT_SECRET=...`
+  - (получить: developers.sber.ru/portal/products/gigachat)
+- [ ] Подключить YandexGPT API — для probing и трекинга цитирований в YandexGPT
+  - `YANDEX_API_KEY=...`
+  - `YANDEX_FOLDER_ID=...`
+  - (получить: console.yandex.cloud, работает без прокси)
+- [ ] Подключить Яндекс.Метрику — аналитика с webvisor, трекинг AI-трафика (utm_source=fact)
+  - `NEXT_PUBLIC_YANDEX_METRIKA_ID=12345678`
+  - (получить: metrika.yandex.ru)
+- [ ] Подключить vc.ru API — кросспост статей
+  - `VCRU_API_TOKEN=...`
+- [ ] Подключить Дзен API — кросспост статей
+  - `DZEN_API_TOKEN=...`
+- [ ] Подключить Хабр API — кросспост статей
+  - `HABR_API_TOKEN=...`
+- [ ] Подключить PageSpeed API — мониторинг Core Web Vitals
+  - `PAGESPEED_API_KEY=...`
+  - (получить: console.cloud.google.com → PageSpeed Insights API)
 
 ## Тарифная модель
 
