@@ -246,7 +246,7 @@ export default async function OrdersPage({
 
                 {/* Actions */}
                 <div className="px-6 py-3 flex items-center justify-between">
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-gray-500">
                     {o.created_at
                       ? new Date(o.created_at as string).toLocaleDateString(
                           "ru-RU",

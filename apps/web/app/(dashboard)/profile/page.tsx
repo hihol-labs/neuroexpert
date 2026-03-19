@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
+import { useToast } from "@/components/ui/toast";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,7 +14,7 @@ const supabase = createClient(
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
+  const { toast } = useToast();
   const [knowsInput, setKnowsInput] = useState("");
 
   // Form fields
@@ -55,7 +56,6 @@ export default function ProfilePage() {
   const save = async () => {
     if (!profile) return;
     setSaving(true);
-    setMessage("");
 
     const { error } = await supabase
       .from("profiles")
@@ -76,7 +76,7 @@ export default function ProfilePage() {
       .eq("id", profile.id as string);
 
     setSaving(false);
-    setMessage(error ? `Ошибка: ${error.message}` : "Сохранено!");
+    toast(error ? `Ошибка: ${error.message}` : "Профиль сохранён", error ? "error" : "success");
   };
 
   const addKnows = () => {
@@ -98,7 +98,6 @@ export default function ProfilePage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Профиль</h1>
         <div className="flex items-center gap-3">
-          {message && <span className="text-sm text-green-600">{message}</span>}
           <Button onClick={save} disabled={saving}>{saving ? "..." : "Сохранить"}</Button>
         </div>
       </div>

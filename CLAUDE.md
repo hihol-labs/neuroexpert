@@ -108,6 +108,39 @@ packages/
   - **Аналитика**: Plausible (layout.tsx), топ-5 страниц в дашборде.
   - Задеплоено на production. pnpm build OK.
 
+## UX/UI Аудит (2026-03-19)
+
+### P0 — Критические
+
+- [x] **Toast-уведомления** — `components/ui/toast.tsx` (ToastProvider + useToast), auto-dismiss 4 сек, 3 типа (success/error/info). Подключен через `components/providers.tsx` → root layout. Заменены inline-сообщения в: profile, content/[id], team, api-keys.
+- [x] **Skeleton-загрузчики** — `components/ui/skeleton.tsx` (Skeleton, SkeletonCard, SkeletonRow, SkeletonTable, SkeletonChart). Обновлены все 7 loading.tsx в дашборде: dashboard, orders, content, leads, analytics, billing, profile.
+
+### P1 — Серьёзные
+
+- [x] **Confirm-диалоги** — `components/ui/confirm-dialog.tsx` (ConfirmProvider + useConfirm), стилизованное модальное окно с danger/primary вариантами. Заменён нативный confirm() в: content/[id] (delete), api-keys (delete), team (remove).
+- [x] **Emoji → Lucide иконки** — установлен `lucide-react`, sidebar дашборда использует Lucide иконки (LayoutDashboard, ClipboardList, FileText, Inbox, Users, Key, UserCircle). Добавлены aria-label и aria-expanded на hamburger.
+- [x] **Унификация Login/Register** — register переведён на тёмную тему с NeuralBackground + glassmorphism + cyan/blue градиенты. Единый стиль с login.
+- [x] **Onboarding чеклист** — блок «Начните работу» на /dashboard с 4 шагами (регистрация, профиль, запись, публикация). Скрывается когда все шаги выполнены. Lucide иконки CheckCircle2/Circle.
+
+### P2 — Средние
+
+- [x] **Дизайн-токены в Tailwind** — расширен `tailwind.config.ts`: `colors.brand` (DEFAULT/light/dark/cyan/purple/bg), `borderRadius.card/button`, `spacing.section`.
+- [x] **Breadcrumbs в дашборде** — `components/ui/breadcrumbs.tsx` с Lucide ChevronRight. Добавлены в content/[id] и content/new.
+- [x] **Inline-валидация форм** — Input/Textarea компоненты расширены: prop `error` для inline-ошибок (красная рамка + текст под полем), `aria-invalid`, `aria-describedby` для accessibility.
+- [x] **Мобильные таблицы** — `components/ui/scroll-table.tsx` (ScrollTable) с fade-gradient справа при горизонтальном скролле + ResizeObserver. Компонент готов к применению в таблицах.
+- [x] **Accessibility (ARIA + контраст)** — sidebar: `role="navigation"`, `aria-label`, `aria-current="page"` на активном пункте, `aria-expanded` на бургере. Контраст: text-gray-400 → text-gray-500 в дашборде (orders, api-keys, content/new, dashboard). Input: aria-invalid + aria-describedby.
+- [x] **Пагинация** — `components/ui/pagination.tsx` (Pagination) с номерами страниц, стрелками, ellipsis, aria-current, aria-label. Компонент готов к применению на страницах каталогов.
+
+### P3 — Улучшения
+
+- [ ] **Прогресс-бар аудита** — при загрузке (15-30 сек) показывать пошаговый прогресс вместо одного спиннера
+- [x] **Кнопка «Наверх»** — `components/ui/scroll-to-top.tsx` (ScrollToTop) с Lucide ArrowUp, появляется при scrollY > 500px. Подключён глобально через Providers.
+- [ ] **Анимация аккордеонов** — раскрытие/свёртывание мгновенное, добавить CSS transition max-height
+- [ ] **Dark mode дашборда** — CSS-переменные + toggle в sidebar + prefers-color-scheme
+- [ ] **Keyboard shortcuts** — G+D (dashboard), G+O (orders), N (новая запись), Cmd+K (command palette)
+- [ ] **Оптимистичные обновления** — accept/skip заказов обновлять UI сразу, откатывать при ошибке
+- [ ] **Empty states с иллюстрациями** — заменить текстовые «Заказов пока нет» на иллюстрации + CTA
+
 ## Остаётся сделать (post-deploy)
 
 - [ ] Добавить DNS-запись `supabase.neuroexpertise.ru → 155.212.185.216` (пока API работает через path `/supabase/`)
@@ -154,27 +187,39 @@ packages/
 - [ ] Подключить ЮKassa маркетплейс — split-payment для консультаций
   - `YUKASSA_MARKETPLACE=true`
   - Экспертам: `yukassa_account_id` в профиле
+- [ ] Лимит ниш по тарифу (maxNiches) — привязать количество доступных ниш к тарифу эксперта
+  - Free=1, Starter=2, Pro=3, Expert=5, Business=10
+  - Добавить `maxNiches` в `TIER_CONFIG` (`apps/web/lib/subscription.ts`)
+  - Добавить `maxNiches` в `SUBSCRIPTION_TIERS` (`packages/shared/src/constants.ts`)
+  - Обновить проверку в Telegram-боте (`apps/bot/src/handlers/callback.ts` — заменить `MAX_NICHES = 3` на лимит из тарифа)
+  - Добавить выбор/управление нишами в веб-дашборд (`/profile` или отдельная страница `/niches`)
+  - Обновить Web-регистрацию (`register/page.tsx`) — оставить 1 нишу (Free), показать апгрейд
+  - Обновить страницу тарифов `/pricing` — добавить строку «Ниш» в таблицу сравнения
+  - Обновить лендинг `/for-experts` — упомянуть лимит ниш как фичу апгрейда
+  - Обновить OpenAPI docs (`/api/v1/docs`) — если ниши влияют на API
 
 ## Тарифная модель
 
-Темы показываются **без ограничений** на всех тарифах (FOMO-механика). Лимит — на контент-пакеты.
+Темы показываются **без ограничений** на всех тарифах (FOMO-механика). Лимит — на контент-пакеты и ниши.
 
-| | Free | Starter | Pro | Expert |
-|---|---|---|---|---|
-| Цена | 0₽ | 1 490₽/мес | 2 990₽/мес | 4 990₽/мес |
-| Комиссия | 15% | 7% | 3% | 0% |
-| Подобранных тем | безлимит | безлимит | безлимит | безлимит |
-| Контент-пакетов/мес | 3 | безлимит | безлимит | безлимит |
-| Форматы | 2 (пост + статья) | все 5 | все 5 | все 5 |
-| Экспорт TG-поста | да | да | да | да |
-| Экспорт всех форматов | нет | да | да | да |
-| Кросспост | нет | нет | да | да |
-| Аналитика AI | нет | нет | нет | да |
+| | Free | Starter | Pro | Expert | Business |
+|---|---|---|---|---|---|
+| Цена | 0₽ | 1 490₽/мес | 2 990₽/мес | 4 990₽/мес | 24 990₽/мес |
+| Комиссия | 15% | 7% | 3% | 0% | 0% |
+| Ниш (maxNiches) | 1 | 2 | 3 | 5 | 10 |
+| Подобранных тем | безлимит | безлимит | безлимит | безлимит | безлимит |
+| Контент-пакетов/мес | 3 | безлимит | безлимит | безлимит | безлимит |
+| Форматы | 2 (пост + статья) | все 5 | все 5 | все 5 | все 5 |
+| Экспорт TG-поста | да | да | да | да | да |
+| Экспорт всех форматов | нет | да | да | да | да |
+| Кросспост | нет | нет | да | да | да |
+| Аналитика AI | нет | нет | нет | да | да |
 
 Ключевые файлы:
-- `apps/web/lib/subscription.ts` — TIER_CONFIG (лимиты, форматы, экспорт)
+- `apps/web/lib/subscription.ts` — TIER_CONFIG (лимиты, форматы, экспорт, maxNiches)
 - `packages/shared/src/constants.ts` — SUBSCRIPTION_TIERS (дублирует для worker)
 - `apps/worker/src/jobs/generate-orders.ts` — показ тем без лимита
+- `apps/bot/src/handlers/callback.ts` — MAX_NICHES (проверка лимита ниш в Telegram)
 - `apps/web/app/(marketing)/pricing/page.tsx` — страница тарифов
 
 ## Мониторинг AIO (еженедельно после публикации)

@@ -1,7 +1,24 @@
+import { SkeletonCard, SkeletonChart, SkeletonTable } from "@/components/ui/skeleton";
+
 export default function AnalyticsLoading() {
   return (
-    <div className="flex items-center justify-center py-20">
-      <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
+    <div>
+      <div className="h-8 w-32 animate-pulse bg-gray-200 rounded-lg mb-6" />
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <SkeletonCard />
+        <SkeletonCard />
+        <SkeletonCard />
+        <SkeletonCard />
+      </div>
+
+      <div className="mb-8">
+        <SkeletonChart />
+      </div>
+
+      <div className="mb-8">
+        <SkeletonTable rows={5} />
+      </div>
     </div>
   );
 }

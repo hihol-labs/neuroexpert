@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/input";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/toast";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,7 +29,8 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
   const [pkg, setPkg] = useState<Record<string, unknown> | null>(null);
   const [tab, setTab] = useState<TabKey>("seo");
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
+  const { toast } = useToast();
+  const { confirm } = useConfirm();
 
   // Editable fields
   const [telegramPost, setTelegramPost] = useState("");
@@ -61,7 +65,6 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
 
   const save = async () => {
     setSaving(true);
-    setMessage("");
     let cards, faq;
     try { cards = JSON.parse(cardsJson); } catch { cards = pkg.format_cards; }
     try { faq = JSON.parse(faqJson); } catch { faq = pkg.format_faq; }
@@ -81,7 +84,7 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
       .eq("id", params.id);
 
     setSaving(false);
-    setMessage(error ? "Ошибка сохранения" : "Сохранено!");
+    toast(error ? "Ошибка сохранения" : "Контент сохранён", error ? "error" : "success");
   };
 
   const publish = async () => {
@@ -92,27 +95,37 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
     });
     const data = await res.json();
     if (data.ok) {
-      setMessage("Опубликовано!");
+      toast("Контент опубликован!", "success");
       setPkg({ ...pkg, status: "published", published_url: data.url });
     } else {
-      setMessage(data.error || "Ошибка публикации");
+      toast(data.error || "Ошибка публикации", "error");
     }
   };
 
   const del = async () => {
-    if (!confirm("Удалить контент-пакет?")) return;
+    const ok = await confirm({
+      title: "Удалить контент-пакет?",
+      message: "Это действие нельзя отменить. Все данные пакета будут удалены.",
+      confirmText: "Удалить",
+      variant: "danger",
+    });
+    if (!ok) return;
     await supabase.from("content_packages").delete().eq("id", params.id);
+    toast("Контент-пакет удалён", "success");
     window.location.href = "/content";
   };
 
   return (
     <div>
+      <Breadcrumbs items={[
+        { label: "Контент", href: "/content" },
+        { label: (pkg.title as string) || "Без заголовка" },
+      ]} />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 truncate">{(pkg.title as string) || "Без заголовка"}</h1>
           <div className="flex items-center gap-2 mt-1">
             <Badge status={pkg.status as string} />
-            {message && <span className="text-sm text-green-600">{message}</span>}
           </div>
         </div>
         <div className="flex gap-2">

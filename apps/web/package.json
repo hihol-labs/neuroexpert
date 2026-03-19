@@ -14,6 +14,7 @@
     "bot": "workspace:*",
     "grammy": "^1.35.0",
     "https-proxy-agent": "^8.0.0",
+    "lucide-react": "^0.577.0",
     "next": "^14.2.21",
     "openai": "^6.27.0",
     "react": "^18.3.1",

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useToast } from "@/components/ui/toast";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface ApiKeyInfo {
   id: string;
@@ -18,6 +20,8 @@ export default function ApiKeysPage() {
   const [newKeyName, setNewKeyName] = useState("");
   const [creating, setCreating] = useState(false);
   const [newKeyValue, setNewKeyValue] = useState<string | null>(null);
+  const { toast } = useToast();
+  const { confirm } = useConfirm();
 
   const loadKeys = async () => {
     try {
@@ -69,12 +73,19 @@ export default function ApiKeysPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Удалить API-ключ? Это действие необратимо.")) return;
+    const ok = await confirm({
+      title: "Удалить API-ключ?",
+      message: "Это действие необратимо. Все запросы с этим ключом перестанут работать.",
+      confirmText: "Удалить",
+      variant: "danger",
+    });
+    if (!ok) return;
     await fetch("/api/api-keys", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
+    toast("API-ключ удалён", "success");
     loadKeys();
   };
 
@@ -113,7 +124,7 @@ export default function ApiKeysPage() {
             <button
               onClick={() => {
                 navigator.clipboard.writeText(newKeyValue);
-                alert("Скопировано!");
+                toast("Ключ скопирован в буфер обмена", "success");
               }}
               className="px-3 py-2 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700"
             >
@@ -193,7 +204,7 @@ export default function ApiKeysPage() {
                   <td className="text-center px-4 py-4 text-sm text-gray-600">
                     {k.rate_limit_per_hour}
                   </td>
-                  <td className="text-center px-4 py-4 text-xs text-gray-400">
+                  <td className="text-center px-4 py-4 text-xs text-gray-500">
                     {k.last_used_at
                       ? new Date(k.last_used_at).toLocaleString("ru-RU")
                       : "Никогда"}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 
 type RecordingState = "idle" | "recording" | "uploading" | "analyzing" | "followup" | "done" | "error";
 
@@ -133,6 +134,12 @@ export default function ContentNewPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
+        <div className="text-left mb-4">
+          <Breadcrumbs items={[
+            { label: "Контент", href: "/content" },
+            { label: "Новая запись" },
+          ]} />
+        </div>
         <h1 className="text-2xl font-bold mb-2">Запись ответа</h1>
         <p className="text-gray-500 mb-8">
           Запишите голосовой ответ (3-10 минут). Мы создадим 5 форматов
@@ -179,7 +186,7 @@ export default function ContentNewPage() {
               <span className="text-white text-2xl">🤖</span>
             </div>
             <p className="text-gray-600 font-medium">AI-ассистент анализирует ответ...</p>
-            <p className="text-gray-400 text-sm mt-1">Проверяем полноту и глубину</p>
+            <p className="text-gray-500 text-sm mt-1">Проверяем полноту и глубину</p>
           </div>
         )}
 
@@ -233,7 +240,7 @@ export default function ContentNewPage() {
               <span className="text-white text-3xl">✓</span>
             </div>
             <p className="text-green-700 font-medium mb-4">{result}</p>
-            <p className="text-gray-400 text-sm mb-4">
+            <p className="text-gray-500 text-sm mb-4">
               AI создаёт 5 форматов контента. Это займёт несколько минут.
             </p>
             <button

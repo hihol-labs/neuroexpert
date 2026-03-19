@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useToast } from "@/components/ui/toast";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface TeamMember {
   id: string;
@@ -36,7 +38,8 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
-  const [message, setMessage] = useState("");
+  const { toast } = useToast();
+  const { confirm } = useConfirm();
 
   useEffect(() => {
     fetch("/api/team")
@@ -50,7 +53,6 @@ export default function TeamPage() {
     e.preventDefault();
     if (!inviteEmail.trim()) return;
     setInviting(true);
-    setMessage("");
 
     try {
       const res = await fetch("/api/team/invite", {
@@ -60,21 +62,27 @@ export default function TeamPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setMessage("Эксперт добавлен в команду!");
+      toast("Эксперт добавлен в команду!", "success");
       setInviteEmail("");
       // Refresh
       const refreshRes = await fetch("/api/team");
       const refreshData = await refreshRes.json();
       setTeam(refreshData.team ?? null);
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Ошибка");
+      toast(err instanceof Error ? err.message : "Ошибка", "error");
     } finally {
       setInviting(false);
     }
   };
 
   const handleRemove = async (memberId: string) => {
-    if (!confirm("Удалить эксперта из команды?")) return;
+    const ok = await confirm({
+      title: "Удалить эксперта из команды?",
+      message: "Эксперт потеряет доступ к командным функциям.",
+      confirmText: "Удалить",
+      variant: "danger",
+    });
+    if (!ok) return;
 
     try {
       const res = await fetch("/api/team/remove", {
@@ -86,12 +94,12 @@ export default function TeamPage() {
         const data = await res.json();
         throw new Error(data.error);
       }
-      // Refresh
+      toast("Эксперт удалён из команды", "success");
       const refreshRes = await fetch("/api/team");
       const refreshData = await refreshRes.json();
       setTeam(refreshData.team ?? null);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Ошибка");
+      toast(err instanceof Error ? err.message : "Ошибка", "error");
     }
   };
 
@@ -160,13 +168,6 @@ export default function TeamPage() {
               {inviting ? "..." : "Добавить"}
             </button>
           </form>
-          {message && (
-            <p
-              className={`mt-2 text-sm ${message.includes("Ошибка") || message.includes("не найден") ? "text-red-600" : "text-green-600"}`}
-            >
-              {message}
-            </p>
-          )}
         </div>
       )}
 

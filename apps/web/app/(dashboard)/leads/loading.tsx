@@ -1,7 +1,17 @@
+import { Skeleton, SkeletonTable } from "@/components/ui/skeleton";
+
 export default function LeadsLoading() {
   return (
-    <div className="flex items-center justify-center py-20">
-      <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
+    <div>
+      <div className="h-8 w-28 animate-pulse bg-gray-200 rounded-lg mb-6" />
+
+      <div className="flex flex-wrap gap-2 mb-6">
+        {[...Array(5)].map((_, i) => (
+          <Skeleton key={i} className="h-8 w-20 rounded-full" />
+        ))}
+      </div>
+
+      <SkeletonTable rows={5} />
     </div>
   );
 }

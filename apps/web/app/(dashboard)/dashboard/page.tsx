@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { Card, CardTitle, CardValue } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { CheckCircle2, Circle } from "lucide-react";
 
 function getSupabase() {
   return createSupabaseClient(
@@ -14,21 +15,28 @@ function getSupabase() {
 async function getDashboardData(userId: string) {
   const supabase = getSupabase();
 
-  const [pubResult, leadsResult, profileResult, ordersResult, recentLeadsResult] = await Promise.all([
+  const [pubResult, leadsResult, profileResult, ordersResult, recentLeadsResult, contentCountResult] = await Promise.all([
     supabase.from("content_packages").select("id", { count: "exact", head: true }).eq("expert_id", userId).eq("status", "published"),
     supabase.from("leads").select("id", { count: "exact", head: true }).eq("expert_id", userId),
-    supabase.from("profiles").select("trust_score, subscription_tier").eq("id", userId).single(),
+    supabase.from("profiles").select("trust_score, subscription_tier, full_name, bio, qualification").eq("id", userId).single(),
     supabase.from("orders").select("id, status, week_number, questions(question_text)").eq("expert_id", userId).in("status", ["pending", "accepted"]).order("created_at", { ascending: false }).limit(5),
     supabase.from("leads").select("id, client_name, client_contact, client_message, status, created_at").eq("expert_id", userId).order("created_at", { ascending: false }).limit(5),
+    supabase.from("content_packages").select("id", { count: "exact", head: true }).eq("expert_id", userId),
   ]);
+
+  const profile = profileResult.data;
+  const hasProfile = !!(profile?.full_name && profile?.bio && profile?.qualification);
+  const totalContent = contentCountResult.count ?? 0;
 
   return {
     publishedCount: pubResult.count ?? 0,
     leadsCount: leadsResult.count ?? 0,
-    trustScore: profileResult.data?.trust_score ?? 0,
-    tier: profileResult.data?.subscription_tier ?? "free",
+    trustScore: profile?.trust_score ?? 0,
+    tier: profile?.subscription_tier ?? "free",
     recentOrders: ordersResult.data ?? [],
     recentLeads: recentLeadsResult.data ?? [],
+    hasProfile,
+    totalContent,
   };
 }
 
@@ -48,6 +56,34 @@ export default async function DashboardPage() {
           Записать ответ
         </Link>
       </div>
+
+      {/* Onboarding checklist — hide when all steps done */}
+      {(!data.hasProfile || data.totalContent === 0 || data.publishedCount === 0) && (
+        <div className="bg-white rounded-xl border border-blue-200 p-6 mb-8">
+          <h2 className="font-semibold text-gray-900 mb-3">Начните работу</h2>
+          <div className="space-y-2">
+            {[
+              { done: true, label: "Зарегистрироваться", href: "" },
+              { done: data.hasProfile, label: "Заполнить профиль", href: "/profile" },
+              { done: data.totalContent > 0, label: "Записать первый ответ", href: "/content/new" },
+              { done: data.publishedCount > 0, label: "Опубликовать контент", href: "/content" },
+            ].map((step) => (
+              <div key={step.label} className="flex items-center gap-3">
+                {step.done ? (
+                  <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                ) : (
+                  <Circle className="w-5 h-5 text-gray-300 flex-shrink-0" />
+                )}
+                {step.done || !step.href ? (
+                  <span className={`text-sm ${step.done ? "text-gray-500 line-through" : "text-gray-900"}`}>{step.label}</span>
+                ) : (
+                  <Link href={step.href} className="text-sm text-blue-600 hover:underline">{step.label}</Link>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

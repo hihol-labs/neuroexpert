@@ -1,7 +1,17 @@
+import { SkeletonCard, SkeletonTable } from "@/components/ui/skeleton";
+
 export default function BillingLoading() {
   return (
-    <div className="flex items-center justify-center py-20">
-      <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
+    <div>
+      <div className="h-8 w-28 animate-pulse bg-gray-200 rounded-lg mb-6" />
+
+      <div className="grid sm:grid-cols-2 gap-4 mb-8">
+        <SkeletonCard />
+        <SkeletonCard />
+      </div>
+
+      <div className="h-6 w-40 animate-pulse bg-gray-200 rounded-lg mb-4" />
+      <SkeletonTable rows={3} />
     </div>
   );
 }
