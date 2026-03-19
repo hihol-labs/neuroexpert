@@ -1,9 +1,18 @@
 import type { Bot } from "grammy";
 import { supabase } from "../supabase";
 import { nicheKeyboard, otherNichesKeyboard } from "../keyboards";
-import { NICHES } from "shared";
+import { NICHES, SUBSCRIPTION_TIERS } from "shared";
 
-const MAX_NICHES = 3;
+/** Получает лимит ниш по тарифу эксперта */
+async function getMaxNiches(profileId: string): Promise<number> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("subscription_tier")
+    .eq("id", profileId)
+    .single();
+  const tier = data?.subscription_tier ?? "free";
+  return SUBSCRIPTION_TIERS[tier]?.maxNiches ?? 1;
+}
 
 /** Получает выбранные ниши эксперта */
 async function getSelectedNiches(profileId: string): Promise<string[]> {
@@ -43,6 +52,7 @@ export function registerCallbackHandler(bot: Bot): void {
     }
 
     const selectedIds = await getSelectedNiches(profileId);
+    const maxNiches = await getMaxNiches(profileId);
     const isSelected = selectedIds.includes(nicheId);
 
     if (isSelected) {
@@ -55,8 +65,9 @@ export function registerCallbackHandler(bot: Bot): void {
       selectedIds.splice(selectedIds.indexOf(nicheId), 1);
       await ctx.answerCallbackQuery({ text: `Убрана: ${niche.name}` });
     } else {
-      if (selectedIds.length >= MAX_NICHES) {
-        await ctx.answerCallbackQuery({ text: `Максимум ${MAX_NICHES} ниши`, show_alert: true });
+      if (selectedIds.length >= maxNiches) {
+        const tierHint = maxNiches < 10 ? " Перейдите на следующий тариф для увеличения лимита." : "";
+        await ctx.answerCallbackQuery({ text: `Максимум ${maxNiches} ${maxNiches === 1 ? "ниша" : maxNiches < 5 ? "ниши" : "ниш"} на вашем тарифе.${tierHint}`, show_alert: true });
         return;
       }
       // Добавляем нишу
@@ -79,8 +90,8 @@ export function registerCallbackHandler(bot: Bot): void {
       .map((n) => `${n!.icon} ${n!.name}`);
 
     const text = selectedNames.length > 0
-      ? `Выберите ниши (до ${MAX_NICHES}):\n\nВыбрано: ${selectedNames.join(", ")}`
-      : `Выберите ниши (до ${MAX_NICHES}):`;
+      ? `Выберите ниши (до ${maxNiches}):\n\nВыбрано: ${selectedNames.join(", ")}`
+      : `Выберите ниши (до ${maxNiches}):`;
 
     await ctx.editMessageText(text, { reply_markup: keyboard });
   });
@@ -94,6 +105,7 @@ export function registerCallbackHandler(bot: Bot): void {
     }
 
     const selectedIds = await getSelectedNiches(profileId);
+    const maxNiches = await getMaxNiches(profileId);
     await ctx.answerCallbackQuery();
 
     const selectedNames = selectedIds
@@ -102,16 +114,18 @@ export function registerCallbackHandler(bot: Bot): void {
       .map((n) => `${n!.icon} ${n!.name}`);
 
     const text = selectedNames.length > 0
-      ? `Выберите ниши (до ${MAX_NICHES}):\n\nВыбрано: ${selectedNames.join(", ")}`
-      : `Выберите ниши (до ${MAX_NICHES}):`;
+      ? `Выберите ниши (до ${maxNiches}):\n\nВыбрано: ${selectedNames.join(", ")}`
+      : `Выберите ниши (до ${maxNiches}):`;
 
     await ctx.editMessageText(text, { reply_markup: nicheKeyboard(selectedIds) });
   });
 
   // Лимит достигнут — нажатие на неактивную кнопку
   bot.callbackQuery("niche_limit", async (ctx) => {
+    const profileId = await getProfileId(ctx.from.id);
+    const maxNiches = profileId ? await getMaxNiches(profileId) : 1;
     await ctx.answerCallbackQuery({
-      text: `Максимум ${MAX_NICHES} ниши. Снимите одну, чтобы выбрать другую.`,
+      text: `Максимум ${maxNiches} ${maxNiches === 1 ? "ниша" : maxNiches < 5 ? "ниши" : "ниш"} на вашем тарифе. Снимите одну, чтобы выбрать другую.`,
       show_alert: true,
     });
   });
@@ -125,6 +139,7 @@ export function registerCallbackHandler(bot: Bot): void {
     }
 
     const selectedIds = await getSelectedNiches(profileId);
+    const maxNiches = await getMaxNiches(profileId);
     await ctx.answerCallbackQuery();
 
     const selectedNames = selectedIds
@@ -133,8 +148,8 @@ export function registerCallbackHandler(bot: Bot): void {
       .map((n) => `${n!.icon} ${n!.name}`);
 
     const text = selectedNames.length > 0
-      ? `Выберите ниши (до ${MAX_NICHES}):\n\nВыбрано: ${selectedNames.join(", ")}`
-      : `Выберите ниши (до ${MAX_NICHES}):`;
+      ? `Выберите ниши (до ${maxNiches}):\n\nВыбрано: ${selectedNames.join(", ")}`
+      : `Выберите ниши (до ${maxNiches}):`;
 
     await ctx.editMessageText(text, { reply_markup: otherNichesKeyboard(selectedIds) });
   });
@@ -148,6 +163,7 @@ export function registerCallbackHandler(bot: Bot): void {
     }
 
     const selectedIds = await getSelectedNiches(profileId);
+    const maxNiches = await getMaxNiches(profileId);
     await ctx.answerCallbackQuery();
 
     const selectedNames = selectedIds
@@ -156,8 +172,8 @@ export function registerCallbackHandler(bot: Bot): void {
       .map((n) => `${n!.icon} ${n!.name}`);
 
     const text = selectedNames.length > 0
-      ? `Выберите ниши (до ${MAX_NICHES}):\n\nВыбрано: ${selectedNames.join(", ")}`
-      : `Выберите ниши (до ${MAX_NICHES}):`;
+      ? `Выберите ниши (до ${maxNiches}):\n\nВыбрано: ${selectedNames.join(", ")}`
+      : `Выберите ниши (до ${maxNiches}):`;
 
     await ctx.editMessageText(text, { reply_markup: nicheKeyboard(selectedIds) });
   });

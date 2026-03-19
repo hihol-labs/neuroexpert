@@ -87,7 +87,7 @@ function RegisterForm() {
         </p>
         <div className="mt-3 flex flex-wrap justify-center gap-3 text-xs">
           <span className="bg-green-500/20 text-green-300 px-2 py-1 rounded-full">0₽ / мес</span>
-          <span className="bg-cyan-500/20 text-cyan-300 px-2 py-1 rounded-full">3 темы / неделя</span>
+          <span className="bg-cyan-500/20 text-cyan-300 px-2 py-1 rounded-full">1 ниша</span>
           <span className="bg-purple-500/20 text-purple-300 px-2 py-1 rounded-full">15% комиссия с клиентов</span>
         </div>
       </div>

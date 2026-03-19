@@ -187,16 +187,24 @@ packages/
 - [ ] Подключить ЮKassa маркетплейс — split-payment для консультаций
   - `YUKASSA_MARKETPLACE=true`
   - Экспертам: `yukassa_account_id` в профиле
-- [ ] Лимит ниш по тарифу (maxNiches) — привязать количество доступных ниш к тарифу эксперта
-  - Free=1, Starter=2, Pro=3, Expert=5, Business=10
-  - Добавить `maxNiches` в `TIER_CONFIG` (`apps/web/lib/subscription.ts`)
-  - Добавить `maxNiches` в `SUBSCRIPTION_TIERS` (`packages/shared/src/constants.ts`)
-  - Обновить проверку в Telegram-боте (`apps/bot/src/handlers/callback.ts` — заменить `MAX_NICHES = 3` на лимит из тарифа)
-  - Добавить выбор/управление нишами в веб-дашборд (`/profile` или отдельная страница `/niches`)
-  - Обновить Web-регистрацию (`register/page.tsx`) — оставить 1 нишу (Free), показать апгрейд
-  - Обновить страницу тарифов `/pricing` — добавить строку «Ниш» в таблицу сравнения
-  - Обновить лендинг `/for-experts` — упомянуть лимит ниш как фичу апгрейда
-  - Обновить OpenAPI docs (`/api/v1/docs`) — если ниши влияют на API
+- [ ] **Лимит ниш по тарифу (maxNiches)** — привязать количество доступных ниш к тарифу эксперта
+  - **Лимиты:** Free=1, Starter=2, Pro=3, Expert=5, Business=10
+  - **Почему:** Free=1 — самый сильный growth lever (видишь темы соседней ниши, но не можешь взять → апгрейд). Текущие 3 ниши на Free обесценивают Starter. Business=10 (не 20) — покрывает любой кластер (медицина, digital).
+  - **Эффект:** конверсия Free→Starter растёт (ниши ощутимее пакетов), LLM-расходы Free падают (1 ниша × 3 пакета = 15 вызовов/мес max), E-E-A-T не страдает, Telegram и Web выравниваются.
+  - **Чеклист реализации:**
+    - [x] Добавить `maxNiches` в `TIER_CONFIG` (`apps/web/lib/subscription.ts`) + хелперы getMaxNiches/checkNicheLimit
+    - [x] Добавить `maxNiches` в `SUBSCRIPTION_TIERS` (`packages/shared/src/constants.ts`) + интерфейс + features
+    - [x] Обновить Telegram-бот (`apps/bot/src/handlers/callback.ts`) — динамический лимит из тарифа + подсказка апгрейда
+    - [ ] Добавить выбор/управление нишами в дашборд (`/profile` или `/niches`)
+    - [x] Обновить регистрацию (`register/page.tsx`) — badge «1 ниша» вместо «3 темы / неделя»
+    - [x] Обновить `/pricing` — строка «Ниш» в COMPARISON_ROWS, ниши в features каждого плана, Business «до 10 ниш»
+    - [x] Обновить `/for-experts` — новая секция «Растите — добавляйте ниши» с 4 карточками тарифов
+    - [x] Обновить `/for-business` — «до 10 ниш» в описании Business
+    - [x] Обновить `/how-it-works` — пометка «от 1 до 10 по тарифу» в шаге поиска спроса
+    - [x] Обновить главную `/` — подсказка «От 1 до 10 ниш по тарифу» в секции ниш
+    - [ ] Обновить `/audit` — если выбранная ниша не в лимите, показать CTA апгрейда (отложено: аудит доступен всем без авторизации)
+    - [ ] Обновить OpenAPI docs (`/api/v1/docs`) — ниши не влияют на API-ключи (отложено)
+    - [x] Обновить Тарифную модель в этом CLAUDE.md (таблица уже актуальна)
 
 ## Тарифная модель
 

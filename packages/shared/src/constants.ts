@@ -47,6 +47,7 @@ export interface SubscriptionTier {
   id: string;
   name: string;
   price: number; // рублей/мес
+  maxNiches: number; // лимит ниш по тарифу
   packagesPerMonth: number; // лимит контент-пакетов (темы показываются без лимита)
   commission: number;
   formats: ContentFormat[];
@@ -59,26 +60,29 @@ export const SUBSCRIPTION_TIERS: Record<string, SubscriptionTier> = {
     id: 'free',
     name: 'Free',
     price: 0,
+    maxNiches: 1,
     packagesPerMonth: 3,
     commission: 0.15,
     formats: ['telegram_post', 'seo_article'],
     exportableFormats: ['telegram_post'],
-    features: ['3 пакета/мес', '2 формата (пост + SEO-статья)', 'Экспорт Telegram-поста', 'Комиссия 15%'],
+    features: ['1 ниша', '3 пакета/мес', '2 формата (пост + SEO-статья)', 'Экспорт Telegram-поста', 'Комиссия 15%'],
   },
   starter: {
     id: 'starter',
     name: 'Starter',
     price: 1490,
+    maxNiches: 2,
     packagesPerMonth: Infinity,
     commission: 0.07,
     formats: ALL_FORMATS,
     exportableFormats: ALL_FORMATS,
-    features: ['10 вопросов/неделю', '5 форматов контента', 'Полный экспорт', 'Комиссия 7%'],
+    features: ['2 ниши', '10 вопросов/неделю', '5 форматов контента', 'Полный экспорт', 'Комиссия 7%'],
   },
   pro: {
     id: 'pro',
     name: 'Pro',
     price: 2990,
+    maxNiches: 3,
     packagesPerMonth: Infinity,
     commission: 0.03,
     formats: ALL_FORMATS,
@@ -89,6 +93,7 @@ export const SUBSCRIPTION_TIERS: Record<string, SubscriptionTier> = {
     id: 'expert',
     name: 'Expert',
     price: 4990,
+    maxNiches: 5,
     packagesPerMonth: Infinity,
     commission: 0,
     formats: ALL_FORMATS,
@@ -99,6 +104,7 @@ export const SUBSCRIPTION_TIERS: Record<string, SubscriptionTier> = {
     id: 'business',
     name: 'Business',
     price: 24990,
+    maxNiches: 10,
     packagesPerMonth: Infinity,
     commission: 0,
     formats: ALL_FORMATS,
@@ -109,6 +115,7 @@ export const SUBSCRIPTION_TIERS: Record<string, SubscriptionTier> = {
     id: 'enterprise',
     name: 'Enterprise',
     price: 99990,
+    maxNiches: 20,
     packagesPerMonth: Infinity,
     commission: 0,
     formats: ALL_FORMATS,

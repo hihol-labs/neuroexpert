@@ -258,6 +258,34 @@ export default function ForExpertsPage() {
         </div>
       </section>
 
+      {/* Ниши как рост */}
+      <section className="py-16">
+        <div className="mx-auto max-w-4xl px-6 text-center">
+          <h2 className="text-3xl font-bold text-white">Растите — добавляйте ниши</h2>
+          <p className="mt-4 text-gray-400 max-w-2xl mx-auto">
+            Начните с одной ниши бесплатно. Увидите результат — добавьте смежные направления.
+            Ниши масштабируются вместе с вашей экспертизой.
+          </p>
+          <div className="mt-8 grid gap-4 sm:grid-cols-4">
+            {[
+              { tier: "Free", niches: "1 ниша", desc: "Попробуйте и увидьте результат", highlight: false },
+              { tier: "Starter", niches: "2 ниши", desc: "Добавьте смежное направление", highlight: false },
+              { tier: "Pro", niches: "3 ниши", desc: "Полный охват экспертизы", highlight: true },
+              { tier: "Expert", niches: "5 ниш", desc: "Широкий профиль, личный бренд", highlight: false },
+            ].map((item) => (
+              <div key={item.tier} className={`rounded-xl border p-4 ${item.highlight ? "border-blue-500/50 bg-blue-500/10" : "border-white/10 bg-white/5"}`}>
+                <div className="text-sm font-semibold text-gray-400">{item.tier}</div>
+                <div className="mt-1 text-xl font-bold text-white">{item.niches}</div>
+                <p className="mt-1 text-xs text-gray-400">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+          <Link href="/pricing" className="mt-6 inline-block text-sm text-cyan-400 hover:text-cyan-300">
+            Сравнить все тарифы &rarr;
+          </Link>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="bg-blue-600 py-16">
         <div className="mx-auto max-w-3xl px-6 text-center">

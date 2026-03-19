@@ -280,6 +280,7 @@ export default function LandingPage() {
                 Платформа для практикующих специалистов, которые хотят клиентов
                 без ведения соцсетей и бюджета на рекламу.
               </p>
+              <p className="mt-2 text-sm text-gray-500">От 1 до 10 ниш по тарифу. Начните бесплатно с одной.</p>
             </FadeIn>
 
             <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5">

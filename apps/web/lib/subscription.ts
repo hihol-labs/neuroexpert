@@ -8,6 +8,7 @@ export const TIER_CONFIG = {
   free: {
     name: "Free",
     price: 0,
+    maxNiches: 1,
     ordersPerWeek: 3,
     packagesPerMonth: 3,
     commission: 0.15,
@@ -27,6 +28,7 @@ export const TIER_CONFIG = {
   starter: {
     name: "Starter",
     price: 1490,
+    maxNiches: 2,
     ordersPerWeek: 10,
     packagesPerMonth: Infinity,
     commission: 0.07,
@@ -46,6 +48,7 @@ export const TIER_CONFIG = {
   pro: {
     name: "Pro",
     price: 2990,
+    maxNiches: 3,
     ordersPerWeek: Infinity,
     packagesPerMonth: Infinity,
     commission: 0.03,
@@ -64,6 +67,7 @@ export const TIER_CONFIG = {
   expert: {
     name: "Expert",
     price: 4990,
+    maxNiches: 5,
     ordersPerWeek: Infinity,
     packagesPerMonth: Infinity,
     commission: 0,
@@ -82,6 +86,7 @@ export const TIER_CONFIG = {
   business: {
     name: "Business",
     price: 24990,
+    maxNiches: 10,
     ordersPerWeek: Infinity,
     packagesPerMonth: Infinity,
     commission: 0,
@@ -100,6 +105,7 @@ export const TIER_CONFIG = {
   enterprise: {
     name: "Enterprise",
     price: 99990,
+    maxNiches: 20,
     ordersPerWeek: Infinity,
     packagesPerMonth: Infinity,
     commission: 0,
@@ -134,6 +140,15 @@ export function checkPackageLimit(tier: string, currentMonthPackages: number): {
 export function getAllowedFormats(tier: string): ContentFormat[] {
   const config = getTierConfig(tier);
   return [...config.formats];
+}
+
+export function getMaxNiches(tier: string): number {
+  return getTierConfig(tier).maxNiches;
+}
+
+export function checkNicheLimit(tier: string, currentNiches: number): { allowed: boolean; limit: number } {
+  const limit = getMaxNiches(tier);
+  return { allowed: currentNiches < limit, limit };
 }
 
 export function isFormatExportable(tier: string, format: ContentFormat): boolean {
