@@ -133,71 +133,100 @@ export function MarketingHeader() {
 
 export function MarketingFooter() {
   return (
-    <footer className="border-t border-white/5 bg-[#040714]/60 backdrop-blur-xl py-12">
+    <footer className="border-t border-white/5 bg-[#040714]/60 backdrop-blur-xl pt-10 pb-6">
       <div className="mx-auto max-w-7xl px-6">
-        {/* Top row: logo + nav + social */}
-        <div className="flex flex-col items-center justify-between gap-8 sm:flex-row">
-          <div className="flex items-center gap-2">
-            <svg viewBox="0 0 36 36" fill="none" className="h-6 w-6 shrink-0" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="footLogo" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#22D3EE"/>
-                  <stop offset="50%" stopColor="#3B82F6"/>
-                  <stop offset="100%" stopColor="#A855F7"/>
-                </linearGradient>
-              </defs>
-              <line x1="10" y1="7" x2="18" y2="16" stroke="#22D3EE" strokeWidth="0.8" opacity="0.5"/>
-              <line x1="26" y1="9" x2="18" y2="16" stroke="#3B82F6" strokeWidth="0.8" opacity="0.45"/>
-              <line x1="18" y1="16" x2="12" y2="25" stroke="#8B5CF6" strokeWidth="0.8" opacity="0.5"/>
-              <line x1="18" y1="16" x2="26" y2="24" stroke="#A855F7" strokeWidth="0.8" opacity="0.45"/>
-              <line x1="12" y1="25" x2="26" y2="24" stroke="#8B5CF6" strokeWidth="0.7" opacity="0.35"/>
-              <circle cx="18" cy="16" r="3.2" fill="url(#footLogo)"/>
-              <circle cx="18" cy="16" r="1.8" fill="#FFFFFF" opacity="0.9"/>
-              <circle cx="10" cy="7" r="2" fill="#22D3EE"/>
-              <circle cx="26" cy="9" r="2" fill="#3B82F6"/>
-              <circle cx="12" cy="25" r="2.2" fill="#8B5CF6"/>
-              <circle cx="26" cy="24" r="2" fill="#A855F7"/>
-            </svg>
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold text-white">НейроЭксперт</span>
-              <span className="text-[10px] text-gray-500">Экспертиза, которую цитируют</span>
+        {/* 4-column grid */}
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Column 1 — Brand */}
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-2">
+              <svg viewBox="0 0 36 36" fill="none" className="h-7 w-7 shrink-0" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="footLogo" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#22D3EE"/>
+                    <stop offset="50%" stopColor="#3B82F6"/>
+                    <stop offset="100%" stopColor="#A855F7"/>
+                  </linearGradient>
+                </defs>
+                <line x1="10" y1="7" x2="18" y2="16" stroke="#22D3EE" strokeWidth="0.8" opacity="0.5"/>
+                <line x1="26" y1="9" x2="18" y2="16" stroke="#3B82F6" strokeWidth="0.8" opacity="0.45"/>
+                <line x1="18" y1="16" x2="12" y2="25" stroke="#8B5CF6" strokeWidth="0.8" opacity="0.5"/>
+                <line x1="18" y1="16" x2="26" y2="24" stroke="#A855F7" strokeWidth="0.8" opacity="0.45"/>
+                <line x1="12" y1="25" x2="26" y2="24" stroke="#8B5CF6" strokeWidth="0.7" opacity="0.35"/>
+                <circle cx="18" cy="16" r="3.2" fill="url(#footLogo)"/>
+                <circle cx="18" cy="16" r="1.8" fill="#FFFFFF" opacity="0.9"/>
+                <circle cx="10" cy="7" r="2" fill="#22D3EE"/>
+                <circle cx="26" cy="9" r="2" fill="#3B82F6"/>
+                <circle cx="12" cy="25" r="2.2" fill="#8B5CF6"/>
+                <circle cx="26" cy="24" r="2" fill="#A855F7"/>
+              </svg>
+              <span className="text-base font-semibold text-white">НейроЭксперт</span>
             </div>
+            <p className="text-sm text-gray-400 leading-relaxed">
+              Платформа, которая превращает экспертизу в контент, который цитируют нейросети и поисковики.
+            </p>
+            <Link
+              href="/register"
+              className="mt-2 inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            >
+              Начать бесплатно
+            </Link>
           </div>
-          <div className="flex flex-wrap justify-center gap-6">
-            <Link href="/for-experts" className="text-sm text-gray-500 hover:text-gray-300 transition-colors">
-              Зачем эксперту
-            </Link>
-            <Link href="/for-business" className="text-sm text-gray-500 hover:text-gray-300 transition-colors">
-              Для бизнеса
-            </Link>
-            <Link href="/how-it-works" className="text-sm text-gray-500 hover:text-gray-300 transition-colors">
+
+          {/* Column 2 — Platform */}
+          <div className="flex flex-col gap-3">
+            <span className="text-sm font-semibold text-white">Возможности</span>
+            <Link href="/how-it-works" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
               Как это работает
             </Link>
-            <Link href="/pricing" className="text-sm text-gray-500 hover:text-gray-300 transition-colors">
+            <Link href="/scan" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+              AI Visibility Scanner
+            </Link>
+            <Link href="/for-experts" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+              Экспертам
+            </Link>
+            <Link href="/for-business" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+              Бизнесу
+            </Link>
+          </div>
+
+          {/* Column 3 — Info */}
+          <div className="flex flex-col gap-3">
+            <span className="text-sm font-semibold text-white">Информация</span>
+            <Link href="/pricing" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
               Тарифы
             </Link>
-            <Link href="/audit" className="text-sm text-gray-500 hover:text-gray-300 transition-colors">
-              Аудит
+            <Link href="/api/v1/docs" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+              Knowledge API
             </Link>
+            <Link href="/privacy" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+              Политика конфиденциальности
+            </Link>
+            <Link href="/terms" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+              Условия использования
+            </Link>
+          </div>
+
+          {/* Column 4 — Contacts */}
+          <div className="flex flex-col gap-3">
+            <span className="text-sm font-semibold text-white">Контакты</span>
+            <a href="mailto:info@neuroexpertise.ru" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+              info@neuroexpertise.ru
+            </a>
+            <a href="https://t.me/neuroexpertise" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+              Telegram-канал
+            </a>
+            <a href="https://t.me/neuroexpertise_bot" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+              Telegram-бот
+            </a>
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="mt-8 border-t border-white/5 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        {/* Bottom bar */}
+        <div className="mt-8 border-t border-white/5 pt-5 flex flex-col sm:flex-row items-center justify-between gap-3">
           <span className="text-xs text-gray-600">
             &copy; {new Date().getFullYear()} НейроЭксперт. Все права защищены.
           </span>
-          <div className="flex items-center gap-6">
-            <Link href="/privacy" className="text-xs text-gray-600 hover:text-gray-400 transition-colors">
-              Политика конфиденциальности
-            </Link>
-            <Link href="/terms" className="text-xs text-gray-600 hover:text-gray-400 transition-colors">
-              Условия использования
-            </Link>
-            <a href="mailto:info@neuroexpertise.ru" className="text-xs text-gray-600 hover:text-gray-400 transition-colors">
-              Контакты
-            </a>
-          </div>
         </div>
       </div>
     </footer>

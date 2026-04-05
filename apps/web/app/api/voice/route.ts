@@ -58,6 +58,10 @@ export async function POST(request: NextRequest) {
       .limit(1)
       .single();
 
+    // Длительность записи (передаётся с фронтенда)
+    const durationRaw = formData.get("duration");
+    const durationSeconds = durationRaw ? parseInt(String(durationRaw), 10) || 0 : 0;
+
     // Создаём voice_recording
     const { data: recording, error: insertErr } = await admin
       .from("voice_recordings")
@@ -66,7 +70,7 @@ export async function POST(request: NextRequest) {
         order_id: acceptedOrder?.id ?? null,
         file_path: filePath,
         file_size: buffer.length,
-        duration_seconds: 0,
+        duration_seconds: durationSeconds,
         source: "web" as const,
         mime_type: audioFile.type || "audio/webm",
         transcription_status: "pending",
@@ -78,20 +82,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to save recording" }, { status: 500 });
     }
 
-    // Создаём задачу на генерацию
+    // Создаём задачу на транскрипцию (generate_content создаст transcribe handler)
     await admin.from("jobs").insert({
-      type: "generate_content",
+      type: "transcribe",
       payload: {
         voice_recording_id: recording.id,
-        expert_id: profile.id,
-        order_id: acceptedOrder?.id ?? null,
       },
       priority: 5,
     });
 
     return NextResponse.json({
       message: "Запись принята! Контент будет готов через несколько минут.",
-      recording_id: recording.id,
+      voice_recording_id: recording.id,
     });
   } catch (err) {
     console.error("[voice/route] Error:", err);

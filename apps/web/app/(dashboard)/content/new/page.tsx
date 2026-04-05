@@ -70,6 +70,7 @@ export default function ContentNewPage() {
     try {
       const formData = new FormData();
       formData.append("audio", blob, "recording.webm");
+      formData.append("duration", String(duration));
 
       const res = await fetch("/api/voice", {
         method: "POST",

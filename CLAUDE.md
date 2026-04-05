@@ -133,78 +133,150 @@ packages/
 
 ### P3 — Улучшения
 
-- [ ] **Прогресс-бар аудита** — при загрузке (15-30 сек) показывать пошаговый прогресс вместо одного спиннера
 - [x] **Кнопка «Наверх»** — `components/ui/scroll-to-top.tsx` (ScrollToTop) с Lucide ArrowUp, появляется при scrollY > 500px. Подключён глобально через Providers.
-- [ ] **Анимация аккордеонов** — раскрытие/свёртывание мгновенное, добавить CSS transition max-height
-- [ ] **Dark mode дашборда** — CSS-переменные + toggle в sidebar + prefers-color-scheme
-- [ ] **Keyboard shortcuts** — G+D (dashboard), G+O (orders), N (новая запись), Cmd+K (command palette)
-- [ ] **Оптимистичные обновления** — accept/skip заказов обновлять UI сразу, откатывать при ошибке
-- [ ] **Empty states с иллюстрациями** — заменить текстовые «Заказов пока нет» на иллюстрации + CTA
+- Остальные P3 перенесены в раздел «Нереализованные фичи (код)» ниже.
 
-## Остаётся сделать (post-deploy)
+## Пошаговый план запуска на 100%
 
-- [ ] Добавить DNS-запись `supabase.neuroexpertise.ru → 155.212.185.216` (пока API работает через path `/supabase/`)
-- [ ] Перегенерировать API-ключи (OpenAI, Telegram) — были отправлены в чат
-- [ ] Увеличить RAM сервера до 8 ГБ (сейчас 5.8 ГБ, свободно ~2 ГБ)
-- [ ] Настроить SMTP для Supabase Auth (сейчас autoconfirm=true, magic link не отправляется)
-- [ ] Установить pg_cron расширение в PostgreSQL (миграции 003 и 008 не применились — cron jobs можно запускать через worker)
-- [ ] Подключить ЮKassa (YUKASSA_SHOP_ID + SECRET_KEY в .env)
-- [ ] Подключить Resend (RESEND_API_KEY для email-рассылок)
-- [ ] Подключить SerpAPI + XMLRiver (для сбора спроса)
-- [ ] Подключить GSC / Яндекс.Вебмастер / Bing (для индексации)
-- [ ] Пересгенерировать Database типы после миграции 009 (scan_results)
-- [ ] Подключить Perplexity API — для probing и трекинга цитирований в Perplexity
-  - `PERPLEXITY_API_KEY=pplx-...` (получить: perplexity.ai/settings/api)
-- [ ] Подключить GigaChat API — для probing и трекинга цитирований в GigaChat
-  - `GIGACHAT_CLIENT_ID=...`
-  - `GIGACHAT_CLIENT_SECRET=...`
-  - (получить: developers.sber.ru/portal/products/gigachat)
-- [ ] Подключить YandexGPT API — для probing и трекинга цитирований в YandexGPT
-  - `YANDEX_API_KEY=...`
-  - `YANDEX_FOLDER_ID=...`
-  - (получить: console.yandex.cloud, работает без прокси)
-- [ ] Подключить Яндекс.Метрику — аналитика с webvisor, трекинг AI-трафика (utm_source=fact)
-  - `NEXT_PUBLIC_YANDEX_METRIKA_ID=12345678`
-  - (получить: metrika.yandex.ru)
-- [ ] Подключить vc.ru API — кросспост статей
-  - `VCRU_API_TOKEN=...`
-- [ ] Подключить Дзен API — кросспост статей
-  - `DZEN_API_TOKEN=...`
-- [ ] Подключить Хабр API — кросспост статей
-  - `HABR_API_TOKEN=...`
-- [ ] Подключить PageSpeed API — мониторинг Core Web Vitals
-  - `PAGESPEED_API_KEY=...`
-  - (получить: console.cloud.google.com → PageSpeed Insights API)
-- [ ] Подключить Pixel Tools — мониторинг упоминаний бренда в нейросетях + тональность
-  - `PIXEL_TOOLS_API_KEY=...`
-  - (получить: pixeltools.ru)
-- [ ] Подключить GptFox.io — трекинг позиций бренда в ChatGPT + конкуренты
-  - `GPTFOX_API_KEY=...`
-  - (получить: gptfox.io)
-- [ ] Подключить Plausible — self-hosted аналитика без cookies (152-ФЗ)
-  - `NEXT_PUBLIC_PLAUSIBLE_DOMAIN=neuroexpertise.ru`
-  - `NEXT_PUBLIC_PLAUSIBLE_HOST=https://plausible.yourdomain.com`
-- [ ] Подключить ЮKassa маркетплейс — split-payment для консультаций
-  - `YUKASSA_MARKETPLACE=true`
-  - Экспертам: `yukassa_account_id` в профиле
-- [ ] **Лимит ниш по тарифу (maxNiches)** — привязать количество доступных ниш к тарифу эксперта
-  - **Лимиты:** Free=1, Starter=2, Pro=3, Expert=5, Business=10
-  - **Почему:** Free=1 — самый сильный growth lever (видишь темы соседней ниши, но не можешь взять → апгрейд). Текущие 3 ниши на Free обесценивают Starter. Business=10 (не 20) — покрывает любой кластер (медицина, digital).
-  - **Эффект:** конверсия Free→Starter растёт (ниши ощутимее пакетов), LLM-расходы Free падают (1 ниша × 3 пакета = 15 вызовов/мес max), E-E-A-T не страдает, Telegram и Web выравниваются.
-  - **Чеклист реализации:**
-    - [x] Добавить `maxNiches` в `TIER_CONFIG` (`apps/web/lib/subscription.ts`) + хелперы getMaxNiches/checkNicheLimit
-    - [x] Добавить `maxNiches` в `SUBSCRIPTION_TIERS` (`packages/shared/src/constants.ts`) + интерфейс + features
-    - [x] Обновить Telegram-бот (`apps/bot/src/handlers/callback.ts`) — динамический лимит из тарифа + подсказка апгрейда
-    - [ ] Добавить выбор/управление нишами в дашборд (`/profile` или `/niches`)
-    - [x] Обновить регистрацию (`register/page.tsx`) — badge «1 ниша» вместо «3 темы / неделя»
-    - [x] Обновить `/pricing` — строка «Ниш» в COMPARISON_ROWS, ниши в features каждого плана, Business «до 10 ниш»
-    - [x] Обновить `/for-experts` — новая секция «Растите — добавляйте ниши» с 4 карточками тарифов
-    - [x] Обновить `/for-business` — «до 10 ниш» в описании Business
-    - [x] Обновить `/how-it-works` — пометка «от 1 до 10 по тарифу» в шаге поиска спроса
-    - [x] Обновить главную `/` — подсказка «От 1 до 10 ниш по тарифу» в секции ниш
-    - [ ] Обновить `/audit` — если выбранная ниша не в лимите, показать CTA апгрейда (отложено: аудит доступен всем без авторизации)
-    - [ ] Обновить OpenAPI docs (`/api/v1/docs`) — ниши не влияют на API-ключи (отложено)
-    - [x] Обновить Тарифную модель в этом CLAUDE.md (таблица уже актуальна)
+### Уже работает (ключи в `.env`)
+
+| Компонент | Переменная | Статус |
+|-----------|-----------|--------|
+| OpenAI (контент, STT, probing) | `OPENAI_API_KEY` | ✅ |
+| OpenAI прокси (РФ) | `OPENAI_PROXY_URL` | ✅ |
+| Telegram-бот | `TELEGRAM_BOT_TOKEN` | ✅ |
+| Supabase (БД, Auth, Storage) | Все ключи | ✅ |
+
+### Приоритет 1 — КРИТИЧНО (без этого платформа = демо)
+
+**Шаг 1. Оплата тарифов** — без этого все на Free навсегда, монетизации нет.
+
+| Переменная | Где получить |
+|-----------|-------------|
+| `YUKASSA_SHOP_ID` | yookassa.ru → личный кабинет (нужно ИП или ООО) |
+| `YUKASSA_SECRET_KEY` | там же → Настройки → Ключи API |
+| `YUKASSA_WEBHOOK_SECRET` | там же → Уведомления (URL: `https://neuroexpertise.ru/api/webhooks/yukassa`) |
+
+**Шаг 2. Email-подтверждение (безопасность)** — сейчас `autoconfirm=true`, кто угодно регистрируется.
+
+| Что сделать | Варианты |
+|------------|---------|
+| Настроить SMTP в Supabase Auth | Yandex 360 (бесплатно для домена), Mail.ru для бизнеса, или Resend |
+| Отключить autoconfirm | `GOTRUE_MAILER_AUTOCONFIRM=false` в конфиге Supabase Auth |
+
+### Приоритет 2 — ВАЖНО (реальные данные вместо фейковых)
+
+**Шаг 3. Реальный спрос** — без этого «запросов/мес» в аудите = захардкоженные 3000/5000/8000, вопросы генерирует GPT.
+
+| Переменная | Где получить | Стоимость |
+|-----------|-------------|-----------|
+| `XMLRIVER_USER_ID` | xmlriver.com | ~1000₽/мес |
+| `XMLRIVER_API_KEY` | там же | |
+| `SERPAPI_API_KEY` | serpapi.com | $50/мес |
+
+SerpAPI покрывает 3 функции: People Also Ask, Яндекс Кью, SERP-позиции.
+
+**Шаг 4. Email-рассылки** — без этого дайджесты подписчикам не отправляются.
+
+| Переменная | Где получить | Стоимость |
+|-----------|-------------|-----------|
+| `RESEND_API_KEY` | resend.com | Бесплатно до 3 000 писем/мес |
+| `EMAIL_FROM` | `noreply@neuroexpertise.ru` | Нужна DNS-запись SPF/DKIM |
+
+### Приоритет 3 — АНАЛИТИКА (обещана в тарифах Expert / Business)
+
+**Шаг 5. AI-платформы (4 вместо 1)** — сейчас probing только ChatGPT, обещано 4.
+
+| Переменная | Где получить | Стоимость |
+|-----------|-------------|-----------|
+| `PERPLEXITY_API_KEY` | perplexity.ai/settings/api | ~$5/мес |
+| `YANDEX_API_KEY` | console.yandex.cloud (без прокси) | Бесплатный грант |
+| `YANDEX_FOLDER_ID` | там же | |
+| `GIGACHAT_CLIENT_ID` | developers.sber.ru/portal/products/gigachat | Бесплатно (лимит) |
+| `GIGACHAT_CLIENT_SECRET` | там же | |
+
+**Шаг 6. Core Web Vitals**
+
+| Переменная | Где получить | Стоимость |
+|-----------|-------------|-----------|
+| `PAGESPEED_API_KEY` | console.cloud.google.com → PageSpeed Insights API | Бесплатно |
+
+### Приоритет 4 — КРОССПОСТ (обещан в тарифах Pro+)
+
+**Шаг 7. Площадки для автопубликации** — без этого контент = «prepared», эксперт копирует вручную.
+
+| Переменная | Где получить |
+|-----------|-------------|
+| `DZEN_API_TOKEN` | dzen.ru → студия → API |
+| `HABR_API_TOKEN` | habr.com → настройки → API |
+| `VCRU_API_TOKEN` | vc.ru → настройки приложения |
+
+### Приоритет 5 — ИНДЕКСАЦИЯ (ускорение попадания в поиск)
+
+**Шаг 8. Вебмастера** — без этого sitemap сабмитить вручную (страницы проиндексируются, но медленнее).
+
+| Переменная | Где получить |
+|-----------|-------------|
+| `GSC_SERVICE_ACCOUNT_JSON` | console.cloud.google.com → Service Account → JSON (base64) |
+| `YANDEX_WEBMASTER_TOKEN` | webmaster.yandex.ru → OAuth |
+| `YANDEX_WEBMASTER_HOST_ID` | там же → ID хоста |
+| `BING_WEBMASTER_API_KEY` | bing.com/webmasters |
+
+### Приоритет 6 — ОПЦИОНАЛЬНО
+
+**Шаг 9. GEO-сервисы**
+
+| Переменная | Где получить |
+|-----------|-------------|
+| `PIXEL_TOOLS_API_KEY` | pixeltools.ru |
+| `GPTFOX_API_KEY` | gptfox.io |
+
+**Шаг 10. Веб-аналитика**
+
+| Переменная | Где получить |
+|-----------|-------------|
+| `NEXT_PUBLIC_YANDEX_METRIKA_ID` | metrika.yandex.ru |
+| `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` + `NEXT_PUBLIC_PLAUSIBLE_HOST` | Self-hosted Plausible |
+
+### Серверные задачи (не API-ключи)
+
+| Задача | Приоритет |
+|--------|-----------|
+| Настроить SMTP в Supabase Auth, отключить autoconfirm | Критично |
+| Перегенерировать OpenAI + Telegram ключи (были в открытом тексте) | Критично |
+| Увеличить RAM до 8 ГБ (сейчас ~2 ГБ свободно) | Желательно |
+| DNS-запись `supabase.neuroexpertise.ru → 155.212.185.216` | Желательно |
+| DNS-записи SPF/DKIM для email (при подключении Resend) | При подключении |
+| Пересгенерировать Database типы после миграции 009 | Желательно |
+
+### Порядок действий (сводка)
+
+| # | Что получить | Что открывает |
+|---|-------------|---------------|
+| 1 | ЮKassa (ИП/ООО) | Монетизация, платные тарифы |
+| 2 | SMTP (Yandex 360 / Resend) | Безопасная регистрация, magic link |
+| 3 | XMLRiver + SerpAPI | Реальные данные спроса, SERP-позиции |
+| 4 | Resend | Email-дайджесты подписчикам |
+| 5 | Perplexity + YandexGPT + GigaChat | Полный probing 4 платформы |
+| 6 | PageSpeed | CWV мониторинг |
+| 7 | Дзен + Хабр + vc.ru | Автокросспост |
+| 8 | GSC + Яндекс.Вебмастер + Bing | Автоиндексация |
+| 9 | Pixel Tools + GptFox | GEO-мониторинг |
+| 10 | Яндекс.Метрика | Веб-аналитика |
+
+> Все ключи добавляются в `/opt/neuroexpert/.env` на сервере. Код автоматически подхватывает — если ключ задан, функция работает; если нет — graceful fallback.
+
+## Нереализованные фичи (код)
+
+- [ ] Добавить выбор/управление нишами в дашборд (`/profile` или `/niches`)
+- [ ] Обновить `/audit` — если выбранная ниша не в лимите, показать CTA апгрейда (отложено: аудит доступен всем без авторизации)
+- [ ] Обновить OpenAPI docs (`/api/v1/docs`) — ниши не влияют на API-ключи (отложено)
+- [ ] Прогресс-бар аудита — пошаговый прогресс вместо одного спиннера
+- [ ] Анимация аккордеонов — CSS transition max-height
+- [ ] Dark mode дашборда
+- [ ] Keyboard shortcuts
+- [ ] Оптимистичные обновления (accept/skip)
+- [ ] Empty states с иллюстрациями
 
 ## Тарифная модель
 
