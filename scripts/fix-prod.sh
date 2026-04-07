@@ -22,14 +22,14 @@ ok()  { printf "\033[1;32m✓ %s\033[0m\n" "$*"; }
 err() { printf "\033[1;31m✗ %s\033[0m\n" "$*"; }
 
 log "Шаг 1/3: Синхронизация кода на сервер (rsync)"
-rsync -avz --delete \
+rsync -az --delete --info=stats2 \
   --exclude='.git' \
   --exclude='node_modules' \
   --exclude='.next' \
   --exclude='.env' \
   --exclude='.env.local' \
   --exclude='dist' \
-  ./ "$SERVER:$REMOTE_DIR/" | tail -20
+  ./ "$SERVER:$REMOTE_DIR/"
 ok "Код синхронизирован"
 
 log "Шаг 2/3: Seed БД (если нужно) + rebuild + restart web"
