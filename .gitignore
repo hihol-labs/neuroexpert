@@ -10,3 +10,6 @@ dist/
 .vscode/
 packages/supabase/.branches/
 packages/supabase/.temp/
+
+# Kong runtime config (generated from kong.yml.template via envsubst on deploy)
+docker/supabase/kong.yml

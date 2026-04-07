@@ -31,6 +31,7 @@ const PUBLIC_PREFIXES = [
   "/manifest",
   "/robots.txt",
   "/sitemap.xml",
+  "/email-templates",
 ];
 
 function isPublic(pathname: string) {

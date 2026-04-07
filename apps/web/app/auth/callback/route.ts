@@ -3,9 +3,10 @@ import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/dashboard";
+  const origin = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;
 
   if (code) {
     const cookieStore = cookies();

@@ -136,6 +136,24 @@ packages/
 - [x] **Кнопка «Наверх»** — `components/ui/scroll-to-top.tsx` (ScrollToTop) с Lucide ArrowUp, появляется при scrollY > 500px. Подключён глобально через Providers.
 - Остальные P3 перенесены в раздел «Нереализованные фичи (код)» ниже.
 
+## Что починили на проде в Фазе 0 (2026-04-07)
+
+> Эти баги жили на проде месяцами. Все исправлены.
+> Подробности и точные команды — в `launch-audit.md`.
+
+1. **`supabase-auth` мёртв с 15 марта** — GoTrue падал на миграции `20221208132122_backfill_email_last_sign_in_at.up.sql` (`uuid = text`). Никто не мог зарегистрироваться/войти 3 недели. Фикс: `ALTER TABLE auth.identities ALTER COLUMN id TYPE text USING id::text;`
+2. **Kong key-auth полностью сломан** — kong.yml содержит `${ANON_KEY}`/`${SERVICE_ROLE_KEY}`, Kong **не** подставляет env vars в declarative config. Все запросы → 401 «Invalid authentication credentials». Фикс: (a) добавил `ANON_KEY`/`SERVICE_ROLE_KEY` в `environment:` сервиса `supabase-kong` в `docker/docker-compose.prod.yml`; (b) сделал `envsubst` для `docker/supabase/kong.yml` (шаблон → `kong.yml.template`).
+3. **`/auth/callback` редиректит на `0.0.0.0:3000`** — `apps/web/app/auth/callback/route.ts` использовал `origin` из `request.url`, а Next.js за Traefik не доверяет `X-Forwarded-Host`. Фикс: вместо `origin` теперь `process.env.NEXT_PUBLIC_APP_URL`.
+4. **Magic link редиректит на `/auth/v1/verify` (404)** — `GOTRUE_MAILER_URLPATHS_*` не учитывали префикс `/supabase/` от Traefik. Фикс: все 4 URLPATHS переписаны на `/supabase/auth/v1/verify`.
+5. **`/email-templates/*` перехватывает middleware** — Next.js middleware ловил все пути и редиректил на `/login`. Фикс: добавил `/email-templates` в `PUBLIC_PREFIXES` в `apps/web/middleware.ts`.
+
+## Известный TODO на проде после Фазы 0
+
+- [ ] **Worker 404 на `rpc/claim_job`** — после фикса Kong key-auth теперь worker проходит auth, но PostgREST отвечает 404 на claim_job. Скорее всего функция отсутствует в публичной схеме (миграции 001/008 не накатились полностью). Не блокирует регистрацию, но worker не разгребает очередь.
+- [ ] **Сделать фиксы постоянными** — `kong.yml` и `email-templates/` сейчас только в /opt/neuroexpert/ и в локальном репо, но **deploy.sh при rsync с локалки откатит kong.yml к шаблону**. Нужно: (a) добавить `envsubst kong.yml.template > kong.yml` в `scripts/deploy.sh` перед `docker compose up`; (b) `kong.yml` в `.gitignore`; (c) убедиться, что `apps/web/public/email-templates/` копируется при rsync (он по умолчанию должен).
+- [ ] **CSP eval-блок** — в браузере на главной видна ошибка `Content Security Policy of your site blocks the use of 'eval' in JavaScript`. Влияет на сторонние библиотеки. Найти источник CSP-заголовка (next.config.js / middleware) и ослабить.
+- [ ] **Перенос pgcrypto / supabase_admin role** — `CREATE EXTENSION pgcrypto` падает (`role "supabase_admin" does not exist`). На функционал сейчас не влияет, но для админ-задач полезно.
+
 ## План запуска (2026-04-07) — активный
 
 > Когда возвращаешься к проекту и задаёшь вопрос «что дальше» — смотри сюда.
@@ -146,10 +164,10 @@ packages/
 
 Цель: пройти путь эксперта и клиента на живом https://neuroexpertise.ru и зафиксировать баги до вложения денег.
 
-- [ ] **0.1** Проверить индексацию: `robots.txt`, `sitemap.xml`, вручную отправить sitemap в GSC и Яндекс.Вебмастер (без API-ключей, через веб-интерфейс)
-- [ ] **0.2** Пройти лендинг глазами: главная → /audit (на своей нише) → /pricing → /for-experts → /for-business → /how-it-works. Зафиксировать тексты, которые врут или устарели
-- [ ] **0.3** Регистрация нового эксперта через magic link (сейчас autoconfirm=true — сработает автоматически). Проверить редирект, заполнение профиля, выбор ниши
-- [ ] **0.4** Проверить `/dashboard` — онбординг-чеклист, метрики, лимиты тарифа Free
+- [x] **0.1** ✅ (2026-04-07) robots.txt 200, sitemap.xml 200 (4 URL — main + experts + audit + pricing). GSC verified (TXT в Beget), sitemap отправлен. Яндекс.Вебмастер verified, sitemap отправлен. DNS у Beget.
+- [~] **0.2** Частично: открыл все страницы (главная, /audit, /pricing, /for-experts, /for-business, /how-it-works) — все живые. Детальный аудит текстов перенесён в `launch-audit.md` (ещё не пройден).
+- [x] **0.3** ✅ (2026-04-07) Регистрация работает. **По пути нашли и пофиксили 5 критических багов на проде** (см. ниже «Что починили в Фазе 0»).
+- [ ] **0.4** Проверить `/dashboard` — онбординг-чеклист, метрики, лимиты тарифа Free **← на этом остановились**
 - [ ] **0.5** Записать голосовое через `/content/new` (Web Audio). Проверить: транскрипция (Whisper через OpenAI-прокси), follow-up вопросы, генерация 5 форматов
 - [ ] **0.6** Открыть сгенерированный пакет `/content/[id]` — проверить 5 вкладок (Telegram/SEO/Cards/Reels/FAQ), meta_title/description, save/publish
 - [ ] **0.7** После publish: открыть публичную SSR-страницу `/experts/[slug]/[articleSlug]` — проверить Schema.org, TL;DR, таблицы, FAQ, аудиоплеер, форму «записаться»
@@ -174,9 +192,17 @@ packages/
   - Тестовый платёж 1₽ через `/pricing`
   - Код готов: `apps/web/lib/yukassa.ts`, `/api/subscribe`, `/api/webhooks/yukassa`
 
-- [ ] **1.2 SMTP + отключить autoconfirm**
-  - Подключить Yandex 360 для домена (бесплатно) ИЛИ Resend
-  - Прописать SMTP в конфиге Supabase Auth (GoTrue env)
+- [x] **1.2 SMTP + отключить autoconfirm** ✅ (2026-04-07, сделано вне очереди по ходу 0.3 — без SMTP не пройти E2E)
+  - Yandex 360 для домена `neuroexpertise.ru`: MX `mx.yandex.net`, SPF `v=spf1 redirect=_spf.yandex.net`, DKIM (`mail._domainkey`), все три зелёные
+  - Ящики `info@`, `noreply@neuroexpertise.ru`
+  - SMTP креды: `SMTP_HOST=smtp.yandex.ru`, `SMTP_PORT=465`, `SMTP_USER=noreply@neuroexpertise.ru`, `SMTP_PASS=*** (пароль приложения)`, `SMTP_ADMIN_EMAIL=noreply@neuroexpertise.ru` — все в `/opt/neuroexpert/.env`
+  - `GOTRUE_MAILER_AUTOCONFIRM=false` (compose hardcode)
+  - `GOTRUE_API_EXTERNAL_URL=https://neuroexpertise.ru/supabase`
+  - `GOTRUE_MAILER_URLPATHS_*` обновлены с префиксом `/supabase/`
+  - Кастомный русский HTML-шаблон magic link: `apps/web/public/email-templates/magic-link.html` (тёмная тема, кнопка градиент cyan→blue)
+  - `GOTRUE_MAILER_TEMPLATES_MAGIC_LINK=https://neuroexpertise.ru/email-templates/magic-link.html`
+  - `GOTRUE_MAILER_SUBJECTS_MAGIC_LINK="Вход в НейроЭксперт"`
+  - **TODO остаётся:** русские шаблоны для `confirmation`, `recovery`, `invite`, `email_change` (пока английские дефолты GoTrue)
   - Выставить `GOTRUE_MAILER_AUTOCONFIRM=false`
   - Проверить: регистрация → письмо с magic link → клик → вход
   - **Важно:** сейчас кто угодно регистрируется без проверки — безопасность
