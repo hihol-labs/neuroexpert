@@ -1,5 +1,21 @@
 // Mapping of niches to curated Telegram channels/chats for targeted sharing
 // Format: niche slug → array of {name, url} for sharing suggestions
+//
+// ⚠️  TODO (Фаза 0, пункт 0.16 плана запуска):
+// Этот файл раньше содержал плейсхолдерные (выдуманные) ссылки вида
+// t.me/psyforall, t.me/lawonline и т.п. Они были удалены, чтобы не
+// рассылать битые ссылки в уведомлениях о публикации.
+//
+// Перед активацией посевов и кросспоста нужно:
+//   1. Вручную собрать 2–5 реальных TG-чатов/каналов по каждой из 20 ниш
+//      (искать через tgstat.ru, tgstat.com, TGStat каталог)
+//   2. Проверить, что это активные чаты с живой аудиторией экспертов
+//   3. Заполнить NICHE_TELEGRAM_CHANNELS ниже
+//   4. Обновить CLAUDE.md: отметить пункт 0.16 как выполненный
+//
+// Пока карта пустая — /api/publish/route.ts корректно это обрабатывает
+// (channels.length > 0 проверка), уведомление просто не содержит блок
+// «Рекомендуемые чаты для вашей ниши».
 
 export interface NicheChannel {
   name: string;
@@ -7,51 +23,11 @@ export interface NicheChannel {
 }
 
 export const NICHE_TELEGRAM_CHANNELS: Record<string, NicheChannel[]> = {
-  psychology: [
-    { name: "Психология для всех", url: "https://t.me/psyforall" },
-    { name: "Психология отношений", url: "https://t.me/psyrelations" },
-    { name: "Родительский чат", url: "https://t.me/parentchat" },
-  ],
-  law: [
-    { name: "Юристы онлайн", url: "https://t.me/lawonline" },
-    { name: "Правовой ликбез", url: "https://t.me/lawfaq" },
-  ],
-  nutrition: [
-    { name: "Правильное питание", url: "https://t.me/nutritionchat" },
-    { name: "ЗОЖ сообщество", url: "https://t.me/healthyliving" },
-  ],
-  finance: [
-    { name: "Финансовая грамотность", url: "https://t.me/finliteracy" },
-    { name: "Инвестиции для начинающих", url: "https://t.me/investbegin" },
-  ],
-  "business-consulting": [
-    { name: "Бизнес-сообщество", url: "https://t.me/bizcommunity" },
-    { name: "Стартапы и бизнес", url: "https://t.me/startupbiz" },
-  ],
-  medicine: [
-    { name: "Медицина и здоровье", url: "https://t.me/medhealth" },
-    { name: "Доказательная медицина", url: "https://t.me/evidencemed" },
-  ],
-  fitness: [
-    { name: "Фитнес и тренировки", url: "https://t.me/fitnesschat" },
-    { name: "Спорт и здоровье", url: "https://t.me/sporthealth" },
-  ],
-  education: [
-    { name: "Образование и развитие", url: "https://t.me/educhat" },
-  ],
-  marketing: [
-    { name: "Маркетинг и SMM", url: "https://t.me/marketingchat" },
-    { name: "Digital маркетинг", url: "https://t.me/digitalmarketing" },
-  ],
-  it: [
-    { name: "Программисты", url: "https://t.me/progrChat" },
-  ],
-  cosmetology: [
-    { name: "Косметология и красота", url: "https://t.me/cosmetologychat" },
-  ],
-  coaching: [
-    { name: "Коучинг и саморазвитие", url: "https://t.me/coachingchat" },
-  ],
+  // TODO: заполнить реальными чатами. См. комментарий выше.
+  // Пример структуры (не раскомментировать с этими URL — они фейковые):
+  // psychology: [
+  //   { name: "Название чата", url: "https://t.me/real_channel_slug" },
+  // ],
 };
 
 // Get channels for a niche (returns empty array if no mapping)

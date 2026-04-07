@@ -24,6 +24,13 @@ const PUBLIC_PREFIXES = [
   "/auth",
   "/_next",
   "/favicon.ico",
+  "/opengraph-image",
+  "/twitter-image",
+  "/apple-icon",
+  "/icon",
+  "/manifest",
+  "/robots.txt",
+  "/sitemap.xml",
 ];
 
 function isPublic(pathname: string) {

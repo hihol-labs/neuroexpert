@@ -5,12 +5,38 @@ import "./globals.css";
 
 const inter = Inter({ subsets: ["latin", "cyrillic"] });
 
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://neuroexpertise.ru";
+const SITE_TITLE = "НейроЭксперт — AI-система, которая превращает экспертизу в клиентов";
+const SITE_DESCRIPTION =
+  "Наговори 10 минут — получи клиентов из поиска и нейросетей. Без написания текстов, без SMM, без бюджета на рекламу.";
+
 export const metadata: Metadata = {
-  title: "НейроЭксперт — AI-система, которая превращает экспертизу в клиентов",
-  description:
-    "Наговори 10 минут — получи клиентов из поиска и нейросетей. Без написания текстов, без SMM, без бюджета на рекламу.",
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
   manifest: "/manifest.json",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://neuroexpertise.ru"),
+  metadataBase: new URL(SITE_URL),
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    siteName: "НейроЭксперт",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    locale: "ru_RU",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "НейроЭксперт",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: ["/opengraph-image"],
+  },
 };
 
 export default function RootLayout({
