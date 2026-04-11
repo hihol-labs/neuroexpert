@@ -1,15 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 import { Card, CardTitle, CardValue } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-);
 
 interface CitationByWeek { week: string; count: number }
 interface ArticleCitation { title: string; chatgpt: boolean; yandexgpt: boolean; gigachat: boolean; perplexity: boolean; serpGoogle: number | null; serpYandex: number | null }
@@ -88,6 +83,12 @@ function CompetitorCompare({ yourMentions }: { yourMentions: number }) {
 }
 
 export default function AnalyticsPage() {
+  const [supabase] = useState(() =>
+    createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    ),
+  );
   const [trustScore, setTrustScore] = useState(0);
   const [shareOfVoice, setShareOfVoice] = useState(0);
   const [citationsByWeek, setCitationsByWeek] = useState<CitationByWeek[]>([]);

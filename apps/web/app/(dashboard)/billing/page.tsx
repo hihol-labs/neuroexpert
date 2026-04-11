@@ -1,15 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle, CardValue } from "@/components/ui/card";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-);
 
 const TIER_LABELS: Record<string, { name: string; price: string }> = {
   free: { name: "Free", price: "0 ₽/мес" },
@@ -21,6 +16,12 @@ const TIER_LABELS: Record<string, { name: string; price: string }> = {
 };
 
 export default function BillingPage() {
+  const [supabase] = useState(() =>
+    createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    ),
+  );
   const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
   const [payments, setPayments] = useState<Array<Record<string, unknown>>>([]);
   const [loading, setLoading] = useState(false);
