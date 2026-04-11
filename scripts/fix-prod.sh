@@ -29,8 +29,13 @@ rsync -az --delete --info=stats2 \
   --exclude='.env' \
   --exclude='.env.local' \
   --exclude='dist' \
+  --exclude='docker/supabase/kong.yml' \
   ./ "$SERVER:$REMOTE_DIR/"
 ok "Код синхронизирован"
+
+log "Шаг 1b/3: Регенерация kong.yml из template (envsubst)"
+ssh -T "$SERVER" "cd $REMOTE_DIR && bash scripts/render-kong.sh"
+ok "kong.yml актуален"
 
 log "Шаг 2/3: Seed БД (если нужно) + rebuild + restart web"
 ssh -T "$SERVER" "REMOTE_DIR=$REMOTE_DIR bash -s" <<'REMOTE_SCRIPT'

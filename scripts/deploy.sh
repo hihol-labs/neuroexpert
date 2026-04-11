@@ -46,22 +46,7 @@ REMOTE
 
 # --- 2b. Render kong.yml from template (envsubst with real keys) ---
 echo "[2b/6] Рендер kong.yml из шаблона..."
-ssh "$SERVER" bash -s <<'REMOTE'
-set -euo pipefail
-cd /opt/neuroexpert
-if [ ! -f docker/supabase/kong.yml.template ]; then
-  echo "  ✗ docker/supabase/kong.yml.template не найден"
-  exit 1
-fi
-export ANON_KEY=$(grep "^NEXT_PUBLIC_SUPABASE_ANON_KEY=" .env | cut -d= -f2-)
-export SERVICE_ROLE_KEY=$(grep "^SUPABASE_SERVICE_ROLE_KEY=" .env | cut -d= -f2-)
-if [ -z "$ANON_KEY" ] || [ -z "$SERVICE_ROLE_KEY" ]; then
-  echo "  ✗ NEXT_PUBLIC_SUPABASE_ANON_KEY или SUPABASE_SERVICE_ROLE_KEY пустые в .env"
-  exit 1
-fi
-envsubst '$ANON_KEY $SERVICE_ROLE_KEY' < docker/supabase/kong.yml.template > docker/supabase/kong.yml
-echo "  → kong.yml сгенерирован (Kong не подставляет \${VAR} сам)"
-REMOTE
+ssh "$SERVER" "cd /opt/neuroexpert && bash scripts/render-kong.sh"
 
 # --- 3. Apply migrations ---
 echo "[3/6] Миграции БД..."
