@@ -11,6 +11,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.99.1",
     "grammy": "^1.35.0",
+    "https-proxy-agent": "^7.0.6",
     "shared": "workspace:*"
   },
   "devDependencies": {

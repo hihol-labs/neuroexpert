@@ -1,4 +1,5 @@
-import { Bot, GrammyError, HttpError, type Context, type NextFunction } from "grammy";
+import { Bot, GrammyError, HttpError, type Context, type NextFunction, type BotConfig } from "grammy";
+import { HttpsProxyAgent } from "https-proxy-agent";
 import { registerCommands } from "./commands/start";
 import { registerOrdersCommand } from "./commands/orders";
 import { registerRecordCommand } from "./commands/record";
@@ -65,4 +66,9 @@ if (!token) {
   throw new Error("TELEGRAM_BOT_TOKEN is not set");
 }
 
-export const bot = setupBot(new Bot(token));
+const proxyUrl = process.env.TG_PROXY_URL || process.env.HTTPS_PROXY;
+const botOptions: BotConfig<Context> = proxyUrl
+  ? { client: { baseFetchConfig: { agent: new HttpsProxyAgent(proxyUrl), compress: true } as any } }
+  : {};
+
+export const bot = setupBot(new Bot(token, botOptions));
