@@ -11,6 +11,8 @@ function getAdmin() {
   );
 }
 import { generateArticleMetadata } from "@/lib/seo";
+import { BookingForm } from "@/components/experts/booking-form";
+import { ArticleAnalytics } from "@/components/article/analytics";
 import {
   generateArticleSchema,
   generatePersonSchema,
@@ -96,7 +98,26 @@ async function getArticleData(expertSlug: string, articleSlug: string) {
     });
   }
 
-  return { expert, article, related: related ?? [], relatedQuestions, otherExperts, niche, pubCount: pubCount ?? 0 };
+  // Reviews (top 3)
+  const { data: reviews } = await supabase
+    .from("reviews")
+    .select("reviewer_name, rating, review_text, created_at")
+    .eq("expert_id", expert.id)
+    .eq("is_published", true)
+    .order("created_at", { ascending: false })
+    .limit(3);
+
+  // Citation count
+  const { count: citationCount } = await supabase
+    .from("citation_checks")
+    .select("id", { count: "exact", head: true })
+    .eq("expert_id", expert.id)
+    .eq("is_cited", true);
+
+  return {
+    expert, article, related: related ?? [], relatedQuestions, otherExperts,
+    niche, pubCount: pubCount ?? 0, reviews: reviews ?? [], citationCount: citationCount ?? 0,
+  };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -169,7 +190,7 @@ export default async function ArticlePage({ params }: Props) {
   const data = await getArticleData(params.slug, params.articleSlug);
   if (!data) notFound();
 
-  const { expert, article, related, relatedQuestions, otherExperts, niche, pubCount } = data;
+  const { expert, article, related, relatedQuestions, otherExperts, niche, pubCount, reviews, citationCount } = data;
   const questionText = (article.questions as unknown as { question_text: string } | null)?.question_text ?? article.title;
   const faqItems = (article.format_faq as Array<{ question: string; answer: string }>) ?? [];
   const tldr = extractTldr(article.format_seo_article ?? "");
@@ -213,6 +234,7 @@ export default async function ArticlePage({ params }: Props) {
         </nav>
       </header>
 
+      <ArticleAnalytics expertSlug={expert.slug} articleSlug={article.slug} />
       <main className="mx-auto max-w-4xl px-6 py-8">
         {/* Breadcrumbs */}
         <nav className="text-sm text-gray-500 mb-6">
@@ -240,6 +262,11 @@ export default async function ArticlePage({ params }: Props) {
               {expert.years_experience && <span>{expert.years_experience} лет опыта</span>}
               {expert.trust_score > 0 && <span>Trust Score: {expert.trust_score.toFixed(1)}</span>}
               <span>{pubCount} публикаций</span>
+              {expert.avg_rating > 0 && (
+                <span>{"★".repeat(Math.round(expert.avg_rating))} {expert.avg_rating.toFixed(1)} ({expert.review_count} отзывов)</span>
+              )}
+              {citationCount > 0 && <span>Цитируется {citationCount} раз в AI</span>}
+              {expert.is_verified && <span className="text-blue-600 font-medium">✓ Верифицирован</span>}
             </div>
             {/* E-E-A-T */}
             <div className="flex flex-wrap gap-3 mt-2 text-xs text-gray-500">
@@ -395,7 +422,34 @@ export default async function ArticlePage({ params }: Props) {
           </div>
         )}
 
-        {/* CTA: Записаться */}
+        {/* Reviews */}
+        {reviews.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Отзывы</h2>
+            <div className="space-y-4">
+              {reviews.map((r, i) => (
+                <div key={i} className="rounded-xl border border-gray-200 p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-yellow-500 text-sm">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</span>
+                    <span className="text-sm font-medium text-gray-900">{r.reviewer_name}</span>
+                    <span className="text-xs text-gray-400">
+                      {new Date(r.created_at).toLocaleDateString("ru-RU")}
+                    </span>
+                  </div>
+                  {r.review_text && <p className="text-sm text-gray-600">{r.review_text}</p>}
+                </div>
+              ))}
+            </div>
+            <Link href={`/experts/${expert.slug}#reviews`} className="inline-block mt-3 text-sm text-blue-600 hover:underline">
+              Все отзывы →
+            </Link>
+          </div>
+        )}
+
+        {/* Primary CTA: Booking widget */}
+        <BookingForm expertId={expert.id} expertName={expert.full_name} />
+
+        {/* Secondary CTA: Lead form */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white mb-8" id="booking">
           <h2 className="text-xl font-bold mb-2">Записаться к эксперту</h2>
           <p className="text-blue-100 text-sm mb-4">

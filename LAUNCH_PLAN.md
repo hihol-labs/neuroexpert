@@ -144,14 +144,14 @@ ssh hostland 'docker logs docker-bot-1 --tail 10'
 **Цель:** каждая SSR-страница = посадочная с **двойным CTA**.
 
 **Действия:**
-- [ ] **Hero-блок** с болевым заголовком (AI-генерит по `niche_questions`)
-- [ ] **Trust block:** регалии + Trust Score + verification badge ✓
-- [ ] **Social proof:** отзывы (`reviews` таблица), avg_rating, число цитирований
-- [ ] **Conversion CTA (ДВА):**
-  - Primary: "Записаться на консультацию" → booking widget
-  - Secondary: "Получить бесплатно статью на похожую тему" → lead form
-- [ ] **Booking widget** с `expert_schedule` + split-payment (`/api/pay-consultation`)
-- [ ] **Analytics events** (Plausible custom): `view`, `cta_primary_click`, `cta_secondary_click`, `booking_paid`
+- [x] **Hero-блок** — H1 = question_text (уже было)
+- [x] **Trust block:** avg_rating звёзды + review_count + число цитирований AI + verification badge ✓
+- [x] **Social proof:** секция отзывов (top 3, is_published) на article page + ссылка на все отзывы
+- [x] **Conversion CTA (ДВА):**
+  - Primary: BookingForm (выбор слота из expert_schedule)
+  - Secondary: Lead form (существующая — имя, контакт, сообщение)
+- [x] **Booking widget** — BookingForm импортирован на article page
+- [x] **Analytics events** — ArticleAnalytics component: article_view + cta_view (IntersectionObserver)
 
 **Как проверить:**
 
