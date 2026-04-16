@@ -9,6 +9,96 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      api_keys: {
+        Row: {
+          id: string;
+          user_id: string;
+          key_hash: string;
+          key_prefix: string;
+          name: string;
+          permissions: string;
+          monthly_limit: number;
+          requests_this_month: number;
+          month_reset_at: string;
+          tier: string;
+          last_used_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          key_hash: string;
+          key_prefix: string;
+          name: string;
+          permissions?: string;
+          monthly_limit?: number;
+          requests_this_month?: number;
+          month_reset_at?: string;
+          tier?: string;
+          last_used_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          key_hash?: string;
+          key_prefix?: string;
+          name?: string;
+          permissions?: string;
+          monthly_limit?: number;
+          requests_this_month?: number;
+          month_reset_at?: string;
+          tier?: string;
+          last_used_at?: string | null;
+          created_at?: string;
+        };
+      };
+      referrals: {
+        Row: {
+          id: string;
+          referrer_id: string;
+          referred_id: string;
+          cash_reward: number;
+          payout_status: string;
+          payout_date: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          referrer_id: string;
+          referred_id: string;
+          cash_reward?: number;
+          payout_status?: string;
+          payout_date?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          referrer_id?: string;
+          referred_id?: string;
+          cash_reward?: number;
+          payout_status?: string;
+          payout_date?: string | null;
+          created_at?: string;
+        };
+      };
+      settings: {
+        Row: {
+          key: string;
+          value: string;
+          updated_at: string;
+        };
+        Insert: {
+          key: string;
+          value: string;
+          updated_at?: string;
+        };
+        Update: {
+          key?: string;
+          value?: string;
+          updated_at?: string;
+        };
+      };
       profiles: {
         Row: {
           id: string;
@@ -715,3 +805,15 @@ export type SubQueryUpdate = Database["public"]["Tables"]["sub_queries"]["Update
 export type CwvMetric = Database["public"]["Tables"]["cwv_metrics"]["Row"];
 export type CwvMetricInsert = Database["public"]["Tables"]["cwv_metrics"]["Insert"];
 export type CwvMetricUpdate = Database["public"]["Tables"]["cwv_metrics"]["Update"];
+
+export type ApiKey = Database["public"]["Tables"]["api_keys"]["Row"];
+export type ApiKeyInsert = Database["public"]["Tables"]["api_keys"]["Insert"];
+export type ApiKeyUpdate = Database["public"]["Tables"]["api_keys"]["Update"];
+
+export type Referral = Database["public"]["Tables"]["referrals"]["Row"];
+export type ReferralInsert = Database["public"]["Tables"]["referrals"]["Insert"];
+export type ReferralUpdate = Database["public"]["Tables"]["referrals"]["Update"];
+
+export type Setting = Database["public"]["Tables"]["settings"]["Row"];
+export type SettingInsert = Database["public"]["Tables"]["settings"]["Insert"];
+export type SettingUpdate = Database["public"]["Tables"]["settings"]["Update"];

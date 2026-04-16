@@ -219,7 +219,7 @@ packages/
 
 ## Production
 
-- **Сервер:** `root@155.212.185.216` (3 CPU, 6 ГБ RAM, 60 ГБ NVMe)
+- **Сервер:** `185.221.213.104` (SSH: `hostland` алиас из ~/.ssh/config)
 - **Домен:** `neuroexpertise.ru` (SSL Let's Encrypt, auto-renew)
 - **Проект:** `/opt/neuroexpert/`
 - **Env:** `/opt/neuroexpert/.env` (НЕ коммитить!)
@@ -242,11 +242,11 @@ packages/
 | Docker up (dev) | `docker-compose up -d` |
 | Healthcheck (dev) | `curl http://localhost:3000/api/health` |
 | Healthcheck (prod) | `curl -sk https://neuroexpertise.ru/api/health` |
-| Prod deploy | `rsync -avz --delete --exclude='.git' --exclude='node_modules' --exclude='.next' --exclude='.env' --exclude='.env.local' --exclude='dist' --exclude='docker/supabase/kong.yml' ./ root@155.212.185.216:/opt/neuroexpert/ && ssh root@155.212.185.216 "cd /opt/neuroexpert && bash scripts/render-kong.sh && docker compose -f docker/docker-compose.prod.yml --env-file .env build web && docker compose -f docker/docker-compose.prod.yml --env-file .env up -d web"` |
-| Prod logs | `ssh root@155.212.185.216 "cd /opt/neuroexpert && docker compose -f docker/docker-compose.prod.yml --env-file .env logs -f web"` |
-| Prod restart | `ssh root@155.212.185.216 "cd /opt/neuroexpert && docker compose -f docker/docker-compose.prod.yml --env-file .env restart web"` |
-| Prod status | `ssh root@155.212.185.216 "cd /opt/neuroexpert && docker compose -f docker/docker-compose.prod.yml --env-file .env ps"` |
-| Prod миграция | `ssh root@155.212.185.216 "docker exec -i docker-supabase-db-1 psql -U postgres -d postgres < packages/supabase/migrations/NNN.sql"` |
+| Prod deploy | `tar czf - --exclude='.git' --exclude='node_modules' --exclude='.next' --exclude='.env' --exclude='.env.local' --exclude='dist' --exclude='docker/supabase/kong.yml' . \| ssh hostland "cd /opt/neuroexpert && tar xzf - --overwrite" && ssh hostland "cd /opt/neuroexpert && bash scripts/render-kong.sh && docker compose -f docker/docker-compose.prod.yml --env-file .env build web && docker compose -f docker/docker-compose.prod.yml --env-file .env up -d web"` |
+| Prod logs | `ssh hostland "cd /opt/neuroexpert && docker compose -f docker/docker-compose.prod.yml --env-file .env logs -f web"` |
+| Prod restart | `ssh hostland "cd /opt/neuroexpert && docker compose -f docker/docker-compose.prod.yml --env-file .env restart web"` |
+| Prod status | `ssh hostland "cd /opt/neuroexpert && docker compose -f docker/docker-compose.prod.yml --env-file .env ps"` |
+| Prod миграция | `ssh hostland "docker exec -i docker-supabase-db-1 psql -U postgres -d postgres < packages/supabase/migrations/NNN.sql"` |
 | Миграция push | `npx supabase db push --db-url $SUPABASE_DB_URL` |
 | AIO мониторинг | `npx tsx --env-file=.env.local scripts/validate-aio.ts` |
 | Тест audit API | `curl -X POST localhost:3000/api/audit -H "Content-Type: application/json" -d '{"niche_id":"...","type":"free"}'` |
