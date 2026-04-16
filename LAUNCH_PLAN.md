@@ -191,12 +191,12 @@ ssh hostland 'docker logs docker-bot-1 --tail 10'
 ### Шаг 1.4 — Архитектурная подготовка (1 день)
 
 **Действия:**
-- [ ] Миграция 016: `referrals` + `cash_reward NUMERIC`, `payout_status`, `payout_date`
-- [ ] API `/api/referrals/payout` (заготовка — возвращает 501 Not Implemented)
-- [ ] `settings` таблица с ключ/значение: `cpa_rate_rub`, `cpa_enabled`
-- [ ] Миграция 017: `api_keys` + колонка `tier` (free/pro/enterprise), `monthly_limit`
-- [ ] `lib/subscription.ts`: убедиться что `Business` (24 990₽) и `Enterprise` (custom) есть
-- [ ] Проверить `MARKETPLACE_COMMISSION_RATE` в `lib/subscription.ts`: Free 15%, Starter 7%, Pro 3%, Expert 3%, Business 0%
+- [x] Миграция 016: `referrals` + `settings` (cpa_rate_rub, cpa_enabled) + RLS
+- [x] API `/api/referrals/payout` — заготовка 501 Not Implemented
+- [x] `settings` таблица в миграции 016
+- [x] Миграция 017: `api_keys` + `tier` (free/pro/enterprise), `monthly_limit`, `requests_this_month`, `month_reset_at`
+- [x] `lib/subscription.ts`: Business (24990) и Enterprise (99990) уже есть
+- [x] Комиссии: Free 15%, Starter 7%, Pro 3%, Expert 0%, Business 0% — корректно
 
 **Как проверить:**
 
