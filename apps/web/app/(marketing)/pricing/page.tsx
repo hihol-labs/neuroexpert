@@ -36,7 +36,8 @@ const PLANS = [
     name: "Starter",
     price: "1 490",
     period: "/мес",
-    headline: "2 ниши. Все 5 форматов. Безлимит пакетов.",
+    headline: "2+ цитирования за 60 дней или возврат",
+    guarantee: "2 цитирования / 60 дней",
     commission: "7%",
     commissionNote: "вы получаете 93%",
     scenario: "При 5 клиентах по 5 000 ₽: комиссия 1 750 ₽ вместо 3 750 ₽ на Free. Экономия 2 000 ₽/мес — подписка окупается.",
@@ -56,7 +57,8 @@ const PLANS = [
     name: "Pro",
     price: "2 990",
     period: "/мес",
-    headline: "3 ниши. Система продвигает вас сама.",
+    headline: "5+ цитирований за 90 дней или возврат",
+    guarantee: "5 цитирований / 90 дней",
     commission: "3%",
     commissionNote: "вы получаете 97%",
     scenario: "Статьи на Дзен, Хабр, Яндекс Кью. При 8 клиентах: комиссия 1 200 ₽ vs 6 000 ₽ на Free. Разница покрывает подписку 3 раза.",
@@ -77,7 +79,8 @@ const PLANS = [
     name: "Expert",
     price: "4 990",
     period: "/мес",
-    headline: "5 ниш. Полная аналитика. 0% комиссии.",
+    headline: "10+ цитирований за 90 дней или возврат",
+    guarantee: "10 цитирований / 90 дней",
     commission: "0%",
     commissionNote: "вы получаете 100%",
     scenario: "При 10 клиентах по 5 000 ₽: на Free вы теряли бы 7 500 ₽/мес на комиссии. Expert = чистая экономия 2 510 ₽/мес + полная аналитика.",
@@ -166,7 +169,12 @@ export default function PricingPage() {
                     </span>
                   </div>
                 </div>
-                <p className="text-sm text-gray-400 mb-3 font-medium">{plan.headline}</p>
+                <p className="text-sm text-gray-400 mb-1 font-medium">{plan.headline}</p>
+                {"guarantee" in plan && (
+                  <Link href="/terms#guarantee" className="text-xs text-blue-400 hover:text-blue-300 underline">
+                    Условия гарантии
+                  </Link>
+                )}
 
                 {/* Сценарий */}
                 <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-3 mb-4">

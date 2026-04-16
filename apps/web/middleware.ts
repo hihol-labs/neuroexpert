@@ -11,6 +11,7 @@ const PUBLIC_ROUTES = [
   "/find-expert",
   "/login",
   "/register",
+  "/terms",
 ];
 
 const PUBLIC_PREFIXES = [

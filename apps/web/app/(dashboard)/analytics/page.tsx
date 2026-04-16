@@ -98,6 +98,8 @@ export default function AnalyticsPage() {
   const [leads30d, setLeads30d] = useState(0);
   const [topPages, setTopPages] = useState<Array<{ title: string; slug: string; leads: number; cited: number }>>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [tier, setTier] = useState<string>("free");
+  const [totalCited, setTotalCited] = useState(0);
 
   useEffect(() => {
     loadData();
@@ -108,8 +110,9 @@ export default function AnalyticsPage() {
     if (!user) return;
 
     // Trust score
-    const { data: profile } = await supabase.from("profiles").select("trust_score").eq("id", user.id).single();
+    const { data: profile } = await supabase.from("profiles").select("trust_score, tier").eq("id", user.id).single();
     setTrustScore(profile?.trust_score ?? 0);
+    setTier((profile?.tier as string) ?? "free");
 
     // Citations
     const { data: citations } = await supabase
@@ -124,6 +127,7 @@ export default function AnalyticsPage() {
       const total = citations.length;
       const cited = citations.filter((c) => c.is_cited).length;
       setShareOfVoice(total > 0 ? Math.round((cited / total) * 100) : 0);
+      setTotalCited(cited);
 
       // By week
       const weekMap = new Map<string, number>();
@@ -297,6 +301,35 @@ export default function AnalyticsPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Аналитика</h1>
+
+      {/* Guarantee progress banner */}
+      {(() => {
+        const guaranteeMap: Record<string, number> = { starter: 2, pro: 5, expert: 10 };
+        const target = guaranteeMap[tier];
+        if (!target) return null;
+        const progress = Math.min(100, Math.round((totalCited / target) * 100));
+        const reached = totalCited >= target;
+        return (
+          <div className={`mb-6 rounded-xl border p-4 ${reached ? "border-green-200 bg-green-50" : "border-blue-200 bg-blue-50"}`}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-900">
+                {reached
+                  ? `Гарантия выполнена! ${totalCited} цитирований`
+                  : `Прогресс: ${totalCited}/${target} цитирований к гарантии`}
+              </span>
+              <a href="/terms#guarantee" className="text-xs text-blue-600 hover:underline">
+                Условия
+              </a>
+            </div>
+            <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${reached ? "bg-green-500" : "bg-blue-600"}`}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Top metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
