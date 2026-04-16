@@ -76,14 +76,14 @@ ssh hostland 'docker logs docker-bot-1 --tail 10'
 **Цель:** превратить `/scan` в главную воронку продаж.
 
 **Действия:**
-- [ ] Убрать auth-middleware с `/scan`, добавить в `PUBLIC_PREFIXES` в `middleware.ts`
-- [ ] Генерация `scan_id` (UUID) при входе на `/scan` без регистрации
-- [ ] Хранение результата в Redis 24ч
-- [ ] Share-link `/scan/[id]` (роут уже есть)
-- [ ] CTA в конце отчёта (два):
-  - Primary (B2C): "Вас не цитируют в 4 из 5 AI. Конкуренты в 3. Исправить → регистрация"
-  - Secondary (B2B): "Агентство? Получите Blind Spots API → $99/мес"
-- [ ] Rate limit 3/час/IP (уже есть, проверить)
+- [x] Убрать auth-middleware с `/scan` — уже в `PUBLIC_PREFIXES` (middleware.ts)
+- [x] Генерация `scan_id` — используем slug (идемпотентный, shareable, SEO-friendly). UUID не нужен
+- [x] Хранение результата — `scan_results` таблица (Supabase). Redis избыточен для single-server
+- [x] Share-link `/scan/[slug]` — роут + OG-теги + share-кнопки (TG/VK)
+- [x] CTA в конце отчёта (два):
+  - Primary (B2C): динамический текст по visibility% + конкурент → `/register?from=scan&niche=...`
+  - Secondary (B2B): "Агентство? Blind Spots API от $99/мес" → `/for-business`
+- [x] Rate limit 3/час/IP — in-memory rate limit в `/api/scan/route.ts`
 
 **Как проверить что работает:**
 

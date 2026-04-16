@@ -275,31 +275,55 @@ export default async function ScanResultPage({
             ))}
           </div>
 
-          {/* CTA */}
-          <div className="mt-12 rounded-2xl bg-blue-600 p-8 text-center">
+          {/* CTA 1 — Primary B2C */}
+          <div className="mt-12 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 p-8 text-center">
             <h2 className="text-2xl font-bold text-white">
-              {result.visibility_percent < 50
-                ? "Нейросети вас не знают. Это можно исправить."
-                : "Хороший старт! Но можно лучше."}
+              {result.visibility_percent === 0
+                ? "Нейросети о вас не знают. Это можно исправить за 10 минут."
+                : result.visibility_percent < 50
+                  ? `Вас не цитируют в ${result.total_platforms - result.mentioned_count} из ${result.total_platforms} AI.${
+                      competitor && competitor.visibility_percent > result.visibility_percent
+                        ? ` Конкурент опережает на ${competitor.visibility_percent - result.visibility_percent}%.`
+                        : " Конкуренты уже там."
+                    }`
+                  : result.visibility_percent < 100
+                    ? `Хороший старт! Но ${result.total_platforms - result.mentioned_count} платформ вас ещё не знают.`
+                    : "Отличная видимость! Следите за позициями и усиливайте контент."}
             </h2>
-            <p className="mt-2 text-blue-100">
+            <p className="mt-3 text-blue-100">
               Наговорите ответ за 10 минут — мы опубликуем экспертную статью,
               которую будут цитировать нейросети.
             </p>
-            <div className="mt-6 flex justify-center gap-4">
+            <div className="mt-6 flex flex-col sm:flex-row justify-center gap-4">
               <Link
-                href="/register"
+                href={`/register?from=scan&niche=${encodeURIComponent(result.query)}`}
                 className="rounded-lg bg-white px-8 py-3 text-base font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
               >
                 Начать бесплатно
               </Link>
               <Link
                 href="/scan"
-                className="rounded-lg border border-blue-400 px-8 py-3 text-base font-semibold text-white hover:bg-blue-700 transition-colors"
+                className="rounded-lg border border-white/40 px-8 py-3 text-base font-semibold text-white hover:bg-white/10 transition-colors"
               >
                 Проверить ещё
               </Link>
             </div>
+          </div>
+
+          {/* CTA 2 — Secondary B2B */}
+          <div className="mt-6 rounded-2xl border border-gray-200 bg-gray-50 p-6 text-center">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Агентство или бизнес?
+            </h3>
+            <p className="mt-2 text-sm text-gray-600">
+              Blind Spots API — автоматический мониторинг AI-видимости ваших клиентов. От $99/мес.
+            </p>
+            <Link
+              href="/for-business"
+              className="mt-4 inline-block rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              Подробнее для агентств
+            </Link>
           </div>
 
           {/* Share */}
