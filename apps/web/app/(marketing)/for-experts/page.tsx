@@ -95,14 +95,14 @@ export default function ForExpertsPage() {
                 <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Корректируем стратегию по данным</li>
               </ul>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-              <h3 className="text-lg font-semibold text-gray-300">Чего мы не обещаем</h3>
-              <ul className="mt-4 space-y-3 text-sm text-gray-400">
-                <li className="flex gap-2"><span className="text-gray-500 flex-shrink-0">&mdash;</span>«N клиентов в месяц» — результат зависит от ниши, конкуренции, качества ответов</li>
-                <li className="flex gap-2"><span className="text-gray-500 flex-shrink-0">&mdash;</span>100% цитирование каждой страницы — но мы делаем всё, чтобы шансы были максимальными</li>
-                <li className="flex gap-2"><span className="text-gray-500 flex-shrink-0">&mdash;</span>Мгновенный результат — первые цитирования появляются через 2-4 недели</li>
+            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-6">
+              <h3 className="text-lg font-semibold text-amber-300">Чего мы не обещаем</h3>
+              <ul className="mt-4 space-y-3 text-sm text-amber-200/90">
+                <li className="flex gap-2"><span className="text-amber-400 flex-shrink-0">&mdash;</span>«N клиентов в месяц» — результат зависит от ниши, конкуренции, качества ответов</li>
+                <li className="flex gap-2"><span className="text-amber-400 flex-shrink-0">&mdash;</span>100% цитирование каждой страницы — но мы делаем всё, чтобы шансы были максимальными</li>
+                <li className="flex gap-2"><span className="text-amber-400 flex-shrink-0">&mdash;</span>Мгновенный результат — первые цитирования появляются через 2-4 недели</li>
               </ul>
-              <p className="mt-4 text-sm text-gray-400">
+              <p className="mt-4 text-sm text-amber-200/80">
                 Мы создаём систему, в которой клиенты находят вас сами — через поисковики и нейросети.
                 Чем больше контента — тем выше авторитет и больше клиентов.
               </p>
