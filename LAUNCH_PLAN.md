@@ -1,7 +1,28 @@
 # NeuroExpert — Пошаговый план запуска под цель 2M ₽/мес к декабрю 2026
 
-> Создан 2026-04-16. Обновлён с учётом Marketplace + Knowledge API + подробных проверок.
+> Создан 2026-04-16. Обновлён 2026-04-17 (порядок шагов Block 2, дашборд, раздел «Что НЕ потеряно»).
 > Следующая сессия Claude Code читает этот файл первым.
+
+## 📊 Статус (обновлять после каждой сессии)
+
+**Прогресс:** Block 1 ✅ · Block 2 🔶 (~40%) · Block 3-6 ⬜
+**Текущая фаза:** Pre-outreach (Step 2.0 + 2.2)
+**Следующий шаг:** Step 2.0.1 — Tech QA 9 лендингов + Step 2.0.2 — Content audit
+**Активные блокеры P0:** Step 2.2 ЮKassa ключи (на пользователе — ЛК ЮKassa)
+**Известные P0/P1 из BACKLOG.md (страховка):**
+- B-004 Ротация OpenAI + TG ключей (security, перед outreach) — см. Step 2.0.5
+- B-005 Backend tier-логика для API ключей — отложена до 1-го платящего Pro
+- B-006 Маркетинговые лендинги в middleware whitelist — DX improvement
+- B-007 PostgREST schema cache automation — DX improvement
+- B-013 Pricing bundles / cross-sell — после 1-го платящего в каждом канале
+
+**Что новое 2026-04-17:**
+- Worker `claim_job` 404 закрыт (миграция 018)
+- `/for-agencies` лендинг + `/api/agency-leads` задеплоены
+- LANDING_BRIEFS.md создан (источник правды контента)
+- Hybrid стратегия выбрана (B2C-пилоты + B2B-API параллельно)
+- Step 2.2 ЮKassa **перед** Step 2.1 E2E (E2E требует working subscription payment)
+- Step 2.5 Knowledge API soft launch вынесен из Block 4.4 в Block 2 (параллельно 2.3)
 
 ## Цель
 **2M ₽/мес MRR к декабрю 2026** из 5 потоков выручки:
@@ -297,47 +318,58 @@ curl -I https://neuroexpertise.ru/api/referrals/payout
 
 ### Шаг 2.0 — Pre-outreach Landing Readiness (½ дня) 🆕
 
-**Цель:** не отправлять холодные письма пилотам и агентствам пока 1 битая ссылка или несоответствие может убить лида. Обязательный gate перед 2.3 (пилоты) и 4.4 (Knowledge API outreach).
+**Цель:** не отправлять холодные письма пилотам и агентствам пока 1 битая ссылка или несоответствие может убить лида. Обязательный gate перед 2.3 (пилоты) и 2.5 (Knowledge API outreach).
 
-**Действия:**
+**Substeps (выполнять в порядке):**
 
-1. **Тех. QA каждого лендинга** (по процедуре «Как проверить лендинг — технический QA» в начале документа):
-   - [ ] `/` — главная
-   - [ ] `/for-experts`
-   - [ ] `/for-business`
-   - [ ] `/for-agencies`
-   - [ ] `/pricing`
-   - [ ] `/how-it-works`
-   - [ ] `/audit`
-   - [ ] `/scan`
-   - [ ] `/terms`
-   - [ ] `/find-expert`
+#### 2.0.1 Тех. QA каждого лендинга (по процедуре «Как проверить лендинг — технический QA»)
+- [ ] `/` — главная
+- [ ] `/for-experts`
+- [ ] `/for-business`
+- [ ] `/for-agencies`
+- [ ] `/pricing`
+- [ ] `/how-it-works`
+- [ ] `/audit`
+- [ ] `/scan`
+- [ ] `/terms`
+- [ ] `/find-expert`
 
-2. **Content audit** (по процедуре «Как провести content-аудит лендингов»):
-   - [ ] Запустить `/advisor` с subagents business-analyst + devils-advocate
-   - [ ] Получить отчёт по всем страницам (P0/P1/P2/P3)
-   - [ ] Все P0 (расхождения с реальностью, overclaims, противоречия) — **исправить до outreach**
-   - [ ] P1-P3 — занести в `BACKLOG.md`
+#### 2.0.2 Content audit (по процедуре «Как провести content-аудит лендингов»)
+- [ ] Запустить `/advisor` с subagents business-analyst + devils-advocate
+- [ ] Получить отчёт по всем страницам (P0/P1/P2/P3)
+- [ ] Все P0 (расхождения с реальностью, overclaims, противоречия) — **исправить до outreach**
+- [ ] P1-P3 — занести в `BACKLOG.md`
 
-3. **Обновить `LANDING_BRIEFS.md`** после правок (бриф = источник правды).
+#### 2.0.3 Обновить `LANDING_BRIEFS.md` после правок
+Бриф = источник правды. Если контент менялся — синхронизировать.
 
-4. **Зафиксировать в `BACKLOG.md`** все findings + время устранения.
+#### 2.0.4 Зафиксировать в `BACKLOG.md` все findings + время устранения
 
-**Acceptance criteria:**
+#### 2.0.5 Ротация OpenAI + Telegram токенов (B-004 в BACKLOG, P1 security) 🔐
+**Почему здесь:** ключи могли быть скомпрометированы (упоминались в открытом виде в чате прошлых сессий). Перед публичным outreach — обязательная санация.
+- [ ] OpenAI: platform.openai.com → API keys → revoke старый → создать новый → прописать в `/opt/neuroexpert/.env`
+- [ ] Telegram: @BotFather → `/token` → revoke → новый → прописать
+- [ ] `docker compose -f docker/docker-compose.prod.yml restart bot worker web`
+- [ ] Проверка: запросом со старым OpenAI ключом → 401; bot отвечает в TG; LLM probing работает в логах worker
+
+**Acceptance criteria Step 2.0:**
 
 - [ ] 0 P0-findings (всё критическое исправлено)
 - [ ] Все 200 на CTA, формы валидируются
 - [ ] LANDING_BRIEFS.md синхронизирован с продом
 - [ ] BACKLOG.md содержит свежие P1-P3 findings
+- [ ] Старые OpenAI/TG ключи отозваны, новые работают
 
 **Когда применяется gate:**
 - Перед началом outreach (Шаг 2.3 пилоты-эксперты)
-- Перед 4.4 Knowledge API soft launch
+- Перед Шагом 2.5 Knowledge API soft launch
 - После любого редизайна 3+ страниц
 
 ---
 
 ### Шаг 2.1 — Финализация Phase 0 (4-5 дней)
+
+**⚠️ Зависимость:** Step 2.2 (ЮKassa активация) должен быть выполнен **раньше** этого шага. Подшаг 0.6/0.7/0.8 проверки subscription включают редирект на ЮKassa и оплату — без ключей этот тест физически нельзя пройти.
 
 Каждый подпункт проверяется отдельно:
 
@@ -453,13 +485,45 @@ curl -I https://neuroexpertise.ru/api/referrals/payout
 6. Получить хотя бы 1 заявку через форму "записаться"
 7. Провести 1 платную консультацию через booking (по возможности)
 
-**Acceptance criteria Блока 2:**
+**Acceptance criteria Блока 2 (B2C-канал):**
 - [ ] 3+ эксперта опубликовали 3+ статей каждый
 - [ ] Минимум 5 статей в индексе Google (проверить GSC)
 - [ ] Минимум 1 зафиксированное AI-цитирование (скриншот)
 - [ ] Минимум 3 реальные заявки через формы
 - [ ] Минимум 1 оплаченная консультация через split-payment
 - [ ] Фидбек: топ-3 UX-проблемы зафиксированы в `BACKLOG.md`
+
+---
+
+### Шаг 2.5 — Knowledge API Soft Launch (параллельно 2.3) 🆕
+
+> **Перенесено из Block 4.4** в Block 2 как часть Hybrid-стратегии (2026-04-17). API готов на 100% (шаги 15-16), нет смысла ждать месяц 3.
+
+**Цель:** валидировать B2B-канал параллельно с пилотами-экспертами. Не выбираем «B2C сначала» vs «API сначала» — оба канала запускаем одновременно, какой даст первого платящего — туда фокус на месяц 3.
+
+**Действия:**
+- [ ] Cold outreach 20 SEO-агентств (TopExpert, SEOnews, vc-сообщества, Telegram-каналы про SEO/GEO)
+  - Шаблон: «бесплатный beta-доступ 14 дней к /api/v1/blind-spots, кейс психология/право, после beta — Pro $99/мес или Enterprise»
+- [ ] Лендинг `/for-agencies` готов и задеплоен ✅ (commits 8107dad + 565e299, 2026-04-17)
+- [ ] OpenAPI docs `/api/v1/docs` — публично доступны ✅
+- [ ] Soft Launch tier — выдавать Pro/Enterprise ключи **вручную через psql** до 1-го платящего:
+  ```sql
+  UPDATE api_keys SET tier='pro',
+                       permissions=ARRAY['read','answers','all'],
+                       rate_limit_per_hour=1000,
+                       monthly_limit=30000
+   WHERE prefix='ne_xxx';
+  ```
+- [ ] Пост на vc.ru: «Карта слепых зон AI» с примерами cURL + JSON response
+- [ ] При первом платящем Pro → начать Backend tier-логику (B-005 в BACKLOG)
+
+**🔑 Ключи нужные перед стартом:** только то что уже есть (OpenAI, Anthropic, SMTP). Для расширенного probing полезен SerpAPI (P1) — но Soft Launch можно начать без него на seed-данных.
+
+**Acceptance criteria Step 2.5:**
+- [ ] 5+ ответов от агентств (open rate ≥25%)
+- [ ] 3-5 beta-агентств активно используют API (last_used_at < 7 дней)
+- [ ] Минимум 2 интервью с агентствами с конкретным фидбеком
+- [ ] Опубликован пост vc.ru → ≥50 просмотров
 
 ---
 
@@ -475,7 +539,18 @@ curl -I https://neuroexpertise.ru/api/referrals/payout
 - ✓ Habr статья опубликована, ≥1 комментарий
 - ✓ GA / Яндекс.Метрика показывает приток трафика с vc.ru
 
-### Шаг 3.2 — Re-engagement 107 beta-юзеров (3 дня)
+### Шаг 3.2 — Re-engagement beta-юзеров (3 дня)
+
+**⚠️ Pre-acceptance: validate the «107» number first** (отмечено в /strategy 2026-04-17 как непроверенный миф):
+```sql
+SELECT COUNT(*) AS total_users,
+       COUNT(*) FILTER (WHERE last_sign_in_at > NOW() - INTERVAL '30 days') AS active_30d,
+       COUNT(*) FILTER (WHERE telegram_id IS NOT NULL) AS with_telegram
+FROM auth.users;
+```
+Если фактическое число < 30 — переименовать шаг и пересмотреть стратегию (массовая рассылка по 5-10 юзерам — overkill).
+
+**Действия (если есть критическая масса beta-юзеров):**
 - [ ] Массовая рассылка через TG-бот (`bot.api.send_message` в цикле по `users.telegram_id`)
 - [ ] Персональные сообщения топ-10 returning users
 - [ ] 5 интервью
@@ -520,18 +595,18 @@ SELECT COUNT(*) FROM bookings WHERE payment_status='paid' AND created_at > NOW()
 - ✓ 3+ партнёра с активным UTM в `/partners`
 - ✓ 5+ платящих приведены через партнёров (атрибуция по `referrer_id`)
 
-### Шаг 4.4 — Knowledge API Soft Launch (2 недели)
-**Действия:**
-- [ ] 3-5 SEO-агентств в closed beta (бесплатный доступ к `/api/v1/blind-spots`)
-- [ ] Пост на vc.ru: "Карта слепых зон AI" с примерами
-- [ ] Лендинг `/api-keys/pricing` переработан под B2B-SEO
+### Шаг 4.4 — Knowledge API expansion (после Step 2.5)
+
+> **Soft Launch перенесён в Block 2 как Step 2.5** (2026-04-17, Hybrid стратегия). В Block 4 остаётся **расширение** — переход от Soft Launch beta к публичному запуску.
+
+**Действия (после успешного Step 2.5):**
+- [ ] Конвертировать активных beta-агентств в Pro $99/мес через ЮKassa
+- [ ] Backend tier-логика (B-005 в BACKLOG): permissions по subscription_tier юзера, не hardcoded
+- [ ] Расширенный probing с **SerpAPI** (требуется ключ — см. P1 в таблице ключей)
+- [ ] Маркетинг в TopExpert, SEOKurs
 
 **Проверка:**
 ```bash
-# API работает
-curl -H "Authorization: Bearer ne_..." https://neuroexpertise.ru/api/v1/blind-spots?niche=psychology
-# ✓ Возвращает JSON с opportunity_score, gap-маркерами
-
 # Beta-агентства активны
 SELECT name, tier, last_used_at FROM api_keys WHERE tier='pro';
 # ✓ 3-5 записей с last_used_at за последние 7 дней
@@ -722,12 +797,12 @@ GROUP BY platform;
 
 ### 🔵 P3 — Кросспост (обещан в тарифах Pro+, нужно в Блоке 5)
 
-| Площадка | Где | Переменные | Приоритет |
-|---|---|---|---|
-| **Дзен** | dzen.ru → Студия → API | `DZEN_API_TOKEN` | Высокий |
-| **Хабр** | habr.com → настройки → API | `HABR_API_TOKEN` | Средний |
-| **vc.ru** | vc.ru → настройки приложения | `VCRU_API_TOKEN` | Высокий |
-| **VK** | vk.com/dev | `VK_API_TOKEN` | Средний |
+| Площадка | Где | Переменные | Приоритет | Нужен в шаге |
+|---|---|---|---|---|
+| **Дзен** | dzen.ru → Студия → API | `DZEN_API_TOKEN` | Высокий | Шаг 5.x (кросспост Pro+) |
+| **Хабр** | habr.com → настройки → API | `HABR_API_TOKEN` | Средний | Шаг 5.x |
+| **vc.ru** | vc.ru → настройки приложения | `VCRU_API_TOKEN` | Высокий | Шаг 3.1 (кейсы) + 5.x |
+| **VK** | vk.com/dev | `VK_API_TOKEN` | Средний | Шаг 5.x |
 
 **Без этого:** статус кросс-поста в БД — "prepared", эксперт копирует вручную. На тарифах Pro+ это обещано как автоматическое.
 
@@ -735,11 +810,11 @@ GROUP BY platform;
 
 ### 🟣 P4 — Индексация (ускорение SEO, нужно в Блоке 5)
 
-| Сервис | Где | Переменные |
-|---|---|---|
-| **Google Search Console API** | console.cloud.google.com → Service Account → JSON base64 | `GSC_SERVICE_ACCOUNT_JSON` |
-| **Яндекс.Вебмастер API** | webmaster.yandex.ru → OAuth | `YANDEX_WEBMASTER_TOKEN`, `YANDEX_WEBMASTER_HOST_ID` |
-| **Bing Webmaster API** | bing.com/webmasters | `BING_WEBMASTER_API_KEY` |
+| Сервис | Где | Переменные | Нужен в шаге |
+|---|---|---|---|
+| **Google Search Console API** | console.cloud.google.com → Service Account → JSON base64 | `GSC_SERVICE_ACCOUNT_JSON` | Шаг 5.4 (SEO long-tail) |
+| **Яндекс.Вебмастер API** | webmaster.yandex.ru → OAuth | `YANDEX_WEBMASTER_TOKEN`, `YANDEX_WEBMASTER_HOST_ID` | Шаг 5.4 |
+| **Bing Webmaster API** | bing.com/webmasters | `BING_WEBMASTER_API_KEY` | Шаг 5.4 |
 
 **Без этого:** sitemap сабмитится вручную (страницы проиндексируются, но медленнее).
 
@@ -747,12 +822,58 @@ GROUP BY platform;
 
 ### ⚪ P5 — Опционально (GEO-мониторинг + веб-аналитика)
 
-| Сервис | Где | Переменные |
+| Сервис | Где | Переменные | Нужен в шаге |
+|---|---|---|---|
+| **Pixel Tools** | pixeltools.ru | `PIXEL_TOOLS_API_KEY` | Block 6 (опц.) |
+| **GptFox** | gptfox.io | `GPTFOX_API_KEY` | Block 6 (опц.) |
+| **Яндекс.Метрика** | metrika.yandex.ru | `NEXT_PUBLIC_YANDEX_METRIKA_ID` | Block 6 (опц.) |
+| **Plausible** | Self-hosted | `NEXT_PUBLIC_PLAUSIBLE_DOMAIN`, `NEXT_PUBLIC_PLAUSIBLE_HOST` | Block 6 (опц.) |
+
+---
+
+## 🛟 Что НЕ потеряно (страховка от пропусков)
+
+Список задач которые **не входят как явные шаги Block 1-6**, но должны быть выполнены. Если задача переходит в шаг плана — переносим её туда и убираем отсюда.
+
+### Из BACKLOG.md — известные P0/P1/P2
+
+| Тикет | Где встроено | Ответственный |
 |---|---|---|
-| **Pixel Tools** | pixeltools.ru | `PIXEL_TOOLS_API_KEY` |
-| **GptFox** | gptfox.io | `GPTFOX_API_KEY` |
-| **Яндекс.Метрика** | metrika.yandex.ru | `NEXT_PUBLIC_YANDEX_METRIKA_ID` |
-| **Plausible** | Self-hosted | `NEXT_PUBLIC_PLAUSIBLE_DOMAIN`, `NEXT_PUBLIC_PLAUSIBLE_HOST` |
+| **B-004** Ротация OpenAI + TG ключей | ✅ Встроено в Step 2.0.5 | Пользователь (получает) + Claude (прописывает) |
+| **B-005** Backend tier-логика для API ключей | Триггер: 1-й платящий Pro → начать. Упомянуто в Step 4.4 | Claude |
+| **B-006** Маркетинговые лендинги в middleware whitelist refactor | Не блокер. Сделать оппортунистически (DX) | Claude |
+| **B-007** PostgREST schema cache automation после миграций | Не блокер. Документировано, добавить в `/deploy` skill | Claude |
+| **B-008** Cyrillic slug в URL (транслитерация) | До публичного маркетинга в Block 4 | Claude |
+| **B-009** Empty state для пустого `/experts` каталога | Закроется автоматически когда появятся 3+ публичных эксперта (Step 2.4) | — |
+| **B-010** GET `/api/agency-leads` 405 handler с понятным сообщением | Опционально. Можно перед Step 2.5 outreach | Claude |
+| **B-011** Страницы `/privacy` и `/terms` (footer 404) | `/terms` уже есть. `/privacy` — перед публичным маркетингом (Block 3-4). Юр. консультация. | Пользователь (текст) + Claude (страница) |
+| **B-012** WSL-curl с локальной машины (timeout) | Не блокер прода. Workaround: ssh hostland. | — |
+| **B-013** Pricing bundles между подписками и API | Триггер: 1-й платящий в **каждом** канале | Стратегическое решение |
+
+### Маркетинговые ассеты (нужны до outreach)
+
+- [ ] Email-шаблон для outreach пилот-экспертам (B2C) — текст в `BACKLOG.md` или draft
+- [ ] Email-шаблон для outreach SEO-агентств (B2B) — текст
+- [ ] Список 5-10 знакомых экспертов с разными нишами (для Step 2.3)
+- [ ] Список 20 SEO-агентств с контактами (для Step 2.5)
+- [ ] Кейс «Карта слепых зон» в нише психологии и права (data из БД, для vc.ru)
+
+### Документы
+
+- [x] LAUNCH_PLAN.md (этот файл)
+- [x] BACKLOG.md
+- [x] LANDING_BRIEFS.md
+- [x] CLAUDE.md
+- [ ] FEEDBACK.md (создаётся после первых 5 интервью в Step 3.2)
+- [ ] PARTNERS.md (создаётся в Step 4.3 — список revenue-share партнёров)
+
+### Регулярные процедуры (запускать по триггеру)
+
+- **После каждой правки маркетинговой страницы** → процедура «Tech QA лендинга» (см. начало документа)
+- **Раз в месяц / перед outreach** → процедура «Content audit» (см. начало документа)
+- **После завершения значимой фичи** → `/session-save`
+- **Каждое воскресенье** → SQL-метрики (см. секцию «Ключевые метрики»)
+- **Каждый месяц** → пересмотр LAUNCH_PLAN.md (обновить дашборд статуса в начале)
 
 ---
 
