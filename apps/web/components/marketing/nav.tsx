@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useState } from "react";
 
 const NAV_LINKS = [
-  { href: "/for-experts", label: "Зачем эксперту" },
-  { href: "/for-business", label: "Для бизнеса" },
-  { href: "/how-it-works", label: "Как это работает" },
+  { href: "/for-experts", label: "Экспертам" },
+  { href: "/for-business", label: "Бизнесу" },
+  { href: "/for-agencies", label: "Агентствам" },
+  { href: "/how-it-works", label: "Как работает" },
   { href: "/pricing", label: "Тарифы" },
-  { href: "/audit", label: "Бесплатный аудит" },
+  { href: "/audit", label: "Аудит" },
 ];
 
 export function MarketingHeader() {
@@ -188,6 +189,9 @@ export function MarketingFooter() {
             <Link href="/for-business" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
               Бизнесу
             </Link>
+            <Link href="/for-agencies" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+              SEO-агентствам
+            </Link>
           </div>
 
           {/* Column 3 — Info */}
@@ -196,7 +200,7 @@ export function MarketingFooter() {
             <Link href="/pricing" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
               Тарифы
             </Link>
-            <Link href="/api/v1/docs" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+            <Link href="/for-agencies" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
               Knowledge API
             </Link>
             <Link href="/privacy" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
