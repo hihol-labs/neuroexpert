@@ -148,7 +148,7 @@ export default function ForExpertsPage() {
             <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6">
               <h3 className="text-lg font-semibold text-red-300">Контент-фабрики</h3>
               <p className="mt-2 text-sm text-red-200/80">
-                Jasper, Writesonic, Copy.ai генерируют текст <strong>из своих обучающих данных</strong>.
+                AI-копирайтеры генерируют текст <strong>из обучающих данных LLM</strong>.
                 Это рерайт интернета. Нового знания — ноль. О чём писать, где публиковать,
                 как оптимизировать, кто прочитает — ваша проблема.
               </p>
