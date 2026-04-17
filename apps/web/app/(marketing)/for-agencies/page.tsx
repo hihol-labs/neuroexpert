@@ -368,11 +368,11 @@ export default function ForAgenciesPage() {
 
             <FadeIn delay={150}>
               <h1 className="mt-10 text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl leading-[1.1]">
-                <span className="text-white">Карта слепых зон</span>
-                <br />
                 <span className="text-purple-400 [text-shadow:_0_0_40px_rgba(168,85,247,0.5),_0_0_80px_rgba(168,85,247,0.2)]">
-                  AI для агентств
+                  Карта слепых зон AI
                 </span>
+                <br />
+                <span className="text-white">для агентств</span>
               </h1>
             </FadeIn>
 
