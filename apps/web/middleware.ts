@@ -7,6 +7,7 @@ const PUBLIC_ROUTES = [
   "/pricing",
   "/for-experts",
   "/for-business",
+  "/for-agencies",
   "/how-it-works",
   "/find-expert",
   "/login",
