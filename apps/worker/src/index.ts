@@ -49,7 +49,9 @@ async function pollAndProcess(): Promise<void> {
   const { data: jobs, error: fetchErr } = await supabase
     .rpc("claim_job", { handler_types: Object.keys(handlers) });
 
-  if (fetchErr?.code === "42883") {
+  // 42883 — Postgres native: function does not exist
+  // PGRST202 — PostgREST: function not found in schema cache
+  if (fetchErr?.code === "42883" || fetchErr?.code === "PGRST202") {
     await pollFallback();
     return;
   }
