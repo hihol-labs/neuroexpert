@@ -319,7 +319,7 @@ export default async function ScanResultPage({
               Blind Spots API — автоматический мониторинг AI-видимости ваших клиентов. От $99/мес.
             </p>
             <Link
-              href="/for-business"
+              href="/for-agencies"
               className="mt-4 inline-block rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
             >
               Подробнее для агентств
