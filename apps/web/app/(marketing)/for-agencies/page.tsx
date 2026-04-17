@@ -379,9 +379,12 @@ export default function ForAgenciesPage() {
             <FadeIn delay={300}>
               <p className="mx-auto mt-8 max-w-2xl text-lg text-gray-300 leading-relaxed">
                 JSON-эндпоинты с реальными данными: какие вопросы в нише клиента
-                AI отвечает плохо, какой объём спроса, какие маркеры качества
-                ответа отсутствуют. Готовое сырьё для GEO/AIO-аудитов и
-                контент-планов — без ручного парсинга ChatGPT.
+                нейросети отвечают плохо, какой объём спроса, каких маркеров
+                качества ответа не хватает.
+              </p>
+              <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-300 leading-relaxed">
+                Готовые данные для GEO/AIO-аудитов и контент-планов — без
+                ручных опросов ChatGPT, Perplexity, YandexGPT и GigaChat.
               </p>
             </FadeIn>
 
