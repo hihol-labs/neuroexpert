@@ -69,6 +69,78 @@ ssh hostland 'docker logs docker-bot-1 --tail 10'
 
 ---
 
+### Как проверить лендинг — технический QA (после каждой правки)
+
+**Когда:** после любой правки страницы в `apps/web/app/(marketing)/` или связанного API.
+**Ожидаемое время:** 5-7 минут на лендинг.
+**Источник правды для CTA:** `LANDING_BRIEFS.md`.
+
+**Чек-лист (для одного лендинга):**
+
+1. **HTTP-статус страницы и всех CTA:**
+   ```bash
+   ssh hostland 'curl -sk -o /dev/null -w "%{http_code}\n" https://neuroexpertise.ru/<URL>'
+   # ожидаемо 200 (не 307/404/500)
+   ```
+   Каждая ссылка из секции CTA в `LANDING_BRIEFS.md` → curl → 200.
+
+2. **Middleware whitelist:** убедись что путь есть в `apps/web/middleware.ts` PUBLIC_ROUTES (иначе 307 на `/login`).
+
+3. **Форма (если есть):**
+   ```bash
+   # пустое тело — должна быть валидация
+   ssh hostland 'curl -sk -X POST -H "Content-Type: application/json" -d "{}" -o /dev/null -w "%{http_code}\n" https://neuroexpertise.ru/api/<form-endpoint>'
+   # ожидаемо 400
+   # валидное тело — должна вернуть 200 + сработать сайд-эффект (TG-уведомление / запись в БД)
+   ```
+
+4. **Schema.org / OG-теги (если страница SSR):**
+   - https://validator.schema.org/ — без ошибок
+   - https://www.opengraph.xyz/url/<URL> — превью корректное
+
+5. **Mobile responsive:** Chrome DevTools → Device Toolbar → проверить iPhone SE (375px) + iPad (768px). Текст не выходит, кнопки нажимаемы.
+
+6. **Performance (Lighthouse, опционально):** ≥ 80 Performance, LCP < 2.5s, CLS < 0.1.
+
+7. **Сверка с `LANDING_BRIEFS.md`:** все CTA, числа, обещания совпадают с брифом. Расхождение → либо обновить страницу, либо обновить бриф.
+
+**Output:** OK / список расхождений → в `BACKLOG.md` как P0/P1/P2.
+
+---
+
+### Как провести content-аудит лендингов (раз в месяц / перед outreach)
+
+**Когда:**
+- Перед началом outreach (Шаг 2.0)
+- Раз в месяц как regression
+- После крупного редизайна (3+ страниц)
+
+**Ожидаемое время:** 30-60 минут на 9 страниц.
+
+**Процедура:**
+
+1. **Запуск:** в Claude Code сессии:
+   ```
+   /advisor — content-аудит всех маркетинговых лендингов NeuroExpert по критериям: адекватность, тех. грамотность, понятность для ICP. Используй subagents business-analyst + devils-advocate.
+   ```
+   `/advisor` параллельно запускает business-analyst (market fit) + devils-advocate (overclaims, противоречия).
+
+2. **Что проверяет:**
+   - **Адекватность:** обещания соответствуют реальному функционалу; числа консистентны между страницами и кодом (`apps/web/lib/subscription.ts`)
+   - **Тех. грамотность:** AI/нейросеть/LLM/GPT — корректное разделение; jargon уместен для ICP; API-термины (Bearer, Schema.org, JSON-LD) — для нужной аудитории
+   - **Понятность:** холодный пользователь поймёт без расшифровки; CTA однозначны; длина предложений; англицизмы
+
+3. **Output:** отчёт со структурой Executive Summary → По каждой странице (P0/P1/P2/P3 findings) → Cross-site проблемы → Рекомендации.
+
+4. **Действия после:**
+   - Все P0 (расхождение с реальностью / overclaim / юридический риск) → исправить **до** outreach
+   - P1 → исправить в течение недели
+   - P2/P3 → внести в `BACKLOG.md` с приоритетом
+
+5. **Обновить `LANDING_BRIEFS.md`** если контент менялся. Бриф = источник правды для следующего аудита.
+
+---
+
 ## 🏗️ БЛОК 1 — Фундамент (Неделя 1-2)
 
 ### ⭐ Шаг 1.1 — Sanner без регистрации (1-2 дня)
@@ -222,6 +294,48 @@ curl -I https://neuroexpertise.ru/api/referrals/payout
 ---
 
 ## 🧪 БЛОК 2 — Product Validation (Неделя 3-4)
+
+### Шаг 2.0 — Pre-outreach Landing Readiness (½ дня) 🆕
+
+**Цель:** не отправлять холодные письма пилотам и агентствам пока 1 битая ссылка или несоответствие может убить лида. Обязательный gate перед 2.3 (пилоты) и 4.4 (Knowledge API outreach).
+
+**Действия:**
+
+1. **Тех. QA каждого лендинга** (по процедуре «Как проверить лендинг — технический QA» в начале документа):
+   - [ ] `/` — главная
+   - [ ] `/for-experts`
+   - [ ] `/for-business`
+   - [ ] `/for-agencies`
+   - [ ] `/pricing`
+   - [ ] `/how-it-works`
+   - [ ] `/audit`
+   - [ ] `/scan`
+   - [ ] `/terms`
+   - [ ] `/find-expert`
+
+2. **Content audit** (по процедуре «Как провести content-аудит лендингов»):
+   - [ ] Запустить `/advisor` с subagents business-analyst + devils-advocate
+   - [ ] Получить отчёт по всем страницам (P0/P1/P2/P3)
+   - [ ] Все P0 (расхождения с реальностью, overclaims, противоречия) — **исправить до outreach**
+   - [ ] P1-P3 — занести в `BACKLOG.md`
+
+3. **Обновить `LANDING_BRIEFS.md`** после правок (бриф = источник правды).
+
+4. **Зафиксировать в `BACKLOG.md`** все findings + время устранения.
+
+**Acceptance criteria:**
+
+- [ ] 0 P0-findings (всё критическое исправлено)
+- [ ] Все 200 на CTA, формы валидируются
+- [ ] LANDING_BRIEFS.md синхронизирован с продом
+- [ ] BACKLOG.md содержит свежие P1-P3 findings
+
+**Когда применяется gate:**
+- Перед началом outreach (Шаг 2.3 пилоты-эксперты)
+- Перед 4.4 Knowledge API soft launch
+- После любого редизайна 3+ страниц
+
+---
 
 ### Шаг 2.1 — Финализация Phase 0 (4-5 дней)
 
