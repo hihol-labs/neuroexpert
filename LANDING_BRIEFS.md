@@ -19,7 +19,7 @@
 | `/scan` | Любые — AI Visibility check | → результат на `/scan/[slug]` |
 | `/terms` | Юридическая прозрачность | → `/pricing` |
 | `/find-expert` | Клиенты — поиск эксперта | → `/experts/[slug]` |
-| `/privacy` | **отсутствует** — создать (P3 в BACKLOG) | — |
+| `/privacy` | Юридическая прозрачность — ФЗ-152 | — (экран-концовка) |
 
 ---
 
@@ -72,7 +72,7 @@
 - **CTA:** «Получить ключ» → `#form` · «OpenAPI-документация» → `/api/v1/docs`.
 - **Формы:** Agency Lead Form: name (req), agency (req), contact email/Telegram (req), plan (Read/Pro/Enterprise, req), message (opt). POST → `/api/agency-leads`.
 - **Числа/обещания:** Read free + 100 req/h; Pro $99/мес + 1 000 req/h; Enterprise по запросу + без лимитов; gap_score 0-10; monthly_volume из Wordstat; 4 маркера качества ответа; «без ручных опросов 4 платформ».
-- **Use-case цифры:** Психология — 47 вопросов с gap_score ≥ 7. Юриспруденция — потенциал ₽2.3M / мес (32 слепых зоны × 154k запросов × CTR 12% × LTV ₽15K). Медицина — 4/4 платформы не находят специалиста.
+- **Use-case формат (без конкретных цифр до подключения XMLRiver+SerpAPI):** Психология — gap_score 0-10 по каждому вопросу. Юриспруденция — monthly_volume + opportunity_score для формулы TAM на стороне агентства. Медицина — probe всех 4 AI-платформ с 4 маркерами качества ответа. Числа-примеры убраны 2026-04-19 (Step 2.0.2 P0-1) т.к. не поддерживаются данными — до подключения P1 API keys.
 - **Тех. термины:** GEO/AIO, Wordstat, gap_score, opportunity_score, sub_queries, Bearer auth, REST, OpenAPI 3.0, RAG, Perplexity Bot, YandexGPT, GigaChat.
 
 ---
@@ -160,6 +160,18 @@
 - **Формы:** Search: query (req). Возвращает full_name, qualification, city, trust_score, avg_rating, years_experience, consultation_price, article_count, match_score, is_premium, is_verified.
 - **Числа/обещания:** Match score, Trust Score, average rating, review_count, поиск в реальном времени.
 - **Тех. термины:** Trust Score, match_score, is_verified, is_premium.
+
+---
+
+## URL: /privacy
+
+- **ICP:** Все пользователи + B2B / GDPR-ориентированные агентства при compliance-проверке.
+- **Tagline:** «Политика конфиденциальности»
+- **Цель:** Юридическая прозрачность по ФЗ-152 — что собираем, где храним, кому передаём, как отозвать согласие.
+- **Структура:** 1. Общие положения → 2. Какие данные собираем → 3. Хранение и защита → 4. Cookies и аналитика → 5. Передача третьим лицам → 6. Ваши права и контакт.
+- **CTA:** «hello@neuroexpertise.ru» (mailto).
+- **Формы:** нет.
+- **Ключевые положения:** данные хранятся в РФ (ст. 18 ч. 5 152-ФЗ), пароли не в открытом виде (passwordless magic link), передача — ЮKassa (ФЗ-161), Telegram, поставщики AI (без email/ФИО), Resend. Ответы на обращения — в течение 30 календарных дней (ст. 20 152-ФЗ).
 
 ---
 

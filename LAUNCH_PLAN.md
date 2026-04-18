@@ -5,14 +5,17 @@
 
 ## 📊 Статус (обновлять после каждой сессии)
 
-**Прогресс:** Block 1 ✅ · Block 2 🔶 (~45%) · Block 3-6 ⬜
-**Текущая фаза:** Pre-outreach (Step 2.0.2 + 2.2)
-**Следующий шаг:** Step 2.0.2 — Content audit через /advisor (business-analyst + devils-advocate)
-**Активные блокеры P0:** Step 2.2 ЮKassa ключи (на пользователе — ЛК ЮKassa)
+**Прогресс:** Block 1 ✅ · Block 2 🔶 (~55%) · Block 3-6 ⬜
+**Текущая фаза:** Pre-outreach (Step 2.0.5 + 2.2 — оба на пользователе)
+**Следующий шаг:** Step 2.0.5 — ротация OpenAI + TG ключей (на пользователе) ИЛИ Step 2.2 ЮKassa (на пользователе). При получении любого — Claude продолжит.
+**Активные блокеры P0:** Step 2.2 ЮKassa ключи · Step 2.0.5 новые OpenAI + TG токены · B-015 ручная Tech QA (mobile/Lighthouse) — все на пользователе.
 
 **Что новое 2026-04-19:**
-- Step 2.0.1 Tech QA 10 лендингов ✅ — 3 finding (F-001/F-002 P0 SEO/OG, F-003 P1 API 404/400) задеплоены на прод (commit `1dba85a`). Подробности в BACKLOG.md B-CLOSED-003/004.
-- LANDING_BRIEFS.md синхронизирован (title /for-experts обновлён до «Не лайки, не охваты — реальные клиенты»).
+- Step 2.0.1 Tech QA ✅ (auto) — 3 finding зафикшены (commit `1dba85a`). Ручная часть → B-015.
+- Step 2.0.2 Content audit ✅ — /advisor нашёл 4 P0 overclaim/gap, все зафикшены на проде (commit `a38ddd5`). P1-P3 + cross-site в BACKLOG B-016..B-022. Закрыты B-CLOSED-003..008 + B-011 + B-020.
+- Step 2.0.3 LANDING_BRIEFS.md синхронизирован — use-case /for-agencies переписан (убраны цифры без данных), добавлена секция /privacy.
+- Step 2.0.4 BACKLOG.md — добавлены все findings Step 2.0.1 + 2.0.2.
+- Остаётся Step 2.0.5 (rotation) — на пользователе.
 **Известные P0/P1 из BACKLOG.md (страховка):**
 - B-004 Ротация OpenAI + TG ключей (security, перед outreach) — см. Step 2.0.5
 - B-005 Backend tier-логика для API ключей — отложена до 1-го платящего Pro
@@ -341,16 +344,19 @@ curl -I https://neuroexpertise.ru/api/referrals/payout
 
 **Findings (commit `1dba85a`):** F-001 duplicate title на 7 страницах, F-002 унаследованный og:title/description на 10/10, F-003 /api/audit → 404 вместо 400 на пустом теле. Все закрыты: B-CLOSED-003/004 в BACKLOG.md. Ручная часть (mobile responsive 375/768px, Lighthouse, Schema.org validator) не проходилась — требует Chrome DevTools у пользователя.
 
-#### 2.0.2 Content audit (по процедуре «Как провести content-аудит лендингов»)
-- [ ] Запустить `/advisor` с subagents business-analyst + devils-advocate
-- [ ] Получить отчёт по всем страницам (P0/P1/P2/P3)
-- [ ] Все P0 (расхождения с реальностью, overclaims, противоречия) — **исправить до outreach**
-- [ ] P1-P3 — занести в `BACKLOG.md`
+#### 2.0.2 Content audit (по процедуре «Как провести content-аудит лендингов») ✅ 2026-04-19
+- [x] Запустить `/advisor` с subagents business-analyst + devils-advocate
+- [x] Получить отчёт по всем страницам (P0/P1/P2/P3)
+- [x] Все P0 (расхождения с реальностью, overclaims, противоречия) — **исправить до outreach**
+- [x] P1-P3 — занести в `BACKLOG.md`
 
-#### 2.0.3 Обновить `LANDING_BRIEFS.md` после правок
-Бриф = источник правды. Если контент менялся — синхронизировать.
+**Findings (commit `a38ddd5`):** 4 P0 overclaim'а зафикшены: (P0-1) USE_CASES /for-agencies переписан на формат вывода API без неподкреплённых цифр; (P0-2) /scan получил подсказку «В /audit — 4 платформы»; (P0-3) /pricing — строка «Гарантия цитирований» в comparison + дисклеймеры для Free/B2B + убран скрытый overclaim «API» из Enterprise desc; (P0-4) создан /privacy — 6 разделов по ФЗ-152. Bonus: закрыт strategy-gap B-020 (убран Knowledge API из features /for-business Enterprise). 7 тикетов B-016..B-022 для P1/P2/P3/cross-site в BACKLOG.md.
 
-#### 2.0.4 Зафиксировать в `BACKLOG.md` все findings + время устранения
+#### 2.0.3 Обновить `LANDING_BRIEFS.md` после правок ✅ 2026-04-19
+Бриф синхронизирован: use-case /for-agencies (убраны цифры), добавлена секция /privacy, таблица лендингов обновлена (убран статус «отсутствует» у /privacy).
+
+#### 2.0.4 Зафиксировать в `BACKLOG.md` все findings + время устранения ✅ 2026-04-19
+B-016..B-022 создано; B-CLOSED-005..008 + B-011 + B-020 закрыты.
 
 #### 2.0.5 Ротация OpenAI + Telegram токенов (B-004 в BACKLOG, P1 security) 🔐
 **Почему здесь:** ключи могли быть скомпрометированы (упоминались в открытом виде в чате прошлых сессий). Перед публичным outreach — обязательная санация.
