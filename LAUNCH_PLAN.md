@@ -5,10 +5,14 @@
 
 ## 📊 Статус (обновлять после каждой сессии)
 
-**Прогресс:** Block 1 ✅ · Block 2 🔶 (~40%) · Block 3-6 ⬜
-**Текущая фаза:** Pre-outreach (Step 2.0 + 2.2)
-**Следующий шаг:** Step 2.0.1 — Tech QA 9 лендингов + Step 2.0.2 — Content audit
+**Прогресс:** Block 1 ✅ · Block 2 🔶 (~45%) · Block 3-6 ⬜
+**Текущая фаза:** Pre-outreach (Step 2.0.2 + 2.2)
+**Следующий шаг:** Step 2.0.2 — Content audit через /advisor (business-analyst + devils-advocate)
 **Активные блокеры P0:** Step 2.2 ЮKassa ключи (на пользователе — ЛК ЮKassa)
+
+**Что новое 2026-04-19:**
+- Step 2.0.1 Tech QA 10 лендингов ✅ — 3 finding (F-001/F-002 P0 SEO/OG, F-003 P1 API 404/400) задеплоены на прод (commit `1dba85a`). Подробности в BACKLOG.md B-CLOSED-003/004.
+- LANDING_BRIEFS.md синхронизирован (title /for-experts обновлён до «Не лайки, не охваты — реальные клиенты»).
 **Известные P0/P1 из BACKLOG.md (страховка):**
 - B-004 Ротация OpenAI + TG ключей (security, перед outreach) — см. Step 2.0.5
 - B-005 Backend tier-логика для API ключей — отложена до 1-го платящего Pro
@@ -322,17 +326,19 @@ curl -I https://neuroexpertise.ru/api/referrals/payout
 
 **Substeps (выполнять в порядке):**
 
-#### 2.0.1 Тех. QA каждого лендинга (по процедуре «Как проверить лендинг — технический QA»)
-- [ ] `/` — главная
-- [ ] `/for-experts`
-- [ ] `/for-business`
-- [ ] `/for-agencies`
-- [ ] `/pricing`
-- [ ] `/how-it-works`
-- [ ] `/audit`
-- [ ] `/scan`
-- [ ] `/terms`
-- [ ] `/find-expert`
+#### 2.0.1 Тех. QA каждого лендинга (по процедуре «Как проверить лендинг — технический QA») ✅ 2026-04-19
+- [x] `/` — главная
+- [x] `/for-experts`
+- [x] `/for-business`
+- [x] `/for-agencies`
+- [x] `/pricing`
+- [x] `/how-it-works`
+- [x] `/audit`
+- [x] `/scan`
+- [x] `/terms`
+- [x] `/find-expert`
+
+**Findings (commit `1dba85a`):** F-001 duplicate title на 7 страницах, F-002 унаследованный og:title/description на 10/10, F-003 /api/audit → 404 вместо 400 на пустом теле. Все закрыты: B-CLOSED-003/004 в BACKLOG.md. Ручная часть (mobile responsive 375/768px, Lighthouse, Schema.org validator) не проходилась — требует Chrome DevTools у пользователя.
 
 #### 2.0.2 Content audit (по процедуре «Как провести content-аудит лендингов»)
 - [ ] Запустить `/advisor` с subagents business-analyst + devils-advocate
