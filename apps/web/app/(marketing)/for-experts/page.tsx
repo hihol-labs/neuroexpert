@@ -2,10 +2,16 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
 
+const TITLE = "Не лайки, не охваты — реальные клиенты | НейроЭксперт";
+const DESCRIPTION =
+  "Не лайки, не охваты — реальные клиенты. AI-система для психологов, юристов, нутрициологов: два канала привлечения из одного голосового описания боли клиента.";
+
 export const metadata: Metadata = {
-  title: "Зачем это эксперту | НейроЭксперт",
-  description:
-    "Как НейроЭксперт превращает вашу экспертизу в клиентов через нейросети и поисковики. Два канала привлечения из одного действия.",
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: { canonical: "/for-experts" },
+  openGraph: { title: TITLE, description: DESCRIPTION, url: "/for-experts" },
+  twitter: { title: TITLE, description: DESCRIPTION },
 };
 
 const PAINS = [

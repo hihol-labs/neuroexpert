@@ -347,7 +347,10 @@ export async function POST(request: NextRequest) {
 
   const { niche_id, type = "free" } = body;
 
-  if (!niche_id || !NICHE_NAMES[niche_id]) {
+  if (!niche_id) {
+    return NextResponse.json({ error: "niche_id is required" }, { status: 400 });
+  }
+  if (!NICHE_NAMES[niche_id]) {
     return NextResponse.json({ error: "Ниша не найдена" }, { status: 404 });
   }
 

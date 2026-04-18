@@ -157,6 +157,24 @@ Leads: 0
 - `/for-experts:151` — «Jasper, Writesonic, Copy.ai генерируют текст…» → «AI-копирайтеры генерируют текст из обучающих данных LLM…»
 - `/for-agencies:60` — «Ahrefs/SE Ranking показывают позиции в Google…» → «Классические SEO-трекеры показывают позиции в Google…»
 
+### ~~B-CLOSED-003 SEO duplicate title + общий OG на маркетинговых лендингах~~
+✅ 2026-04-19 (Step 2.0.1 F-001/F-002) — автоматическая Tech QA нашла:
+- 7 страниц (`/for-business`, `/for-agencies`, `/how-it-works`, `/audit`, `/scan`, `/find-expert`, главная) отдавали **одинаковый** `<title>` от root layout → Google/Яндекс duplicate title penalty.
+- 10/10 страниц имели **одинаковые** `og:title` / `og:description` → при шеринге в TG/LinkedIn любой лендинг показывал «Наговори 10 минут…» независимо от контекста, ломая outreach к агентствам и B2B.
+
+**Фикс:** 3 server-компонента (for-experts, pricing, terms) расширены existing `export const metadata` (openGraph + twitter + canonical). 6 client-страниц получили собственный `layout.tsx` с уникальной metadata. Title/description/og взяты из LANDING_BRIEFS.md.
+
+### ~~B-CLOSED-004 POST /api/audit с пустым телом → 404 вместо 400~~
+✅ 2026-04-19 (Step 2.0.1 F-003) — условие `!niche_id || !NICHE_NAMES[niche_id]` склеивало два случая. Split: `!niche_id → 400 "niche_id is required"`, `!NICHE_NAMES[niche_id] → 404 "Ниша не найдена"`. Семантически корректно.
+
+---
+
+### B-014 Hardcoded URL в `scan/[slug]/page.tsx` (P2, DX)
+- **Что:** `apps/web/app/(marketing)/scan/[slug]/page.tsx:79` использует `url: \`https://neuroexpertise.ru/scan/${slug}\`` в `openGraph.url` — абсолютный путь мимо `metadataBase`. Все остальные страницы используют относительные пути. При смене домена / staging-окружения — рассинхрон.
+- **Решение:** Заменить на `url: \`/scan/${slug}\`` — Next.js корректно разрешит через `metadataBase` из root layout.
+- **Найдено:** 2026-04-19 в /review Step 2.0.1 как замечание вне scope.
+- **Создано:** 2026-04-19
+
 **Почему важно:** ст. 14.1 ФЗ-135 (защита конкуренции) + ст. 5 ч.3 ФЗ «О рекламе» (сравнительная реклама без оснований). Маркетингово: punching down + бесплатная реклама конкурентам + быстро устаревает (список AI/SEO-инструментов меняется каждые полгода). На /for-agencies риск ниже, но Ahrefs/SE Ranking — повседневный tool ICP, лучше не пинать.
 
 **Превентивная мера на будущее:** при любой правке маркетинговой страницы прогонять grep по списку известных конкурентов перед коммитом — этот шаг включён в процедуру tech-QA в LAUNCH_PLAN.md и в content-audit. Список конкурентов поддерживать в LANDING_BRIEFS.md (TODO: добавить раздел «Список нежелательных упоминаний»).

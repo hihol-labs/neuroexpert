@@ -2,10 +2,16 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
 
+const TITLE = "Тарифы НейроЭксперт — от 0 ₽ с комиссией 15% до 99 990 ₽ Enterprise";
+const DESCRIPTION =
+  "Free 15% · Starter 1 490 ₽ (7%) · Pro 2 990 ₽ (3%) · Expert 4 990 ₽ (0%) · Business 24 990 ₽ · Enterprise 99 990 ₽. Подписка окупается с первого клиента.";
+
 export const metadata: Metadata = {
-  title: "Тарифы | НейроЭксперт",
-  description:
-    "Начните бесплатно с комиссией 15%. Растите — снижайте комиссию до 0%. Подписка окупается с первого клиента.",
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: { canonical: "/pricing" },
+  openGraph: { title: TITLE, description: DESCRIPTION, url: "/pricing" },
+  twitter: { title: TITLE, description: DESCRIPTION },
 };
 
 const PLANS = [

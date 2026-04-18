@@ -1,9 +1,16 @@
 import type { Metadata } from "next";
 import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
 
+const TITLE = "Условия использования | НейроЭксперт";
+const DESCRIPTION =
+  "Условия использования платформы НейроЭксперт, гарантия результата по тарифам Starter/Pro/Expert, политика возврата.";
+
 export const metadata: Metadata = {
-  title: "Условия использования | НейроЭксперт",
-  description: "Условия использования платформы НейроЭксперт, гарантия результата, политика возврата.",
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: { canonical: "/terms" },
+  openGraph: { title: TITLE, description: DESCRIPTION, url: "/terms" },
+  twitter: { title: TITLE, description: DESCRIPTION },
 };
 
 export default function TermsPage() {
