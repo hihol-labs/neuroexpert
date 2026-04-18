@@ -19,6 +19,7 @@
 - B-006 Маркетинговые лендинги в middleware whitelist — DX improvement
 - B-007 PostgREST schema cache automation — DX improvement
 - B-013 Pricing bundles / cross-sell — после 1-го платящего в каждом канале
+- **B-015 Ручная часть Step 2.0.1 Tech QA** (mobile 375/768px + Lighthouse ≥80 + Schema.org validator) — на пользователе, **перед** outreach. Auto-часть закрыта 2026-04-19.
 
 **Что новое 2026-04-17:**
 - Worker `claim_job` 404 закрыт (миграция 018)

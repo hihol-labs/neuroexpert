@@ -101,6 +101,17 @@ Leads: 0
 - **Решение:** Добавить в `scripts/render-kong.sh` (или новый `apply-migration.sh`) автоматический рестарт rest после применения миграций с `CREATE FUNCTION`. Либо документировать в `/deploy` skill.
 - **Создано:** 2026-04-17
 
+### B-015 Ручная часть Step 2.0.1 Tech QA не пройдена (mobile + Lighthouse + Schema.org)
+- **Что:** Автоматическая часть Step 2.0.1 закрыта 2026-04-19 (curl HTTP/формы/API-auth/meta). Но процедура LAUNCH_PLAN.md §«Как проверить лендинг» содержит 3 ручных пункта, которые не проходились:
+  - **Пункт 5:** Mobile responsive (Chrome DevTools → Device Toolbar → iPhone SE 375px + iPad 768px) — проверить что текст не выходит за границы, кнопки нажимаются, hero читается.
+  - **Пункт 6:** Lighthouse Performance ≥ 80, LCP < 2.5s, CLS < 0.1 — прогнать на всех 10 лендингах.
+  - **Дополнительно:** Schema.org validator (https://validator.schema.org/) — убедиться что JSON-LD отсутствует или корректен (для маркетинговых лендингов он не обязателен, но если есть — должен валидироваться).
+- **Кто:** Пользователь (требует Chrome DevTools на рабочей машине; Claude не может запустить из WSL-сессии).
+- **Страницы:** `/`, `/for-experts`, `/for-business`, `/for-agencies`, `/pricing`, `/how-it-works`, `/audit`, `/scan`, `/terms`, `/find-expert` — все 10.
+- **Acceptance:** На каждой странице зафиксирован скрин iPhone SE без horizontal scroll + Lighthouse отчёт (можно скриншот) ≥ 80 Performance. Findings P0 (например layout breaks на mobile) — фиксить **до** outreach, P1-P3 — в BACKLOG.
+- **Связь:** Step 2.0.1 LAUNCH_PLAN.md — формально закрыт только после прохождения ручной части. Auto-acceptance «0 P0» относится к curl-findings.
+- **Создано:** 2026-04-19 (вынесено из сессии 2026-04-19, чтобы не потерять как ЮKassa)
+
 ---
 
 ## P2 — UX и качество
