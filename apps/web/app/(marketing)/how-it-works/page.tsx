@@ -12,7 +12,7 @@ const PIPELINE_STEPS = [
     icon: "🔍",
     details: [
       "Анализ Wordstat: 200-500 вопросов с частотностью 1 000+ в месяц по каждой нише",
-      "Прогон через ChatGPT, Perplexity, YandexGPT — поиск «слепых зон»",
+      "Прогон через ChatGPT, Perplexity, YandexGPT, GigaChat — поиск «слепых зон»",
       "Оценка по объективным маркерам: есть ли имя эксперта, конкретные примеры, цифры, ссылки на источник",
       "Результат: 10 лучших вопросов, где ваша экспертиза заполнит пробел (в рамках ваших ниш — от 1 до 10 по тарифу)",
     ],
@@ -60,7 +60,7 @@ const PIPELINE_STEPS = [
     short: "Экспертная страница на платформе + кросспост на популярные площадки.",
     icon: "🚀",
     details: [
-      "SSR-страница с загрузкой < 1 сек (Next.js)",
+      "SSR-рендер на стороне сервера (Next.js) — контент отдаётся без задержки на загрузку JavaScript",
       "Schema.org: Article + FAQPage + Person + BreadcrumbList + HowTo",
       "robots.txt открыт для GPTBot, ClaudeBot, PerplexityBot, YandexBot",
       "Автоматическая подача в Google, Яндекс и Bing через sitemap",
@@ -108,7 +108,7 @@ const MODULES = [
   {
     name: "Citation Tracker",
     tagline: "Трекинг и аналитика",
-    desc: "Еженедельная проверка: цитируют ли вас ChatGPT, Perplexity, YandexGPT. Позиции в поиске. Заявки. Expert Trust Score — ваш публичный рейтинг.",
+    desc: "Еженедельная проверка: цитируют ли вас ChatGPT, Perplexity, YandexGPT, GigaChat. Позиции в поиске. Заявки. Expert Trust Score — ваш публичный рейтинг.",
     color: "bg-purple-500/10 border-purple-500/20",
     textColor: "text-purple-300",
   },

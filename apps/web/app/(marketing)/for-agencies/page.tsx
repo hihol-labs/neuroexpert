@@ -149,6 +149,7 @@ const PLANS = [
     name: "Pro",
     price: "$99",
     period: "/мес",
+    priceNote: "≈ 9 000 ₽/мес · оплата в рублях по курсу ЦБ",
     desc: "Карта слепых зон + полные ответы",
     limit: "1 000 запросов/час",
     features: [
@@ -306,7 +307,7 @@ function AgencyLeadForm() {
           className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white backdrop-blur-md focus:border-purple-500/50 focus:outline-none focus:ring-1 focus:ring-purple-500/30"
         >
           <option value="read">Read (Free)</option>
-          <option value="pro">Pro ($99/мес)</option>
+          <option value="pro">Pro ($99/мес · оплата в ₽)</option>
           <option value="enterprise">Enterprise (custom)</option>
         </select>
       </div>
@@ -570,6 +571,9 @@ export default function ForAgenciesPage() {
                       <span className="text-4xl font-bold text-purple-400">{plan.price}</span>
                       {plan.period && <span className="text-gray-500">{plan.period}</span>}
                     </div>
+                    {plan.priceNote && (
+                      <div className="mt-1 text-xs text-gray-500">{plan.priceNote}</div>
+                    )}
                     <div className="mt-2 text-xs text-purple-300/70 uppercase tracking-wider">{plan.limit}</div>
 
                     <ul className="mt-6 space-y-3 flex-1">

@@ -10,6 +10,10 @@
 **Следующий шаг:** Step 2.0.5 — ротация OpenAI + TG ключей (на пользователе) ИЛИ Step 2.2 ЮKassa (на пользователе). При получении любого — Claude продолжит.
 **Активные блокеры P0:** Step 2.2 ЮKassa ключи · Step 2.0.5 новые OpenAI + TG токены · B-015 ручная Tech QA (mobile/Lighthouse) — все на пользователе.
 
+**Что новое 2026-04-20:**
+- Content P1-pack из Step 2.0.2 ✅ — закрыты B-016..B-019 + B-021 (5 тикетов). Правки: +GigaChat в 2 места /how-it-works, убран «SSR < 1 сек» до B-015 Lighthouse QA, дисклеймер к кейсу Анны на /for-experts, `*`-footnote с «По отраслевым данным 2024» для 86%/58% + 500K+, «0 аналогов/конкурентов» → «Первая RU-платформа», ₽-эквивалент к $99 на /for-agencies.
+- LANDING_BRIEFS.md синхронизирован — homepage и /for-experts обещания обновлены, правило запрета «0 аналогов» зафиксировано.
+
 **Что новое 2026-04-19:**
 - Step 2.0.1 Tech QA ✅ (auto) — 3 finding зафикшены (commit `1dba85a`). Ручная часть → B-015.
 - Step 2.0.2 Content audit ✅ — /advisor нашёл 4 P0 overclaim/gap, все зафикшены на проде (commit `a38ddd5`). P1-P3 + cross-site в BACKLOG B-016..B-022. Закрыты B-CLOSED-003..008 + B-011 + B-020.

@@ -35,9 +35,9 @@ const STEPS = [
 ];
 
 const STATS = [
-  { value: "500K+", label: "экспертов в РФ ищут клиентов" },
-  { value: "86%", label: "профессионалов используют AI" },
-  { value: "0", label: "аналогов в России" },
+  { value: "500K+", label: "экспертов в РФ ищут клиентов*" },
+  { value: "86%", label: "профессионалов используют AI*" },
+  { value: "Первая", label: "RU-платформа с AIO-циклом" },
 ];
 
 function FadeIn({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
@@ -179,6 +179,9 @@ export default function LandingPage() {
                   </FadeIn>
                 ))}
               </div>
+              <p className="mt-6 text-center text-xs text-gray-500">
+                * По отраслевым данным 2024 — цифры показывают порядок, точные значения могут отличаться.
+              </p>
             </div>
           </div>
         </section>
