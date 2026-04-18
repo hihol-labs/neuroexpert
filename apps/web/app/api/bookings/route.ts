@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { tgFetch } from "shared/http/telegram-fetch";
 
 function getAdmin() {
   return createSupabaseClient(
@@ -168,7 +169,7 @@ export async function POST(request: NextRequest) {
           ],
         };
 
-        fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        tgFetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ chat_id: expert.telegram_id, text, reply_markup: keyboard }),

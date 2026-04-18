@@ -1,4 +1,5 @@
 import { supabase } from "../supabase.js";
+import { tgFetch } from "shared/http/telegram-fetch";
 
 export async function handleRefreshContent(_payload: Record<string, unknown>): Promise<{ flagged: number }> {
   const ninetyDaysAgo = new Date(Date.now() - 90 * 86400000).toISOString();
@@ -47,7 +48,7 @@ export async function handleRefreshContent(_payload: Record<string, unknown>): P
       ].join("\n");
 
       try {
-        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        await tgFetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ chat_id: telegramId, text }),

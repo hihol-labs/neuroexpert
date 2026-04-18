@@ -1,5 +1,6 @@
 import { supabase } from "../supabase.js";
 import { getLLM, SYSTEM_PROMPT_CONTENT, ARTICLE_STRUCTURE } from "shared";
+import { tgFetch } from "shared/http/telegram-fetch";
 
 const MAX_REWORK_ATTEMPTS = 2;
 
@@ -236,7 +237,7 @@ async function notifyExpertReady(
   };
 
   try {
-    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    await tgFetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

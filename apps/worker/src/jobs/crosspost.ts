@@ -1,4 +1,5 @@
 import { supabase } from "../supabase.js";
+import { tgFetch } from "shared/http/telegram-fetch";
 
 // Кросспостинг на внешние площадки: Дзен, Хабр, Яндекс Кью
 // Требует API-токены площадок. Без них — сохраняет подготовленные посты для ручного размещения.
@@ -160,7 +161,7 @@ async function notifyManualCrosspost(expertId: string, expertName: string, title
   ].join("\n");
 
   try {
-    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    await tgFetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chat_id: expert.telegram_id, text }),

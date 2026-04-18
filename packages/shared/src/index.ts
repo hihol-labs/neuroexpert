@@ -7,3 +7,6 @@ export * from "./prompts/gap-analysis.js";
 export * from "./prompts/filter.js";
 export * from "./prompts/content-gen.js";
 export * from "./prompts/query-fanout.js";
+// NOTE: ./http/telegram-fetch.js is NOT exported from the main index because it imports
+// "undici" (node-only, pulls in node:crypto) which breaks client-side webpack builds.
+// Import it via deep path from server-only code: `import { tgFetch } from "shared/dist/http/telegram-fetch.js"`.

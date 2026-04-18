@@ -166,6 +166,27 @@ Leads: 0
 
 ---
 
+## E2E Smoke Test — findings 2026-04-20
+
+### ~~F-E2E-001 Docker containers не могли делать outbound (FORWARD policy DROP)~~
+✅ 2026-04-20 — **ROOT CAUSE бездействия прода 2 дня**. На сервере 185.221.213.104 `iptables FORWARD policy = DROP` + UFW не разрешал explicitly FORWARD для Docker bridge networks. Все outbound вызовы из контейнеров (TG API, OpenAI, Telegram polling) silently timeout'или. Симптомы: bot Up 2 days с 0 polling messages, 0 jobs completed за 2 дня, /api/scan всегда пустое. **Фикс:** `iptables -I FORWARD 1 -s 10.0.0.0/8 -j ACCEPT` + persistent через `/etc/ufw/before.rules` (pattern `# NeuroExpert FORWARD for docker containers outbound`), survive reboot.
+
+### ~~F-E2E-002 Новый OpenAI key + прокси не были в .env~~
+✅ 2026-04-20 — старый key истёк. Обновлено: `OPENAI_API_KEY`, `OPENAI_PROXY_URL=http://user:pass@72.56.184.139:8000` (proxy6.net HTTPS-capable HTTP proxy). Backup `/opt/neuroexpert/.env.backup.20260418-194756`. После fix `/api/scan` вернул реальный ответ ChatGPT (1/1 platform, mentioned=true).
+
+### ~~F-E2E-003 TELEGRAM_ADMIN_CHAT_ID отсутствовал → B2B/agency leads молча не доходили~~
+✅ 2026-04-20 — в `/api/b2b-leads` и `/api/agency-leads` код `if (!botToken || !adminChatId) return;` делал silent-skip. Добавлено: `TELEGRAM_ADMIN_CHAT_ID=681237223` (@dmitry_hihol). Верифицировано: 3 тестовые заявки доехали в TG.
+
+### ~~F-E2E-004 api.telegram.org блокируется на уровне ЦОД/ISP~~
+✅ 2026-04-20 — TCP к `149.154.166.110:443` timeout из хоста и из контейнеров, при этом `8.8.8.8:443` и proxy6 на `72.56.184.139:8000` работают. Специфическая блокировка Telegram IP range на этом Hostland ЦОД. **Фикс:** новый helper `packages/shared/src/http/telegram-fetch.ts` (`tgFetch`) через undici ProxyAgent, подхватывает `TG_PROXY_URL` (с fallback на `OPENAI_PROXY_URL`). Заменены все 12 callsites: 5 web API routes (leads/b2b-leads/agency-leads/publish/bookings), 5 worker jobs (generate-orders/crosspost/crosspost-social/refresh-content/validate-content), bot voice handler, и `apps/web/lib/bot-instance.ts` grammY instance. **Env:** `TG_PROXY_URL=http://user:pass@72.56.184.139:8000` на проде.
+
+### F-E2E-005 Продукт ни разу не прогонялся end-to-end
+- **Что:** На момент Step 2.0/2.0.1/2.0.2 в БД: 0 content_packages, 0 orders, 0 leads, 0 scan_results, 0 api_keys, 0 bookings, 0 jobs completed. Весь content pipeline (voice → STT → LLM 5 форматов → publish → SSR страница → lead form) никогда не тестировался на production. Любые runtime-баги внутри pipeline обнаружатся только на реальных пилотах.
+- **Решение:** Phase 2-3 E2E прогон с hihol.dmitry@ya.ru + @dmitry_hihol — регистрация, TG привязка, запись голоса, job generate_content, publish, lead на published странице. **Блокер:** нужны Step 2.0.5 rotation TG bot token (новый) + после этого Claude прогоняет.
+- **Создано:** 2026-04-20
+
+---
+
 ## P3 — nice-to-have
 
 ### ~~B-011 Страницы /privacy и /terms не существуют~~

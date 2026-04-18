@@ -1,6 +1,7 @@
 import type { Bot } from "grammy";
 import { supabase } from "../supabase";
 import { getSTT } from "shared";
+import { tgFetch } from "shared/http/telegram-fetch";
 
 export function registerVoiceHandler(bot: Bot): void {
   bot.on("message:voice", async (ctx) => {
@@ -25,7 +26,7 @@ export function registerVoiceHandler(bot: Bot): void {
     const fileUrl = `https://api.telegram.org/file/bot${bot.token}/${file.file_path}`;
 
     // Скачиваем файл
-    const response = await fetch(fileUrl);
+    const response = await tgFetch(fileUrl);
     if (!response.ok) {
       await ctx.reply("Не удалось скачать голосовое сообщение.");
       return;

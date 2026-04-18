@@ -1,5 +1,6 @@
 import { supabase } from "../supabase.js";
 import { SUBSCRIPTION_TIERS } from "shared";
+import { tgFetch } from "shared/http/telegram-fetch";
 
 export async function handleGenerateOrders(payload: Record<string, unknown>): Promise<{ created: number }> {
   const nicheId = payload.niche_id as string;
@@ -165,7 +166,7 @@ async function notifyNewOrders(
   lines.push("", "Откройте /orders для просмотра");
 
   try {
-    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    await tgFetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chat_id: telegramId, text: lines.join("\n") }),

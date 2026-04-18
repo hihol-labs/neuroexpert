@@ -24,6 +24,7 @@ ENV NODE_ENV=production
 COPY --from=builder /app/apps/worker/dist ./apps/worker/dist
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/packages/shared/package.json ./packages/shared/
+COPY --from=builder /app/packages/shared/node_modules ./packages/shared/node_modules
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/worker/node_modules ./apps/worker/node_modules
 COPY --from=builder /app/apps/worker/package.json ./apps/worker/

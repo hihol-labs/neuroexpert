@@ -1,4 +1,5 @@
 import { supabase } from "../supabase.js";
+import { tgFetch } from "shared/http/telegram-fetch";
 
 // Кросспост в социальные сети + отзовики
 // При публикации статьи — подготовка постов для размещения на разных площадках
@@ -83,7 +84,7 @@ export async function handleCrosspostSocial(payload: Record<string, unknown>): P
       };
 
       try {
-        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        await tgFetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ chat_id: expert.telegram_id, text, reply_markup: keyboard }),

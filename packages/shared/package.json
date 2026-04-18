@@ -4,6 +4,18 @@
   "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./http/telegram-fetch": {
+      "types": "./dist/http/telegram-fetch.d.ts",
+      "import": "./dist/http/telegram-fetch.js",
+      "default": "./dist/http/telegram-fetch.js"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
@@ -14,6 +26,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
-    "openai": "^6.27.0"
+    "openai": "^6.27.0",
+    "undici": "^6.19.8"
   }
 }

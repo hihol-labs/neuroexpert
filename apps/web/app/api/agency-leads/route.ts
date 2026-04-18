@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { tgFetch } from "shared/http/telegram-fetch";
 
 // Rate limit: 3 per hour per IP
 const rateLimitMap = new Map<string, number[]>();
@@ -78,7 +79,7 @@ async function sendTelegramNotification(
   ].join("\n");
 
   try {
-    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    await tgFetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chat_id: adminChatId, text }),

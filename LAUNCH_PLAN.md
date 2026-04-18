@@ -13,6 +13,8 @@
 **Что новое 2026-04-20:**
 - Content P1-pack из Step 2.0.2 ✅ — закрыты B-016..B-019 + B-021 (5 тикетов). Правки: +GigaChat в 2 места /how-it-works, убран «SSR < 1 сек» до B-015 Lighthouse QA, дисклеймер к кейсу Анны на /for-experts, `*`-footnote с «По отраслевым данным 2024» для 86%/58% + 500K+, «0 аналогов/конкурентов» → «Первая RU-платформа», ₽-эквивалент к $99 на /for-agencies.
 - LANDING_BRIEFS.md синхронизирован — homepage и /for-experts обещания обновлены, правило запрета «0 аналогов» зафиксировано.
+- **E2E Smoke Test ✅ вскрыл 5 critical findings** (см. BACKLOG F-E2E-001..005). P0: на проде `iptables FORWARD policy DROP` + UFW блокировал весь outbound из Docker → продукт **не работал 2 дня** (0 jobs / 0 leads / 0 scans). Fixed iptables + persistent UFW rules. Обновлён OpenAI key + proxy. Добавлен `TELEGRAM_ADMIN_CHAT_ID`. Обнаружено: `api.telegram.org` заблокирован на Hostland ЦОД — создан helper `tgFetch` через `undici.ProxyAgent`, все 12 TG callsites перешли на proxy routing. Bot полноценно заработал (polling) впервые с deploy.
+- **F-E2E-005 (P1)**: Full E2E pipeline (voice → content → publish → lead) никогда не прогонялся на проде — нужен Phase 2-3 прогон с реальным экспертом после ротации TG bot token.
 
 **Что новое 2026-04-19:**
 - Step 2.0.1 Tech QA ✅ (auto) — 3 finding зафикшены (commit `1dba85a`). Ручная часть → B-015.
