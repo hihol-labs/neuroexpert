@@ -13,6 +13,7 @@ const PUBLIC_ROUTES = [
   "/login",
   "/register",
   "/terms",
+  "/privacy",
 ];
 
 const PUBLIC_PREFIXES = [

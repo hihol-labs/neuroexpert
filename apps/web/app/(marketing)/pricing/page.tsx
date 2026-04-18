@@ -110,6 +110,7 @@ const COMPARISON_ROWS = [
   { label: "Цена", free: "0 ₽", starter: "1 490 ₽/мес", pro: "2 990 ₽/мес", expert: "4 990 ₽/мес" },
   { label: "Комиссия с клиентов", free: "15%", starter: "7%", pro: "3%", expert: "0%" },
   { label: "Вы получаете", free: "85%", starter: "93%", pro: "97%", expert: "100%" },
+  { label: "Гарантия цитирований*", free: "—", starter: "2 / 60 дн", pro: "5 / 90 дн", expert: "10 / 90 дн" },
   { label: "Ниш", free: "1", starter: "2", pro: "3", expert: "5" },
   { label: "Подобранных тем", free: "Без ограничений", starter: "Без ограничений", pro: "Без ограничений", expert: "Без ограничений" },
   { label: "Контент-пакетов в месяц", free: "3", starter: "Без ограничений", pro: "Без ограничений", expert: "Без ограничений" },
@@ -176,10 +177,12 @@ export default function PricingPage() {
                   </div>
                 </div>
                 <p className="text-sm text-gray-400 mb-1 font-medium">{plan.headline}</p>
-                {"guarantee" in plan && (
+                {"guarantee" in plan ? (
                   <Link href="/terms#guarantee" className="text-xs text-blue-400 hover:text-blue-300 underline">
                     Условия гарантии
                   </Link>
+                ) : (
+                  <p className="text-xs text-gray-500">Free — без гарантии цитирований; попробуйте без обязательств.</p>
                 )}
 
                 {/* Сценарий */}
@@ -220,6 +223,7 @@ export default function PricingPage() {
                 <span className="text-sm text-gray-400">/мес</span>
               </div>
               <p className="mt-2 text-sm text-gray-400">Для клиник, юрфирм и команд. До 10 ниш, до 5 экспертов, AI Visibility Scanner, брендированная публикация, персональный менеджер.</p>
+              <p className="mt-2 text-xs text-gray-500">Гарантия цитирований — индивидуальные условия в договоре.</p>
               <Link href="/register?plan=business" className="mt-4 block text-center rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15">
                 Подписаться
               </Link>
@@ -230,7 +234,8 @@ export default function PricingPage() {
                 <span className="text-2xl font-bold text-white">99 990 &#8381;</span>
                 <span className="text-sm text-gray-400">/мес</span>
               </div>
-              <p className="mt-2 text-sm text-gray-400">White-label, SLA, выделенная инфраструктура, безлимит экспертов, кастомные интеграции, API.</p>
+              <p className="mt-2 text-sm text-gray-400">White-label, SLA, выделенная инфраструктура, безлимит экспертов, кастомные интеграции.</p>
+              <p className="mt-2 text-xs text-gray-500">Гарантия цитирований — индивидуальные условия в договоре.</p>
               <Link href="mailto:hello@neuroexpertise.ru" className="mt-4 block text-center rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15">
                 Связаться
               </Link>
@@ -306,6 +311,12 @@ export default function PricingPage() {
               </tbody>
             </table>
           </div>
+          <p className="mt-4 text-xs text-gray-500 text-center">
+            * Гарантия действует при ≥3 опубликованных статьях и заполненном профиле. При недостижении — возврат 100% подписки за расчётный период.{" "}
+            <Link href="/terms#guarantee" className="text-blue-400 hover:text-blue-300 underline">
+              Полные условия гарантии
+            </Link>
+          </p>
         </div>
       </section>
 

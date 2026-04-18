@@ -108,23 +108,23 @@ const FEATURES = [
 const USE_CASES = [
   {
     niche: "Психология",
-    metric: "47",
-    metricLabel: "вопросов с gap_score ≥ 7",
-    insight: "В нише психологии 47 высокообъёмных вопросов (>1500 показов/мес), на которые ChatGPT отвечает без ссылок на экспертов. Готовые контент-брифы для клиента — на месяц.",
+    metric: "gap_score",
+    metricLabel: "0–10 по каждому вопросу",
+    insight: "GET /blind-spots?niche=psychology возвращает JSON: список высокообъёмных вопросов, по которым AI-ответ не содержит имени эксперта / примеров / источника / цифр. Контент-брифы для клиента генерируются из этого списка.",
     color: "from-purple-500/15 to-violet-500/5 border-purple-500/30",
   },
   {
     niche: "Юриспруденция",
-    metric: "₽2.3M",
-    metricLabel: "потенциальный трафик/мес",
-    insight: "По 32 «слепым зонам» в семейном и трудовом праве — суммарный спрос Wordstat 154 000 запросов. По CTR 12% и LTV клиента ₽15K = TAM ₽2.3M через AI-канал.",
+    metric: "TAM",
+    metricLabel: "считается на стороне агентства",
+    insight: "GET /blind-spots?niche=legal отдаёт monthly_volume + opportunity_score по каждому вопросу. Ваша формула «volume × CTR × LTV» на выходе даёт оценку TAM по AI-каналу для конкретного клиента.",
     color: "from-violet-500/15 to-purple-500/5 border-violet-500/30",
   },
   {
     niche: "Медицина",
-    metric: "4 / 4",
-    metricLabel: "AI не находит специалиста",
-    insight: "В нише «детская стоматология» все 4 проверяемые платформы (ChatGPT/Perplexity/YandexGPT/GigaChat) дают generic-ответ без рекомендации врача. Чистый whitespace для контентной работы.",
+    metric: "4 платформы",
+    metricLabel: "ChatGPT · Perplexity · YandexGPT · GigaChat",
+    insight: "По каждому вопросу — probe всех 4 AI-платформ с 4 маркерами качества ответа (имя эксперта / примеры / источник / цифры). Видно где AI даёт generic-ответ без рекомендации врача — whitespace для контентной работы.",
     color: "from-purple-500/15 to-violet-500/5 border-purple-500/30",
   },
 ];
@@ -489,7 +489,7 @@ export default function ForAgenciesPage() {
             <FadeIn className="text-center mb-14">
               <h2 className="text-3xl font-bold text-white sm:text-4xl">Сырые данные из API</h2>
               <p className="mt-4 text-gray-400 max-w-2xl mx-auto">
-                Что вернёт /blind-spots по 3 нишам прямо сейчас (snapshot 2026-04-17)
+                Что возвращает /blind-spots — структура ответа и поля по 3 примерным нишам
               </p>
             </FadeIn>
 

@@ -126,7 +126,10 @@ export default function ScanPage() {
                     3 платформы
                   </h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    ChatGPT, Perplexity, YandexGPT
+                    ChatGPT, Perplexity, YandexGPT.{" "}
+                    <a href="/audit" className="underline hover:text-blue-600">
+                      В /audit — 4 платформы (+ GigaChat)
+                    </a>
                   </p>
                 </div>
                 <div className="rounded-xl border border-gray-200 p-6 text-center">
