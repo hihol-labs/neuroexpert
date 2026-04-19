@@ -5,10 +5,13 @@
 
 ## 📊 Статус (обновлять после каждой сессии)
 
-**Прогресс:** Block 1 ✅ · Block 2 🔶 (~55%) · Block 3-6 ⬜
-**Текущая фаза:** Pre-outreach (Step 2.0.5 + 2.2 — оба на пользователе)
-**Следующий шаг:** Step 2.0.5 — ротация OpenAI + TG ключей (на пользователе) ИЛИ Step 2.2 ЮKassa (на пользователе). При получении любого — Claude продолжит.
-**Активные блокеры P0:** Step 2.2 ЮKassa ключи · Step 2.0.5 новые OpenAI + TG токены · B-015 ручная Tech QA (mobile/Lighthouse) — все на пользователе.
+**Прогресс:** Block 1 ✅ · Block 2 🔶 (~60%) · Block 3-6 ⬜
+**Текущая фаза:** Pre-outreach (Step 2.2 — на пользователе)
+**Следующий шаг:** Step 2.2 — ключи ЮKassa (на пользователе). После получения → Claude завершает `/api/webhooks/yukassa` + Step 2.1 E2E прогон.
+**Активные блокеры P0:** Step 2.2 ЮKassa ключи · B-015 ручная Tech QA (mobile/Lighthouse) — оба на пользователе.
+
+**Что новое 2026-04-21:**
+- **Step 2.0.5 ✅ закрыт** — OpenAI key ротирован в прошлой сессии (`c4d2067`). TG bot token **оставлен текущий** (accepted risk): пользователь подтвердил, что токен не попадал в открытые сессии Claude → риск компрометации отсутствует. B-004 → закрыт. F-E2E-005 не зависит от ротации TG — можно прогонять E2E pipeline когда появится реальный эксперт.
 
 **Что новое 2026-04-20:**
 - Content P1-pack из Step 2.0.2 ✅ — закрыты B-016..B-019 + B-021 (5 тикетов). Правки: +GigaChat в 2 места /how-it-works, убран «SSR < 1 сек» до B-015 Lighthouse QA, дисклеймер к кейсу Анны на /for-experts, `*`-footnote с «По отраслевым данным 2024» для 86%/58% + 500K+, «0 аналогов/конкурентов» → «Первая RU-платформа», ₽-эквивалент к $99 на /for-agencies.
@@ -23,7 +26,7 @@
 - Step 2.0.4 BACKLOG.md — добавлены все findings Step 2.0.1 + 2.0.2.
 - Остаётся Step 2.0.5 (rotation) — на пользователе.
 **Известные P0/P1 из BACKLOG.md (страховка):**
-- B-004 Ротация OpenAI + TG ключей (security, перед outreach) — см. Step 2.0.5
+- ~~B-004 Ротация OpenAI + TG ключей~~ ✅ закрыт 2026-04-21 (OpenAI ротирован, TG token kept as accepted risk)
 - B-005 Backend tier-логика для API ключей — отложена до 1-го платящего Pro
 - B-006 Маркетинговые лендинги в middleware whitelist — DX improvement
 - B-007 PostgREST schema cache automation — DX improvement
@@ -364,12 +367,12 @@ curl -I https://neuroexpertise.ru/api/referrals/payout
 #### 2.0.4 Зафиксировать в `BACKLOG.md` все findings + время устранения ✅ 2026-04-19
 B-016..B-022 создано; B-CLOSED-005..008 + B-011 + B-020 закрыты.
 
-#### 2.0.5 Ротация OpenAI + Telegram токенов (B-004 в BACKLOG, P1 security) 🔐
+#### 2.0.5 Ротация OpenAI + Telegram токенов (B-004 в BACKLOG, P1 security) 🔐 ✅ 2026-04-21
 **Почему здесь:** ключи могли быть скомпрометированы (упоминались в открытом виде в чате прошлых сессий). Перед публичным outreach — обязательная санация.
-- [ ] OpenAI: platform.openai.com → API keys → revoke старый → создать новый → прописать в `/opt/neuroexpert/.env`
-- [ ] Telegram: @BotFather → `/token` → revoke → новый → прописать
-- [ ] `docker compose -f docker/docker-compose.prod.yml restart bot worker web`
-- [ ] Проверка: запросом со старым OpenAI ключом → 401; bot отвечает в TG; LLM probing работает в логах worker
+- [x] OpenAI: старый истёк/забанен → создан новый → прописан в `/opt/neuroexpert/.env` (2026-04-20, commit `c4d2067`)
+- [x] ~~Telegram: @BotFather → `/token` → revoke~~ → **не требуется.** Пользователь подтвердил 2026-04-21: TG bot token не попадал в открытые сессии Claude → риск компрометации отсутствует. Accepted risk, токен оставлен.
+- [x] `docker compose -f docker/docker-compose.prod.yml restart bot worker web` (2026-04-20)
+- [x] Проверка: bot polling активен с 2026-04-20; LLM probing работает (F-E2E-004 показал что tgFetch routing через прокси функционирует)
 
 **Acceptance criteria Step 2.0:**
 
@@ -858,7 +861,7 @@ GROUP BY platform;
 
 | Тикет | Где встроено | Ответственный |
 |---|---|---|
-| **B-004** Ротация OpenAI + TG ключей | ✅ Встроено в Step 2.0.5 | Пользователь (получает) + Claude (прописывает) |
+| ~~**B-004** Ротация OpenAI + TG ключей~~ | ✅ Закрыт 2026-04-21 (OpenAI ротирован `c4d2067`, TG kept — accepted risk) | — |
 | **B-005** Backend tier-логика для API ключей | Триггер: 1-й платящий Pro → начать. Упомянуто в Step 4.4 | Claude |
 | **B-006** Маркетинговые лендинги в middleware whitelist refactor | Не блокер. Сделать оппортунистически (DX) | Claude |
 | **B-007** PostgREST schema cache automation после миграций | Не блокер. Документировано, добавить в `/deploy` skill | Claude |
