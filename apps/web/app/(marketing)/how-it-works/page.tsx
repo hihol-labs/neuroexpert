@@ -1,8 +1,6 @@
-"use client";
-
 import Link from "next/link";
-import { useState } from "react";
 import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
+import { PipelineStep } from "./pipeline-step";
 
 const PIPELINE_STEPS = [
   {
@@ -119,6 +117,13 @@ const MODULES = [
     color: "bg-green-500/10 border-green-500/20",
     textColor: "text-green-300",
   },
+];
+
+const BLIND_SPOT_MARKERS = [
+  { marker: "Имя эксперта", question: "Ссылается ли ответ на конкретного специалиста?" },
+  { marker: "Конкретные примеры", question: "«Из 200 пациентов...» или «в целом рекомендуется...»?" },
+  { marker: "Цифры и сроки", question: "Есть конкретные данные или размытые формулировки?" },
+  { marker: "Ссылка на источник", question: "Указан ли URL или автор?" },
 ];
 
 const CITATION_MECHANICS = [
@@ -245,12 +250,7 @@ export default function HowItWorksPage() {
             которые AI определяет быстрее человека.
           </p>
           <div className="mt-10 grid gap-4 sm:grid-cols-2">
-            {[
-              { marker: "Имя эксперта", question: "Ссылается ли ответ на конкретного специалиста?" },
-              { marker: "Конкретные примеры", question: "«Из 200 пациентов...» или «в целом рекомендуется...»?" },
-              { marker: "Цифры и сроки", question: "Есть конкретные данные или размытые формулировки?" },
-              { marker: "Ссылка на источник", question: "Указан ли URL или автор?" },
-            ].map((item) => (
+            {BLIND_SPOT_MARKERS.map((item) => (
               <div key={item.marker} className="rounded-xl bg-white/5 border border-white/10 p-5">
                 <div className="text-sm font-semibold text-blue-400">{item.marker}</div>
                 <p className="mt-1 text-sm text-gray-300">{item.question}</p>
@@ -340,46 +340,3 @@ export default function HowItWorksPage() {
   );
 }
 
-function PipelineStep({ step }: { step: typeof PIPELINE_STEPS[number] }) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden backdrop-blur-sm">
-      <button
-        className="w-full flex items-center gap-4 p-6 text-left hover:bg-white/5 transition-colors"
-        onClick={() => setOpen(!open)}
-      >
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-xl text-white flex-shrink-0 font-bold">
-          {step.num}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">{step.icon}</span>
-            <h3 className="text-lg font-semibold text-white">{step.title}</h3>
-          </div>
-          <p className="mt-1 text-sm text-gray-400">{step.short}</p>
-        </div>
-        <svg
-          className={`h-5 w-5 text-gray-500 flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      {open && (
-        <div className="border-t border-white/5 bg-white/5 px-6 py-4">
-          <ul className="space-y-2">
-            {step.details.map((d, i) => (
-              <li key={i} className="flex gap-2 text-sm text-gray-300">
-                <span className="text-blue-400 flex-shrink-0 mt-0.5">&#10003;</span>
-                {d}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
-}
