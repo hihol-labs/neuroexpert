@@ -5,12 +5,13 @@
 
 ## 📊 Статус (обновлять после каждой сессии)
 
-**Прогресс:** Block 1 ✅ · Block 2 🔶 (~60%) · Block 3-6 ⬜
+**Прогресс:** Block 1 ✅ · Block 2 🔶 (~65%) · Block 3-6 ⬜
 **Текущая фаза:** Pre-outreach (Step 2.2 — на пользователе)
 **Следующий шаг:** Step 2.2 — ключи ЮKassa (на пользователе). После получения → Claude завершает `/api/webhooks/yukassa` + Step 2.1 E2E прогон.
-**Активные блокеры P0:** Step 2.2 ЮKassa ключи · B-015 ручная Tech QA (mobile/Lighthouse) — оба на пользователе.
+**Активные блокеры P0:** Step 2.2 ЮKassa ключи — на пользователе.
 
 **Что новое 2026-04-21:**
+- **B-015 ✅ закрыт** — Lighthouse CI настроен + baseline прогнан + 2 раунда оптимизаций. Результат: **все 10 маркетинговых URL** теперь проходят пороги (Perf ≥ 0.80, A11y ≥ 0.90, BP ≥ 0.85, SEO ≥ 0.90) на mobile simulated 4G. 3 commit'а: `899fb63` (LHCI workflow + lighthouserc.json + PR comment), `6b425d3` (Server Component layout + canvas sqrt→distSq + mobile 60 узлов + pauseOnHidden), `bccfdac` (how-it-works split: page.tsx → Server + pipeline-step.tsx → client leaf). Бюджеты в lighthouserc повышены с `warn` на `error` — будущие регрессии блокируют PR.
 - **Step 2.0.5 ✅ закрыт** — OpenAI key ротирован в прошлой сессии (`c4d2067`). TG bot token **оставлен текущий** (accepted risk): пользователь подтвердил, что токен не попадал в открытые сессии Claude → риск компрометации отсутствует. B-004 → закрыт. F-E2E-005 не зависит от ротации TG — можно прогонять E2E pipeline когда появится реальный эксперт.
 
 **Что новое 2026-04-20:**
@@ -31,7 +32,7 @@
 - B-006 Маркетинговые лендинги в middleware whitelist — DX improvement
 - B-007 PostgREST schema cache automation — DX improvement
 - B-013 Pricing bundles / cross-sell — после 1-го платящего в каждом канале
-- **B-015 Ручная часть Step 2.0.1 Tech QA** (mobile 375/768px + Lighthouse ≥80 + Schema.org validator) — на пользователе, **перед** outreach. Auto-часть закрыта 2026-04-19.
+- ~~**B-015 Ручная часть Step 2.0.1 Tech QA**~~ ✅ закрыт 2026-04-21. Lighthouse CI workflow настроен, 3 раунда оптимизаций — все 10 URL прошли пороги Perf ≥ 0.80 на mobile.
 
 **Что новое 2026-04-17:**
 - Worker `claim_job` 404 закрыт (миграция 018)

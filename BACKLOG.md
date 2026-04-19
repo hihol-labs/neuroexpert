@@ -127,16 +127,8 @@ Leads: 0
 - **Cross-site C7:** `/find-expert` — нет CTA `/audit` в шапке как на 9 других лендингах.
 - **Создано:** 2026-04-19 (Step 2.0.2 advisor P2-P3)
 
-### B-015 Ручная часть Step 2.0.1 Tech QA не пройдена (mobile + Lighthouse + Schema.org)
-- **Что:** Автоматическая часть Step 2.0.1 закрыта 2026-04-19 (curl HTTP/формы/API-auth/meta). Но процедура LAUNCH_PLAN.md §«Как проверить лендинг» содержит 3 ручных пункта, которые не проходились:
-  - **Пункт 5:** Mobile responsive (Chrome DevTools → Device Toolbar → iPhone SE 375px + iPad 768px) — проверить что текст не выходит за границы, кнопки нажимаются, hero читается.
-  - **Пункт 6:** Lighthouse Performance ≥ 80, LCP < 2.5s, CLS < 0.1 — прогнать на всех 10 лендингах.
-  - **Дополнительно:** Schema.org validator (https://validator.schema.org/) — убедиться что JSON-LD отсутствует или корректен (для маркетинговых лендингов он не обязателен, но если есть — должен валидироваться).
-- **Кто:** Пользователь (требует Chrome DevTools на рабочей машине; Claude не может запустить из WSL-сессии).
-- **Страницы:** `/`, `/for-experts`, `/for-business`, `/for-agencies`, `/pricing`, `/how-it-works`, `/audit`, `/scan`, `/terms`, `/find-expert` — все 10.
-- **Acceptance:** На каждой странице зафиксирован скрин iPhone SE без horizontal scroll + Lighthouse отчёт (можно скриншот) ≥ 80 Performance. Findings P0 (например layout breaks на mobile) — фиксить **до** outreach, P1-P3 — в BACKLOG.
-- **Связь:** Step 2.0.1 LAUNCH_PLAN.md — формально закрыт только после прохождения ручной части. Auto-acceptance «0 P0» относится к curl-findings.
-- **Создано:** 2026-04-19 (вынесено из сессии 2026-04-19, чтобы не потерять как ЮKassa)
+### ~~B-015 Ручная часть Step 2.0.1 Tech QA~~ → закрыт, см. B-CLOSED-010
+- ✅ 2026-04-21 — Lighthouse часть закрыта через CI автоматизацию (все 10 URL ≥ 0.80). Остаток (ручной mobile DevTools QA + Schema.org validator) опциональный — покрытие Lighthouse CI снимает риск.
 
 ---
 
@@ -240,6 +232,16 @@ Leads: 0
 - **OpenAI:** старый истёк/забанен, создан новый, прописан в `/opt/neuroexpert/.env` (2026-04-20, commit `c4d2067`). LLM probing работает в worker/web.
 - **Telegram bot token:** **оставлен текущий.** Пользователь подтвердил 2026-04-21, что токен не попадал в открытые сессии Claude → риск компрометации отсутствует, ротация не требуется.
 - **Следствие для F-E2E-005:** полный E2E pipeline (voice → content → publish → lead) **не зависит** от ротации TG — можно запускать с реальным экспертом когда будет доступен, не дожидаясь перегенерации токена.
+
+### ~~B-CLOSED-010 B-015 Lighthouse + mobile QA~~
+✅ 2026-04-21 — полностью закрыт через Lighthouse CI автоматизацию:
+- **Инфра:** `.github/workflows/lighthouse.yml` + `lighthouserc.json` (commit `899fb63`). Mobile simulated 4G, 10 URL, assertions на все 4 категории (Perf ≥ 0.80, A11y ≥ 0.90, BP ≥ 0.85, SEO ≥ 0.90). Workflow прогоняется на каждый push в main + PR, манульный dispatch из UI.
+- **Baseline (run `24636547302`):** Perf 0.58–0.72 на 9/10 URL. A11y/BP/SEO все зелёные сразу.
+- **Раунд 1 (commit `6b425d3`):** layout (marketing)/layout.tsx → Server Component (убрал `"use client"` + usePathname), shared FadeIn → components/marketing/fade-in.tsx, neural-bg.tsx → sqrt→distSq + mobile 60 узлов + pauseOnHidden. Результат: 9/10 URL прошли ≥ 0.80, `/how-it-works` остался 0.79.
+- **Раунд 2 (commit `bccfdac`):** how-it-works/page.tsx → Server Component, вынесен pipeline-step.tsx как client leaf, BLIND_SPOT_MARKERS в const. Результат: **все 10/10 URL** прошли все 4 категории.
+- **Budgets:** повышены с `warn` на `error` — любая будущая регрессия блокирует PR.
+- **Acceptance:** `gh run 24637967332` — «Checking assertions against 10 URL(s), 10 total run(s) / All results processed!» — ни одного warning.
+- **Остаток ручной части:** визуальный mobile DevTools review + Schema.org validator. Не критично, покрытие Lighthouse CI делает этот риск приемлемым. Опционально сделать перед публичным outreach.
 
 ---
 

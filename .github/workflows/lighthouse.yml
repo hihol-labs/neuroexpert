@@ -41,8 +41,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: lighthouse-reports-${{ github.run_number }}
-          path: .lighthouseci/
+          path: lhci-reports/
           retention-days: 30
+          if-no-files-found: warn
 
       - name: Comment PR with scores
         if: github.event_name == 'pull_request' && always()
@@ -51,9 +52,9 @@ jobs:
           script: |
             const fs = require('fs');
             const path = require('path');
-            const dir = '.lighthouseci';
+            const dir = 'lhci-reports';
             if (!fs.existsSync(dir)) return;
-            const files = fs.readdirSync(dir).filter(f => f.endsWith('.json') && f.startsWith('lhr-'));
+            const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
             if (!files.length) return;
             const rows = files.map(f => {
               const data = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
