@@ -1,0 +1,78 @@
+name: Lighthouse CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - '.github/workflows/lighthouse.yml'
+      - 'lighthouserc.json'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+
+jobs:
+  lighthouse:
+    name: Lighthouse audit (mobile)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli@0.14.x
+
+      - name: Run Lighthouse CI
+        run: lhci autorun --config=./lighthouserc.json
+
+      - name: Upload reports as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports-${{ github.run_number }}
+          path: .lighthouseci/
+          retention-days: 30
+
+      - name: Comment PR with scores
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const dir = '.lighthouseci';
+            if (!fs.existsSync(dir)) return;
+            const files = fs.readdirSync(dir).filter(f => f.endsWith('.json') && f.startsWith('lhr-'));
+            if (!files.length) return;
+            const rows = files.map(f => {
+              const data = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+              const cats = data.categories || {};
+              const score = (k) => cats[k] ? Math.round(cats[k].score * 100) : '—';
+              return `| ${data.finalUrl} | ${score('performance')} | ${score('accessibility')} | ${score('best-practices')} | ${score('seo')} |`;
+            });
+            const body = [
+              '## Lighthouse CI results (mobile)',
+              '',
+              '| URL | Perf | A11y | Best Practices | SEO |',
+              '|---|---|---|---|---|',
+              ...rows,
+              '',
+              `Budgets: Perf ≥ 80, A11y ≥ 90, Best Practices ≥ 85, SEO ≥ 90. Full reports in workflow artifacts.`
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
