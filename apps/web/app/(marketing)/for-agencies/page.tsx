@@ -1,52 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
-import { NeuralBackground } from "@/components/marketing/neural-bg";
-
-function FadeIn({
-  children,
-  className = "",
-  delay = 0,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  delay?: number;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) {
-          setTimeout(() => {
-            el.style.opacity = "1";
-            el.style.transform = "translateY(0)";
-          }, delay);
-          obs.unobserve(el);
-        }
-      },
-      { threshold: 0.1 },
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [delay]);
-  return (
-    <div
-      ref={ref}
-      className={className}
-      style={{
-        opacity: 0,
-        transform: "translateY(30px)",
-        transition: "all 0.8s cubic-bezier(0.16, 1, 0.3, 1)",
-      }}
-    >
-      {children}
-    </div>
-  );
-}
+import { FadeIn } from "@/components/marketing/fade-in";
 
 const PROBLEMS = [
   {
@@ -345,14 +302,8 @@ function AgencyLeadForm() {
 
 export default function ForAgenciesPage() {
   return (
-    <div className="relative min-h-screen">
-      <div className="fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-[#040714]" />
-        <NeuralBackground />
-      </div>
-
-      <div className="relative z-10">
-        <MarketingHeader />
+    <>
+      <MarketingHeader />
 
         {/* ===== HERO ===== */}
         <section className="min-h-[85vh] flex items-center justify-center">
@@ -619,7 +570,6 @@ export default function ForAgenciesPage() {
         </section>
 
         <MarketingFooter />
-      </div>
-    </div>
+    </>
   );
 }

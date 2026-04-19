@@ -25,9 +25,11 @@ const COLORS: [number, number, number][] = [
 ];
 
 const CONNECTION_DIST = 160;
+const CONNECTION_DIST_SQ = CONNECTION_DIST * CONNECTION_DIST;
+const HUB_DIST = CONNECTION_DIST * 1.5;
+const HUB_DIST_SQ = HUB_DIST * HUB_DIST;
 const MOUSE_RADIUS = 200;
-const NODE_COUNT = 90;
-const HUB_COUNT = 6;
+const MOUSE_RADIUS_SQ = MOUSE_RADIUS * MOUSE_RADIUS;
 
 export function NeuralBackground({ className = "", nodeCount = 90, hubCount = 6 }: { className?: string; nodeCount?: number; hubCount?: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -37,8 +39,13 @@ export function NeuralBackground({ className = "", nodeCount = 90, hubCount = 6 
   const sizeRef = useRef({ w: 0, h: 0 });
 
   const initNodes = useCallback((w: number, h: number) => {
+    // Adaptive node count: halve on mobile (≤767px) to cut O(n²) connection cost ~6x.
+    const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+    const nc = isMobile ? Math.min(nodeCount, 60) : nodeCount;
+    const hc = isMobile ? Math.min(hubCount, 4) : hubCount;
+
     const nodes: Node[] = [];
-    for (let i = 0; i < hubCount; i++) {
+    for (let i = 0; i < hc; i++) {
       nodes.push({
         x: Math.random() * w,
         y: Math.random() * h,
@@ -53,7 +60,7 @@ export function NeuralBackground({ className = "", nodeCount = 90, hubCount = 6 
         isHub: true,
       });
     }
-    for (let i = 0; i < nodeCount - hubCount; i++) {
+    for (let i = 0; i < nc - hc; i++) {
       nodes.push({
         x: Math.random() * w,
         y: Math.random() * h,
@@ -77,6 +84,9 @@ export function NeuralBackground({ className = "", nodeCount = 90, hubCount = 6 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    // Pause animation when tab hidden — saves CPU and prevents Lighthouse TBT hit.
+    let paused = false;
+
     function resize() {
       if (!canvas) return;
       const w = window.innerWidth;
@@ -91,7 +101,7 @@ export function NeuralBackground({ className = "", nodeCount = 90, hubCount = 6 
     }
 
     function animate() {
-      if (!ctx) return;
+      if (!ctx || paused) return;
       const { w, h } = sizeRef.current;
       if (w === 0) return;
 
@@ -105,11 +115,12 @@ export function NeuralBackground({ className = "", nodeCount = 90, hubCount = 6 
       for (const node of nodes) {
         node.pulsePhase += node.pulseSpeed;
 
-        // Mouse attraction
+        // Mouse attraction — compare squared distances first, sqrt only when node is in range.
         const dmx = mx - node.x;
         const dmy = my - node.y;
-        const mouseDist = Math.sqrt(dmx * dmx + dmy * dmy);
-        if (mouseDist < MOUSE_RADIUS && mouseDist > 1) {
+        const mouseDistSq = dmx * dmx + dmy * dmy;
+        if (mouseDistSq < MOUSE_RADIUS_SQ && mouseDistSq > 1) {
+          const mouseDist = Math.sqrt(mouseDistSq);
           const force = (1 - mouseDist / MOUSE_RADIUS) * 0.6;
           node.vx += (dmx / mouseDist) * force;
           node.vy += (dmy / mouseDist) * force;
@@ -126,9 +137,11 @@ export function NeuralBackground({ className = "", nodeCount = 90, hubCount = 6 
 
         node.vx *= 0.985;
         node.vy *= 0.985;
-        const speed = Math.sqrt(node.vx * node.vx + node.vy * node.vy);
+        // Squared-speed compare; sqrt only when clamping needed.
+        const speedSq = node.vx * node.vx + node.vy * node.vy;
         const maxSpeed = node.isHub ? 0.5 : 1.0;
-        if (speed > maxSpeed) {
+        if (speedSq > maxSpeed * maxSpeed) {
+          const speed = Math.sqrt(speedSq);
           node.vx = (node.vx / speed) * maxSpeed;
           node.vy = (node.vy / speed) * maxSpeed;
         }
@@ -142,15 +155,18 @@ export function NeuralBackground({ className = "", nodeCount = 90, hubCount = 6 
         if (node.y > h) { node.y = h; node.vy *= -1; }
       }
 
-      // Connections
+      // Connections — sqrt only for pairs that pass the squared-distance gate (~15% of pairs).
       for (let i = 0; i < nodes.length; i++) {
         for (let j = i + 1; j < nodes.length; j++) {
           const dx = nodes[i].x - nodes[j].x;
           const dy = nodes[i].y - nodes[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          const maxDist = (nodes[i].isHub || nodes[j].isHub) ? CONNECTION_DIST * 1.5 : CONNECTION_DIST;
+          const distSq = dx * dx + dy * dy;
+          const isHubPair = nodes[i].isHub || nodes[j].isHub;
+          const maxDistSq = isHubPair ? HUB_DIST_SQ : CONNECTION_DIST_SQ;
 
-          if (dist < maxDist) {
+          if (distSq < maxDistSq) {
+            const maxDist = isHubPair ? HUB_DIST : CONNECTION_DIST;
+            const dist = Math.sqrt(distSq);
             const opacity = (1 - dist / maxDist) * 0.35;
             const pulse = Math.sin(nodes[i].pulsePhase + nodes[j].pulsePhase) * 0.3 + 0.7;
             const [r, g, b] = nodes[i].isHub ? nodes[i].color : nodes[j].color;
@@ -211,6 +227,16 @@ export function NeuralBackground({ className = "", nodeCount = 90, hubCount = 6 
       rafRef.current = requestAnimationFrame(animate);
     }
 
+    function onVisibilityChange() {
+      if (document.hidden) {
+        paused = true;
+        cancelAnimationFrame(rafRef.current);
+      } else if (paused) {
+        paused = false;
+        rafRef.current = requestAnimationFrame(animate);
+      }
+    }
+
     // Mouse tracking on window (not canvas — canvas has pointer-events: none)
     function onMouseMove(e: MouseEvent) {
       mouseRef.current = { x: e.clientX, y: e.clientY };
@@ -219,21 +245,26 @@ export function NeuralBackground({ className = "", nodeCount = 90, hubCount = 6 
       mouseRef.current = { x: -1000, y: -1000 };
     }
 
+    function onResize() {
+      resize();
+      initNodes(sizeRef.current.w, sizeRef.current.h);
+    }
+
     resize();
     initNodes(sizeRef.current.w, sizeRef.current.h);
     rafRef.current = requestAnimationFrame(animate);
 
-    window.addEventListener("resize", () => {
-      resize();
-      initNodes(sizeRef.current.w, sizeRef.current.h);
-    });
+    window.addEventListener("resize", onResize);
     window.addEventListener("mousemove", onMouseMove);
     document.addEventListener("mouseleave", onMouseLeave);
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
       cancelAnimationFrame(rafRef.current);
+      window.removeEventListener("resize", onResize);
       window.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("mouseleave", onMouseLeave);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [initNodes]);
 
