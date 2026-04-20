@@ -76,6 +76,8 @@ services:
       GOTRUE_MAILER_URLPATHS_CONFIRMATION: "/supabase/auth/v1/verify"
       GOTRUE_MAILER_URLPATHS_RECOVERY: "/supabase/auth/v1/verify"
       GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: "/supabase/auth/v1/verify"
+      GOTRUE_MAILER_TEMPLATES_MAGIC_LINK: "https://neuroexpertise.ru/email-templates/magic-link.html"
+      GOTRUE_MAILER_SUBJECTS_MAGIC_LINK: "Вход в НейроЭксперт"
     networks:
       - neuro-internal
     restart: unless-stopped
