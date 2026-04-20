@@ -203,7 +203,7 @@ function AgencyLeadForm() {
   if (done) {
     return (
       <div className="text-center py-8">
-        <div className="text-5xl mb-4">📬</div>
+        <div className="text-5xl mb-4">✅</div>
         <h3 className="text-xl font-semibold text-white mb-2">Заявка получена</h3>
         <p className="text-gray-400">
           Свяжемся в течение 24 часов и выдадим ключ для тестирования. Параллельно

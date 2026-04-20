@@ -286,17 +286,17 @@ export default function HowItWorksPage() {
               <tbody>
                 <tr className="border-b border-white/10">
                   <td className="px-4 py-3 font-medium text-white">Месяц 1</td>
-                  <td className="px-4 py-3 text-center text-gray-400">~5%</td>
+                  <td className="px-4 py-3 text-center text-gray-400">~5%*</td>
                   <td className="px-4 py-3 text-gray-400">Индексация, первые упоминания</td>
                 </tr>
                 <tr className="border-b border-white/10">
                   <td className="px-4 py-3 font-medium text-white">Месяц 2-3</td>
-                  <td className="px-4 py-3 text-center text-gray-400">10-15%</td>
+                  <td className="px-4 py-3 text-center text-gray-400">10-15%*</td>
                   <td className="px-4 py-3 text-gray-400">Домен набирает авторитет, растёт трафик</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-3 font-medium text-white">Месяц 4-6</td>
-                  <td className="px-4 py-3 text-center text-blue-400 font-semibold">20-30%</td>
+                  <td className="px-4 py-3 text-center text-blue-400 font-semibold">20-30%*</td>
                   <td className="px-4 py-3 text-gray-400">Стабильный поток цитирований и клиентов</td>
                 </tr>
               </tbody>
@@ -305,6 +305,10 @@ export default function HowItWorksPage() {
           <p className="mt-6 text-sm text-gray-500">
             При 24 страницах за 6 месяцев и 25% цитировании — это 6 страниц, каждая приносящая 50-200 визитов.
             Достаточно для ROI при подписке 2 990 &#8381;.
+          </p>
+          <p className="mt-4 text-xs text-gray-500">
+            * Ориентир по отраслевым данным 2024. Реальные значения зависят от ниши,
+            конкуренции, качества ответов и регулярности публикаций.
           </p>
         </div>
       </section>

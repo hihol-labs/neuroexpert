@@ -76,7 +76,7 @@ export async function generateMetadata({
       title,
       description,
       type: "website",
-      url: `https://neuroexpertise.ru/scan/${slug}`,
+      url: `/scan/${slug}`,
       siteName: "НейроЭксперт",
     },
   };

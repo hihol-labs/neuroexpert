@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
 
 interface MatchedExpert {
   id: string;
@@ -62,19 +63,7 @@ export default function FindExpertPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <header className="border-b bg-white">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
-          <Link href="/" className="text-lg font-bold text-gray-900">
-            НейроЭксперт
-          </Link>
-          <Link
-            href="/experts"
-            className="text-sm text-gray-600 hover:text-gray-900"
-          >
-            Каталог
-          </Link>
-        </nav>
-      </header>
+      <MarketingHeader />
 
       <main className="mx-auto max-w-3xl px-6 py-12">
         <div className="text-center mb-8">
@@ -223,6 +212,8 @@ export default function FindExpertPage() {
           </div>
         )}
       </main>
+
+      <MarketingFooter />
     </div>
   );
 }
