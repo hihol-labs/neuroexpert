@@ -1,6 +1,18 @@
 FROM node:20-alpine AS base
 RUN corepack enable
 
+# Install НУЦ Минцифры CA (root + sub) for Russian gov-signed endpoints
+# (GigaChat, YandexGPT, Yandex SpeechKit и т.п.). Без этого Node.js fetch
+# падает с "self-signed certificate in certificate chain" на *.sberbank.ru.
+# NODE_EXTRA_CA_CERTS читается Node at startup как доп trust anchors.
+RUN apk add --no-cache ca-certificates wget \
+    && wget -qO /usr/local/share/ca-certificates/russian_trusted_root_ca.crt \
+         "https://gu-st.ru/content/Other/doc/russian_trusted_root_ca.cer" \
+    && wget -qO /usr/local/share/ca-certificates/russian_trusted_sub_ca.crt \
+         "https://gu-st.ru/content/Other/doc/russian_trusted_sub_ca.cer" \
+    && update-ca-certificates
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
 FROM base AS deps
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
