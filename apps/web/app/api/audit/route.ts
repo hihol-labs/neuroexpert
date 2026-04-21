@@ -202,6 +202,7 @@ async function checkPerplexity(
 // --- YandexGPT ---
 async function checkYandexGPT(
   question: string,
+  proxiedFetch?: FetchFn,
 ): Promise<PlatformResult | null> {
   if (!process.env.YANDEX_API_KEY || !process.env.YANDEX_FOLDER_ID) return null;
 
@@ -231,7 +232,10 @@ async function checkYandexGPT(
   };
   const aiResponse = data.result.alternatives[0]?.message?.text || "";
 
-  const analyzer = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const analyzer = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+    ...(proxiedFetch && { fetch: proxiedFetch }),
+  });
   const markers = await analyzeWithOpenAI(analyzer, question, aiResponse);
 
   return { platform: "YandexGPT", ai_response: aiResponse, markers };
@@ -240,6 +244,7 @@ async function checkYandexGPT(
 // --- GigaChat ---
 async function checkGigaChat(
   question: string,
+  proxiedFetch?: FetchFn,
 ): Promise<PlatformResult | null> {
   if (!process.env.GIGACHAT_CLIENT_ID || !process.env.GIGACHAT_CLIENT_SECRET)
     return null;
@@ -288,7 +293,10 @@ async function checkGigaChat(
   };
   const aiResponse = chatData.choices[0]?.message?.content || "";
 
-  const analyzer = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const analyzer = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+    ...(proxiedFetch && { fetch: proxiedFetch }),
+  });
   const markers = await analyzeWithOpenAI(analyzer, question, aiResponse);
 
   return { platform: "GigaChat", ai_response: aiResponse, markers };
