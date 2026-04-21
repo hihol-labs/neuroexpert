@@ -6,9 +6,11 @@
 ## 📊 Статус (обновлять после каждой сессии)
 
 **Прогресс:** Block 1 ✅ · Block 2 🔶 (~65%) · Block 3-6 ⬜
-**Текущая фаза:** Pre-outreach (Step 2.2 — заявка в ЮKassa на модерации)
-**Следующий шаг:** дождаться письма от ЮKassa (≤2 дней) на `hihol.dmitry@gmail.com` → выполнить чеклист в Шаге 2.2 ниже → Step 2.1 E2E прогон.
-**Активные блокеры P0:** Step 2.2 ЮKassa moderation — на стороне ЮKassa (заявка отправлена 2026-04-21).
+**Текущая фаза:** Pre-outreach (Step 2.2 — заявка в ЮKassa на модерации · Step 2.0.6 — сбор недостающих API-ключей)
+**Следующий шаг:** параллельно — (а) дождаться письма от ЮKassa (≤2 дней) → Шаг 2.2 чеклист; (б) получить ключи провайдеров по Шагу 2.0.6 (GigaChat/YandexGPT/Perplexity/XMLRiver/SerpAPI/Resend/Webmaster).
+**Активные блокеры P0:**
+- Step 2.2 ЮKassa moderation — на стороне ЮKassa (заявка отправлена 2026-04-21)
+- **Step 2.0.6 ключи провайдеров — на пользователе.** Без этих ключей фичи, обещанные на лендингах (4 AI-платформы в Scanner, Wordstat-данные, автокросспост, email-рассылки, индексация), работают частично или не работают. Решено получить все ключи, а не править лендинги вниз.
 
 **Что новое 2026-04-21:**
 - **B-015 ✅ закрыт** — Lighthouse CI настроен + baseline прогнан + 2 раунда оптимизаций. Результат: **все 10 маркетинговых URL** теперь проходят пороги (Perf ≥ 0.80, A11y ≥ 0.90, BP ≥ 0.85, SEO ≥ 0.90) на mobile simulated 4G. 3 commit'а: `899fb63` (LHCI workflow + lighthouserc.json + PR comment), `6b425d3` (Server Component layout + canvas sqrt→distSq + mobile 60 узлов + pauseOnHidden), `bccfdac` (how-it-works split: page.tsx → Server + pipeline-step.tsx → client leaf). Бюджеты в lighthouserc повышены с `warn` на `error` — будущие регрессии блокируют PR.
@@ -375,6 +377,55 @@ B-016..B-022 создано; B-CLOSED-005..008 + B-011 + B-020 закрыты.
 - [x] `docker compose -f docker/docker-compose.prod.yml restart bot worker web` (2026-04-20)
 - [x] Проверка: bot polling активен с 2026-04-20; LLM probing работает (F-E2E-004 показал что tgFetch routing через прокси функционирует)
 
+#### 2.0.6 Регистрация ключей всех заявленных провайдеров 🔑 🔴 P0
+
+**Цель:** лендинги обещают 4 AI-платформы в Scanner, Wordstat-данные, кросспост в Дзен/Хабр, email-рассылки. Без ключей эти фичи не работают → overclaim. Решение (принято 2026-04-21): **не править лендинги вниз, а добрать ключи**, чтобы обещания стали правдой.
+
+**Стратегия:** сначала бесплатные / лайт-платные, потом платные по мере роста. Можно регистрировать параллельно, большинство выдают ключи мгновенно или за час.
+
+**Чеклист ключей (по приоритету):**
+
+| # | Провайдер | Зачем (фича) | Стоимость | Где получить | Env var(s) |
+|---|---|---|---|---|---|
+| 1 | **YandexGPT + Yandex SpeechKit** | 2-я платформа в Scanner, STT fallback (Whisper не единственный) | Бесплатный tier + Foundation Models | `console.yandex.cloud` → сервис-аккаунт → API Key | `YANDEX_API_KEY`, `YANDEX_FOLDER_ID`, `YANDEX_CLOUD_API_KEY`, `YANDEX_CLOUD_FOLDER_ID` |
+| 2 | **GigaChat** | 3-я платформа в Scanner, LLM fallback, /audit GigaChat column | Бесплатно 1M токенов/мес | `developers.sber.ru/gigachat` → зарегистрировать app → Client ID/Secret | `GIGACHAT_CLIENT_ID`, `GIGACHAT_CLIENT_SECRET` |
+| 3 | **Perplexity API** | 4-я платформа в Scanner, AI-citation tracking | $20/мес (pro plan) | `perplexity.ai/settings/api` → Generate API Key | `PERPLEXITY_API_KEY` |
+| 4 | **XMLRiver (Wordstat)** | `collect_demand` — сбор реальных частотностей из Я.Вордстат (300 seed — недостаточно) | от ₽500/мес | `xmlriver.com` → регистрация → user_id + api_key | `XMLRIVER_USER_ID`, `XMLRIVER_API_KEY` |
+| 5 | **SerpAPI** | Google PAA («Люди также спрашивают»), Яндекс Кью, SERP tracking | $50/мес (developer) | `serpapi.com/users/sign_up` | `SERPAPI_API_KEY` |
+| 6 | **Resend** | Email-дайджесты (send-email-digest job), email-отписка, welcome-письма | Бесплатно 3k email/мес | `resend.com/signup` → Domains → верификация neuroexpertise.ru (DKIM/SPF) → API Key | `RESEND_API_KEY`, `EMAIL_FROM=noreply@neuroexpertise.ru` |
+| 7 | **Яндекс Вебмастер** | `submit-sitemap` → Яндекс, ускорение индексации | Бесплатно | `webmaster.yandex.ru` → Настройки → OAuth-токен + Host ID | `YANDEX_WEBMASTER_TOKEN`, `YANDEX_WEBMASTER_HOST_ID` |
+| 8 | **Google Search Console** | `submit-sitemap` → Google, аналитика индексации | Бесплатно | Service account JSON → base64 | `GSC_SERVICE_ACCOUNT_JSON` |
+| 9 | **Bing Webmaster** | `submit-sitemap` → Bing (+DuckDuckGo) | Бесплатно | `bing.com/webmasters` → API Key | `BING_WEBMASTER_API_KEY` |
+| 10 | **Дзен API** | Автокросспост Дзен (Starter+ обещает) | Бесплатно, по заявке | OAuth via `dzen.ru/api` | `DZEN_API_TOKEN` |
+| 11 | **Хабр API** | Автокросспост Хабр (Pro+ обещает) | Бесплатно | `habr.com/ru/users/<login>/settings/tokens/` | `HABR_API_TOKEN` |
+| 12 | **Cloudflare purge** (опционально) | Purge cache после deploy | Бесплатно | `dash.cloudflare.com` → API Tokens → Zone scope | `CLOUDFLARE_ZONE_ID`, `CLOUDFLARE_API_TOKEN` |
+| 13 | **Plausible** (опционально) | Аналитика (альтернатива Я.Метрике, уже есть) | Self-hosted или $9/мес | — | `PLAUSIBLE_API_KEY`, `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` |
+
+**Action plan для пользователя (порядок регистрации):**
+
+1. **Бесплатные, мгновенные** (1-2 часа суммарно): GigaChat → YandexGPT → Яндекс.Вебмастер → Bing Webmaster → Resend (DKIM займёт ~1 час ожидания DNS).
+2. **Бесплатные с ожиданием** (1-3 дня): GSC service account (создать проект в Google Cloud Console), Дзен API (по заявке).
+3. **Платные** (когда будут первые пилоты и нужен реальный data scale): XMLRiver (₽500/мес) → Perplexity ($20/мес) → SerpAPI ($50/мес).
+4. **Опциональные** (не срочно): Хабр, Cloudflare, Plausible — откладываем до реальной нагрузки.
+
+**По мере получения ключей:**
+- [ ] Пользователь передаёт Claude через чат
+- [ ] Claude прописывает в `/opt/neuroexpert/.env`
+- [ ] `docker compose restart web worker` (ключи читаются в runtime)
+- [ ] Smoke тест фичи (см. колонку «Зачем» — например, для GigaChat → `curl https://neuroexpertise.ru/api/audit` с telecom-нишей, должен вернуть GigaChat column)
+
+**Уже починено в коде (2026-04-21):**
+- `apps/worker/src/services/wordstat.ts` — var name mismatch: теперь читает `XMLRIVER_USER_ID` / `XMLRIVER_API_KEY` (с fallback на старые имена для обратной совместимости)
+
+**Acceptance criteria Step 2.0.6:**
+- [ ] Все 9 core провайдеров (1-9 из таблицы) имеют активные ключи в `.env`
+- [ ] Smoke-test каждой фичи пройден (Scanner показывает 4 платформы на /scan, Wordstat возвращает результаты, Resend отправляет email)
+- [ ] Обновлён этот план (статус) + MEMORY.md
+
+**Почему это приоритет P0:** без этих ключей лендинги содержат overclaim'ы, которые будут замечены (а) пилот-экспертами на Step 2.3, (б) модераторами vc.ru при публикации кейса, (в) SEO-агентствами на Step 2.5 (они проверят API). Это блокер для всего outreach — не меньший чем ЮKassa.
+
+---
+
 **Acceptance criteria Step 2.0:**
 
 - [ ] 0 P0-findings (всё критическое исправлено)
@@ -382,6 +433,7 @@ B-016..B-022 создано; B-CLOSED-005..008 + B-011 + B-020 закрыты.
 - [ ] LANDING_BRIEFS.md синхронизирован с продом
 - [ ] BACKLOG.md содержит свежие P1-P3 findings
 - [ ] Старые OpenAI/TG ключи отозваны, новые работают
+- [ ] Step 2.0.6: core ключи (1-9) получены и вставлены
 
 **Когда применяется gate:**
 - Перед началом outreach (Шаг 2.3 пилоты-эксперты)

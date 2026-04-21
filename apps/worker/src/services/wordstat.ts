@@ -1,7 +1,9 @@
 // XMLRiver Wordstat API client
 
-const XMLRIVER_USER = process.env.XMLRIVER_USER || "";
-const XMLRIVER_KEY = process.env.XMLRIVER_KEY || "";
+// XMLRIVER_USER_ID + XMLRIVER_API_KEY — официальные имена в .env.example.
+// Старые XMLRIVER_USER / XMLRIVER_KEY поддерживаются как fallback для обратной совместимости.
+const XMLRIVER_USER = process.env.XMLRIVER_USER_ID || process.env.XMLRIVER_USER || "";
+const XMLRIVER_KEY = process.env.XMLRIVER_API_KEY || process.env.XMLRIVER_KEY || "";
 const MIN_VOLUME = 1000;
 
 // Слова-маркеры вопросов
