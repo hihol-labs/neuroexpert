@@ -6,9 +6,19 @@ export class ClaudeLLMProvider implements LLMProvider {
   private client: Anthropic;
 
   constructor() {
-    this.client = new Anthropic({
+    const proxyUrl = process.env.ANTHROPIC_PROXY_URL || process.env.OPENAI_PROXY_URL;
+    const clientOptions: ConstructorParameters<typeof Anthropic>[0] = {
       apiKey: process.env.ANTHROPIC_API_KEY,
-    });
+    };
+
+    if (proxyUrl) {
+      const { ProxyAgent, fetch: undiciFetch } = require("undici") as typeof import("undici");
+      const dispatcher = new ProxyAgent(proxyUrl);
+      clientOptions.fetch = ((url: string, init?: RequestInit) =>
+        undiciFetch(url, { ...(init as Parameters<typeof undiciFetch>[1]), dispatcher })) as unknown as typeof fetch;
+    }
+
+    this.client = new Anthropic(clientOptions);
   }
 
   async generateText(prompt: string, options?: LLMOptions): Promise<string> {
