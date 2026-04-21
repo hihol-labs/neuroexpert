@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
 
-const TITLE = "Условия использования | НейроЭксперт";
+const TITLE = "Публичная оферта | НейроЭксперт";
 const DESCRIPTION =
-  "Условия использования платформы НейроЭксперт, гарантия результата по тарифам Starter/Pro/Expert, политика возврата.";
+  "Публичная оферта и условия использования платформы НейроЭксперт: порядок оплаты, способ получения услуги, гарантия результата и условия возврата.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -20,9 +20,12 @@ export default function TermsPage() {
 
       <section className="py-16">
         <div className="mx-auto max-w-3xl px-6">
-          <h1 className="text-3xl font-bold text-white">Условия использования</h1>
+          <h1 className="text-3xl font-bold text-white">Публичная оферта</h1>
+          <p className="mt-2 text-gray-400 text-sm">
+            (Условия использования платформы НейроЭксперт)
+          </p>
           <p className="mt-4 text-gray-400">
-            Последнее обновление: 16 апреля 2026 г.
+            Последнее обновление: 21 апреля 2026 г.
           </p>
 
           <div className="mt-12 space-y-10 text-gray-300 text-sm leading-relaxed">
@@ -30,22 +33,37 @@ export default function TermsPage() {
             <div>
               <h2 className="text-xl font-semibold text-white mb-4">1. Общие положения</h2>
               <p>
+                Настоящий документ является публичной офертой (далее — Оферта) в соответствии
+                со ст. 437 Гражданского кодекса РФ. Исполнитель — самозанятый Хихол Дмитрий
+                Николаевич (ИНН 683306354810), полные реквизиты на странице{" "}
+                <a href="/requisites" className="text-cyan-400 hover:underline">
+                  /requisites
+                </a>
+                .
+              </p>
+              <p className="mt-3">
                 НейроЭксперт (далее — Платформа) предоставляет экспертам инструменты
                 для создания контента, публикации экспертных страниц и привлечения клиентов
                 через поисковые системы и AI-платформы.
               </p>
               <p className="mt-3">
-                Регистрируясь на Платформе, вы соглашаетесь с настоящими условиями.
+                Регистрируясь на Платформе и/или оплачивая подписку, вы (далее — Пользователь)
+                совершаете акцепт настоящей Оферты и соглашаетесь со всеми её условиями.
               </p>
             </div>
 
             {/* Тарифы */}
             <div>
-              <h2 className="text-xl font-semibold text-white mb-4">2. Тарифы и оплата</h2>
+              <h2 className="text-xl font-semibold text-white mb-4">2. Тарифы и стоимость</h2>
               <p>
-                Платформа предлагает тарифы Free, Starter, Pro, Expert и Business.
-                Подписка оплачивается ежемесячно через ЮKassa. Вы можете отменить подписку
-                в любой момент — она действует до конца оплаченного периода.
+                Платформа предлагает шесть тарифов: Free (0 ₽/мес), Starter (1 490 ₽/мес),
+                Pro (2 990 ₽/мес), Expert (4 990 ₽/мес), Business (24 990 ₽/мес) и
+                Enterprise (индивидуальные условия, договор согласовывается отдельно).
+                Актуальные цены и состав услуг тарифов указаны на странице{" "}
+                <a href="/pricing" className="text-cyan-400 hover:underline">
+                  /pricing
+                </a>
+                .
               </p>
               <p className="mt-3">
                 Комиссия с оплаченных консультаций зависит от тарифа:
@@ -53,12 +71,64 @@ export default function TermsPage() {
               </p>
             </div>
 
+            {/* Порядок оплаты */}
+            <div>
+              <h2 className="text-xl font-semibold text-white mb-4">3. Порядок оплаты</h2>
+              <p>
+                Оплата подписки и консультаций производится через платёжный сервис ЮKassa
+                (ООО НКО «ЮMoney») в рублях РФ. Возможные способы оплаты: банковская карта
+                Visa / Mastercard / МИР, система быстрых платежей (СБП), кошелёк ЮMoney.
+              </p>
+              <p className="mt-3">
+                Подписка оплачивается авансовым платежом за расчётный период (1 месяц).
+                При включённом автопродлении следующий платёж списывается автоматически
+                в день окончания оплаченного периода. Автопродление можно отключить в
+                разделе «Биллинг» личного кабинета в любой момент — текущий оплаченный
+                период продолжает действовать до его окончания.
+              </p>
+            </div>
+
+            {/* Способ получения услуги */}
+            <div>
+              <h2 className="text-xl font-semibold text-white mb-4">4. Способ получения услуги</h2>
+              <p>
+                НейроЭксперт оказывает цифровые услуги в электронной форме. После
+                успешного платежа подписка активируется автоматически в течение 1–2 минут.
+                Доступ ко всему функционалу тарифа предоставляется в личном кабинете по
+                адресу{" "}
+                <a href="https://neuroexpertise.ru/dashboard" className="text-cyan-400 hover:underline">
+                  neuroexpertise.ru/dashboard
+                </a>
+                . Уведомление об активации направляется на email, указанный при
+                регистрации.
+              </p>
+              <p className="mt-3">
+                Физическая доставка товаров не производится — платформа предоставляет
+                цифровые сервисы по модели SaaS.
+              </p>
+            </div>
+
             {/* Гарантия результата */}
             <div id="guarantee">
-              <h2 className="text-xl font-semibold text-white mb-4">3. Гарантия результата</h2>
+              <h2 className="text-xl font-semibold text-white mb-4">5. Гарантия результата и возврат средств</h2>
+
+              <h3 className="font-semibold text-white mb-2">5.1 Общий порядок возврата</h3>
+              <p>
+                Поскольку доступ к цифровым материалам и тарифу предоставляется
+                незамедлительно после оплаты, Пользователь имеет право требовать возврата
+                средств в случаях, предусмотренных п. 5.2 (гарантия результата) либо при
+                наличии существенных технических проблем, препятствующих использованию
+                услуги по вине Платформы. Заявление о возврате направляется на{" "}
+                <a href="mailto:info@neuroexpertise.ru" className="text-cyan-400 hover:underline">
+                  info@neuroexpertise.ru
+                </a>
+                ; рассмотрение — до 10 рабочих дней, возврат на ту же карту — до 10 рабочих
+                дней после одобрения.
+              </p>
+
+              <h3 className="font-semibold text-white mt-6 mb-2">5.2 Что мы гарантируем</h3>
 
               <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-6 mb-6">
-                <h3 className="font-semibold text-white mb-3">Что мы гарантируем</h3>
                 <div className="space-y-3">
                   <div className="flex gap-3">
                     <span className="text-cyan-400 font-bold mt-0.5">Starter</span>
@@ -75,27 +145,27 @@ export default function TermsPage() {
                 </div>
               </div>
 
-              <h3 className="font-semibold text-white mb-2">Что считается цитированием</h3>
+              <h3 className="font-semibold text-white mb-2">5.3 Что считается цитированием</h3>
               <p>
                 Цитирование — это упоминание вашего имени, бренда или контента в ответе
                 AI-платформы (ChatGPT, YandexGPT, Perplexity, GigaChat) на релевантный
                 вопрос пользователя. Фиксируется автоматически системой Citation Tracker.
               </p>
 
-              <h3 className="font-semibold text-white mt-6 mb-2">Сроки</h3>
+              <h3 className="font-semibold text-white mt-6 mb-2">5.4 Сроки</h3>
               <p>
                 Отсчёт начинается с даты первой опубликованной статьи на Платформе.
                 Starter: 60 дней. Pro и Expert: 90 дней.
               </p>
 
-              <h3 className="font-semibold text-white mt-6 mb-2">Условия возврата</h3>
+              <h3 className="font-semibold text-white mt-6 mb-2">5.5 Условия возврата по гарантии</h3>
               <p>
                 Если за гарантийный период количество зафиксированных цитирований
                 не достигло порога вашего тарифа — мы возвращаем 100% стоимости подписки
                 за этот период. Возврат осуществляется на карту в течение 10 рабочих дней.
               </p>
 
-              <h3 className="font-semibold text-white mt-6 mb-2">Когда гарантия не действует</h3>
+              <h3 className="font-semibold text-white mt-6 mb-2">5.6 Когда гарантия не действует</h3>
               <ul className="list-disc pl-5 space-y-1 mt-2">
                 <li>Тариф Free (бесплатный, без гарантии)</li>
                 <li>Профиль не заполнен (нет фото, квалификации, опыта работы)</li>
@@ -107,7 +177,7 @@ export default function TermsPage() {
 
             {/* Контент */}
             <div>
-              <h2 className="text-xl font-semibold text-white mb-4">4. Контент</h2>
+              <h2 className="text-xl font-semibold text-white mb-4">6. Контент</h2>
               <p>
                 Контент, созданный на Платформе, принадлежит эксперту. Платформа получает
                 неисключительную лицензию на публикацию и распространение контента
@@ -120,18 +190,34 @@ export default function TermsPage() {
 
             {/* Конфиденциальность */}
             <div>
-              <h2 className="text-xl font-semibold text-white mb-4">5. Конфиденциальность</h2>
+              <h2 className="text-xl font-semibold text-white mb-4">7. Конфиденциальность</h2>
               <p>
                 Мы не передаём персональные данные третьим лицам без вашего согласия.
                 Данные хранятся на серверах в РФ. Подробнее — в Политике конфиденциальности.
               </p>
             </div>
 
-            {/* Контакты */}
+            {/* Реквизиты + контакты */}
             <div>
-              <h2 className="text-xl font-semibold text-white mb-4">6. Контакты</h2>
+              <h2 className="text-xl font-semibold text-white mb-4">8. Реквизиты исполнителя и контакты</h2>
               <p>
-                По вопросам и возвратам: <a href="mailto:info@neuroexpertise.ru" className="text-cyan-400 hover:underline">info@neuroexpertise.ru</a>
+                Исполнитель — самозанятый Хихол Дмитрий Николаевич, ИНН 683306354810,
+                г. Тамбов. Полные реквизиты, включая контактный телефон и способы связи,
+                размещены на странице{" "}
+                <a href="/requisites" className="text-cyan-400 hover:underline">
+                  /requisites
+                </a>
+                .
+              </p>
+              <p className="mt-3">
+                По вопросам оплаты, возвратов и общим обращениям:{" "}
+                <a
+                  href="mailto:info@neuroexpertise.ru"
+                  className="text-cyan-400 hover:underline"
+                >
+                  info@neuroexpertise.ru
+                </a>
+                .
               </p>
             </div>
           </div>

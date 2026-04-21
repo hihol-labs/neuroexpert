@@ -207,7 +207,10 @@ export function MarketingFooter() {
               Политика конфиденциальности
             </Link>
             <Link href="/terms" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
-              Условия использования
+              Публичная оферта
+            </Link>
+            <Link href="/requisites" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+              Реквизиты
             </Link>
           </div>
 
