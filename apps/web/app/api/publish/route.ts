@@ -31,14 +31,20 @@ export async function POST(request: NextRequest) {
     const admin = getAdmin();
 
     // Verify ownership
-    const { data: pkg } = await admin
+    const { data: pkg, error: pkgErr } = await admin
       .from("content_packages")
-      .select("id, expert_id, title, slug, status, profiles!inner(slug, telegram_id, niche_id, niches(slug))")
+      .select("id, expert_id, order_id, title, slug, status, profiles!inner(slug, telegram_id, niche_id, niches(slug))")
       .eq("id", content_id)
       .single();
 
-    if (!pkg || pkg.expert_id !== user.id) {
-      return NextResponse.json({ error: "Not found or not owner" }, { status: 404 });
+    if (!pkg) {
+      console.error("[publish] content_package not found", { content_id, user_id: user.id, supabase_error: pkgErr?.message });
+      return NextResponse.json({ error: "Content package not found" }, { status: 404 });
+    }
+
+    if (pkg.expert_id !== user.id) {
+      console.error("[publish] ownership mismatch", { content_id, pkg_expert_id: pkg.expert_id, user_id: user.id });
+      return NextResponse.json({ error: "Forbidden: content package belongs to another expert" }, { status: 403 });
     }
 
     if (pkg.status === "published") {
@@ -58,11 +64,13 @@ export async function POST(request: NextRequest) {
       })
       .eq("id", content_id);
 
-    // Update order status if exists
-    await admin
-      .from("orders")
-      .update({ status: "published" })
-      .eq("id", content_id);
+    // Update order status if linked
+    if (pkg.order_id) {
+      await admin
+        .from("orders")
+        .update({ status: "published" })
+        .eq("id", pkg.order_id);
+    }
 
     // Create crosspost job
     await admin.from("jobs").insert({
