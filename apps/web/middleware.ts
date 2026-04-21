@@ -14,6 +14,7 @@ const PUBLIC_ROUTES = [
   "/register",
   "/terms",
   "/privacy",
+  "/requisites",
 ];
 
 const PUBLIC_PREFIXES = [
