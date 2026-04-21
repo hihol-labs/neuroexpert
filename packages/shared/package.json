@@ -20,6 +20,11 @@
       "types": "./dist/utils/slug.d.ts",
       "import": "./dist/utils/slug.js",
       "default": "./dist/utils/slug.js"
+    },
+    "./constants": {
+      "types": "./dist/constants.d.ts",
+      "import": "./dist/constants.js",
+      "default": "./dist/constants.js"
     }
   },
   "scripts": {

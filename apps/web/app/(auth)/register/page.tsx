@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { NICHES } from "shared";
+import { NICHES } from "shared/constants";
 import { slugifyLatin } from "shared/utils/slug";
 import { NeuralBackground } from "@/components/marketing/neural-bg";
 
