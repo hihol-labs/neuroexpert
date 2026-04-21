@@ -3,6 +3,53 @@ import { createClient } from "@supabase/supabase-js";
 
 const WEBHOOK_SECRET = process.env.YUKASSA_WEBHOOK_SECRET || "";
 
+// Публичный список IP-диапазонов ЮKassa для webhook-уведомлений
+// (https://yookassa.ru/developers/using-api/webhooks#ip). Можно переопределить
+// через YUKASSA_WEBHOOK_IP_ALLOWLIST (comma-separated CIDR или IP). Пустая
+// строка отключает IP-проверку (не рекомендуется для prod).
+const DEFAULT_YUKASSA_IPS = [
+  "185.71.76.0/27",
+  "185.71.77.0/27",
+  "77.75.153.0/25",
+  "77.75.156.11",
+  "77.75.156.35",
+  "77.75.154.128/25",
+  "2a02:5180::/32",
+];
+
+function allowlistedIps(): string[] {
+  const env = process.env.YUKASSA_WEBHOOK_IP_ALLOWLIST;
+  if (env === undefined) return DEFAULT_YUKASSA_IPS;
+  if (env.trim() === "") return []; // явное отключение
+  return env.split(",").map((s) => s.trim()).filter(Boolean);
+}
+
+function ipToUint32(ip: string): number | null {
+  if (ip.includes(":")) return null; // IPv6 обрабатывается отдельно (по префиксу строки)
+  const parts = ip.split(".").map(Number);
+  if (parts.length !== 4 || parts.some((n) => isNaN(n) || n < 0 || n > 255)) return null;
+  // >>> 0 приводит результат к unsigned 32-bit
+  return ((parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]) >>> 0;
+}
+
+function ipMatchesCidr(clientIp: string, cidrOrIp: string): boolean {
+  if (!cidrOrIp.includes("/")) return clientIp === cidrOrIp;
+  if (cidrOrIp.includes(":")) return clientIp.toLowerCase().startsWith(cidrOrIp.split("/")[0].toLowerCase().replace(/::$/, ""));
+  const [subnet, bitsStr] = cidrOrIp.split("/");
+  const bits = Number(bitsStr);
+  const client = ipToUint32(clientIp);
+  const net = ipToUint32(subnet);
+  if (client === null || net === null || isNaN(bits) || bits < 0 || bits > 32) return false;
+  const mask = bits === 0 ? 0 : (0xffffffff << (32 - bits)) >>> 0;
+  return (client & mask) >>> 0 === (net & mask) >>> 0;
+}
+
+function extractClientIp(request: NextRequest): string | null {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  return request.headers.get("x-real-ip");
+}
+
 function getAdmin() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,9 +59,18 @@ function getAdmin() {
 }
 
 export async function POST(request: NextRequest) {
-  // Verify webhook (basic IP check or secret header)
+  // 1) IP-проверка. Работает поверх Traefik (он передаёт X-Forwarded-For).
+  const allowlist = allowlistedIps();
+  if (allowlist.length > 0) {
+    const clientIp = extractClientIp(request);
+    if (!clientIp || !allowlist.some((entry) => ipMatchesCidr(clientIp, entry))) {
+      console.warn(`[yukassa] Webhook rejected: IP ${clientIp ?? "<unknown>"} not in allowlist`);
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
+
+  // 2) Общий секрет в URL (дополнительная защита, опционально)
   if (WEBHOOK_SECRET) {
-    // ЮKassa sends events as plain JSON, verify via shared secret in URL or body
     const url = new URL(request.url);
     const secret = url.searchParams.get("secret");
     if (secret !== WEBHOOK_SECRET) {
@@ -34,6 +90,13 @@ export async function POST(request: NextRequest) {
     const admin = getAdmin();
 
     if (event === "payment.succeeded") {
+      // Доверяем только payload'у в котором object.status совпадает с event
+      // (защита от сфабрикованных событий, если shared secret утечёт).
+      if (object.status !== "succeeded") {
+        console.warn(`[yukassa] payment.succeeded event but object.status=${String(object.status)}, ignoring`);
+        return NextResponse.json({ ok: true });
+      }
+
       const paymentId = object.id as string;
       const amount = object.amount as { value: string; currency: string };
       const metadata = (object.metadata ?? {}) as Record<string, string>;
@@ -91,6 +154,14 @@ export async function POST(request: NextRequest) {
         .from("payments")
         .update({ status })
         .eq("yukassa_payment_id", paymentId);
+    }
+
+    // Catch-all: события которые мы не обрабатываем (payment.waiting_for_capture,
+    // deal.closed, etc.) — логируем, чтобы не терять диагностику. Возвращаем 200
+    // чтобы ЮKassa не дёргала retry.
+    const handled = new Set(["payment.succeeded", "payment.canceled", "refund.succeeded"]);
+    if (!handled.has(event)) {
+      console.log(`[yukassa] Unhandled event type: ${event} (id=${String(object.id)})`);
     }
 
     return NextResponse.json({ ok: true });
