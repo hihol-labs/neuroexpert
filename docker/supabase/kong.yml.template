@@ -88,7 +88,19 @@ services:
             - admin
             - anon
 
-  # ===== STORAGE =====
+  # ===== STORAGE public (no auth, must be declared BEFORE /storage/v1/) =====
+  - name: storage-v1-public
+    _comment: "Public objects: /storage/v1/object/public/<bucket>/<key> -> :5000/object/public/<bucket>/<key>"
+    url: http://supabase-storage:5000/object/public/
+    routes:
+      - name: storage-v1-public-all
+        strip_path: true
+        paths:
+          - /storage/v1/object/public/
+    plugins:
+      - name: cors
+
+  # ===== STORAGE (authenticated: everything else under /storage/v1/) =====
   - name: storage-v1
     _comment: "Storage: /storage/v1/* -> :5000/*"
     url: http://supabase-storage:5000/
