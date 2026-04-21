@@ -41,7 +41,7 @@ async function getArticleData(expertSlug: string, articleSlug: string) {
 
   const { data: article } = await supabase
     .from("content_packages")
-    .select("*, questions(question_text)")
+    .select("*, questions(question_text), voice_recordings(file_path, mime_type)")
     .eq("slug", articleSlug)
     .eq("expert_id", expert.id)
     .eq("status", "published")
@@ -336,14 +336,21 @@ export default async function ArticlePage({ params }: Props) {
         )}
 
         {/* Audio player */}
-        {article.voice_id && (
-          <div className="bg-gray-50 rounded-xl p-4 mb-8">
-            <p className="text-sm font-medium text-gray-700 mb-2">Послушать оригинальный ответ эксперта</p>
-            <audio controls className="w-full" preload="none">
-              <source src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/voice/${article.voice_id}`} />
-            </audio>
-          </div>
-        )}
+        {(() => {
+          const voice = article.voice_recordings as unknown as { file_path: string; mime_type: string | null } | null;
+          if (!voice?.file_path) return null;
+          // file_path hrанится с префиксом "voice/..." (historic upload path),
+          // bucket тоже "voice" → URL: .../object/public/voice/voice/uuid/ts.webm
+          const audioUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/voice/${voice.file_path}`;
+          return (
+            <div className="bg-gray-50 rounded-xl p-4 mb-8">
+              <p className="text-sm font-medium text-gray-700 mb-2">Послушать оригинальный ответ эксперта</p>
+              <audio controls className="w-full" preload="none">
+                <source src={audioUrl} type={voice.mime_type ?? "audio/webm"} />
+              </audio>
+            </div>
+          );
+        })()}
 
         {/* FAQ */}
         {faqItems.length > 0 && (

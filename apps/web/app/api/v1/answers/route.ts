@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
   let query = admin
     .from("content_packages")
     .select(
-      "id, title, slug, format_seo_article, format_telegram_post, format_faq, meta_title, meta_description, keywords, word_count, published_at, voice_id, expert_quotes, question_id, questions(question_text, slug, monthly_volume), profiles!inner(id, full_name, slug, qualification, is_verified, trust_score, avg_rating, years_experience, knows_about, alumni_of, works_for)",
+      "id, title, slug, format_seo_article, format_telegram_post, format_faq, meta_title, meta_description, keywords, word_count, published_at, voice_id, voice_recordings(file_path), expert_quotes, question_id, questions(question_text, slug, monthly_volume), profiles!inner(id, full_name, slug, qualification, is_verified, trust_score, avg_rating, years_experience, knows_about, alumni_of, works_for)",
       { count: "exact" },
     )
     .eq("status", "published")
@@ -138,9 +138,12 @@ export async function GET(request: NextRequest) {
         },
       },
       expert_quotes: pkg.expert_quotes,
-      audio_url: pkg.voice_id && storageUrl
-        ? `${storageUrl}/storage/v1/object/public/voice/${pkg.voice_id}`
-        : null,
+      audio_url: (() => {
+        const voice = pkg.voice_recordings as unknown as { file_path: string } | null;
+        return voice?.file_path && storageUrl
+          ? `${storageUrl}/storage/v1/object/public/voice/${voice.file_path}`
+          : null;
+      })(),
       published_at: pkg.published_at,
       license: {
         type: "commercial",
