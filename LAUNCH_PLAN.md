@@ -6,9 +6,9 @@
 ## 📊 Статус (обновлять после каждой сессии)
 
 **Прогресс:** Block 1 ✅ · Block 2 🔶 (~65%) · Block 3-6 ⬜
-**Текущая фаза:** Pre-outreach (Step 2.2 — на пользователе)
-**Следующий шаг:** Step 2.2 — ключи ЮKassa (на пользователе). После получения → Claude завершает `/api/webhooks/yukassa` + Step 2.1 E2E прогон.
-**Активные блокеры P0:** Step 2.2 ЮKassa ключи — на пользователе.
+**Текущая фаза:** Pre-outreach (Step 2.2 — заявка в ЮKassa на модерации)
+**Следующий шаг:** дождаться письма от ЮKassa (≤2 дней) на `hihol.dmitry@gmail.com` → выполнить чеклист в Шаге 2.2 ниже → Step 2.1 E2E прогон.
+**Активные блокеры P0:** Step 2.2 ЮKassa moderation — на стороне ЮKassa (заявка отправлена 2026-04-21).
 
 **Что новое 2026-04-21:**
 - **B-015 ✅ закрыт** — Lighthouse CI настроен + baseline прогнан + 2 раунда оптимизаций. Результат: **все 10 маркетинговых URL** теперь проходят пороги (Perf ≥ 0.80, A11y ≥ 0.90, BP ≥ 0.85, SEO ≥ 0.90) на mobile simulated 4G. 3 commit'а: `899fb63` (LHCI workflow + lighthouserc.json + PR comment), `6b425d3` (Server Component layout + canvas sqrt→distSq + mobile 60 узлов + pauseOnHidden), `bccfdac` (how-it-works split: page.tsx → Server + pipeline-step.tsx → client leaf). Бюджеты в lighthouserc повышены с `warn` на `error` — будущие регрессии блокируют PR.
@@ -446,14 +446,72 @@ B-016..B-022 создано; B-CLOSED-005..008 + B-011 + B-020 закрыты.
 
 ### Шаг 2.2 — ЮKassa активация (1 день)
 
-**Действия:**
-- [ ] Получить ключи в ЛК ЮKassa
-- [ ] Вписать в `/opt/neuroexpert/.env`:
-  - `YUKASSA_SHOP_ID=...`
-  - `YUKASSA_SECRET_KEY=...`
-  - `YUKASSA_WEBHOOK_SECRET=...`
-- [ ] Перезапустить web: `docker compose -f docker/docker-compose.prod.yml restart web`
-- [ ] В ЛК ЮKassa настроить webhook URL: `https://neuroexpertise.ru/api/webhooks/yukassa`
+**Статус 2026-04-21:** заявка «Платежи на сайте» отправлена (IT-сфера → Программист). Ожидание письма на `hihol.dmitry@gmail.com` до 2 суток. Подготовка сайта закрыта 4 коммитами:
+- `1c1ee64` NEW /requisites + /terms как публичная оферта
+- `14a2d17` middleware: `/requisites` в публичных paths
+- `0df81d4` webhook hardened (IP allowlist + status check + env docs)
+
+**Чеклист когда придёт письмо от ЮKassa**
+
+**А) Если одобрили (happy path):**
+
+- [ ] Войти в `https://yookassa.ru/my` → получить `SHOP_ID` (число) и **тестовый** ключ `test_*` (боевой `live_*` после первого успешного тестового платежа).
+- [ ] Сгенерировать random `YUKASSA_WEBHOOK_SECRET`:
+  ```bash
+  openssl rand -hex 32
+  ```
+- [ ] На проде обновить `.env`:
+  ```bash
+  ssh hostland
+  cd /opt/neuroexpert
+  cp .env .env.backup.$(date +%Y%m%d-%H%M%S)
+  # в конец .env:
+  # YUKASSA_SHOP_ID=123456
+  # YUKASSA_SECRET_KEY=test_xxxxxxxxxxxxxx
+  # YUKASSA_WEBHOOK_SECRET=<вывод openssl>
+  docker compose -f docker/docker-compose.prod.yml --env-file .env restart web
+  ```
+  (restart, не rebuild — env vars читаются из `process.env` в runtime)
+- [ ] В ЛК ЮKassa → **Настройки → Уведомления (HTTP) → Webhook URL**:
+  `https://neuroexpertise.ru/api/webhooks/yukassa?secret=<YUKASSA_WEBHOOK_SECRET>`
+  Активировать события: `payment.succeeded`, `payment.canceled`, `refund.succeeded`.
+- [ ] (Опционально) Переопределить IP allowlist если ЮKassa дал новый IP не в дефолтном списке — `YUKASSA_WEBHOOK_IP_ALLOWLIST=...` в `.env`.
+- [ ] Тестовая покупка:
+  1. Регистрация эксперта: `/register`
+  2. `/pricing` → выбрать **Starter** (1 490 ₽) → оплата
+  3. Карта ЮKassa testing: `5555 5555 5555 4444`, CVV/дата — любые
+  4. Редирект на `/billing?success=1`
+  5. Проверка БД:
+     ```sql
+     SELECT subscription_tier, subscription_expires_at FROM profiles WHERE email='...';
+     -- tier=starter, expires_at = now() + 30 days
+     SELECT * FROM payments ORDER BY created_at DESC LIMIT 3;
+     -- status=succeeded, yukassa_payment_id=...
+     ```
+  6. Логи webhook'а:
+     ```bash
+     ssh hostland 'docker logs docker-web-1 --tail 80 2>&1 | grep -i yukassa'
+     # Ожидание: [yukassa] Subscription updated: <id> → starter
+     ```
+- [ ] После успешного тестового платежа: в ЛК ЮKassa переключить на **live-режим** → получить `live_SECRET_KEY` → обновить `YUKASSA_SECRET_KEY` в `.env` → restart web.
+- [ ] Обновить в этом плане статус «Шаг 2.2 → ✅ закрыт».
+- [ ] Перейти к Step 2.1 E2E прогону (Шаг 2.1 в этом же плане).
+
+**Б) Если попросят доработать (rework path):**
+
+- Письмо ЮKassa обычно содержит конкретную претензию. Типичные:
+  - «Не указан ИНН» — у нас указан в `/requisites` (683306354810).
+  - «Неясны условия возврата» — у нас есть раздел 5.1 в `/terms`.
+  - «Не описаны услуги / цены не фиксированные» — у нас `/pricing` с 6 тарифами.
+  - «Нет способа получения услуги» — у нас раздел 4 в `/terms`.
+- Сессия фикса: 30-60 мин в Claude Code → `/task` с указанием конкретного пункта → допиливаем 1-2 файла → `/review` → commit → deploy web.
+- В ЛК ЮKassa ответить через форму «Я исправил» со ссылкой на commit или updated URL.
+
+**Нюансы (из session 2026-04-21_4):**
+
+- Webhook защищён в 5 слоёв: IP allowlist (default ЮKassa IPs) → shared secret в URL → `object.status === "succeeded"` check → idempotent upsert по `yukassa_payment_id` → catch-all log. Не нужно ничего дополнительного настраивать.
+- ЮKassa НЕ поддерживает HMAC-подпись webhook'ов нативно (в отличие от Stripe). Наш shared secret в URL — это осознанный выбор.
+- Marketplace (split-payment) отключён: `YUKASSA_MARKETPLACE` не ставить в `.env` пока нет 50+ активных экспертов (см. `project_tier_decision.md`).
 
 **Как проверить подписку:**
 
