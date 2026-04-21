@@ -4,6 +4,7 @@
   "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -14,6 +15,11 @@
       "types": "./dist/http/telegram-fetch.d.ts",
       "import": "./dist/http/telegram-fetch.js",
       "default": "./dist/http/telegram-fetch.js"
+    },
+    "./utils/slug": {
+      "types": "./dist/utils/slug.d.ts",
+      "import": "./dist/utils/slug.js",
+      "default": "./dist/utils/slug.js"
     }
   },
   "scripts": {

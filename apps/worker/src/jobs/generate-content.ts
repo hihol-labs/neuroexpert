@@ -9,16 +9,8 @@ import {
   buildCardsPrompt,
   buildReelsScriptPrompt,
   buildFaqPrompt,
+  slugifyLatin,
 } from "shared";
-
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^a-zа-яёА-ЯЁ0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .slice(0, 80);
-}
 
 function extractMeta(article: string): { metaTitle: string; metaDescription: string; keywords: string[] } {
   const titleMatch = article.match(/META_TITLE:\s*(.+)/i);
@@ -183,7 +175,7 @@ export async function handleGenerateContent(payload: Record<string, unknown>): P
   // Извлекаем мета из SEO-статьи
   const meta = extractMeta(seoArticle);
   const expertQuotes = extractQuotes(seoArticle, expert.full_name);
-  const slug = slugify(meta.metaTitle || questionText);
+  const slug = slugifyLatin(meta.metaTitle || questionText);
 
   // Считаем метрики
   const wordCount = seoArticle.split(/\s+/).filter(Boolean).length;

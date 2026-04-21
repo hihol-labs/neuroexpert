@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { NICHES } from "shared";
+import { slugifyLatin } from "shared/utils/slug";
 import { NeuralBackground } from "@/components/marketing/neural-bg";
 
 function RegisterForm() {
@@ -39,6 +40,9 @@ function RegisterForm() {
 
     const referrerSlug = ref || localStorage.getItem("neuroexpert_ref") || undefined;
 
+    const slugBase = slugifyLatin(fullName);
+    const slug = slugBase ? `${slugBase}-${crypto.randomUUID().slice(0, 8)}` : undefined;
+
     const supabase = createClient();
     const { error: authError } = await supabase.auth.signUp({
       email,
@@ -46,6 +50,7 @@ function RegisterForm() {
       options: {
         data: {
           full_name: fullName,
+          slug,
           niche_id: nicheId || undefined,
           referrer_slug: referrerSlug,
         },
