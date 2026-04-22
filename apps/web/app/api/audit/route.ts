@@ -507,7 +507,13 @@ export async function POST(request: NextRequest) {
     }),
   );
 
-  gaps.sort((a, b) => b.avg_gap_score - a.avg_gap_score);
+  // Сортируем по объёму запросов (убывание): самые популярные вопросы первыми.
+  // При равном volume tiebreak по gap_score (сильнее разрыв — выше).
+  gaps.sort(
+    (a, b) =>
+      b.estimated_monthly_volume - a.estimated_monthly_volume ||
+      b.avg_gap_score - a.avg_gap_score,
+  );
 
   return NextResponse.json({ niche: nicheName, type, gaps });
 }
