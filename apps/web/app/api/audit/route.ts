@@ -427,36 +427,46 @@ export async function POST(request: NextRequest) {
     (q: string, pf?: FetchFn) => Promise<PlatformResult | null>
   > = [checkChatGPT, checkPerplexity, checkYandexGPT];
 
+  // GigaChat chat endpoint also rate-limits on GIGACHAT_API_PERS free tier
+  // (HTTP 429 on concurrent chat calls). Run them sequentially with a short
+  // pacing delay so all N questions get a GigaChat answer.
+  const gigaChatResults: Array<PlatformResult | null> = [];
+  if (gigaChatToken) {
+    for (let i = 0; i < questions.length; i += 1) {
+      if (i > 0) await new Promise((r) => setTimeout(r, 1100));
+      try {
+        gigaChatResults.push(
+          await checkGigaChat(questions[i].question, gigaChatToken, proxiedFetch),
+        );
+      } catch (err) {
+        console.error(
+          `[audit] GigaChat check error for "${questions[i].question}":`,
+          err,
+        );
+        gigaChatResults.push(null);
+      }
+    }
+  } else {
+    for (let i = 0; i < questions.length; i += 1) gigaChatResults.push(null);
+  }
+
   const gaps = await Promise.all(
     questions.map(async (q, idx) => {
-      const [parallelResults, gigaChatResult] = await Promise.all([
-        Promise.all(
-          checkers.map(async (checker) => {
-            try {
-              return await checker(q.question, proxiedFetch);
-            } catch (err) {
-              console.error(
-                `[audit] Platform check error for "${q.question}":`,
-                err,
-              );
-              return null;
-            }
-          }),
-        ),
-        (async () => {
+      const parallelResults = await Promise.all(
+        checkers.map(async (checker) => {
           try {
-            return await checkGigaChat(q.question, gigaChatToken, proxiedFetch);
+            return await checker(q.question, proxiedFetch);
           } catch (err) {
             console.error(
-              `[audit] GigaChat check error for "${q.question}":`,
+              `[audit] Platform check error for "${q.question}":`,
               err,
             );
             return null;
           }
-        })(),
-      ]);
+        }),
+      );
 
-      const platforms = [...parallelResults, gigaChatResult].filter(
+      const platforms = [...parallelResults, gigaChatResults[idx]].filter(
         Boolean,
       ) as PlatformResult[];
 
