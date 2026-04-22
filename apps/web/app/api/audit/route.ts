@@ -242,10 +242,11 @@ async function checkYandexGPT(
 }
 
 // --- GigaChat ---
-async function checkGigaChat(
-  question: string,
-  proxiedFetch?: FetchFn,
-): Promise<PlatformResult | null> {
+// OAuth token is fetched ONCE per audit request (valid ~30 min) and shared
+// across all per-question chat calls. Sber free tier rate-limits concurrent
+// OAuth requests from the same client_id, which silently drops 2/3 of
+// parallel calls — pre-fetching avoids that.
+async function getGigaChatToken(): Promise<string | null> {
   if (!process.env.GIGACHAT_CLIENT_ID || !process.env.GIGACHAT_CLIENT_SECRET)
     return null;
 
@@ -267,8 +268,24 @@ async function checkGigaChat(
     },
   );
 
-  if (!authResponse.ok) return null;
+  if (!authResponse.ok) {
+    const body = await authResponse.text().catch(() => "");
+    console.error(
+      `[audit] GigaChat OAuth ${authResponse.status}:`,
+      body.slice(0, 300),
+    );
+    return null;
+  }
   const authData = (await authResponse.json()) as { access_token: string };
+  return authData.access_token;
+}
+
+async function checkGigaChat(
+  question: string,
+  accessToken: string | null,
+  proxiedFetch?: FetchFn,
+): Promise<PlatformResult | null> {
+  if (!accessToken) return null;
 
   const chatResponse = await fetch(
     "https://gigachat.devices.sberbank.ru/api/v1/chat/completions",
@@ -276,7 +293,7 @@ async function checkGigaChat(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${authData.access_token}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
         model: "GigaChat",
@@ -287,7 +304,14 @@ async function checkGigaChat(
     },
   );
 
-  if (!chatResponse.ok) return null;
+  if (!chatResponse.ok) {
+    const body = await chatResponse.text().catch(() => "");
+    console.error(
+      `[audit] GigaChat chat ${chatResponse.status} for "${question.slice(0, 60)}":`,
+      body.slice(0, 300),
+    );
+    return null;
+  }
   const chatData = (await chatResponse.json()) as {
     choices: Array<{ message: { content: string } }>;
   };
@@ -394,28 +418,47 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ niche: nicheName, type, gaps: [] });
   }
 
-  // Step 2: For each question, check AI platforms in real-time
+  // Step 2: For each question, check AI platforms in real-time.
+  // GigaChat OAuth is pre-fetched once and shared across all questions
+  // (Sber free tier drops concurrent OAuth calls from the same client_id).
+  const gigaChatToken = await getGigaChatToken();
+
   const checkers: Array<
     (q: string, pf?: FetchFn) => Promise<PlatformResult | null>
-  > = [checkChatGPT, checkPerplexity, checkYandexGPT, checkGigaChat];
+  > = [checkChatGPT, checkPerplexity, checkYandexGPT];
 
   const gaps = await Promise.all(
     questions.map(async (q, idx) => {
-      const results = await Promise.all(
-        checkers.map(async (checker) => {
+      const [parallelResults, gigaChatResult] = await Promise.all([
+        Promise.all(
+          checkers.map(async (checker) => {
+            try {
+              return await checker(q.question, proxiedFetch);
+            } catch (err) {
+              console.error(
+                `[audit] Platform check error for "${q.question}":`,
+                err,
+              );
+              return null;
+            }
+          }),
+        ),
+        (async () => {
           try {
-            return await checker(q.question, proxiedFetch);
+            return await checkGigaChat(q.question, gigaChatToken, proxiedFetch);
           } catch (err) {
             console.error(
-              `[audit] Platform check error for "${q.question}":`,
+              `[audit] GigaChat check error for "${q.question}":`,
               err,
             );
             return null;
           }
-        }),
-      );
+        })(),
+      ]);
 
-      const platforms = results.filter(Boolean) as PlatformResult[];
+      const platforms = [...parallelResults, gigaChatResult].filter(
+        Boolean,
+      ) as PlatformResult[];
 
       const avgGapScore =
         platforms.length > 0
