@@ -5,7 +5,7 @@
 const XMLRIVER_USER = process.env.XMLRIVER_USER_ID || process.env.XMLRIVER_USER || "";
 const XMLRIVER_KEY = process.env.XMLRIVER_API_KEY || process.env.XMLRIVER_KEY || "";
 const XMLRIVER_WORDSTAT_URL =
-  process.env.XMLRIVER_WORDSTAT_URL || "https://xmlriver.com/wordstat/json";
+  process.env.XMLRIVER_WORDSTAT_URL || "https://xmlriver.com/wordstat/new/json";
 const MIN_VOLUME = Number(process.env.WORDSTAT_MIN_VOLUME || 1000);
 const REQUEST_TIMEOUT_MS = Number(process.env.WORDSTAT_TIMEOUT_MS || 90_000);
 
@@ -19,10 +19,14 @@ export interface WordstatResult {
 
 interface XmlRiverWordstatItem {
   phrase?: string;
+  text?: string;
   number?: string | number;
+  value?: string | number;
 }
 
 interface XmlRiverWordstatResponse {
+  popular?: XmlRiverWordstatItem[];
+  associations?: XmlRiverWordstatItem[];
   content?: {
     includingPhrases?: {
       items?: XmlRiverWordstatItem[];
@@ -70,16 +74,22 @@ function parseWordstatBody(body: string): WordstatResult[] {
 
 function parseWordstatJson(payload: XmlRiverWordstatResponse): WordstatResult[] {
   const items = [
+    ...(payload.popular ?? []),
+    ...(payload.associations ?? []),
     ...(payload.content?.includingPhrases?.items ?? []),
     ...(payload.content?.phrasesAssociations?.items ?? []),
   ];
 
   return normalizeResults(
     items
-      .filter((item) => item.phrase && item.number !== undefined)
+      .filter(
+        (item) =>
+          (item.phrase || item.text) &&
+          (item.number !== undefined || item.value !== undefined),
+      )
       .map((item) => ({
-        query: String(item.phrase).trim().toLowerCase(),
-        volume: parseWordstatNumber(item.number ?? 0),
+        query: String(item.phrase || item.text).trim().toLowerCase(),
+        volume: parseWordstatNumber(item.number ?? item.value ?? 0),
       })),
   );
 }
