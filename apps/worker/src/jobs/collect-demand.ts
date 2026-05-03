@@ -3,6 +3,13 @@ import { fetchWordstat } from "../services/wordstat.js";
 import { fetchPAA } from "../services/serpapi.js";
 import { fetchYandexKyuQuestions } from "../services/yandex-kyu.js";
 
+type DemandSource = "wordstat" | "serpapi" | "yandex_kyu";
+
+interface DemandQuestion {
+  source: DemandSource;
+  volume: number | null;
+}
+
 function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-zа-яё0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").slice(0, 120);
 }
@@ -28,17 +35,43 @@ export async function handleCollectDemand(payload: Record<string, unknown>): Pro
 
   console.log(`[collect_demand] Collecting for "${niche.name}", ${keywords.length} keywords`);
 
-  const allQuestions = new Map<string, number>(); // question_text → volume
+  const allQuestions = new Map<string, DemandQuestion>();
+
+  const rememberQuestion = (
+    text: string,
+    source: DemandSource,
+    volume: number | null,
+  ) => {
+    const normalized = text.trim().toLowerCase();
+    if (!normalized) return;
+
+    const existing = allQuestions.get(normalized);
+    if (!existing) {
+      allQuestions.set(normalized, { source, volume });
+      return;
+    }
+
+    // Wordstat is the only source with verified demand volume here.
+    // If the same question later appears in Wordstat, promote it.
+    if (source === "wordstat" && existing.source !== "wordstat") {
+      allQuestions.set(normalized, { source, volume });
+      return;
+    }
+
+    if (source === "wordstat" && existing.source === "wordstat") {
+      allQuestions.set(normalized, {
+        source,
+        volume: Math.max(existing.volume ?? 0, volume ?? 0),
+      });
+    }
+  };
 
   for (const keyword of keywords) {
     // Wordstat
     try {
       const results = await fetchWordstat(keyword);
       for (const r of results) {
-        const existing = allQuestions.get(r.query);
-        if (!existing || existing < r.volume) {
-          allQuestions.set(r.query, r.volume);
-        }
+        rememberQuestion(r.query, "wordstat", r.volume);
       }
     } catch (err) {
       console.error(`[collect_demand] Wordstat failed for "${keyword}":`, err instanceof Error ? err.message : err);
@@ -48,9 +81,7 @@ export async function handleCollectDemand(payload: Record<string, unknown>): Pro
     try {
       const paaQuestions = await fetchPAA(keyword);
       for (const q of paaQuestions) {
-        if (!allQuestions.has(q.toLowerCase())) {
-          allQuestions.set(q.toLowerCase(), 500); // PAA без объёма — ставим среднее
-        }
+        rememberQuestion(q, "serpapi", null);
       }
     } catch (err) {
       console.error(`[collect_demand] SerpAPI failed for "${keyword}":`, err instanceof Error ? err.message : err);
@@ -60,9 +91,7 @@ export async function handleCollectDemand(payload: Record<string, unknown>): Pro
     try {
       const kyuQuestions = await fetchYandexKyuQuestions(keyword);
       for (const q of kyuQuestions) {
-        if (!allQuestions.has(q.toLowerCase())) {
-          allQuestions.set(q.toLowerCase(), 800); // Кью без объёма — ставим среднее
-        }
+        rememberQuestion(q, "yandex_kyu", null);
       }
     } catch (err) {
       console.error(`[collect_demand] Yandex Kyu failed for "${keyword}":`, err instanceof Error ? err.message : err);
@@ -78,12 +107,12 @@ export async function handleCollectDemand(payload: Record<string, unknown>): Pro
   }
 
   // Upsert вопросы
-  const rows = Array.from(allQuestions.entries()).map(([text, volume]) => ({
+  const rows = Array.from(allQuestions.entries()).map(([text, item]) => ({
     niche_id: nicheId,
     question_text: text,
     slug: slugify(text),
-    source: "wordstat" as const,
-    monthly_volume: volume,
+    source: item.source,
+    monthly_volume: item.volume,
     is_active: true,
   }));
 

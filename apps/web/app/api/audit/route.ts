@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const maxDuration = 60;
 
@@ -69,48 +70,13 @@ async function createProxiedFetch(): Promise<FetchFn | undefined> {
 }
 
 // ============================================================
-// Step 1: Generate real questions for a niche via LLM
+// Step 1: Load real demand questions collected from Wordstat
 // ============================================================
 
 interface GeneratedQuestion {
   question: string;
   search_intent: string;
-}
-
-async function generateQuestions(
-  openai: OpenAI,
-  nicheName: string,
-  count: number,
-): Promise<GeneratedQuestion[]> {
-  const r = await openai.chat.completions.create({
-    model: process.env.OPENAI_MODEL_BULK || "gpt-4o-mini",
-    max_tokens: 800,
-    temperature: 0.3,
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content: `Ты — SEO-аналитик. Генерируй реальные поисковые запросы, которые люди задают в Яндексе и Google по теме "${nicheName}". Выбирай вопросы с высоким коммерческим или информационным интентом, на которые нейросети дают слабые ответы (без имён экспертов, без конкретики). Ответь JSON.`,
-      },
-      {
-        role: "user",
-        content: `Сгенерируй ${count} самых популярных и коммерчески важных вопросов для ниши "${nicheName}".
-
-Требования:
-- Вопросы должны быть на русском языке
-- Каждый вопрос — реальный поисковый запрос (как люди пишут в поиске)
-- Выбирай вопросы, на которые ИИ обычно даёт поверхностные ответы без экспертизы
-- search_intent: "informational" | "commercial" | "transactional"
-
-JSON: {"questions": [{"question": "...", "search_intent": "..."}]}`,
-      },
-    ],
-  });
-
-  const parsed = JSON.parse(r.choices[0]?.message?.content || '{"questions":[]}') as {
-    questions: GeneratedQuestion[];
-  };
-  return parsed.questions.slice(0, count);
+  monthly_volume?: number;
 }
 
 // ============================================================
@@ -159,6 +125,56 @@ async function analyzeWithOpenAI(
   return JSON.parse(r.choices[0]?.message?.content || "{}") as GapMarkers;
 }
 
+function analyzeResponseHeuristically(aiResponse: string): GapMarkers {
+  const hasExpertName =
+    /\b[А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+\b/.test(aiResponse) ||
+    /\b[A-Z][a-z]+ [A-Z][a-z]+\b/.test(aiResponse);
+  const hasSpecificExamples =
+    /например|кейс|случай|практик|пример/i.test(aiResponse);
+  const hasSourceLink = /https?:\/\/|www\./i.test(aiResponse);
+  const hasSpecificNumbers = /\d/.test(aiResponse);
+  const falseCount = [
+    hasExpertName,
+    hasSpecificExamples,
+    hasSourceLink,
+    hasSpecificNumbers,
+  ].filter((value) => !value).length;
+
+  return {
+    has_expert_name: hasExpertName,
+    has_specific_examples: hasSpecificExamples,
+    has_source_link: hasSourceLink,
+    has_specific_numbers: hasSpecificNumbers,
+    gap_score: Math.round(falseCount * 2.5),
+    weakness:
+      falseCount > 0
+        ? "В ответе не хватает конкретных экспертных доказательств: имен, кейсов, источников или проверяемых чисел."
+        : "Ответ содержит базовые структурные маркеры, но требует экспертной проверки качества.",
+  };
+}
+
+async function analyzeResponse(
+  question: string,
+  aiResponse: string,
+  proxiedFetch?: FetchFn,
+): Promise<GapMarkers> {
+  if (!process.env.OPENAI_API_KEY) {
+    return analyzeResponseHeuristically(aiResponse);
+  }
+
+  const analyzer = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+    ...(proxiedFetch && { fetch: proxiedFetch }),
+  });
+
+  try {
+    return await analyzeWithOpenAI(analyzer, question, aiResponse);
+  } catch (err) {
+    console.error("[audit] OpenAI analyzer failed; using heuristic markers:", err);
+    return analyzeResponseHeuristically(aiResponse);
+  }
+}
+
 // --- ChatGPT ---
 async function checkChatGPT(
   question: string,
@@ -179,7 +195,7 @@ async function checkChatGPT(
   });
 
   const aiResponse = chatResponse.choices[0]?.message?.content || "";
-  const markers = await analyzeWithOpenAI(openai, question, aiResponse);
+  const markers = await analyzeResponse(question, aiResponse, proxiedFetch);
 
   return { platform: "ChatGPT", ai_response: aiResponse, markers };
 }
@@ -204,12 +220,7 @@ async function checkPerplexity(
   });
 
   const aiResponse = chatResponse.choices[0]?.message?.content || "";
-
-  const analyzer = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    ...(proxiedFetch && { fetch: proxiedFetch }),
-  });
-  const markers = await analyzeWithOpenAI(analyzer, question, aiResponse);
+  const markers = await analyzeResponse(question, aiResponse, proxiedFetch);
 
   return { platform: "Perplexity", ai_response: aiResponse, markers };
 }
@@ -246,14 +257,9 @@ async function checkYandexGPT(
     result: { alternatives: Array<{ message: { text: string } }> };
   };
   const aiResponse = data.result.alternatives[0]?.message?.text || "";
+  const markers = await analyzeResponse(question, aiResponse, proxiedFetch);
 
-  const analyzer = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    ...(proxiedFetch && { fetch: proxiedFetch }),
-  });
-  const markers = await analyzeWithOpenAI(analyzer, question, aiResponse);
-
-  return { platform: "YandexGPT", ai_response: aiResponse, markers };
+  return { platform: "Яндекс.GPT", ai_response: aiResponse, markers };
 }
 
 // --- GigaChat ---
@@ -331,12 +337,7 @@ async function checkGigaChat(
     choices: Array<{ message: { content: string } }>;
   };
   const aiResponse = chatData.choices[0]?.message?.content || "";
-
-  const analyzer = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    ...(proxiedFetch && { fetch: proxiedFetch }),
-  });
-  const markers = await analyzeWithOpenAI(analyzer, question, aiResponse);
+  const markers = await analyzeResponse(question, aiResponse, proxiedFetch);
 
   return { platform: "GigaChat", ai_response: aiResponse, markers };
 }
@@ -368,75 +369,57 @@ const NICHE_NAMES: Record<string, string> = {
   "a0000000-0000-0000-0000-000000000020": "Туризм и путешествия",
 };
 
-const FALLBACK_QUESTION_TEMPLATES: GeneratedQuestion[] = [
-  { question: "Как выбрать специалиста в нише «{niche}» и не ошибиться?", search_intent: "commercial" },
-  { question: "Сколько стоит консультация по теме «{niche}» и от чего зависит цена?", search_intent: "transactional" },
-  { question: "Какие ошибки чаще всего совершают клиенты в нише «{niche}»?", search_intent: "informational" },
-  { question: "Когда пора обращаться к эксперту по теме «{niche}»?", search_intent: "commercial" },
-  { question: "Какие вопросы задать эксперту по теме «{niche}» перед началом работы?", search_intent: "informational" },
-  { question: "Как понять, что эксперт по теме «{niche}» действительно компетентен?", search_intent: "commercial" },
-  { question: "Какие результаты можно ожидать после консультации по теме «{niche}»?", search_intent: "transactional" },
-  { question: "Какие документы или данные подготовить перед консультацией по теме «{niche}»?", search_intent: "informational" },
-  { question: "Чем отличается хороший эксперт по теме «{niche}» от обычного консультанта?", search_intent: "commercial" },
-  { question: "Какие признаки показывают, что ответ нейросети по теме «{niche}» неполный?", search_intent: "informational" },
-];
-
 const ESTIMATED_VOLUME: Record<string, number> = {
   transactional: 3000,
   commercial: 5000,
   informational: 8000,
 };
 
-function getEstimatedVolume(searchIntent: string): number {
-  return ESTIMATED_VOLUME[searchIntent] ?? 5000;
+function getEstimatedVolume(question: GeneratedQuestion): number {
+  return question.monthly_volume ?? ESTIMATED_VOLUME[question.search_intent] ?? 5000;
 }
 
-function getFallbackQuestions(nicheName: string, count: number): GeneratedQuestion[] {
-  return FALLBACK_QUESTION_TEMPLATES.slice(0, count).map((item) => ({
-    question: item.question.replaceAll("{niche}", nicheName.toLowerCase()),
-    search_intent: item.search_intent,
-  }));
+function inferSearchIntent(question: string): string {
+  const text = question.toLowerCase();
+  if (/сколько стоит|цена|стоимость|купить|заказать|записаться/.test(text)) {
+    return "transactional";
+  }
+  if (/как выбрать|какой|лучший|рейтинг|сравнить|отзывы/.test(text)) {
+    return "commercial";
+  }
+  return "informational";
 }
 
-function getFallbackPlatforms(question: string, nicheName: string): PlatformResult[] {
-  return [
-    {
-      platform: "ChatGPT fallback",
-      ai_response: `Типичный общий ответ по запросу «${question}» обычно перечисляет базовые советы по теме «${nicheName}», но не называет конкретных экспертов, кейсы, источники и проверяемые критерии выбора.`,
-      markers: {
-        has_expert_name: false,
-        has_specific_examples: false,
-        has_source_link: false,
-        has_specific_numbers: true,
-        gap_score: 8,
-        weakness: "Ответ полезен как вводный обзор, но не помогает выбрать конкретного эксперта или проверить его доказательную базу.",
-      },
-    },
-    {
-      platform: "YandexGPT fallback",
-      ai_response: `По такому запросу нейросеть чаще всего дает безопасную универсальную рекомендацию: сравнить опыт, отзывы и условия работы. В ответе обычно не хватает ссылок, имен специалистов и локальной экспертизы.`,
-      markers: {
-        has_expert_name: false,
-        has_specific_examples: false,
-        has_source_link: false,
-        has_specific_numbers: false,
-        gap_score: 10,
-        weakness: "Ответ остается слишком общим и не закрывает коммерческий интент пользователя.",
-      },
-    },
-    {
-      platform: "GigaChat fallback",
-      ai_response: `Вероятный ответ по теме «${nicheName}» описывает общие шаги: сформулировать проблему, проверить квалификацию и записаться на консультацию. Экспертный контент может занять эту выдачу за счет конкретных кейсов и структуры.`,
-      markers: {
-        has_expert_name: false,
-        has_specific_examples: false,
-        has_source_link: false,
-        has_specific_numbers: true,
-        gap_score: 8,
-        weakness: "Есть базовая структура, но нет конкретного экспертного доказательства и источника.",
-      },
-    },
-  ];
+async function fetchWordstatQuestions(
+  nicheId: string,
+  count: number,
+): Promise<GeneratedQuestion[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("questions")
+    .select("question_text, monthly_volume")
+    .eq("niche_id", nicheId)
+    .eq("source", "wordstat")
+    .eq("is_active", true)
+    .order("monthly_volume", { ascending: false })
+    .limit(count);
+
+  if (error) {
+    throw new Error(`Failed to load Wordstat questions: ${error.message}`);
+  }
+
+  const rows = (data ?? []) as unknown as Array<{
+    question_text: string | null;
+    monthly_volume: number | null;
+  }>;
+
+  return rows
+    .filter((row) => row.question_text)
+    .map((row) => ({
+      question: row.question_text as string,
+      search_intent: inferSearchIntent(row.question_text as string),
+      monthly_volume: (row.monthly_volume as number | null) ?? undefined,
+    }));
 }
 
 function toAuditGap(
@@ -458,7 +441,7 @@ function toAuditGap(
     question: q.question,
     search_intent: q.search_intent,
     avg_gap_score: avgGapScore,
-    estimated_monthly_volume: getEstimatedVolume(q.search_intent),
+    estimated_monthly_volume: getEstimatedVolume(q),
     platforms: platforms.map((p) => ({
       platform: p.platform,
       ai_response: p.ai_response,
@@ -479,14 +462,6 @@ function sortGaps(gaps: AuditGap[]): AuditGap[] {
     (a, b) =>
       b.estimated_monthly_volume - a.estimated_monthly_volume ||
       b.avg_gap_score - a.avg_gap_score,
-  );
-}
-
-function buildFallbackGaps(nicheName: string, count: number): AuditGap[] {
-  return sortGaps(
-    getFallbackQuestions(nicheName, count).map((q, idx) =>
-      toAuditGap(q, idx, getFallbackPlatforms(q.question, nicheName), "fallback"),
-    ),
   );
 }
 
@@ -526,43 +501,27 @@ export async function POST(request: NextRequest) {
   const nicheName = NICHE_NAMES[niche_id];
   const questionCount = type === "free" ? 3 : 10;
 
-  if (!process.env.OPENAI_API_KEY) {
-    console.warn("[audit] OPENAI_API_KEY is not configured; using fallback audit.");
-    return NextResponse.json({
-      niche: nicheName,
-      type,
-      source: "fallback",
-      gaps: buildFallbackGaps(nicheName, questionCount),
-    });
-  }
-
   const proxiedFetch = await createProxiedFetch();
-  const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    ...(proxiedFetch && { fetch: proxiedFetch }),
-  });
 
-  // Step 1: Generate real questions dynamically
-  let questions: GeneratedQuestion[];
+  let questions: GeneratedQuestion[] = [];
   try {
-    questions = await generateQuestions(openai, nicheName, questionCount);
+    questions = await fetchWordstatQuestions(niche_id, questionCount);
   } catch (err) {
-    console.error("[audit] Failed to generate questions:", err);
-    return NextResponse.json({
-      niche: nicheName,
-      type,
-      source: "fallback",
-      gaps: buildFallbackGaps(nicheName, questionCount),
-    });
+    console.error("[audit] Failed to load Wordstat questions:", err);
+    return NextResponse.json(
+      { error: "Не удалось загрузить вопросы из Wordstat" },
+      { status: 500 },
+    );
   }
 
   if (questions.length === 0) {
-    return NextResponse.json({
-      niche: nicheName,
-      type,
-      source: "fallback",
-      gaps: buildFallbackGaps(nicheName, questionCount),
-    });
+    return NextResponse.json(
+      {
+        error:
+          "Для этой ниши пока нет Wordstat-вопросов. Сначала запустите сбор спроса collect_demand.",
+      },
+      { status: 503 },
+    );
   }
 
   // Step 2: For each question, check AI platforms in real-time.
@@ -620,15 +579,30 @@ export async function POST(request: NextRequest) {
       return toAuditGap(
         q,
         idx,
-        platforms.length > 0 ? platforms : getFallbackPlatforms(q.question, nicheName),
-        platforms.length > 0 ? "gen" : "fallback-platforms",
+        platforms,
+        "wordstat",
       );
     }),
   );
+
+  if (gaps.every((gap) => gap.platforms.length === 0)) {
+    return NextResponse.json(
+      {
+        error:
+          "AI-платформы временно недоступны. Проверьте ключи ChatGPT, Яндекс.GPT или GigaChat.",
+      },
+      { status: 503 },
+    );
+  }
 
   // Сортируем по объёму запросов (убывание): самые популярные вопросы первыми.
   // При равном volume tiebreak по gap_score (сильнее разрыв — выше).
   sortGaps(gaps);
 
-  return NextResponse.json({ niche: nicheName, type, source: "realtime", gaps });
+  return NextResponse.json({
+    niche: nicheName,
+    type,
+    source: "wordstat",
+    gaps,
+  });
 }
