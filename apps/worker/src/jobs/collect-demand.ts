@@ -14,6 +14,29 @@ function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-zа-яё0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").slice(0, 120);
 }
 
+const WORDSTAT_QUESTION_PREFIXES = (
+  process.env.WORDSTAT_QUESTION_PREFIXES ||
+  "как,почему,можно ли,что делать,сколько стоит,какой,нужно ли,стоит ли"
+)
+  .split(",")
+  .map((prefix) => prefix.trim())
+  .filter(Boolean);
+const WORDSTAT_REQUEST_DELAY_MS = Number(
+  process.env.WORDSTAT_REQUEST_DELAY_MS || 250,
+);
+
+function buildWordstatQueries(keyword: string): string[] {
+  const normalized = keyword.trim();
+  if (!normalized) return [];
+
+  return Array.from(
+    new Set([
+      normalized,
+      ...WORDSTAT_QUESTION_PREFIXES.map((prefix) => `${prefix} ${normalized}`),
+    ]),
+  );
+}
+
 export async function handleCollectDemand(payload: Record<string, unknown>): Promise<{ collected: number }> {
   const nicheId = payload.niche_id as string;
   if (!nicheId) throw new Error("niche_id is required");
@@ -68,13 +91,19 @@ export async function handleCollectDemand(payload: Record<string, unknown>): Pro
 
   for (const keyword of keywords) {
     // Wordstat
-    try {
-      const results = await fetchWordstat(keyword);
-      for (const r of results) {
-        rememberQuestion(r.query, "wordstat", r.volume);
+    for (const wordstatQuery of buildWordstatQueries(keyword)) {
+      try {
+        const results = await fetchWordstat(wordstatQuery);
+        for (const r of results) {
+          rememberQuestion(r.query, "wordstat", r.volume);
+        }
+      } catch (err) {
+        console.error(
+          `[collect_demand] Wordstat failed for "${wordstatQuery}":`,
+          err instanceof Error ? err.message : err,
+        );
       }
-    } catch (err) {
-      console.error(`[collect_demand] Wordstat failed for "${keyword}":`, err instanceof Error ? err.message : err);
+      await new Promise((r) => setTimeout(r, WORDSTAT_REQUEST_DELAY_MS));
     }
 
     // People Also Ask
