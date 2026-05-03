@@ -1,7 +1,7 @@
 {
   "sessionState": "ACTIVE",
-  "currentStage": "REVIEWING",
-  "intent": "Existing project `neuroexpert` analyzed by Product Factory OS.",
+  "currentStage": "STAGE_1_RESTORE_LOGIN_AND_BASIC_AVAILABILITY",
+  "intent": "NeuroExpert work locked to the staged Product Factory OS execution sequence.",
   "classification": {
     "productType": "SaaS Application + Messaging Bot + Background Worker",
     "domain": "existing project inferred from repository docs and stack",
@@ -59,7 +59,7 @@
     "currentTaskRoute": "/task -> adoption-check -> repository-analysis -> task-classification -> gates -> state-save",
     "lastAnalysisSummary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 4 gate command(s)."
   },
-  "currentNode": "",
+  "currentNode": "stage-1.1-yandex-360-balance-and-smtp-restore",
   "gateResults": {
     "strategy": "PASS",
     "architecture": "PASS",
@@ -163,6 +163,10 @@
       "note": ""
     },
     {
+      "event": "locked execution sequence saved",
+      "note": "Future NeuroExpert work must follow .codex-memory/NEUROEXPERT_EXECUTION_SEQUENCE.md. Active stage: Stage 1 Restore Login And Basic Availability."
+    },
+    {
       "event": "existing project analyzer run",
       "note": "runGates=False"
     },
@@ -209,10 +213,13 @@
     "CODEX.md",
     ".codex-memory/MEMORY.md",
     "PFO_EXISTING_PROJECT_ANALYSIS.json",
-    "PFO_REPORT.md"
+    "PFO_REPORT.md",
+    ".codex-memory/NEUROEXPERT_EXECUTION_SEQUENCE.md"
   ],
   "completedModules": [],
   "failedValidations": [],
-  "blockers": [],
-  "nextAction": "Project gates passed; continue with task-specific PFO execution graph."
+  "blockers": [
+    "Yandex 360 services are in viewing mode due to insufficient balance; SMTP is disabled, so Supabase magic links fail."
+  ],
+  "nextAction": "Complete Stage 1: restore Yandex 360 balance, restart supabase-auth, and verify magic link /otp returns 200."
 }
