@@ -406,7 +406,7 @@ async function fetchWordstatQuestions(
     .eq("source", "wordstat")
     .eq("is_active", true)
     .order("monthly_volume", { ascending: false })
-    .limit(count);
+    .limit(count * 25);
 
   if (error) {
     throw new Error(`Failed to load Wordstat questions: ${error.message}`);
@@ -426,7 +426,8 @@ async function fetchWordstatQuestions(
       question: row.question_text as string,
       search_intent: inferSearchIntent(row.question_text as string),
       monthly_volume: (row.monthly_volume as number | null) ?? undefined,
-    }));
+    }))
+    .slice(0, count);
 }
 
 function toAuditGap(
