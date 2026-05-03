@@ -1,0 +1,126 @@
+{
+  "project": "/home/hihol/projects/neuroexpert",
+  "isMonorepo": true,
+  "packageManager": "pnpm",
+  "packageFiles": [
+    "apps/bot/package.json",
+    "apps/web/package.json",
+    "apps/worker/package.json",
+    "package.json",
+    "packages/shared/package.json"
+  ],
+  "detectedStack": [
+    "Anthropic",
+    "Docker Compose",
+    "Next.js",
+    "Node.js",
+    "OpenAI",
+    "PostgreSQL",
+    "React",
+    "Supabase",
+    "TailwindCSS",
+    "Telegram bot",
+    "Turborepo",
+    "TypeScript",
+    "monorepo",
+    "pnpm"
+  ],
+  "availableCommands": [
+    {
+      "name": "build",
+      "command": "pnpm build"
+    },
+    {
+      "name": "clean",
+      "command": "pnpm clean"
+    },
+    {
+      "name": "dev",
+      "command": "pnpm dev"
+    },
+    {
+      "name": "lint",
+      "command": "pnpm lint"
+    },
+    {
+      "name": "typecheck",
+      "command": "pnpm typecheck"
+    }
+  ],
+  "selectedGates": [
+    {
+      "gate": "build",
+      "script": "build",
+      "command": "pnpm build"
+    },
+    {
+      "gate": "lint",
+      "script": "lint",
+      "command": "pnpm lint"
+    },
+    {
+      "gate": "tests",
+      "script": "typecheck",
+      "command": "pnpm typecheck"
+    }
+  ],
+  "gateRuns": [
+    {
+      "gate": "build",
+      "script": "build",
+      "command": "pnpm build",
+      "status": "PASS",
+      "exitCode": 0,
+      "summary": "Command completed successfully.",
+      "outputTail": "web:build: ├ ○ /profile                             3.67 kB         146 kB\nweb:build: ├ ƒ /questions                           208 B          96.2 kB\nweb:build: ├ ƒ /questions/[slug]                    208 B          96.2 kB\nweb:build: ├ ○ /register                            5.38 kB         157 kB\nweb:build: ├ ○ /requisites                          185 B          98.8 kB\nweb:build: ├ ○ /robots.txt                          0 B                0 B\nweb:build: ├ ○ /scan                                2.09 kB         101 kB\nweb:build: ├ ƒ /scan/[slug]                         189 B          98.8 kB\nweb:build: ├ ƒ /sitemap.xml                         0 B                0 B\nweb:build: ├ ○ /team                                3.27 kB        99.3 kB\nweb:build: ├ ○ /terms                               185 B          98.8 kB\nweb:build: └ ƒ /track/[token]                       208 B          96.2 kB\nweb:build: + First Load JS shared by all            87.3 kB\nweb:build:   ├ chunks/2749-34c413b392683b6f.js      31.7 kB\nweb:build:   ├ chunks/5b8f0dd8-a86d9eaff2fb0233.js  53.6 kB\nweb:build:   └ other shared chunks (total)          1.96 kB\nweb:build: \nweb:build: \nweb:build: ƒ Middleware                             75.5 kB\nweb:build: \nweb:build: ○  (Static)   prerendered as static content\nweb:build: ƒ  (Dynamic)  server-rendered on demand\nweb:build: \n\n Tasks:    4 successful, 4 total\nCached:    4 cached, 4 total\n  Time:    154ms >>> FULL TURBO\n\n\n• turbo 2.8.16"
+    },
+    {
+      "gate": "lint",
+      "script": "lint",
+      "command": "pnpm lint",
+      "status": "PASS",
+      "exitCode": 0,
+      "summary": "Command completed successfully.",
+      "outputTail": "web:lint: \nweb:lint: ./app/(dashboard)/analytics/page.tsx\nweb:lint: 106:6  Warning: React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps\nweb:lint: \nweb:lint: ./app/(dashboard)/billing/page.tsx\nweb:lint: 43:6  Warning: React Hook useEffect has a missing dependency: 'supabase'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps\nweb:lint: \nweb:lint: ./app/(dashboard)/content/[id]/page.tsx\nweb:lint: 63:6  Warning: React Hook useEffect has a missing dependency: 'supabase'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps\nweb:lint: \nweb:lint: ./app/(dashboard)/content/new/page.tsx\nweb:lint: 60:6  Warning: React Hook useCallback has a missing dependency: 'uploadAudio'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps\nweb:lint: \nweb:lint: ./app/(dashboard)/profile/page.tsx\nweb:lint: 55:6  Warning: React Hook useEffect has a missing dependency: 'supabase'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps\nweb:lint: \nweb:lint: ./app/compare/page.tsx\nweb:lint: 55:6  Warning: React Hook useEffect has a missing dependency: 'ids'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps\nweb:lint: \nweb:lint: ./app/layout.tsx\nweb:lint: 86:15  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element\nweb:lint: \nweb:lint: info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules\n\n Tasks:    3 successful, 3 total\nCached:    3 cached, 3 total\n  Time:    116ms >>> FULL TURBO\n\n\n• turbo 2.8.16"
+    },
+    {
+      "gate": "tests",
+      "script": "typecheck",
+      "command": "pnpm typecheck",
+      "status": "PASS",
+      "exitCode": 0,
+      "summary": "Command completed successfully.",
+      "outputTail": "web:build: ├ ○ /profile                             3.67 kB         146 kB\nweb:build: ├ ƒ /questions                           208 B          96.2 kB\nweb:build: ├ ƒ /questions/[slug]                    208 B          96.2 kB\nweb:build: ├ ○ /register                            5.38 kB         157 kB\nweb:build: ├ ○ /requisites                          185 B          98.8 kB\nweb:build: ├ ○ /robots.txt                          0 B                0 B\nweb:build: ├ ○ /scan                                2.09 kB         101 kB\nweb:build: ├ ƒ /scan/[slug]                         189 B          98.8 kB\nweb:build: ├ ƒ /sitemap.xml                         0 B                0 B\nweb:build: ├ ○ /team                                3.27 kB        99.3 kB\nweb:build: ├ ○ /terms                               185 B          98.8 kB\nweb:build: └ ƒ /track/[token]                       208 B          96.2 kB\nweb:build: + First Load JS shared by all            87.3 kB\nweb:build:   ├ chunks/2749-34c413b392683b6f.js      31.7 kB\nweb:build:   ├ chunks/5b8f0dd8-a86d9eaff2fb0233.js  53.6 kB\nweb:build:   └ other shared chunks (total)          1.96 kB\nweb:build: \nweb:build: \nweb:build: ƒ Middleware                             75.5 kB\nweb:build: \nweb:build: ○  (Static)   prerendered as static content\nweb:build: ƒ  (Dynamic)  server-rendered on demand\nweb:build: \n\n Tasks:    4 successful, 4 total\nCached:    4 cached, 4 total\n  Time:    217ms >>> FULL TURBO\n\n\n• turbo 2.8.16"
+    }
+  ],
+  "securityFindings": [],
+  "classification": {
+    "productType": "SaaS Application + Messaging Bot + Background Worker",
+    "domain": "existing project inferred from repository docs and stack",
+    "complexity": "high",
+    "requiredModules": [
+      "API routes",
+      "LLM integration",
+      "bot service",
+      "database layer",
+      "web frontend",
+      "worker service"
+    ],
+    "infrastructure": [
+      "Docker Compose",
+      "PostgreSQL",
+      "Supabase",
+      "Turborepo",
+      "pnpm"
+    ]
+  },
+  "architecture": {
+    "pattern": "modular monorepo",
+    "backend": "Next.js API routes and service packages",
+    "frontend": "Next.js/React",
+    "database": "Supabase/PostgreSQL",
+    "auth": "Supabase auth or project-specific auth",
+    "deployment": "Docker Compose"
+  },
+  "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 3 gate command(s)."
+}

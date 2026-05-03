@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin", "cyrillic"] });
+const fontClassName = "font-sans";
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://neuroexpertise.ru";
 const SITE_TITLE = "НейроЭксперт — AI-система, которая превращает экспертизу в клиентов";
@@ -77,7 +76,7 @@ export default function RootLayout({
           />
         )}
       </head>
-      <body className={inter.className}>
+      <body className={fontClassName}>
         <Providers>
         {children}
         </Providers>
