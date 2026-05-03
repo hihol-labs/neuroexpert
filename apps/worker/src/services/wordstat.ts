@@ -7,6 +7,7 @@ const XMLRIVER_KEY = process.env.XMLRIVER_API_KEY || process.env.XMLRIVER_KEY ||
 const XMLRIVER_WORDSTAT_URL =
   process.env.XMLRIVER_WORDSTAT_URL || "https://xmlriver.com/wordstat/new/json";
 const MIN_VOLUME = Number(process.env.WORDSTAT_MIN_VOLUME || 1000);
+const MIN_WORDS = Number(process.env.WORDSTAT_MIN_WORDS || 4);
 const REQUEST_TIMEOUT_MS = Number(process.env.WORDSTAT_TIMEOUT_MS || 90_000);
 
 // Слова-маркеры вопросов
@@ -123,7 +124,11 @@ function parseWordstatXml(xml: string): WordstatResult[] {
 function normalizeResults(results: WordstatResult[]): WordstatResult[] {
   const byQuery = new Map<string, number>();
   for (const result of results) {
-    if (!result.query || result.volume < MIN_VOLUME || !isQuestion(result.query)) {
+    if (
+      !result.query ||
+      result.volume < MIN_VOLUME ||
+      !isQuestion(result.query)
+    ) {
       continue;
     }
 
@@ -144,5 +149,8 @@ function parseWordstatNumber(value: string | number): number {
 }
 
 function isQuestion(text: string): boolean {
-  return QUESTION_MARKERS.some((marker) => text.includes(marker));
+  return (
+    text.split(/\s+/).filter(Boolean).length >= MIN_WORDS &&
+    QUESTION_MARKERS.some((marker) => text.includes(marker))
+  );
 }

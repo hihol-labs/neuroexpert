@@ -390,6 +390,10 @@ function inferSearchIntent(question: string): string {
   return "informational";
 }
 
+function isUsefulAuditQuestion(question: string): boolean {
+  return question.trim().split(/\s+/).filter(Boolean).length >= 4;
+}
+
 async function fetchWordstatQuestions(
   nicheId: string,
   count: number,
@@ -414,7 +418,10 @@ async function fetchWordstatQuestions(
   }>;
 
   return rows
-    .filter((row) => row.question_text)
+    .filter(
+      (row) =>
+        row.question_text && isUsefulAuditQuestion(row.question_text),
+    )
     .map((row) => ({
       question: row.question_text as string,
       search_intent: inferSearchIntent(row.question_text as string),
