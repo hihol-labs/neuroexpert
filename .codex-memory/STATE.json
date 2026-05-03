@@ -53,15 +53,16 @@
       "pnpm clean",
       "pnpm dev",
       "pnpm lint",
+      "pnpm test",
       "pnpm typecheck"
     ],
     "currentTaskRoute": "/task -> adoption-check -> repository-analysis -> task-classification -> gates -> state-save",
-    "lastAnalysisSummary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 3 gate command(s)."
+    "lastAnalysisSummary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 4 gate command(s)."
   },
   "currentNode": "",
   "gateResults": {
-    "strategy": "PASS_WITH_WARNINGS",
-    "architecture": "PASS_WITH_WARNINGS",
+    "strategy": "PASS",
+    "architecture": "PASS",
     "tests": "PASS",
     "review": "PASS",
     "security": "PASS",
@@ -130,6 +131,30 @@
       "stage": "REVIEWING",
       "status": "PASS",
       "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 3 gate command(s)."
+    },
+    {
+      "mode": "existing-project-analyze",
+      "stage": "REVIEWING",
+      "status": "BLOCKED",
+      "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 4 gate command(s)."
+    },
+    {
+      "mode": "existing-project-analyze",
+      "stage": "REVIEWING",
+      "status": "PASS",
+      "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 4 gate command(s)."
+    },
+    {
+      "mode": "existing-project-analyze",
+      "stage": "REVIEWING",
+      "status": "PASS",
+      "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 4 gate command(s)."
+    },
+    {
+      "mode": "existing-project-analyze",
+      "stage": "REVIEWING",
+      "status": "PASS",
+      "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 4 gate command(s)."
     }
   ],
   "decisionLog": [
@@ -148,6 +173,22 @@
     {
       "event": "existing project analyzer run",
       "note": "runGates=False"
+    },
+    {
+      "event": "existing project analyzer run",
+      "note": "runGates=True"
+    },
+    {
+      "event": "existing project analyzer run",
+      "note": "runGates=True"
+    },
+    {
+      "event": "existing project analyzer run",
+      "note": "runGates=True"
+    },
+    {
+      "event": "existing project analyzer run",
+      "note": "runGates=True"
     },
     {
       "event": "existing project analyzer run",

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
+/* eslint-disable @next/next/no-img-element */
+
 const fontClassName = "font-sans";
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://neuroexpertise.ru";

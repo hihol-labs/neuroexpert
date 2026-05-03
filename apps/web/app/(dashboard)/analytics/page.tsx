@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import { Card, CardTitle, CardValue } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -101,11 +101,7 @@ export default function AnalyticsPage() {
   const [tier, setTier] = useState<string>("free");
   const [totalCited, setTotalCited] = useState(0);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -296,7 +292,11 @@ export default function AnalyticsPage() {
     }
 
     setRecommendations(recs);
-  }
+  }, [supabase]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   return (
     <div>

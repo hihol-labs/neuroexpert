@@ -40,6 +40,21 @@ interface PlatformResult {
   markers: GapMarkers;
 }
 
+interface AuditGap {
+  id: string;
+  question: string;
+  search_intent: string;
+  avg_gap_score: number;
+  estimated_monthly_volume: number;
+  platforms: Array<{
+    platform: string;
+    ai_response: string;
+    gap_score: number;
+    markers: Omit<GapMarkers, "gap_score" | "weakness">;
+    weakness: string;
+  }>;
+}
+
 type FetchFn = typeof globalThis.fetch;
 
 async function createProxiedFetch(): Promise<FetchFn | undefined> {
@@ -353,6 +368,128 @@ const NICHE_NAMES: Record<string, string> = {
   "a0000000-0000-0000-0000-000000000020": "Туризм и путешествия",
 };
 
+const FALLBACK_QUESTION_TEMPLATES: GeneratedQuestion[] = [
+  { question: "Как выбрать специалиста в нише «{niche}» и не ошибиться?", search_intent: "commercial" },
+  { question: "Сколько стоит консультация по теме «{niche}» и от чего зависит цена?", search_intent: "transactional" },
+  { question: "Какие ошибки чаще всего совершают клиенты в нише «{niche}»?", search_intent: "informational" },
+  { question: "Когда пора обращаться к эксперту по теме «{niche}»?", search_intent: "commercial" },
+  { question: "Какие вопросы задать эксперту по теме «{niche}» перед началом работы?", search_intent: "informational" },
+  { question: "Как понять, что эксперт по теме «{niche}» действительно компетентен?", search_intent: "commercial" },
+  { question: "Какие результаты можно ожидать после консультации по теме «{niche}»?", search_intent: "transactional" },
+  { question: "Какие документы или данные подготовить перед консультацией по теме «{niche}»?", search_intent: "informational" },
+  { question: "Чем отличается хороший эксперт по теме «{niche}» от обычного консультанта?", search_intent: "commercial" },
+  { question: "Какие признаки показывают, что ответ нейросети по теме «{niche}» неполный?", search_intent: "informational" },
+];
+
+const ESTIMATED_VOLUME: Record<string, number> = {
+  transactional: 3000,
+  commercial: 5000,
+  informational: 8000,
+};
+
+function getEstimatedVolume(searchIntent: string): number {
+  return ESTIMATED_VOLUME[searchIntent] ?? 5000;
+}
+
+function getFallbackQuestions(nicheName: string, count: number): GeneratedQuestion[] {
+  return FALLBACK_QUESTION_TEMPLATES.slice(0, count).map((item) => ({
+    question: item.question.replaceAll("{niche}", nicheName.toLowerCase()),
+    search_intent: item.search_intent,
+  }));
+}
+
+function getFallbackPlatforms(question: string, nicheName: string): PlatformResult[] {
+  return [
+    {
+      platform: "ChatGPT fallback",
+      ai_response: `Типичный общий ответ по запросу «${question}» обычно перечисляет базовые советы по теме «${nicheName}», но не называет конкретных экспертов, кейсы, источники и проверяемые критерии выбора.`,
+      markers: {
+        has_expert_name: false,
+        has_specific_examples: false,
+        has_source_link: false,
+        has_specific_numbers: true,
+        gap_score: 8,
+        weakness: "Ответ полезен как вводный обзор, но не помогает выбрать конкретного эксперта или проверить его доказательную базу.",
+      },
+    },
+    {
+      platform: "YandexGPT fallback",
+      ai_response: `По такому запросу нейросеть чаще всего дает безопасную универсальную рекомендацию: сравнить опыт, отзывы и условия работы. В ответе обычно не хватает ссылок, имен специалистов и локальной экспертизы.`,
+      markers: {
+        has_expert_name: false,
+        has_specific_examples: false,
+        has_source_link: false,
+        has_specific_numbers: false,
+        gap_score: 10,
+        weakness: "Ответ остается слишком общим и не закрывает коммерческий интент пользователя.",
+      },
+    },
+    {
+      platform: "GigaChat fallback",
+      ai_response: `Вероятный ответ по теме «${nicheName}» описывает общие шаги: сформулировать проблему, проверить квалификацию и записаться на консультацию. Экспертный контент может занять эту выдачу за счет конкретных кейсов и структуры.`,
+      markers: {
+        has_expert_name: false,
+        has_specific_examples: false,
+        has_source_link: false,
+        has_specific_numbers: true,
+        gap_score: 8,
+        weakness: "Есть базовая структура, но нет конкретного экспертного доказательства и источника.",
+      },
+    },
+  ];
+}
+
+function toAuditGap(
+  q: GeneratedQuestion,
+  idx: number,
+  platforms: PlatformResult[],
+  idPrefix: string,
+): AuditGap {
+  const avgGapScore =
+    platforms.length > 0
+      ? Math.round(
+          platforms.reduce((sum, p) => sum + p.markers.gap_score, 0) /
+            platforms.length,
+        )
+      : 0;
+
+  return {
+    id: `${idPrefix}-${idx}`,
+    question: q.question,
+    search_intent: q.search_intent,
+    avg_gap_score: avgGapScore,
+    estimated_monthly_volume: getEstimatedVolume(q.search_intent),
+    platforms: platforms.map((p) => ({
+      platform: p.platform,
+      ai_response: p.ai_response,
+      gap_score: p.markers.gap_score,
+      markers: {
+        has_expert_name: p.markers.has_expert_name,
+        has_specific_examples: p.markers.has_specific_examples,
+        has_source_link: p.markers.has_source_link,
+        has_specific_numbers: p.markers.has_specific_numbers,
+      },
+      weakness: p.markers.weakness,
+    })),
+  };
+}
+
+function sortGaps(gaps: AuditGap[]): AuditGap[] {
+  return gaps.sort(
+    (a, b) =>
+      b.estimated_monthly_volume - a.estimated_monthly_volume ||
+      b.avg_gap_score - a.avg_gap_score,
+  );
+}
+
+function buildFallbackGaps(nicheName: string, count: number): AuditGap[] {
+  return sortGaps(
+    getFallbackQuestions(nicheName, count).map((q, idx) =>
+      toAuditGap(q, idx, getFallbackPlatforms(q.question, nicheName), "fallback"),
+    ),
+  );
+}
+
 // ============================================================
 // Main handler
 // ============================================================
@@ -386,15 +523,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Ниша не найдена" }, { status: 404 });
   }
 
-  if (!process.env.OPENAI_API_KEY) {
-    return NextResponse.json(
-      { error: "AI-сервис временно недоступен" },
-      { status: 503 },
-    );
-  }
-
   const nicheName = NICHE_NAMES[niche_id];
   const questionCount = type === "free" ? 3 : 10;
+
+  if (!process.env.OPENAI_API_KEY) {
+    console.warn("[audit] OPENAI_API_KEY is not configured; using fallback audit.");
+    return NextResponse.json({
+      niche: nicheName,
+      type,
+      source: "fallback",
+      gaps: buildFallbackGaps(nicheName, questionCount),
+    });
+  }
 
   const proxiedFetch = await createProxiedFetch();
   const openai = new OpenAI({
@@ -408,14 +548,21 @@ export async function POST(request: NextRequest) {
     questions = await generateQuestions(openai, nicheName, questionCount);
   } catch (err) {
     console.error("[audit] Failed to generate questions:", err);
-    return NextResponse.json(
-      { error: "Не удалось сгенерировать вопросы" },
-      { status: 500 },
-    );
+    return NextResponse.json({
+      niche: nicheName,
+      type,
+      source: "fallback",
+      gaps: buildFallbackGaps(nicheName, questionCount),
+    });
   }
 
   if (questions.length === 0) {
-    return NextResponse.json({ niche: nicheName, type, gaps: [] });
+    return NextResponse.json({
+      niche: nicheName,
+      type,
+      source: "fallback",
+      gaps: buildFallbackGaps(nicheName, questionCount),
+    });
   }
 
   // Step 2: For each question, check AI platforms in real-time.
@@ -470,50 +617,18 @@ export async function POST(request: NextRequest) {
         Boolean,
       ) as PlatformResult[];
 
-      const avgGapScore =
-        platforms.length > 0
-          ? Math.round(
-              platforms.reduce((sum, p) => sum + p.markers.gap_score, 0) /
-                platforms.length,
-            )
-          : 0;
-
-      // Estimated monthly volume based on search intent
-      const estimatedVolume: Record<string, number> = {
-        transactional: 3000,
-        commercial: 5000,
-        informational: 8000,
-      };
-
-      return {
-        id: `gen-${idx}`,
-        question: q.question,
-        search_intent: q.search_intent,
-        avg_gap_score: avgGapScore,
-        estimated_monthly_volume: estimatedVolume[q.search_intent] ?? 5000,
-        platforms: platforms.map((p) => ({
-          platform: p.platform,
-          ai_response: p.ai_response,
-          gap_score: p.markers.gap_score,
-          markers: {
-            has_expert_name: p.markers.has_expert_name,
-            has_specific_examples: p.markers.has_specific_examples,
-            has_source_link: p.markers.has_source_link,
-            has_specific_numbers: p.markers.has_specific_numbers,
-          },
-          weakness: p.markers.weakness,
-        })),
-      };
+      return toAuditGap(
+        q,
+        idx,
+        platforms.length > 0 ? platforms : getFallbackPlatforms(q.question, nicheName),
+        platforms.length > 0 ? "gen" : "fallback-platforms",
+      );
     }),
   );
 
   // Сортируем по объёму запросов (убывание): самые популярные вопросы первыми.
   // При равном volume tiebreak по gap_score (сильнее разрыв — выше).
-  gaps.sort(
-    (a, b) =>
-      b.estimated_monthly_volume - a.estimated_monthly_volume ||
-      b.avg_gap_score - a.avg_gap_score,
-  );
+  sortGaps(gaps);
 
-  return NextResponse.json({ niche: nicheName, type, gaps });
+  return NextResponse.json({ niche: nicheName, type, source: "realtime", gaps });
 }

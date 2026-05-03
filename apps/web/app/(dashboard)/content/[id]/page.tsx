@@ -60,7 +60,7 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
           setMetaDesc((data.meta_description as string) ?? "");
         }
       });
-  }, [params.id]);
+  }, [params.id, supabase]);
 
   if (!pkg) return <div className="py-12 text-center text-gray-500">Загрузка...</div>;
 

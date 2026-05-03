@@ -52,7 +52,7 @@ export default function ProfilePage() {
         setIsPublished((data.is_published as boolean) ?? false);
       }
     });
-  }, []);
+  }, [supabase]);
 
   const save = async () => {
     if (!profile) return;

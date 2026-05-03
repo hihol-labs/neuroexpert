@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 interface Expert {
   id: string;
@@ -37,7 +37,10 @@ function StarRating({ rating }: { rating: number }) {
 
 function CompareContent() {
   const searchParams = useSearchParams();
-  const ids = searchParams.get("ids")?.split(",").filter(Boolean) ?? [];
+  const ids = useMemo(
+    () => searchParams.get("ids")?.split(",").filter(Boolean) ?? [],
+    [searchParams],
+  );
   const [experts, setExperts] = useState<Expert[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,7 +55,7 @@ function CompareContent() {
       .then((data) => setExperts(data.experts ?? []))
       .catch(() => setExperts([]))
       .finally(() => setLoading(false));
-  }, [searchParams]);
+  }, [ids]);
 
   if (loading) {
     return (

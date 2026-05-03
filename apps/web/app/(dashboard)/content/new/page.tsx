@@ -21,56 +21,13 @@ export default function ContentNewPage() {
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const chunks = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const durationRef = useRef(0);
 
-  const startRecording = useCallback(async () => {
-    try {
-      setError("");
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-          ? "audio/webm;codecs=opus"
-          : "audio/webm",
-      });
-
-      chunks.current = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.current.push(e.data);
-      };
-
-      recorder.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop());
-        if (timerRef.current) clearInterval(timerRef.current);
-
-        const blob = new Blob(chunks.current, { type: recorder.mimeType });
-        await uploadAudio(blob);
-      };
-
-      recorder.start(1000);
-      mediaRecorder.current = recorder;
-      setState("recording");
-      setDuration(0);
-
-      timerRef.current = setInterval(() => {
-        setDuration((d) => d + 1);
-      }, 1000);
-    } catch {
-      setError("Нет доступа к микрофону. Разрешите в настройках браузера.");
-      setState("error");
-    }
-  }, []);
-
-  const stopRecording = useCallback(() => {
-    if (mediaRecorder.current?.state === "recording") {
-      mediaRecorder.current.stop();
-      setState("uploading");
-    }
-  }, []);
-
-  const uploadAudio = async (blob: Blob) => {
+  const uploadAudio = useCallback(async (blob: Blob) => {
     try {
       const formData = new FormData();
       formData.append("audio", blob, "recording.webm");
-      formData.append("duration", String(duration));
+      formData.append("duration", String(durationRef.current));
 
       const res = await fetch("/api/voice", {
         method: "POST",
@@ -114,7 +71,56 @@ export default function ContentNewPage() {
       setError(err instanceof Error ? err.message : "Ошибка загрузки");
       setState("error");
     }
-  };
+  }, []);
+
+  const startRecording = useCallback(async () => {
+    try {
+      setError("");
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+          ? "audio/webm;codecs=opus"
+          : "audio/webm",
+      });
+
+      chunks.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.current.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        if (timerRef.current) clearInterval(timerRef.current);
+
+        const blob = new Blob(chunks.current, { type: recorder.mimeType });
+        await uploadAudio(blob);
+      };
+
+      recorder.start(1000);
+      mediaRecorder.current = recorder;
+      setState("recording");
+      durationRef.current = 0;
+      setDuration(0);
+
+      timerRef.current = setInterval(() => {
+        setDuration((d) => {
+          const next = d + 1;
+          durationRef.current = next;
+          return next;
+        });
+      }, 1000);
+    } catch {
+      setError("Нет доступа к микрофону. Разрешите в настройках браузера.");
+      setState("error");
+    }
+  }, [uploadAudio]);
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorder.current?.state === "recording") {
+      mediaRecorder.current.stop();
+      setState("uploading");
+    }
+  }, []);
 
   const skipFollowUp = () => {
     setState("done");
@@ -123,6 +129,7 @@ export default function ContentNewPage() {
   const recordMore = () => {
     setFollowUp(null);
     setState("idle");
+    durationRef.current = 0;
     setDuration(0);
   };
 

@@ -40,7 +40,7 @@ export default function BillingPage() {
         .limit(20);
       setPayments(pays ?? []);
     });
-  }, []);
+  }, [supabase]);
 
   const subscribe = async (tier: string) => {
     setLoading(true);

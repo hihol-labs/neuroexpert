@@ -29,6 +29,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "test": "pnpm build && node --test tests/*.test.cjs",
     "dev": "tsc --watch",
     "clean": "rm -rf dist"
   },
