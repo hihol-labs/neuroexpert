@@ -6,8 +6,8 @@
 
 set -euo pipefail
 
-SERVER="root@155.212.185.216"
-REPO="https://github.com/HiH-DimaN/neuroexpert.git"
+SERVER="${SERVER:-hostland}"
+REPO="git@github.com:hihol-labs/neuroexpert.git"
 APP_DIR="/opt/neuroexpert"
 DOMAIN="neuroexpertise.ru"
 
@@ -18,7 +18,7 @@ echo "[1/6] Синхронизация кода..."
 ssh "$SERVER" bash -s <<'REMOTE'
 set -euo pipefail
 APP_DIR="/opt/neuroexpert"
-REPO="https://github.com/HiH-DimaN/neuroexpert.git"
+REPO="git@github.com:hihol-labs/neuroexpert.git"
 
 if [ -d "$APP_DIR/.git" ]; then
   cd "$APP_DIR"

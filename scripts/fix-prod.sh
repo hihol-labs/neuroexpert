@@ -9,11 +9,11 @@
 #   2) для финального блока (seed БД + docker build + restart)
 #
 # Совет: чтобы не вводить пароль — один раз сделай:
-#   ssh-copy-id root@155.212.185.216
+#   ssh-copy-id hostland
 
 set -euo pipefail
 
-SERVER="root@155.212.185.216"
+SERVER="${SERVER:-hostland}"
 REMOTE_DIR="/opt/neuroexpert"
 DOMAIN="https://neuroexpertise.ru"
 
