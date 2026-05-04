@@ -66,18 +66,19 @@ export default function ScanPage() {
             <>
               <div className="text-center">
                 <h1 className="text-4xl font-bold text-gray-900">
-                  AI Visibility Scanner
+                  Scanner спроса в нейросетях
                 </h1>
                 <p className="mt-4 text-lg text-gray-600">
-                  Проверьте, знают ли нейросети о вас. Введите имя, бренд или
-                  сайт — мы спросим ChatGPT, Perplexity и YandexGPT.
+                  Проверьте, находят ли нейросети вас, когда человек ищет
+                  эксперта, бренд или компанию. Сравните себя с конкурентом
+                  и поймите, где теряете потенциальные заявки.
                 </p>
               </div>
 
               <form onSubmit={handleSubmit} className="mt-10 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Вы (имя, бренд или сайт) *
+                    Вы или ваша компания *
                   </label>
                   <input
                     type="text"
@@ -92,7 +93,7 @@ export default function ScanPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Конкурент (необязательно)
+                    Конкурент или альтернатива (необязательно)
                   </label>
                   <input
                     type="text"
@@ -103,7 +104,7 @@ export default function ScanPage() {
                     className="w-full rounded-xl border border-gray-300 px-5 py-4 text-lg text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                   />
                   <p className="mt-1 text-xs text-gray-400">
-                    Добавьте конкурента — увидите сравнение видимости
+                    Добавьте конкурента — увидите, кому нейросети отдают спрос сейчас
                   </p>
                 </div>
 
@@ -111,7 +112,7 @@ export default function ScanPage() {
                   type="submit"
                   className="w-full rounded-xl bg-blue-600 px-8 py-4 text-lg font-semibold text-white hover:bg-blue-700 transition-colors"
                 >
-                  Проверить видимость
+                  Проверить спрос в AI
                 </button>
 
                 {error && (
@@ -135,19 +136,19 @@ export default function ScanPage() {
                 <div className="rounded-xl border border-gray-200 p-6 text-center">
                   <div className="text-3xl">📊</div>
                   <h3 className="mt-3 font-semibold text-gray-900">
-                    Сравнение
+                    Сравнение спроса
                   </h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    Вы vs конкурент — по каждой платформе
+                    Вы vs конкурент — кто попадает в ответы
                   </p>
                 </div>
                 <div className="rounded-xl border border-gray-200 p-6 text-center">
                   <div className="text-3xl">🚀</div>
                   <h3 className="mt-3 font-semibold text-gray-900">
-                    План роста
+                    Следующий шаг
                   </h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    Как увеличить видимость
+                    Какие страницы запускать для заявок
                   </p>
                 </div>
               </div>

@@ -7,7 +7,7 @@ import { LayoutDashboard, ClipboardList, FileText, Inbox, Users, Key, UserCircle
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Дашборд", icon: LayoutDashboard },
-  { href: "/orders", label: "Заказы", icon: ClipboardList },
+  { href: "/orders", label: "Возможности спроса", icon: ClipboardList },
   { href: "/content", label: "Контент", icon: FileText },
   { href: "/leads", label: "Заявки", icon: Inbox },
   { href: "/team", label: "Команда", icon: Users },

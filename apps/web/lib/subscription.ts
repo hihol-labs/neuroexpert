@@ -1,4 +1,4 @@
-// Subscription tier limits, commission rates, and content format access
+// Subscription tier limits, commission rates, demand-map access, and content format access
 
 export type ContentFormat = "telegram_post" | "seo_article" | "cards" | "reels_script" | "faq";
 
@@ -16,6 +16,8 @@ export const TIER_CONFIG = {
     formats: ["telegram_post", "seo_article"] as ContentFormat[],
     exportableFormats: ["telegram_post"] as ContentFormat[],
     features: {
+      demandMap: true,
+      pageAnalytics: false,
       unlimitedPublications: true,
       crosspost: false,
       distributionHelp: false,
@@ -36,6 +38,8 @@ export const TIER_CONFIG = {
     formats: ALL_FORMATS,
     exportableFormats: ALL_FORMATS,
     features: {
+      demandMap: true,
+      pageAnalytics: false,
       unlimitedPublications: true,
       crosspost: false,
       distributionHelp: false,
@@ -55,6 +59,8 @@ export const TIER_CONFIG = {
     formats: ALL_FORMATS,
     exportableFormats: ALL_FORMATS,
     features: {
+      demandMap: true,
+      pageAnalytics: false,
       unlimitedPublications: true,
       crosspost: true,
       distributionHelp: true,
@@ -74,6 +80,8 @@ export const TIER_CONFIG = {
     formats: ALL_FORMATS,
     exportableFormats: ALL_FORMATS,
     features: {
+      demandMap: true,
+      pageAnalytics: true,
       unlimitedPublications: true,
       crosspost: true,
       distributionHelp: true,
@@ -93,6 +101,8 @@ export const TIER_CONFIG = {
     formats: ALL_FORMATS,
     exportableFormats: ALL_FORMATS,
     features: {
+      demandMap: true,
+      pageAnalytics: true,
       unlimitedPublications: true,
       crosspost: true,
       distributionHelp: true,
@@ -112,6 +122,8 @@ export const TIER_CONFIG = {
     formats: ALL_FORMATS,
     exportableFormats: ALL_FORMATS,
     features: {
+      demandMap: true,
+      pageAnalytics: true,
       unlimitedPublications: true,
       crosspost: true,
       distributionHelp: true,

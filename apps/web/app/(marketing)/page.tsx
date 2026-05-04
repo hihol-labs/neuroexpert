@@ -29,15 +29,15 @@ const ALL_NICHES = [
 ];
 
 const STEPS = [
-  { num: "01", title: "Находим вопрос", desc: "Анализируем тысячи запросов, где нейросети дают слабые ответы — без экспертов, без конкретики.", icon: "🔍" },
-  { num: "02", title: "Наговариваете ответ", desc: "Получаете заказ в Telegram. Наговариваете 3-10 минут голосом. Мы создаём 5 форматов контента.", icon: "🎙️" },
-  { num: "03", title: "Получаете клиентов", desc: "Публикуем экспертную статью. Нейросети цитируют вас, поисковики ранжируют.", icon: "🚀" },
+  { num: "01", title: "Находим спрос", desc: "Собираем реальные вопросы людей, оцениваем частотность, намерение и шанс получить заявку.", icon: "🔍" },
+  { num: "02", title: "Вы отвечаете голосом", desc: "Наговариваете 3-10 минут. Мы сохраняем вашу экспертизу и превращаем ответ в страницу под конкретный спрос.", icon: "🎙️" },
+  { num: "03", title: "Страница приводит заявки", desc: "Публикуем материал с SEO, AI-разметкой и кнопкой записи. Дальше измеряем трафик, клики и заявки.", icon: "🚀" },
 ];
 
 const STATS = [
-  { value: "500K+", label: "экспертов в РФ ищут клиентов*" },
-  { value: "86%", label: "профессионалов используют AI*" },
-  { value: "Первая", label: "RU-платформа с AIO-циклом" },
+  { value: "20", label: "ниш для поиска реального спроса" },
+  { value: "10 мин", label: "достаточно для первого экспертного ответа" },
+  { value: "1 вопрос", label: "одна страница под конкретную заявку" },
 ];
 
 function PlatformStatsSection() {
@@ -55,7 +55,7 @@ function PlatformStatsSection() {
   const items = [
     { value: stats.experts, label: "экспертов на платформе" },
     { value: stats.articles, label: "опубликованных статей" },
-    { value: stats.citations, label: "цитирований в AI" },
+    { value: stats.citations, label: "AI-упоминаний" },
     { value: stats.niches, label: "профессиональных ниш" },
   ].filter((s) => s.value > 0);
 
@@ -96,27 +96,26 @@ export default function LandingPage() {
                   <span className="animate-ping absolute h-full w-full rounded-full bg-cyan-400 opacity-75" />
                   <span className="relative h-2 w-2 rounded-full bg-cyan-400" />
                 </span>
-                <span className="text-sm font-medium text-cyan-300">AI-платформа для экспертов</span>
+                <span className="text-sm font-medium text-cyan-300">Карта спроса для экспертов</span>
               </div>
             </FadeIn>
 
             <FadeIn delay={150}>
               <h1 className="mt-10 text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl leading-[1.1]">
-                <span className="text-white">Наговори 10 минут —</span>
+                <span className="text-white">Найдём вопросы,</span>
                 <br />
                 <span className="text-cyan-400 [text-shadow:_0_0_40px_rgba(34,211,238,0.5),_0_0_80px_rgba(34,211,238,0.2)]">
-                  получи клиентов
+                  по которым люди
                 </span>
                 <br />
-                <span className="text-white">из поиска и нейросетей</span>
+                <span className="text-white">уже ищут эксперта</span>
               </h1>
             </FadeIn>
 
             <FadeIn delay={300}>
               <p className="mx-auto mt-8 max-w-2xl text-lg text-gray-300 leading-relaxed">
-                Без написания текстов, без SMM, без бюджета на рекламу.
-                Мы находим вопросы, которые задают тысячи людей.
-                Превращаем ваш голос в экспертный контент.
+                Вы не придумываете темы для контента. Мы показываем, где уже есть спрос,
+                превращаем ваш голос в экспертную страницу и ставим на неё кнопку записи.
               </p>
             </FadeIn>
 
@@ -129,13 +128,13 @@ export default function LandingPage() {
                   <span className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl" />
                   <span className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <span className="absolute -inset-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl blur-xl opacity-50 group-hover:opacity-80 transition-opacity duration-300" />
-                  <span className="relative">Бесплатный аудит AI-видимости</span>
+                  <span className="relative">Получить карту спроса</span>
                 </Link>
                 <Link
-                  href="/register"
+                  href="/launch"
                   className="rounded-2xl border border-cyan-400/30 bg-white/5 px-10 py-4 text-lg font-semibold text-white backdrop-blur-md shadow-[0_0_10px_rgba(34,211,238,0.15)] hover:bg-white/10 hover:border-cyan-400/60 hover:shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-all"
                 >
-                  Регистрация
+                  Запуск под ключ
                 </Link>
               </div>
             </FadeIn>
@@ -158,7 +157,7 @@ export default function LandingPage() {
                 ))}
               </div>
               <p className="mt-6 text-center text-xs text-gray-500">
-                * По отраслевым данным 2024 — цифры показывают порядок, точные значения могут отличаться.
+                Сначала спрос и заявки. AI-упоминания — дополнительный канал, а не единственное обещание.
               </p>
             </div>
           </div>
@@ -172,10 +171,10 @@ export default function LandingPage() {
           <div className="mx-auto max-w-7xl px-6">
             <FadeIn className="text-center mb-14">
               <h2 className="text-3xl font-bold text-white sm:text-4xl">
-                Два канала привлечения клиентов
+                Один спрос — несколько путей к заявке
               </h2>
               <p className="mt-4 text-gray-400 max-w-xl mx-auto">
-                Одно действие — два результата
+                Каждая страница закрывает конкретный вопрос пользователя
               </p>
             </FadeIn>
 
@@ -186,10 +185,10 @@ export default function LandingPage() {
                   <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-500/15 border border-purple-500/25 shadow-[0_0_25px_rgba(168,85,247,0.2)]">
                     <span className="text-3xl">🤖</span>
                   </div>
-                  <h3 className="mt-5 text-xl font-semibold text-purple-300">Нейросети цитируют вас</h3>
+                  <h3 className="mt-5 text-xl font-semibold text-purple-300">AI-поиск может привести вас в ответ</h3>
                   <p className="mt-3 text-gray-400 leading-relaxed">
-                    ChatGPT, Perplexity, YandexGPT находят ваш экспертный контент
-                    и рекомендуют вас в ответах на вопросы пользователей.
+                    Мы проверяем, как ChatGPT, Perplexity, YandexGPT и GigaChat отвечают на вопрос,
+                    и создаём страницу, которую им проще понять и использовать как источник.
                   </p>
                   <div className="mt-5 flex flex-wrap gap-2">
                     {["ChatGPT", "Perplexity", "YandexGPT", "GigaChat"].map((n) => (
@@ -205,10 +204,10 @@ export default function LandingPage() {
                   <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-500/15 border border-cyan-500/25 shadow-[0_0_25px_rgba(34,211,238,0.2)]">
                     <span className="text-3xl">🔍</span>
                   </div>
-                  <h3 className="mt-5 text-xl font-semibold text-cyan-300">Поисковики ранжируют вас</h3>
+                  <h3 className="mt-5 text-xl font-semibold text-cyan-300">Поиск приводит людей на страницу записи</h3>
                   <p className="mt-3 text-gray-400 leading-relaxed">
-                    Google и Яндекс показывают ваши статьи в топе
-                    благодаря SEO-оптимизации, Schema.org и E-E-A-T.
+                    Яндекс и Google получают страницу под реальный вопрос: с понятным ответом,
+                    структурой, Schema.org и кнопкой «Записаться».
                   </p>
                   <div className="mt-5 flex flex-wrap gap-2">
                     {["Google", "Яндекс", "Bing", "Schema.org"].map((n) => (
@@ -288,10 +287,11 @@ export default function LandingPage() {
               <div className="rounded-3xl border border-cyan-500/20 bg-[#04080f]/60 p-12 backdrop-blur-xl text-center overflow-hidden relative">
                 <div className="absolute -top-px left-10 right-10 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
                 <h2 className="text-3xl font-bold text-white">
-                  Узнайте, как AI видит вашу нишу
+                  Узнайте, где в вашей нише уже есть спрос
                 </h2>
                 <p className="mt-4 text-gray-400">
-                  Бесплатный аудит покажет вопросы с максимальным спросом и слабыми ответами нейросетей.
+                  Бесплатная карта спроса покажет вопросы, по которым люди уже ищут решение,
+                  и темы, из которых стоит делать первые страницы для заявок.
                 </p>
                 <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
                   <Link
@@ -300,13 +300,13 @@ export default function LandingPage() {
                   >
                     <span className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-600" />
                     <span className="absolute -inset-2 bg-gradient-to-r from-cyan-500 to-blue-600 blur-xl opacity-40 group-hover:opacity-70 transition-opacity" />
-                    <span className="relative">Узнать свои точки роста</span>
+                    <span className="relative">Получить карту спроса</span>
                   </Link>
                   <Link
                     href="/for-experts"
                     className="rounded-2xl border border-white/15 bg-white/5 px-10 py-4 text-lg font-semibold text-white backdrop-blur-sm hover:bg-white/10 transition-all"
                   >
-                    Зачем это эксперту
+                    Как это приводит заявки
                   </Link>
                 </div>
               </div>

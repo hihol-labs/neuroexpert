@@ -1,4 +1,4 @@
-// Niches, statuses, limits, AIO parameters
+// Niches, statuses, limits, demand-map and AIO parameters
 
 // ============================================================
 // Ниши (20 шт)
@@ -65,7 +65,7 @@ export const SUBSCRIPTION_TIERS: Record<string, SubscriptionTier> = {
     commission: 0.15,
     formats: ['telegram_post', 'seo_article'],
     exportableFormats: ['telegram_post'],
-    features: ['1 ниша', '3 пакета/мес', '2 формата (пост + SEO-статья)', 'Экспорт Telegram-поста', 'Комиссия 15%'],
+    features: ['1 ниша', 'Карта спроса', '3 страницы/мес', '2 формата (пост + SEO-страница)', 'Экспорт Telegram-поста', 'Комиссия 15%'],
   },
   starter: {
     id: 'starter',
@@ -76,7 +76,7 @@ export const SUBSCRIPTION_TIERS: Record<string, SubscriptionTier> = {
     commission: 0.07,
     formats: ALL_FORMATS,
     exportableFormats: ALL_FORMATS,
-    features: ['2 ниши', '10 вопросов/неделю', '5 форматов контента', 'Полный экспорт', 'Комиссия 7%'],
+    features: ['2 ниши', '10 возможностей спроса/неделю', '5 форматов контента', 'Полный экспорт', 'Комиссия 7%'],
   },
   pro: {
     id: 'pro',
@@ -87,7 +87,7 @@ export const SUBSCRIPTION_TIERS: Record<string, SubscriptionTier> = {
     commission: 0.03,
     formats: ALL_FORMATS,
     exportableFormats: ALL_FORMATS,
-    features: ['Безлимит вопросов', 'Кросспост на площадки', 'Помощь с распространением', 'Комиссия 3%'],
+    features: ['Безлимит возможностей спроса', 'Кросспост на площадки', 'Помощь с распространением', 'Комиссия 3%'],
   },
   expert: {
     id: 'expert',
@@ -98,7 +98,7 @@ export const SUBSCRIPTION_TIERS: Record<string, SubscriptionTier> = {
     commission: 0,
     formats: ALL_FORMATS,
     exportableFormats: ALL_FORMATS,
-    features: ['Всё из Pro', 'AI Citation Tracker', 'Анализ конкурентов', 'Комиссия 0%'],
+    features: ['Всё из Pro', 'Аналитика страниц и заявок', 'AI Citation Tracker как доп. канал', 'Анализ конкурентов', 'Комиссия 0%'],
   },
   business: {
     id: 'business',
@@ -109,7 +109,7 @@ export const SUBSCRIPTION_TIERS: Record<string, SubscriptionTier> = {
     commission: 0,
     formats: ALL_FORMATS,
     exportableFormats: ALL_FORMATS,
-    features: ['Мультиэксперт (до 5)', 'API доступ', 'Персональный менеджер'],
+    features: ['Мультиэксперт (до 5)', 'Карта спроса для команды', 'API доступ', 'Персональный менеджер'],
   },
   enterprise: {
     id: 'enterprise',

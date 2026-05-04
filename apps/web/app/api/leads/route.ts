@@ -95,6 +95,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (content_id) {
+      await admin.rpc("increment_page_metric", {
+        p_content_id: content_id,
+        p_event_type: "lead",
+      });
+    }
+
     // Telegram notification to expert
     const { data: expert } = await admin
       .from("profiles")

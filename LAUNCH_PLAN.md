@@ -1,13 +1,15 @@
 # NeuroExpert — Пошаговый план запуска под цель 2M ₽/мес к декабрю 2026
+`CURRENT_PLAN.md` — активный источник порядка работ. Этот файл не определяет ближайшую очередность сам по себе.
+
 
 > Создан 2026-04-16. Обновлён 2026-04-17 (порядок шагов Block 2, дашборд, раздел «Что НЕ потеряно»).
-> Следующая сессия Claude Code читает этот файл первым.
+> Активный порядок работ перенесён в `CURRENT_PLAN.md`; этот файл остаётся бизнес/маркетинговой дорожной картой и справочным контекстом.
 
-## 📊 Статус (обновлять после каждой сессии)
+## 📊 Исторический статус launch-плана (не активный порядок работ)
 
 **Прогресс:** Block 1 ✅ · Block 2 🔶 (~65%) · Block 3-6 ⬜
-**Текущая фаза:** Pre-outreach (Step 2.2 — заявка в ЮKassa на модерации · Step 2.0.6 — сбор недостающих API-ключей)
-**Следующий шаг:** параллельно — (а) дождаться письма от ЮKassa (≤2 дней) → Шаг 2.2 чеклист; (б) получить ключи провайдеров по Шагу 2.0.6 (GigaChat/YandexGPT/Perplexity/XMLRiver/SerpAPI/Resend/Webmaster).
+**Историческая фаза на 2026-04-21:** Pre-outreach (Step 2.2 — заявка в ЮKassa на модерации · Step 2.0.6 — сбор недостающих API-ключей)
+**Исторически следующий шаг:** параллельно — (а) дождаться письма от ЮKassa (≤2 дней) → Шаг 2.2 чеклист; (б) получить ключи провайдеров по Шагу 2.0.6 (GigaChat/YandexGPT/Perplexity/XMLRiver/SerpAPI/Resend/Webmaster).
 **Активные блокеры P0:**
 - Step 2.2 ЮKassa moderation — на стороне ЮKassa (заявка отправлена 2026-04-21)
 - **Step 2.0.6 ключи провайдеров — на пользователе.** Без этих ключей фичи, обещанные на лендингах (4 AI-платформы в Scanner, Wordstat-данные, автокросспост, email-рассылки, индексация), работают частично или не работают. Решено получить все ключи, а не править лендинги вниз.
@@ -179,6 +181,46 @@ ssh hostland 'docker logs docker-bot-1 --tail 10'
    - P2/P3 → внести в `BACKLOG.md` с приоритетом
 
 5. **Обновить `LANDING_BRIEFS.md`** если контент менялся. Бриф = источник правды для следующего аудита.
+
+---
+
+### Как провести SEO/AIO-аудит маркетинга и лендингов проекта (перед outreach / раз в месяц)
+
+**Зачем:** технический Lighthouse SEO score не отвечает на главный вопрос: могут ли Google/Яндекс и AI-поиск понять, кому нужен NeuroExpert, какие интенты мы закрываем и почему нам можно доверять. Этот аудит проверяет лендинги как acquisition asset, а не только как набор исправных страниц.
+
+**Когда:**
+- Перед началом outreach (Шаг 2.0, до пилотов и SEO/GEO-агентств)
+- Перед публикацией внешних кейсов на vc.ru/Habr/Telegram
+- Раз в месяц как regression
+- После крупного редизайна или изменения позиционирования
+
+**Страницы в scope:** `/`, `/for-experts`, `/for-business`, `/for-agencies`, `/pricing`, `/how-it-works`, `/audit`, `/scan`, `/find-expert`, `/terms`, `/privacy`.
+
+**Процедура:**
+
+1. **Keyword / intent map:** для каждой страницы зафиксировать primary intent, secondary intents, целевые запросы и ICP. Проверить, что `title`, `description`, `H1`, первый экран и CTA не спорят между собой.
+
+2. **SERP SEO:** проверить canonical, robots, sitemap visibility, Open Graph, Twitter cards, внутреннюю перелинковку, breadcrumb-логику, FAQ-блоки, индексацию ключевых страниц, отсутствие дублей title/description.
+
+3. **Schema.org:** проверить JSON-LD через validator.schema.org. Минимум: `Organization`, `WebSite`, `SoftwareApplication` или `Product` для платформы, `FAQPage` там где есть FAQ, `BreadcrumbList` для вложенных страниц. Для экспертных страниц отдельно: `Person`, `Article`, `FAQPage`.
+
+4. **AIO / AI-answerability:** проверить, что страница даёт короткие прямые ответы на вопросы: что такое NeuroExpert, кому подходит, чем отличается от AI-копирайтера/SEO-трекера/GEO-инструмента, как работает AIO-цикл, какие платформы проверяются, чего продукт не гарантирует. Формат должен быть удобен для RAG: ясные определения, списки, Q&A, TL;DR, без пустых маркетинговых обобщений.
+
+5. **Trust / E-E-A-T:** проверить наличие юридических страниц, реквизитов, прозрачных гарантий, ограничений обещаний, контактов, объяснения источников данных, дисклеймеров к цифрам, и отсутствие неподкреплённых claims.
+
+6. **AI-bot access:** проверить `robots.txt` и nginx/Next.js headers: Googlebot, YandexBot, Bingbot, GPTBot, ClaudeBot, PerplexityBot не должны быть случайно закрыты для публичных маркетинговых страниц.
+
+7. **Marketing consistency:** сверить с `LANDING_BRIEFS.md`: позиционирование, тарифы, 4 AI-платформы, Wordstat/XMLRiver claims, guarantee wording, CTA, ICP, cross-site terminology.
+
+8. **Output:** отчёт `SEO/AIO Executive Summary` → Page findings (P0/P1/P2/P3) → Cross-site gaps → Concrete copy/schema/metadata fixes → Backlog items.
+
+**Приоритеты фикса:**
+- **P0:** страница не индексируется, закрыта ботам, вводит в заблуждение, содержит overclaim или противоречит реально работающим фичам.
+- **P1:** неясный intent, слабые title/description/H1, отсутствует важная schema, нет answerable-блоков для AI-поиска.
+- **P2:** слабая перелинковка, FAQ/TL;DR можно усилить, OG/social preview можно улучшить.
+- **P3:** редакторская полировка и long-tail расширения.
+
+**Acceptance:** перед outreach нет P0, P1 либо закрыты, либо явно заведены в `BACKLOG.md` с owner и сроком.
 
 ---
 
@@ -424,12 +466,36 @@ B-016..B-022 создано; B-CLOSED-005..008 + B-011 + B-020 закрыты.
 
 **Почему это приоритет P0:** без этих ключей лендинги содержат overclaim'ы, которые будут замечены (а) пилот-экспертами на Step 2.3, (б) модераторами vc.ru при публикации кейса, (в) SEO-агентствами на Step 2.5 (они проверят API). Это блокер для всего outreach — не меньший чем ЮKassa.
 
+#### 2.0.7 SEO/AIO-аудит маркетинга и лендингов проекта 🔎 🟡 P1
+
+**Цель:** сделать отдельный gate для органического поиска и AI-поиска, а не полагаться только на Lighthouse SEO score и общий content-аудит. Проверяем, что лендинги NeuroExpert понятны поисковикам, AI-ответчикам и целевым сегментам как acquisition asset.
+
+**Scope:** `/`, `/for-experts`, `/for-business`, `/for-agencies`, `/pricing`, `/how-it-works`, `/audit`, `/scan`, `/find-expert`, `/terms`, `/privacy`.
+
+**Чеклист:**
+- [ ] Keyword / intent map по каждой странице: primary intent, ICP, основные запросы, CTA.
+- [ ] Metadata QA: unique title/description, H1, canonical, robots, OG/Twitter preview.
+- [ ] Schema.org QA: Organization, WebSite, SoftwareApplication/Product, FAQPage, BreadcrumbList; для экспертных страниц — Person/Article/FAQPage.
+- [ ] AIO answerability: страницы дают прямые ответы на вопросы «что это», «кому подходит», «как работает», «чем отличается», «что не гарантируем».
+- [ ] AI-bot access: robots.txt и headers не закрывают публичные страницы для Google/Yandex/Bing/GPTBot/ClaudeBot/PerplexityBot.
+- [ ] Trust/E-E-A-T: реквизиты, privacy/terms, ограничения обещаний, источники данных, дисклеймеры к цифрам.
+- [ ] Internal linking: `/` ↔ `/how-it-works` ↔ `/pricing` ↔ `/audit` ↔ `/scan` ↔ `/for-agencies`, без тупиков и лишних редиректов.
+- [ ] Marketing consistency с `LANDING_BRIEFS.md`: тарифы, 4 AI-платформы, Wordstat/XMLRiver, guarantee wording, ICP, CTA.
+- [ ] Все findings заведены в `BACKLOG.md` или исправлены до outreach.
+
+**Acceptance criteria:**
+- [ ] 0 P0 SEO/AIO findings.
+- [ ] P1 findings закрыты или имеют owner + срок в `BACKLOG.md`.
+- [ ] `LANDING_BRIEFS.md` дополнен keyword/intent map, если аудит меняет позиционирование страниц.
+- [ ] После исправлений пройден tech QA лендингов и Lighthouse CI не регрессирует.
+
 ---
 
 **Acceptance criteria Step 2.0:**
 
 - [ ] 0 P0-findings (всё критическое исправлено)
 - [ ] Все 200 на CTA, формы валидируются
+- [ ] SEO/AIO-аудит маркетинга и лендингов проекта пройден: 0 P0, P1 закрыты или заведены в `BACKLOG.md`
 - [ ] LANDING_BRIEFS.md синхронизирован с продом
 - [ ] BACKLOG.md содержит свежие P1-P3 findings
 - [ ] Старые OpenAI/TG ключи отозваны, новые работают

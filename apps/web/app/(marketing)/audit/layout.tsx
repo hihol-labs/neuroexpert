@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
-const TITLE = "Бесплатный аудит AI-видимости | НейроЭксперт";
+const TITLE = "Бесплатная карта спроса | НейроЭксперт";
 const DESCRIPTION =
-  "Выберите нишу — покажем до 10 вопросов, где AI даёт слабые ответы. Проверка по ChatGPT, Perplexity, YandexGPT, GigaChat. gap_score, monthly_volume, 4 маркера качества.";
+  "Выберите нишу — покажем вопросы, по которым люди уже ищут решение, спрос/мес, intent, слабость AI-ответов и темы для первых страниц под заявки.";
 
 export const metadata: Metadata = {
   title: TITLE,

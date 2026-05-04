@@ -5,6 +5,7 @@ import { useState } from "react";
 
 const NAV_LINKS = [
   { href: "/for-experts", label: "Экспертам" },
+  { href: "/launch", label: "Запуск под ключ" },
   { href: "/for-business", label: "Бизнесу" },
   { href: "/for-agencies", label: "Агентствам" },
   { href: "/how-it-works", label: "Как работает" },
@@ -64,7 +65,7 @@ export function MarketingHeader() {
           </svg>
           <div className="flex flex-col">
             <span>НейроЭксперт</span>
-            <span className="text-[10px] font-normal text-gray-500 tracking-wide -mt-0.5">Экспертиза, которую цитируют</span>
+            <span className="text-[10px] font-normal text-gray-500 tracking-wide -mt-0.5">Клиенты из поиска и нейросетей</span>
           </div>
         </Link>
 
@@ -164,13 +165,14 @@ export function MarketingFooter() {
               <span className="text-base font-semibold text-white">НейроЭксперт</span>
             </div>
             <p className="text-sm text-gray-400 leading-relaxed">
-              Платформа, которая превращает экспертизу в контент, который цитируют нейросети и поисковики.
+              Платформа, которая находит реальный спрос и превращает ответы экспертов
+              в страницы для заявок из поиска и нейросетей.
             </p>
             <Link
-              href="/register"
+              href="/audit"
               className="mt-2 inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
             >
-              Начать бесплатно
+              Получить карту спроса
             </Link>
           </div>
 
@@ -180,8 +182,11 @@ export function MarketingFooter() {
             <Link href="/how-it-works" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
               Как это работает
             </Link>
+            <Link href="/launch" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+              Запуск под ключ
+            </Link>
             <Link href="/scan" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
-              AI Visibility Scanner
+              Scanner спроса в AI
             </Link>
             <Link href="/for-experts" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
               Экспертам
@@ -201,7 +206,7 @@ export function MarketingFooter() {
               Тарифы
             </Link>
             <Link href="/for-agencies" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
-              Knowledge API
+              Demand API
             </Link>
             <Link href="/privacy" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
               Политика конфиденциальности

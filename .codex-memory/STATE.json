@@ -1,7 +1,7 @@
 {
   "sessionState": "ACTIVE",
   "currentStage": "STAGE_1_RESTORE_LOGIN_AND_BASIC_AVAILABILITY",
-  "intent": "NeuroExpert work locked to the staged Product Factory OS execution sequence.",
+  "intent": "NeuroExpert work must strictly follow CURRENT_PLAN.md in order; no stage skipping unless the user explicitly changes the sequence.",
   "classification": {
     "productType": "SaaS Application + Messaging Bot + Background Worker",
     "domain": "existing project inferred from repository docs and stack",
@@ -205,21 +205,35 @@
     {
       "event": "existing project analyzer run",
       "note": "runGates=True"
+    },
+    {
+      "event": "seo/aio landing audit gate added",
+      "note": "2026-05-04: User approved a separate SEO/AIO audit for project marketing and landing pages. Added LAUNCH_PLAN.md Step 2.0.7 and Stage 9 promotion readiness gate."
+    },
+    {
+      "event": "unified current plan created",
+      "note": "2026-05-04: Merged LAUNCH_PLAN.md with .codex-memory/NEUROEXPERT_EXECUTION_SEQUENCE.md into CURRENT_PLAN.md. First active item is restoring Yandex 360 billing/viewing mode before YuKassa, outreach, or API monetization."
+    },
+    {
+      "event": "strict current plan sequence locked",
+      "note": "2026-05-04: User explicitly required all future NeuroExpert work to follow CURRENT_PLAN.md strictly in order. No skipping stages; first active item remains Yandex 360 payment/refill and SMTP/magic-link restoration."
     }
   ],
   "artifactHashes": {},
   "lastSuccessfulState": "REVIEWING",
   "artifacts": [
     "CODEX.md",
+    "LAUNCH_PLAN.md",
     ".codex-memory/MEMORY.md",
     "PFO_EXISTING_PROJECT_ANALYSIS.json",
     "PFO_REPORT.md",
-    ".codex-memory/NEUROEXPERT_EXECUTION_SEQUENCE.md"
+    ".codex-memory/NEUROEXPERT_EXECUTION_SEQUENCE.md",
+    "CURRENT_PLAN.md"
   ],
   "completedModules": [],
   "failedValidations": [],
   "blockers": [
     "Yandex 360 services are in viewing mode due to insufficient balance; SMTP is disabled, so Supabase magic links fail."
   ],
-  "nextAction": "Complete Stage 1: restore Yandex 360 balance, restart supabase-auth, and verify magic link /otp returns 200."
+  "nextAction": "Start every NeuroExpert work session by reading AGENTS.md and CURRENT_PLAN.md. Active first item: pay/refill Yandex 360, remove viewing mode, restart supabase-auth, and verify magic link /otp returns 200."
 }

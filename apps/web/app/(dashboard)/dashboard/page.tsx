@@ -15,21 +15,47 @@ function getSupabase() {
 async function getDashboardData(userId: string) {
   const supabase = getSupabase();
 
-  const [pubResult, leadsResult, profileResult, ordersResult, recentLeadsResult, contentCountResult] = await Promise.all([
+  const [
+    pubResult,
+    leadsResult,
+    profileResult,
+    ordersResult,
+    recentLeadsResult,
+    contentListResult,
+    pageMetricsResult,
+    demandCountResult,
+  ] = await Promise.all([
     supabase.from("content_packages").select("id", { count: "exact", head: true }).eq("expert_id", userId).eq("status", "published"),
     supabase.from("leads").select("id", { count: "exact", head: true }).eq("expert_id", userId),
     supabase.from("profiles").select("trust_score, subscription_tier, full_name, bio, qualification").eq("id", userId).single(),
     supabase.from("orders").select("id, status, week_number, questions(question_text)").eq("expert_id", userId).in("status", ["pending", "accepted"]).order("created_at", { ascending: false }).limit(5),
     supabase.from("leads").select("id, client_name, client_contact, client_message, status, created_at").eq("expert_id", userId).order("created_at", { ascending: false }).limit(5),
-    supabase.from("content_packages").select("id", { count: "exact", head: true }).eq("expert_id", userId),
+    supabase.from("content_packages").select("id").eq("expert_id", userId),
+    supabase.from("page_metrics").select("views, cta_views, cta_clicks, leads_count").eq("expert_id", userId),
+    supabase.from("orders").select("id", { count: "exact", head: true }).eq("expert_id", userId).in("status", ["pending", "accepted"]),
   ]);
 
   const profile = profileResult.data;
   const hasProfile = !!(profile?.full_name && profile?.bio && profile?.qualification);
-  const totalContent = contentCountResult.count ?? 0;
+  const contentIds = (contentListResult.data ?? []).map((item) => item.id as string);
+  const totalContent = contentIds.length;
+  const { data: indexedRows } = contentIds.length
+    ? await supabase.from("serp_positions").select("content_id").in("content_id", contentIds)
+    : { data: [] };
+
+  const indexedCount = new Set((indexedRows ?? []).map((row) => row.content_id as string)).size;
+  const pageMetrics = pageMetricsResult.data ?? [];
+  const pageViews = pageMetrics.reduce((sum, row) => sum + ((row.views as number) ?? 0), 0);
+  const ctaClicks = pageMetrics.reduce((sum, row) => sum + ((row.cta_clicks as number) ?? 0), 0);
+  const metricLeads = pageMetrics.reduce((sum, row) => sum + ((row.leads_count as number) ?? 0), 0);
 
   return {
+    demandOpportunitiesCount: demandCountResult.count ?? 0,
     publishedCount: pubResult.count ?? 0,
+    indexedCount,
+    pageViews,
+    ctaClicks,
+    metricLeads,
     leadsCount: leadsResult.count ?? 0,
     trustScore: profile?.trust_score ?? 0,
     tier: profile?.subscription_tier ?? "free",
@@ -51,9 +77,14 @@ export default async function DashboardPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Дашборд</h1>
-        <Link href="/content/new" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-          Записать ответ
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Дашборд результата</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Воронка: спрос → страница → индексация → трафик → клики → заявки.
+          </p>
+        </div>
+        <Link href="/orders" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+          Выбрать возможность спроса
         </Link>
       </div>
 
@@ -65,8 +96,9 @@ export default async function DashboardPage() {
             {[
               { done: true, label: "Зарегистрироваться", href: "" },
               { done: data.hasProfile, label: "Заполнить профиль", href: "/profile" },
+              { done: data.demandOpportunitiesCount > 0, label: "Выбрать возможность спроса", href: "/orders" },
               { done: data.totalContent > 0, label: "Записать первый ответ", href: "/content/new" },
-              { done: data.publishedCount > 0, label: "Опубликовать контент", href: "/content" },
+              { done: data.publishedCount > 0, label: "Опубликовать страницу", href: "/content" },
             ].map((step) => (
               <div key={step.label} className="flex items-center gap-3">
                 {step.done ? (
@@ -86,15 +118,34 @@ export default async function DashboardPage() {
       )}
 
       {/* Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 xl:grid-cols-6 gap-4 mb-8">
         <Card>
-          <CardTitle>Опубликовано</CardTitle>
+          <CardTitle>Возможности</CardTitle>
+          <CardValue>{data.demandOpportunitiesCount}</CardValue>
+        </Card>
+        <Card>
+          <CardTitle>Страницы</CardTitle>
           <CardValue>{data.publishedCount}</CardValue>
+        </Card>
+        <Card>
+          <CardTitle>Проиндексировано</CardTitle>
+          <CardValue>{data.indexedCount}</CardValue>
+        </Card>
+        <Card>
+          <CardTitle>Просмотры</CardTitle>
+          <CardValue>{data.pageViews}</CardValue>
+        </Card>
+        <Card>
+          <CardTitle>Клики записи</CardTitle>
+          <CardValue>{data.ctaClicks}</CardValue>
         </Card>
         <Card>
           <CardTitle>Заявки</CardTitle>
           <CardValue>{data.leadsCount}</CardValue>
         </Card>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card>
           <CardTitle>Trust Score</CardTitle>
           <CardValue>{data.trustScore.toFixed(1)}</CardValue>
@@ -109,11 +160,11 @@ export default async function DashboardPage() {
         {/* Recent orders */}
         <Card>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-gray-900">Последние заказы</h2>
+            <h2 className="font-semibold text-gray-900">Возможности спроса</h2>
             <Link href="/orders" className="text-sm text-blue-600 hover:underline">Все</Link>
           </div>
           {data.recentOrders.length === 0 ? (
-            <p className="text-sm text-gray-500">Заказов пока нет</p>
+            <p className="text-sm text-gray-500">Возможностей спроса пока нет</p>
           ) : (
             <div className="space-y-3">
               {data.recentOrders.map((o: Record<string, unknown>) => (

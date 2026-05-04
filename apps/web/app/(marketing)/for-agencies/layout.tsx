@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
-const TITLE = "Карта слепых зон AI — Knowledge API для SEO/GEO-агентств | НейроЭксперт";
+const TITLE = "Карта спроса и Demand API для SEO/GEO-агентств | НейроЭксперт";
 const DESCRIPTION =
-  "JSON-эндпоинты с реальными данными: какие вопросы в нише клиента нейросети отвечают плохо. gap_score, monthly_volume, 4 AI-платформы. Read free / Pro $99/мес / Enterprise.";
+  "JSON-эндпоинты с реальными вопросами людей: monthly_volume, intent, gap_score, слабость AI-ответа, opportunity_score и CTA для страниц под заявки.";
 
 export const metadata: Metadata = {
   title: TITLE,

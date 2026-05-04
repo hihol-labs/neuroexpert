@@ -2,9 +2,9 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
 
-const TITLE = "Не лайки, не охваты — реальные клиенты | НейроЭксперт";
+const TITLE = "Карта спроса и заявки для экспертов | НейроЭксперт";
 const DESCRIPTION =
-  "Не лайки, не охваты — реальные клиенты. AI-система для психологов, юристов, нутрициологов: два канала привлечения из одного голосового описания боли клиента.";
+  "НейроЭксперт находит реальные вопросы людей в вашей нише и превращает голосовые ответы эксперта в страницы для привлечения заявок.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -19,7 +19,7 @@ const PAINS = [
     icon: "😐",
     title: "Не знаю, о чём писать",
     desc: "Садитесь за пост — и зависаете. Выбираете тему наугад. Результата нет.",
-    solution: "Система каждую неделю находит вопросы с подтверждённым спросом тысяч людей, на которые нейросети дают слабый ответ. Вы точно знаете: эта тема нужна.",
+    solution: "Система находит вопросы с подтверждённым спросом и показывает, какие из них ближе всего к заявке. Вы точно знаете: эта тема нужна людям.",
   },
   {
     icon: "😩",
@@ -31,19 +31,19 @@ const PAINS = [
     icon: "👻",
     title: "Пишу, но никто не видит",
     desc: "Канал на 300 подписчиков, охват 50 человек. Нет сайта, не знаете SEO.",
-    solution: "Мы публикуем на индексируемой платформе с AIO-разметкой. Нейросети и поисковики находят ваш контент сами. На каждой странице — кнопка «Записаться к вам».",
+    solution: "Мы публикуем страницу под конкретный вопрос: понятный ответ, SEO-структура, AI-разметка и кнопка «Записаться к вам».",
   },
   {
     icon: "📉",
     title: "Не понимаю, что работает",
     desc: "Нет связи между контентом и клиентами. Пишете в пустоту.",
-    solution: "Дашборд показывает: сколько раз вас процитировали нейросети, сколько пришло посетителей, сколько записалось. Вы видите путь от контента к клиенту.",
+    solution: "Дашборд показывает: какие страницы опубликованы, что индексируется, сколько пришло посетителей, кликов и заявок. Вы видите путь от темы к клиенту.",
   },
   {
     icon: "😤",
     title: "Коллеги видимы, а я — нет",
     desc: "Специалисты с меньшим опытом собирают аудиторию благодаря активному ведению соцсетей. Вас — не видно.",
-    solution: "Мы целимся в вопросы, где AI-ответ слабый. Ваша экспертиза заполняет пробел — и нейросети начинают цитировать именно вас.",
+    solution: "Мы целимся в вопросы, где есть спрос и слабые ответы. Ваша экспертиза закрывает пробел — и страница получает шанс работать в поиске и AI-ответах.",
   },
   {
     icon: "🤖",
@@ -54,9 +54,9 @@ const PAINS = [
 ];
 
 const PROOF_NUMBERS = [
-  { value: "86%", label: "россиян в интеллектуальных профессиях используют нейросети для поиска информации*" },
-  { value: "58%", label: "поисковых запросов завершаются без клика — ответ даёт нейросеть*" },
-  { value: "Первая", label: "RU-платформа с полным AIO-циклом для экспертов" },
+  { value: "Спрос", label: "сначала ищем реальные вопросы людей, а не придумываем темы" },
+  { value: "Голос", label: "эксперт отвечает как человек, AI только структурирует материал" },
+  { value: "Заявка", label: "каждая страница ведёт к действию: запись, разбор или консультация" },
 ];
 
 export default function ForExpertsPage() {
@@ -68,17 +68,16 @@ export default function ForExpertsPage() {
       <section className="pb-16 pt-16">
         <div className="mx-auto max-w-4xl px-6 text-center">
           <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
-            Не лайки, не охваты —{" "}
-            <span className="text-blue-400">реальные клиенты</span>
+            Не контент ради контента —{" "}
+            <span className="text-blue-400">страницы под реальный спрос</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-300">
-            НейроЭксперт находит вопросы, которые задают тысячи людей. Превращает ваш голос
-            в экспертный контент. Публикует так, чтобы нейросети и поисковики его нашли.
-            На каждой странице — кнопка «Записаться к вам».
+            НейроЭксперт находит вопросы, по которым люди уже ищут решение.
+            Вы отвечаете голосом, а мы превращаем ответ в страницу с понятным CTA:
+            записаться, задать вопрос или получить разбор.
           </p>
           <p className="mx-auto mt-4 max-w-xl text-base text-gray-400">
-            Два канала привлечения клиентов из одного действия: нейросети цитируют ваш ответ +
-            поисковики ранжируют вашу страницу.
+            Логика простая: спрос → экспертный ответ → страница → трафик → заявка.
           </p>
         </div>
       </section>
@@ -93,24 +92,24 @@ export default function ForExpertsPage() {
             <div className="rounded-2xl border border-green-500/20 bg-green-500/10 p-6">
               <h3 className="text-lg font-semibold text-green-300">Что мы делаем</h3>
               <ul className="mt-4 space-y-3 text-sm text-green-200/90">
-                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Находим вопросы с подтверждённым массовым спросом, где нейросети слабы</li>
-                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Превращаем ваш голос в AIO-оптимизированный контент с вашими цитатами</li>
-                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Публикуем на индексируемой платформе с правильной разметкой</li>
+                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Находим вопросы с подтверждённым спросом и понятным клиентским намерением</li>
+                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Превращаем ваш голос в экспертную страницу под конкретный вопрос</li>
+                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Публикуем страницу с SEO-структурой, AI-разметкой и вашим профилем</li>
                 <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>На каждой странице — кнопка «Записаться к эксперту»</li>
-                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Отслеживаем цитирование и приток клиентов</li>
-                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Корректируем стратегию по данным</li>
+                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Отслеживаем индексацию, трафик, клики и заявки</li>
+                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Корректируем следующие темы по фактическому результату</li>
               </ul>
             </div>
             <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-6">
               <h3 className="text-lg font-semibold text-amber-300">Чего мы не обещаем</h3>
               <ul className="mt-4 space-y-3 text-sm text-amber-200/90">
                 <li className="flex gap-2"><span className="text-amber-400 flex-shrink-0">&mdash;</span>«N клиентов в месяц» — результат зависит от ниши, конкуренции, качества ответов</li>
-                <li className="flex gap-2"><span className="text-amber-400 flex-shrink-0">&mdash;</span>100% цитирование каждой страницы — но мы делаем всё, чтобы шансы были максимальными</li>
-                <li className="flex gap-2"><span className="text-amber-400 flex-shrink-0">&mdash;</span>Мгновенный результат — первые цитирования появляются через 2-4 недели</li>
+                <li className="flex gap-2"><span className="text-amber-400 flex-shrink-0">&mdash;</span>100% попадание каждой страницы в AI-ответы — это дополнительный канал, а не единственная цель</li>
+                <li className="flex gap-2"><span className="text-amber-400 flex-shrink-0">&mdash;</span>Мгновенный поток клиентов — поиску, индексации и доверию нужно время</li>
               </ul>
               <p className="mt-4 text-sm text-amber-200/80">
-                Мы создаём систему, в которой клиенты находят вас сами — через поисковики и нейросети.
-                Чем больше контента — тем выше авторитет и больше клиентов.
+                Мы создаём систему, где каждая публикация начинается с реального спроса
+                и заканчивается измеримым действием: просмотром, кликом или заявкой.
               </p>
             </div>
           </div>
@@ -209,10 +208,11 @@ export default function ForExpertsPage() {
       <section className="py-16">
         <div className="mx-auto max-w-5xl px-6">
           <h2 className="text-3xl font-bold text-white text-center">
-            Почему сейчас
+            Почему это работает лучше обычного контента
           </h2>
           <p className="mt-4 text-center text-gray-400 max-w-2xl mx-auto">
-            AI-поиск заменяет традиционный. Эксперты, которые не попали в ответы нейросетей, теряют клиентов.
+            Эксперты часто пишут то, что удобно написать. Мы начинаем с другого:
+            смотрим, что люди уже спрашивают, и строим страницу под этот спрос.
           </p>
           <div className="mt-12 grid gap-8 md:grid-cols-3">
             {PROOF_NUMBERS.map((item) => (
@@ -223,7 +223,7 @@ export default function ForExpertsPage() {
             ))}
           </div>
           <p className="mt-8 text-center text-xs text-gray-500">
-            * По отраслевым данным 2024. Цифры показывают порядок — точные значения могут отличаться.
+            Это продуктовая логика НейроЭксперта: сначала карта спроса, затем голос эксперта, затем страница для заявки.
           </p>
         </div>
       </section>
@@ -256,15 +256,15 @@ export default function ForExpertsPage() {
               </div>
               <div className="rounded-xl bg-white/5 border border-white/10 p-4 text-center">
                 <div className="text-2xl font-bold text-white">2-14</div>
-                <div className="text-sm text-gray-400">новых клиентов в месяц</div>
+                <div className="text-sm text-gray-400">заявок и кликов по записи в месяц</div>
               </div>
             </div>
 
             <p className="mt-6 text-center text-sm font-medium text-blue-300">
-              Подписка окупается с первого клиента. Анна тратит 10 минут в неделю на запись голоса.
+              Цель — довести страницы до первых измеримых сигналов. Эксперт тратит около 10 минут в неделю на запись голоса.
             </p>
             <p className="mt-3 text-center text-xs text-gray-500">
-              Расчёт-пример на основе средних данных по отрасли. Реальные результаты зависят от ниши, конкуренции и качества ответов.
+              Модельный сценарий для иллюстрации воронки. Реальные результаты зависят от ниши, конкуренции и качества ответов.
             </p>
           </div>
         </div>
@@ -302,17 +302,18 @@ export default function ForExpertsPage() {
       <section className="bg-blue-600 py-16">
         <div className="mx-auto max-w-3xl px-6 text-center">
           <h2 className="text-3xl font-bold text-white">
-            Узнайте, как AI видит вашу нишу
+            Узнайте, где в вашей нише уже есть спрос
           </h2>
           <p className="mt-4 text-lg text-blue-100">
-            Бесплатный аудит покажет вопросы с максимальным спросом и слабыми ответами нейросетей.
+            Бесплатная карта покажет вопросы с клиентским потенциалом и подскажет,
+            какие страницы стоит сделать первыми.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/audit"
               className="rounded-lg bg-white px-10 py-4 text-lg font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
             >
-              Бесплатный аудит AI-видимости
+              Получить карту спроса
             </Link>
             <Link
               href="/how-it-works"

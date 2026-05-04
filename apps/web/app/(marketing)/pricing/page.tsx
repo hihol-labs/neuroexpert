@@ -2,9 +2,9 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
 
-const TITLE = "Тарифы НейроЭксперт — от 0 ₽ с комиссией 15% до 99 990 ₽ Enterprise";
+const TITLE = "Тарифы НейроЭксперт — карта спроса, страницы и заявки для экспертов";
 const DESCRIPTION =
-  "Free 15% · Starter 1 490 ₽ (7%) · Pro 2 990 ₽ (3%) · Expert 4 990 ₽ (0%) · Business 24 990 ₽ · Enterprise 99 990 ₽. Подписка окупается с первого клиента.";
+  "НейроЭксперт находит реальный спрос в нише и превращает голосовые ответы эксперта в страницы для привлечения заявок. Free, Starter, Pro, Expert, Business и запуск под ключ.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -20,17 +20,17 @@ const PLANS = [
     name: "Free",
     price: "0",
     period: "навсегда",
-    headline: "Попробуйте бесплатно. Платите только когда зарабатываете.",
+    headline: "Проверьте спрос и опубликуйте первые страницы без риска.",
     commission: "15%",
     commissionNote: "вы получаете 85%",
-    scenario: "Пришёл 1 клиент на 5 000 ₽ — вы получили 4 250 ₽. Платформа заработала только когда заработали вы.",
+    scenario: "Платформа помогает проверить, какие вопросы люди уже задают в вашей нише. Если через страницу пришёл клиент на 5 000 ₽ — вы получили 4 250 ₽.",
     features: [
       "1 ниша",
-      "Темы для контента подбираются без ограничений",
+      "Карта спроса: темы подбираются без ограничений",
       "3 контент-пакета в месяц",
       "2 формата: экспертная статья + пост для Telegram",
       "Telegram-пост — забирайте и публикуйте у себя",
-      "SEO-статья работает на платформе",
+      "SEO-страница работает на платформе",
       "Кнопка «Записаться» на каждой странице",
     ],
     cta: "Начать бесплатно",
@@ -42,8 +42,7 @@ const PLANS = [
     name: "Starter",
     price: "1 490",
     period: "/мес",
-    headline: "2+ цитирования за 60 дней или возврат",
-    guarantee: "2 цитирования / 60 дней",
+    headline: "Регулярно закрывайте спрос экспертными страницами.",
     commission: "7%",
     commissionNote: "вы получаете 93%",
     scenario: "При 5 клиентах по 5 000 ₽: комиссия 1 750 ₽ вместо 3 750 ₽ на Free. Экономия 2 000 ₽/мес — подписка окупается.",
@@ -52,6 +51,7 @@ const PLANS = [
       "Контент-пакеты без ограничений",
       "Все 5 форматов: статья + пост + карточки + Reels + FAQ",
       "Полный экспорт — забирайте всё для своих каналов",
+      "Больше страниц под реальные вопросы аудитории",
       "Комиссия снижена до 7%",
     ],
     cta: "Подписаться",
@@ -63,11 +63,10 @@ const PLANS = [
     name: "Pro",
     price: "2 990",
     period: "/мес",
-    headline: "5+ цитирований за 90 дней или возврат",
-    guarantee: "5 цитирований / 90 дней",
+    headline: "Добавьте распространение и быстрее проверяйте, что даёт заявки.",
     commission: "3%",
     commissionNote: "вы получаете 97%",
-    scenario: "Статьи на Дзен, Хабр, Яндекс Кью. При 8 клиентах: комиссия 1 200 ₽ vs 6 000 ₽ на Free. Разница покрывает подписку 3 раза.",
+    scenario: "Страницы + посты + кросспостинг. При 8 клиентах: комиссия 1 200 ₽ vs 6 000 ₽ на Free. Разница покрывает подписку 3 раза.",
     features: [
       "3 ниши — полный охват вашей экспертизы",
       "Всё из Starter",
@@ -85,15 +84,15 @@ const PLANS = [
     name: "Expert",
     price: "4 990",
     period: "/мес",
-    headline: "10+ цитирований за 90 дней или возврат",
-    guarantee: "10 цитирований / 90 дней",
+    headline: "Видите весь путь: спрос, страницы, трафик, клики и заявки.",
     commission: "0%",
     commissionNote: "вы получаете 100%",
-    scenario: "При 10 клиентах по 5 000 ₽: на Free вы теряли бы 7 500 ₽/мес на комиссии. Expert = чистая экономия 2 510 ₽/мес + полная аналитика.",
+    scenario: "При 10 клиентах по 5 000 ₽: на Free вы теряли бы 7 500 ₽/мес на комиссии. Expert = чистая экономия 2 510 ₽/мес + полная аналитика результата.",
     features: [
       "5 ниш — широкий профиль, личный бренд",
       "Всё из Pro",
-      "Видите, цитируют ли вас нейросети — и по каким запросам",
+      "Видите путь от темы к заявке: спрос, публикации, трафик, клики",
+      "Видите, появляются ли ваши страницы в нейросетях — как дополнительный канал",
       "Ваш % ответов vs конкуренты",
       "Какие сайты используют нейросети в вашей теме",
       "Публичный рейтинг экспертности",
@@ -110,7 +109,7 @@ const COMPARISON_ROWS = [
   { label: "Цена", free: "0 ₽", starter: "1 490 ₽/мес", pro: "2 990 ₽/мес", expert: "4 990 ₽/мес" },
   { label: "Комиссия с клиентов", free: "15%", starter: "7%", pro: "3%", expert: "0%" },
   { label: "Вы получаете", free: "85%", starter: "93%", pro: "97%", expert: "100%" },
-  { label: "Гарантия цитирований*", free: "—", starter: "2 / 60 дн", pro: "5 / 90 дн", expert: "10 / 90 дн" },
+  { label: "Главная ценность", free: "Проверка спроса", starter: "Регулярные страницы", pro: "Дистрибуция", expert: "Аналитика заявок" },
   { label: "Ниш", free: "1", starter: "2", pro: "3", expert: "5" },
   { label: "Подобранных тем", free: "Без ограничений", starter: "Без ограничений", pro: "Без ограничений", expert: "Без ограничений" },
   { label: "Контент-пакетов в месяц", free: "3", starter: "Без ограничений", pro: "Без ограничений", expert: "Без ограничений" },
@@ -121,7 +120,7 @@ const COMPARISON_ROWS = [
   { label: "Размещение на площадках", free: "—", starter: "—", pro: "да", expert: "да" },
   { label: "Помощь с распространением", free: "—", starter: "—", pro: "да", expert: "да" },
   { label: "Напоминания об обновлении", free: "—", starter: "—", pro: "да", expert: "да" },
-  { label: "Цитирование нейросетями", free: "—", starter: "—", pro: "—", expert: "да" },
+  { label: "AI-упоминания", free: "—", starter: "—", pro: "—", expert: "доп. канал" },
   { label: "% ответов vs конкуренты", free: "—", starter: "—", pro: "—", expert: "да" },
   { label: "Рейтинг экспертности", free: "—", starter: "—", pro: "—", expert: "да" },
   { label: "Подсказки по конкурентам", free: "—", starter: "—", pro: "—", expert: "да" },
@@ -137,11 +136,11 @@ export default function PricingPage() {
         <div className="mx-auto max-w-4xl px-6 text-center">
           <h1 className="text-4xl font-bold text-white">Тарифы</h1>
           <p className="mt-4 text-lg text-gray-400">
-            Начните бесплатно — платите только когда зарабатываете.
-            Растите — снижайте комиссию и получайте больше инструментов.
+            Начните с карты спроса и первых страниц. Растите — снижайте комиссию,
+            получайте больше форматов, дистрибуцию и аналитику заявок.
           </p>
           <p className="mt-2 text-sm text-gray-500">
-            Подписка окупается с первого клиента при консультации от 3 000 ₽.
+            Платформа продаёт не AI-упоминания сами по себе, а путь от реального вопроса пользователя к странице записи.
           </p>
         </div>
       </section>
@@ -177,13 +176,9 @@ export default function PricingPage() {
                   </div>
                 </div>
                 <p className="text-sm text-gray-400 mb-1 font-medium">{plan.headline}</p>
-                {"guarantee" in plan ? (
-                  <Link href="/terms#guarantee" className="text-xs text-blue-400 hover:text-blue-300 underline">
-                    Условия гарантии
-                  </Link>
-                ) : (
-                  <p className="text-xs text-gray-500">Free — без гарантии цитирований; попробуйте без обязательств.</p>
-                )}
+                <p className="text-xs text-gray-500">
+                  Без обещаний мгновенных клиентов: результат измеряется по страницам, трафику, кликам и заявкам.
+                </p>
 
                 {/* Сценарий */}
                 <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-3 mb-4">
@@ -222,8 +217,8 @@ export default function PricingPage() {
                 <span className="text-2xl font-bold text-white">24 990 &#8381;</span>
                 <span className="text-sm text-gray-400">/мес</span>
               </div>
-              <p className="mt-2 text-sm text-gray-400">Для клиник, юрфирм и команд. До 10 ниш, до 5 экспертов, AI Visibility Scanner, брендированная публикация, персональный менеджер.</p>
-              <p className="mt-2 text-xs text-gray-500">Гарантия цитирований — индивидуальные условия в договоре.</p>
+              <p className="mt-2 text-sm text-gray-400">Для клиник, юрфирм и команд. До 10 ниш, до 5 экспертов, карта спроса, брендированные страницы, заявки, персональный менеджер.</p>
+              <p className="mt-2 text-xs text-gray-500">Цели по публикациям, трафику и заявкам фиксируются индивидуально.</p>
               <Link href="/register?plan=business" className="mt-4 block text-center rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15">
                 Подписаться
               </Link>
@@ -234,8 +229,8 @@ export default function PricingPage() {
                 <span className="text-2xl font-bold text-white">99 990 &#8381;</span>
                 <span className="text-sm text-gray-400">/мес</span>
               </div>
-              <p className="mt-2 text-sm text-gray-400">White-label, SLA, выделенная инфраструктура, безлимит экспертов, кастомные интеграции.</p>
-              <p className="mt-2 text-xs text-gray-500">Гарантия цитирований — индивидуальные условия в договоре.</p>
+              <p className="mt-2 text-sm text-gray-400">White-label, SLA, выделенная инфраструктура, безлимит экспертов, кастомные интеграции и управляемая карта спроса.</p>
+              <p className="mt-2 text-xs text-gray-500">Метрики результата и SLA фиксируются индивидуально.</p>
               <Link href="mailto:hello@neuroexpertise.ru" className="mt-4 block text-center rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15">
                 Связаться
               </Link>
@@ -251,13 +246,14 @@ export default function PricingPage() {
             Когда стоит перейти на платную подписку
           </h2>
           <p className="text-center text-gray-400 text-sm mb-8">
-            Подписка — это не барьер, а способ снизить комиссию и получить больше инструментов.
+            Подписка — это не барьер, а способ закрывать больше реального спроса,
+            быстрее распространять материалы и видеть, что приносит заявки.
             Считайте сами:
           </p>
           <div className="grid gap-6 md:grid-cols-3">
             <div className="rounded-xl bg-white/5 border border-white/10 p-5">
               <div className="text-sm font-semibold text-gray-400">Free &rarr; Starter</div>
-              <div className="mt-2 text-2xl font-bold text-white">5 клиентов/мес</div>
+              <div className="mt-2 text-2xl font-bold text-white">Сценарий: 5 клиентов</div>
               <p className="mt-2 text-sm text-gray-400">
                 При 5 клиентах &times; 5 000 &#8381;: комиссия 15% = 3 750 &#8381;.
                 На Starter: 1 490 + 7% = 3 240 &#8381;. Экономите + получаете все 5 форматов.
@@ -265,18 +261,19 @@ export default function PricingPage() {
             </div>
             <div className="rounded-xl bg-blue-500/5 border border-blue-500/20 p-5">
               <div className="text-sm font-semibold text-blue-400">Starter &rarr; Pro</div>
-              <div className="mt-2 text-2xl font-bold text-white">8 клиентов/мес</div>
+              <div className="mt-2 text-2xl font-bold text-white">Сценарий: 8 клиентов</div>
               <p className="mt-2 text-sm text-gray-400">
-                Комиссия 3% вместо 7%. Плюс кросспост на площадки — больше охват, больше клиентов.
+                Комиссия 3% вместо 7%. Плюс кросспост на площадки — больше охват,
+                больше шансов получить трафик и заявки.
                 Разница покрывает подписку с запасом.
               </p>
             </div>
             <div className="rounded-xl bg-white/5 border border-white/10 p-5">
               <div className="text-sm font-semibold text-gray-400">Pro &rarr; Expert</div>
-              <div className="mt-2 text-2xl font-bold text-white">10+ клиентов/мес</div>
+              <div className="mt-2 text-2xl font-bold text-white">Сценарий: 10+ клиентов</div>
               <p className="mt-2 text-sm text-gray-400">
-                0% комиссии — все деньги ваши. Плюс аналитика: видите, кто вас цитирует,
-                и где перехватить позиции у конкурентов.
+                0% комиссии — все деньги ваши. Плюс аналитика: видите,
+                какие темы, страницы и каналы двигают людей к заявке.
               </p>
             </div>
           </div>
@@ -312,10 +309,8 @@ export default function PricingPage() {
             </table>
           </div>
           <p className="mt-4 text-xs text-gray-500 text-center">
-            * Гарантия действует при ≥3 опубликованных статьях и заполненном профиле. При недостижении — возврат 100% подписки за расчётный период.{" "}
-            <Link href="/terms#guarantee" className="text-blue-400 hover:text-blue-300 underline">
-              Полные условия гарантии
-            </Link>
+            AI-упоминания остаются полезной метрикой, но главный результат продукта —
+            страницы под реальный спрос, трафик, клики по записи и заявки.
           </p>
         </div>
       </section>
@@ -325,14 +320,14 @@ export default function PricingPage() {
         <div className="mx-auto max-w-3xl px-6 text-center text-white">
           <h2 className="text-2xl font-bold">Одна консультация = 3 000-5 000 &#8381;</h2>
           <p className="mt-4 text-lg text-blue-100">
-            Подписка окупается с первого клиента. На Free — вы не платите ничего вперёд.
+            Начните с карты спроса и первой страницы. На Free — вы не платите ничего вперёд.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/register" className="rounded-lg bg-white px-8 py-3 font-semibold text-blue-600 hover:bg-blue-50">
               Начать бесплатно
             </Link>
             <Link href="/audit" className="rounded-lg border-2 border-white/50 px-8 py-3 font-semibold text-white hover:bg-white/10">
-              Бесплатный аудит
+              Карта спроса
             </Link>
           </div>
         </div>

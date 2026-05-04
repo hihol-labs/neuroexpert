@@ -234,7 +234,7 @@ export default async function ArticlePage({ params }: Props) {
         </nav>
       </header>
 
-      <ArticleAnalytics expertSlug={expert.slug} articleSlug={article.slug} />
+      <ArticleAnalytics expertSlug={expert.slug} articleSlug={article.slug} contentId={article.id} />
       <main className="mx-auto max-w-4xl px-6 py-8">
         {/* Breadcrumbs */}
         <nav className="text-sm text-gray-500 mb-6">

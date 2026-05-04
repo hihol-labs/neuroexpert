@@ -66,7 +66,7 @@ export async function generateMetadata({
   const result = await getScanResult(slug);
   if (!result) return { title: "Результат не найден" };
 
-  const title = `${result.query} — AI Visibility: ${result.visibility_percent}%`;
+  const title = `${result.query} — AI-спрос: ${result.visibility_percent}%`;
   const description = `${result.query} упоминается в ${result.mentioned_count} из ${result.total_platforms} AI-платформ.`;
 
   return {
@@ -113,7 +113,7 @@ function VisibilityBadge({
   return (
     <div className={`inline-flex items-center gap-3 rounded-2xl ${bg} px-8 py-5`}>
       <span className={`text-5xl font-bold ${color}`}>{percent}%</span>
-      <span className="text-left text-sm text-gray-600">AI-видимость</span>
+      <span className="text-left text-sm text-gray-600">AI-спрос</span>
     </div>
   );
 }
@@ -155,7 +155,7 @@ export default async function ScanResultPage({
           {/* Hero */}
           <div className="text-center">
             <p className="text-sm font-medium text-blue-600">
-              AI Visibility Scanner
+              Scanner спроса в нейросетях
             </p>
             <h1 className="mt-3 text-3xl font-bold text-gray-900">
               {result.query}
@@ -172,7 +172,7 @@ export default async function ScanResultPage({
           {hasComparison && (
             <div className="mt-10 rounded-2xl border-2 border-blue-100 bg-blue-50/30 p-6">
               <h2 className="text-lg font-bold text-gray-900 text-center mb-6">
-                Сравнение видимости
+                Сравнение AI-ответов
               </h2>
               <div className="grid grid-cols-3 gap-4 items-center">
                 {/* You */}
@@ -240,7 +240,7 @@ export default async function ScanResultPage({
                 <p className="mt-4 text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg px-4 py-3 text-center">
                   Конкурент опережает вас на{" "}
                   {(competitor?.visibility_percent ?? 0) - result.visibility_percent}%.
-                  Самое время начать публиковать экспертный контент.
+                  Самое время запускать страницы под реальные вопросы клиентов.
                 </p>
               )}
             </div>
@@ -279,27 +279,27 @@ export default async function ScanResultPage({
           <div className="mt-12 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 p-8 text-center">
             <h2 className="text-2xl font-bold text-white">
               {result.visibility_percent === 0
-                ? "Нейросети о вас не знают. Это можно исправить за 10 минут."
+                ? "Нейросети не находят вас по этому спросу. Это можно превратить в план страниц."
                 : result.visibility_percent < 50
-                  ? `Вас не цитируют в ${result.total_platforms - result.mentioned_count} из ${result.total_platforms} AI.${
+                  ? `Вы не попадаете в ${result.total_platforms - result.mentioned_count} из ${result.total_platforms} AI-ответов.${
                       competitor && competitor.visibility_percent > result.visibility_percent
                         ? ` Конкурент опережает на ${competitor.visibility_percent - result.visibility_percent}%.`
-                        : " Конкуренты уже там."
+                        : " Этот спрос можно закрывать экспертными страницами."
                     }`
                   : result.visibility_percent < 100
-                    ? `Хороший старт! Но ${result.total_platforms - result.mentioned_count} платформ вас ещё не знают.`
-                    : "Отличная видимость! Следите за позициями и усиливайте контент."}
+                    ? `Хороший старт! Но ${result.total_platforms - result.mentioned_count} платформ ещё не связывают этот спрос с вами.`
+                    : "Отличный старт! Теперь важно вести людей со страниц к записи и заявке."}
             </h2>
             <p className="mt-3 text-blue-100">
-              Наговорите ответ за 10 минут — мы опубликуем экспертную статью,
-              которую будут цитировать нейросети.
+              Наговорите ответ за 10 минут — мы превратим его в страницу под вопрос,
+              добавим CTA и начнём измерять трафик, клики и заявки.
             </p>
             <div className="mt-6 flex flex-col sm:flex-row justify-center gap-4">
               <Link
-                href={`/register?from=scan&niche=${encodeURIComponent(result.query)}`}
+                href={`/launch?from=scan&niche=${encodeURIComponent(result.query)}`}
                 className="rounded-lg bg-white px-8 py-3 text-base font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
               >
-                Начать бесплатно
+                Получить план запуска
               </Link>
               <Link
                 href="/scan"
@@ -316,7 +316,7 @@ export default async function ScanResultPage({
               Агентство или бизнес?
             </h3>
             <p className="mt-2 text-sm text-gray-600">
-              Blind Spots API — автоматический мониторинг AI-видимости ваших клиентов. От $99/мес.
+              Demand API показывает вопросы, спрос, слабость AI-ответов и CTA для страниц под заявки. От $99/мес.
             </p>
             <Link
               href="/for-agencies"
@@ -333,7 +333,7 @@ export default async function ScanResultPage({
             </p>
             <div className="mt-3 flex justify-center gap-3">
               <a
-                href={`https://t.me/share/url?url=${encodeURIComponent(`https://neuroexpertise.ru/scan/${result.slug}`)}&text=${encodeURIComponent(`${result.query} — AI Visibility: ${result.visibility_percent}%`)}`}
+                href={`https://t.me/share/url?url=${encodeURIComponent(`https://neuroexpertise.ru/scan/${result.slug}`)}&text=${encodeURIComponent(`${result.query} — AI-спрос: ${result.visibility_percent}%`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
@@ -341,7 +341,7 @@ export default async function ScanResultPage({
                 Telegram
               </a>
               <a
-                href={`https://vk.com/share.php?url=${encodeURIComponent(`https://neuroexpertise.ru/scan/${result.slug}`)}&title=${encodeURIComponent(`${result.query} — AI Visibility: ${result.visibility_percent}%`)}`}
+                href={`https://vk.com/share.php?url=${encodeURIComponent(`https://neuroexpertise.ru/scan/${result.slug}`)}&title=${encodeURIComponent(`${result.query} — AI-спрос: ${result.visibility_percent}%`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"

@@ -7,9 +7,9 @@ import "./globals.css";
 const fontClassName = "font-sans";
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://neuroexpertise.ru";
-const SITE_TITLE = "НейроЭксперт — AI-система, которая превращает экспертизу в клиентов";
+const SITE_TITLE = "НейроЭксперт — клиенты из поиска и нейросетей";
 const SITE_DESCRIPTION =
-  "Наговори 10 минут — получи клиентов из поиска и нейросетей. Без написания текстов, без SMM, без бюджета на рекламу.";
+  "Находим реальные вопросы людей и превращаем голосовые ответы экспертов в страницы, которые привлекают трафик, клики по записи и заявки.";
 
 export const metadata: Metadata = {
   title: SITE_TITLE,

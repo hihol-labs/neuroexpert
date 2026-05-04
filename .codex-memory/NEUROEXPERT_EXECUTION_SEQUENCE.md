@@ -1,11 +1,12 @@
 # NeuroExpert Execution Sequence
 
-This is the locked Product Factory OS execution sequence for NeuroExpert.
+This sequence was absorbed into `CURRENT_PLAN.md` on 2026-05-04.
 
-All future work on this project must move through these stages in order unless the user explicitly changes the sequence.
+Use `CURRENT_PLAN.md` as the single active plan. This file is retained as the source sequence that was merged into it.
 
 ## Current Rule
 
+- 2026-05-04 user lock: all future NeuroExpert work must follow `CURRENT_PLAN.md` strictly in order; do not skip stages unless the user explicitly changes the sequence.
 - Work strictly by stage and point.
 - Do not skip a stage because later work depends on earlier gates.
 - Before changing code, identify the active stage and scope.
@@ -157,16 +158,18 @@ Goal: move from technical MVP to sellable product.
 1. Run 3-5 pilot experts through the full flow.
 2. Publish real articles from those pilots.
 3. Collect real cases: question, expert answer, article, lead/citation/search result.
-4. Start expert outreach after repeatable E2E success.
-5. Move B2B/agency promotion after B2C pipeline stability.
+4. Run the SEO/AIO marketing and landing audit from `LAUNCH_PLAN.md` Step 2.0.7 before outreach.
+5. Start expert outreach after repeatable E2E success and after the SEO/AIO landing audit has no P0 findings.
+6. Move B2B/agency promotion after B2C pipeline stability.
 
 Gate:
 
 - The product can demonstrate real outcomes.
 - Marketing claims match actual functionality and evidence.
+- Marketing landing pages are indexable, answerable for AI search, schema-valid, and have no P0 SEO/AIO findings.
 
 ## Current Active Stage
 
-Stage 1: Restore Login And Basic Availability.
+Stage 1: Restore Login And Basic Availability. Active source: `CURRENT_PLAN.md`.
 
 Next action: after Yandex 360 balance is restored, restart `supabase-auth` and verify magic link.

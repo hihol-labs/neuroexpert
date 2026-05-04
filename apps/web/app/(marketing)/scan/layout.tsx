@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 
 // Применяется только к /scan (форма). Для /scan/[slug] приоритет у generateMetadata в [slug]/page.tsx.
 
-const TITLE = "AI Visibility Scanner — проверьте видимость в нейросетях | НейроЭксперт";
+const TITLE = "Scanner спроса в нейросетях | НейроЭксперт";
 const DESCRIPTION =
-  "Проверьте, упоминают ли вас ChatGPT, Perplexity и YandexGPT. Сравнение с конкурентом, Share of Voice, детальный отчёт за 10-40 секунд. Бесплатно.";
+  "Проверьте, находят ли нейросети вас или конкурента по запросам клиентов. Сравнение ответов, потерянный спрос и следующий шаг к страницам под заявки.";
 
 export const metadata: Metadata = {
   title: TITLE,

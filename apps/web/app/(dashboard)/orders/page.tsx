@@ -37,6 +37,16 @@ const MARKER_LABELS: Record<string, { label: string; good: string; bad: string }
   },
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Новые",
+  accepted: "Выбраны",
+  recording: "Запись",
+  processing: "Обработка",
+  review: "На проверке",
+  published: "Опубликованы",
+  rejected: "Отклонены",
+};
+
 function extractMentionedExperts(text: string): string[] {
   if (!text) return [];
   const names = new Set<string>();
@@ -51,6 +61,40 @@ function extractMentionedExperts(text: string): string[] {
     }
   }
   return Array.from(names).slice(0, 3);
+}
+
+type SearchIntent = "informational" | "commercial" | "transactional";
+
+function inferSearchIntent(question: string): SearchIntent {
+  const q = question.toLowerCase();
+  if (/(цена|стоимость|сколько стоит|запис|консультац|при[её]м|купить|заказать)/i.test(q)) {
+    return "transactional";
+  }
+  if (/(выбрать|лучший|рейтинг|отзывы|сравн|специалист|эксперт|клиник|юрист|психолог|нутрициолог)/i.test(q)) {
+    return "commercial";
+  }
+  return "informational";
+}
+
+function getIntentLabel(intent: SearchIntent): string {
+  if (intent === "transactional") return "Готов к записи";
+  if (intent === "commercial") return "Выбирает специалиста";
+  return "Изучает проблему";
+}
+
+function getRecommendedCta(intent: SearchIntent): string {
+  if (intent === "transactional") return "Записаться на консультацию";
+  if (intent === "commercial") return "Получить первичный разбор";
+  return "Задать вопрос эксперту";
+}
+
+function getLeadPotential(volume: number, gapScore: number, intent: SearchIntent): { score: number; label: string; className: string } {
+  const volumeScore = Math.min(3, Math.log10(Math.max(volume, 10)) - 1);
+  const intentScore = intent === "transactional" ? 3 : intent === "commercial" ? 2 : 1;
+  const score = Math.max(1, Math.min(10, Math.round(gapScore * 0.55 + volumeScore + intentScore)));
+  if (score >= 8) return { score, label: "Высокий", className: "text-green-700 bg-green-50 border-green-100" };
+  if (score >= 5) return { score, label: "Средний", className: "text-yellow-700 bg-yellow-50 border-yellow-100" };
+  return { score, label: "Низкий", className: "text-gray-700 bg-gray-50 border-gray-100" };
 }
 
 export default async function OrdersPage({
@@ -92,7 +136,13 @@ export default async function OrdersPage({
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Заказы</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Возможности спроса</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Это реальные вопросы людей, из которых можно сделать страницу для привлечения заявки.
+          Таблица `orders` остаётся техническим названием, но в продукте это возможности спроса.
+        </p>
+      </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2 mb-6">
@@ -108,14 +158,14 @@ export default async function OrdersPage({
             href={`/orders?status=${s}`}
             className={`px-3 py-1.5 rounded-full text-sm border ${searchParams.status === s ? "bg-blue-600 text-white border-blue-600" : "text-gray-700 border-gray-300 hover:border-blue-300"}`}
           >
-            {s}
+            {STATUS_LABELS[s] ?? s}
           </Link>
         ))}
       </div>
 
       {!orders?.length ? (
         <p className="text-gray-500 py-12 text-center">
-          Заказов пока нет. Они обновляются каждый понедельник.
+          Возможностей спроса пока нет. Они обновляются после сбора спроса по вашей нише.
         </p>
       ) : (
         <div className="space-y-4">
@@ -124,6 +174,9 @@ export default async function OrdersPage({
             const questionText = (q?.question_text as string) ?? "—";
             const gapScore = (q?.gap_score as number) ?? 0;
             const volume = (q?.monthly_volume as number) ?? 0;
+            const intent = inferSearchIntent(questionText);
+            const leadPotential = getLeadPotential(volume, gapScore, intent);
+            const recommendedCta = getRecommendedCta(intent);
             const aiResponse =
               (q?.ai_response_chatgpt as string) ||
               (q?.ai_response_yandexgpt as string) ||
@@ -152,13 +205,16 @@ export default async function OrdersPage({
                           Высокий приоритет
                         </span>
                       )}
+                      <span className={`text-xs font-medium border px-2 py-0.5 rounded-full ${leadPotential.className}`}>
+                        Потенциал заявки: {leadPotential.label}
+                      </span>
                     </div>
                     <h3 className="font-semibold text-gray-900 text-lg">
                       {questionText}
                     </h3>
                     <div className="flex gap-4 mt-1 text-sm text-gray-500">
                       <span>
-                        Gap Score:{" "}
+                        Слабость AI-ответа:{" "}
                         <span
                           className={`font-medium ${gapScore >= 7 ? "text-red-600" : gapScore >= 4 ? "text-yellow-600" : "text-green-600"}`}
                         >
@@ -166,6 +222,20 @@ export default async function OrdersPage({
                         </span>
                       </span>
                       <span>{volume.toLocaleString()} запросов/мес</span>
+                    </div>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                      <div className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
+                        <p className="text-xs text-gray-500">Намерение</p>
+                        <p className="text-sm font-medium text-gray-900">{getIntentLabel(intent)}</p>
+                      </div>
+                      <div className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
+                        <p className="text-xs text-gray-500">Потенциал заявки</p>
+                        <p className="text-sm font-medium text-gray-900">{leadPotential.score}/10</p>
+                      </div>
+                      <div className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
+                        <p className="text-xs text-gray-500">Рекомендуемый CTA</p>
+                        <p className="text-sm font-medium text-gray-900">{recommendedCta}</p>
+                      </div>
                     </div>
                   </div>
                   <Badge status={o.status as string} />
@@ -237,8 +307,8 @@ export default async function OrdersPage({
                     {gapScore >= 6 && competitorNames.length === 0 && (
                       <p className="mt-3 text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
                         Нейросеть даёт слабый ответ без упоминания экспертов — ваш
-                        опыт значительно ценнее. Наговорите 5-10 минут, и тысячи
-                        людей получат качественный ответ.
+                        опыт может закрыть реальный спрос. Наговорите 5-10 минут,
+                        и мы превратим ответ в страницу с кнопкой «{recommendedCta}».
                       </p>
                     )}
                   </div>
@@ -273,7 +343,7 @@ export default async function OrdersPage({
                           value={o.id as string}
                         />
                         <button className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
-                          Я отвечу лучше
+                          Превратить в страницу
                         </button>
                       </form>
                     </div>

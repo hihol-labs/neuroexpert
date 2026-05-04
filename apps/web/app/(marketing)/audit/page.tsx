@@ -113,11 +113,11 @@ export default function AuditPage() {
             <>
               <div className="text-center">
                 <h1 className="text-3xl font-bold text-white">
-                  Бесплатный аудит AI-видимости
+                  Бесплатная карта спроса
                 </h1>
                 <p className="mt-4 text-lg text-gray-300">
-                  Выберите свою нишу — мы проверим ответы нейросетей на
-                  популярные вопросы и найдём дыры.
+                  Выберите свою нишу — мы найдём вопросы, по которым люди уже
+                  ищут решение, и покажем, какие из них стоит превратить в страницы для заявок.
                 </p>
               </div>
               <div className="mt-12 grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
@@ -149,10 +149,9 @@ export default function AuditPage() {
                 Анализируем нишу &laquo;{nicheName}&raquo;...
               </p>
               <p className="mt-2 text-sm text-gray-400">
-                Генерируем актуальные вопросы, задаём их нейросетям и
-                анализируем качество ответов. Это займёт 15-30 секунд —
-                мы проверяем 10 вопросов на 4 платформах, поэтому дольше,
-                чем Scanner.
+                Собираем вопросы, проверяем текущие ответы нейросетей и
+                оцениваем потенциал темы. Это займёт 15-30 секунд —
+                мы ищем не просто контент-идеи, а возможности для заявок.
               </p>
             </div>
           )}
@@ -162,7 +161,7 @@ export default function AuditPage() {
             <>
               <div className="text-center">
                 <p className="text-sm font-medium text-cyan-400">
-                  Результаты аудита
+                  Карта спроса
                 </p>
                 <h1 className="mt-2 text-3xl font-bold text-white">
                   {nicheName}
@@ -200,7 +199,7 @@ export default function AuditPage() {
                           {gap.avg_gap_score}/10
                         </p>
                         <p className="text-xs text-gray-400">
-                          слабость ответа AI
+                          слабость текущего ответа AI
                         </p>
                       </div>
                       {gap.estimated_monthly_volume && (
@@ -320,21 +319,21 @@ export default function AuditPage() {
               {/* CTA */}
               <div className="mt-12 rounded-2xl border border-cyan-500/20 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 backdrop-blur-md p-8 text-center">
                 <h2 className="text-2xl font-bold text-white">
-                  Хотите занять эти позиции?
+                  Хотите превратить эти вопросы в заявки?
                 </h2>
                 <p className="mt-2 text-gray-300">
-                  Наговорите ответ за 10 минут — мы опубликуем экспертную
-                  статью, которую будут цитировать нейросети.
+                  Наговорите ответ за 10 минут — мы превратим его в страницу
+                  под реальный спрос, добавим кнопку записи и начнём измерять результат.
                 </p>
                 <div className="mt-6">
                   <Link
-                    href="/register"
+                    href="/launch"
                     className="rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 px-8 py-3 text-base font-semibold text-white hover:from-cyan-400 hover:to-blue-500 transition-all"
                   >
-                    Начать бесплатно
+                    Получить план запуска
                   </Link>
                   <p className="mt-3 text-xs text-gray-400">
-                    Без карты · Регистрация 2 минуты · Первый контент-пакет бесплатно
+                    Без карты · Ответим с планом запуска · Можно начать с пилота
                   </p>
                 </div>
               </div>
