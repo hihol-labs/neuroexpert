@@ -97,6 +97,39 @@ const PRICE_FACTORS = [
   "Насколько быстро нужен запуск и насколько конкурентная ниша",
 ];
 
+const BUSINESS_MODULE_MATRIX = [
+  {
+    module: "Аудит видимости",
+    audit: "Находим пустые карточки, слабые фото, услуги, отзывы и точки потери заявок.",
+    launch: "Исправляем карточки, описания, услуги, фото-рекомендации, FAQ и точки входа.",
+    support: "Следим за заполненностью, позициями, изменениями площадок и новыми проблемами.",
+  },
+  {
+    module: "Гео-рейтинг и конкуренты",
+    audit: "Смотрим позиции по запросам «рядом», «цена», «срочно», «на районе».",
+    launch: "Выбираем запросы и площадки, где быстрее всего можно обойти конкурентов.",
+    support: "Обновляем рейтинг, сравниваем с топ-3 и даём задачи для роста.",
+  },
+  {
+    module: "Ежедневные задачи",
+    audit: "Формируем первичный список действий: фото, услуги, отзывы, FAQ, Авито, офферы.",
+    launch: "Внедряем первые задачи и запускаем недельный ритм отчётности.",
+    support: "Каждый день выдаём действия, каждую неделю показываем прогресс и эффект.",
+  },
+  {
+    module: "Отзывы",
+    audit: "Проверяем рейтинг, свежесть отзывов, ответы на негатив и отставание от конкурентов.",
+    launch: "Настраиваем сценарий: довольных ведём на Яндекс/2ГИС, негатив — владельцу.",
+    support: "Поддерживаем поток отзывов, ответы, перехват негатива и рост доверия.",
+  },
+  {
+    module: "Потерянные лиды",
+    audit: "Ищем пропущенные звонки, поздние ответы, формы без реакции и клиентов без follow-up.",
+    launch: "Вводим учёт обращений, возврат непроданных лидов и базовые сценарии дожима.",
+    support: "Показываем потери в рублях, контролируем реакции и возвращаем старых клиентов.",
+  },
+];
+
 const AUDIT_PACKAGES = [
   {
     name: "Аудит Старт",
@@ -361,6 +394,8 @@ function BusinessPricing() {
         </div>
       </section>
 
+      <BusinessModuleMatrix />
+
       <BusinessPackageSection
         eyebrow="Шаг 1"
         title="Аудит видимости"
@@ -424,6 +459,53 @@ function BusinessPricing() {
         </div>
       </section>
     </>
+  );
+}
+
+function BusinessModuleMatrix() {
+  return (
+    <section className="bg-[#040714]/40 py-12 backdrop-blur-sm">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="max-w-3xl">
+          <p className="text-sm font-semibold text-cyan-300">Операционная система заявок</p>
+          <h2 className="mt-2 text-3xl font-bold text-white">
+            5 модулей системы × аудит, запуск и сопровождение
+          </h2>
+          <p className="mt-3 text-gray-400">
+            Это не разовый маркетинговый отчёт. Каждый модуль проходит путь от диагностики
+            к внедрению и постоянному управлению ростом заявок.
+          </p>
+        </div>
+
+        <div className="mt-8 overflow-x-auto rounded-lg border border-white/10 bg-white/5">
+          <table className="w-full min-w-[920px] text-sm">
+            <thead>
+              <tr className="border-b border-white/10">
+                <th className="w-[18%] px-4 py-4 text-left font-semibold text-white">Модуль</th>
+                <th className="w-[27%] px-4 py-4 text-left font-semibold text-cyan-300">Аудит</th>
+                <th className="w-[27%] px-4 py-4 text-left font-semibold text-cyan-300">Запуск 30 дней</th>
+                <th className="w-[28%] px-4 py-4 text-left font-semibold text-cyan-300">Сопровождение</th>
+              </tr>
+            </thead>
+            <tbody>
+              {BUSINESS_MODULE_MATRIX.map((row, index) => (
+                <tr key={row.module} className={index % 2 === 0 ? "bg-white/5" : ""}>
+                  <td className="px-4 py-4 align-top font-semibold text-white">{row.module}</td>
+                  <td className="px-4 py-4 align-top text-gray-300">{row.audit}</td>
+                  <td className="px-4 py-4 align-top text-gray-300">{row.launch}</td>
+                  <td className="px-4 py-4 align-top text-gray-300">{row.support}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <p className="mt-4 text-sm text-gray-500">
+          Поэтому цена растёт не абстрактно: чем больше площадок, филиалов, конкурентов,
+          ручной работы и контроля лидов, тем выше объём системы.
+        </p>
+      </div>
+    </section>
   );
 }
 
