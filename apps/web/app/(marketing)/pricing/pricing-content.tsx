@@ -1,0 +1,626 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+
+type Audience = "business" | "expert";
+
+const SOLO_PLANS = [
+  {
+    id: "free",
+    name: "Free",
+    price: "0",
+    period: "навсегда",
+    headline: "Проверить спрос и опубликовать первые страницы без риска.",
+    badge: "Комиссия 15%",
+    features: [
+      "1 ниша",
+      "Карта спроса без ограничения по темам",
+      "3 страницы в месяц",
+      "SEO-страница и Telegram-пост",
+      "Кнопка записи на каждой странице",
+    ],
+    cta: "Начать бесплатно",
+    href: "/register",
+    highlight: false,
+  },
+  {
+    id: "starter",
+    name: "Starter",
+    price: "1 490",
+    period: "/мес",
+    headline: "Регулярно закрывать спрос экспертными страницами.",
+    badge: "Комиссия 7%",
+    features: [
+      "2 ниши",
+      "Страницы без лимита",
+      "Все 5 форматов контента",
+      "Полный экспорт материалов",
+      "Сниженная комиссия с клиентов",
+    ],
+    cta: "Подписаться",
+    href: "/register?plan=starter",
+    highlight: false,
+  },
+  {
+    id: "pro",
+    name: "Pro",
+    price: "2 990",
+    period: "/мес",
+    headline: "Добавить дистрибуцию и быстрее проверять, что даёт заявки.",
+    badge: "Комиссия 3%",
+    features: [
+      "3 ниши",
+      "Всё из Starter",
+      "Кросспостинг на внешние площадки",
+      "Помощь с распространением",
+      "Напоминания об обновлении страниц",
+    ],
+    cta: "Подписаться",
+    href: "/register?plan=pro",
+    highlight: true,
+  },
+  {
+    id: "expert",
+    name: "Expert",
+    price: "4 990",
+    period: "/мес",
+    headline: "Видеть путь от спроса к трафику, кликам и заявкам.",
+    badge: "Комиссия 0%",
+    features: [
+      "5 ниш",
+      "Всё из Pro",
+      "Аналитика страниц и заявок",
+      "AI-упоминания как дополнительный канал",
+      "Сравнение с конкурентами",
+    ],
+    cta: "Подписаться",
+    href: "/register?plan=expert",
+    highlight: false,
+  },
+];
+
+const BUSINESS_SYSTEMS = [
+  "Аудит видимости: Яндекс Карты, 2ГИС, Авито, сайт, VK, Telegram, отзывы",
+  "Гео-рейтинг и конкуренты по запросам «рядом», «цена», «срочно», «на районе»",
+  "Ежедневные задачи для роста заявок плюс недельный отчёт собственнику",
+  "Сбор положительных отзывов и перехват негатива до публичной публикации",
+  "Потерянные лиды: пропущенные звонки, поздние ответы, клиенты без follow-up",
+];
+
+const PRICE_FACTORS = [
+  "Количество филиалов, точек и городов",
+  "Количество площадок: карты, Авито, сайт, соцсети, мессенджеры",
+  "Количество конкурентов, запросов и направлений услуг",
+  "Нужен ли анализ звонков, форм, сообщений и старых лидов",
+  "Кто выполняет задачи: вы самостоятельно или мы руками",
+  "Насколько быстро нужен запуск и насколько конкурентная ниша",
+];
+
+const AUDIT_PACKAGES = [
+  {
+    name: "Аудит Старт",
+    price: "9 900",
+    period: "разово",
+    fit: "Одна точка, один город, нужно быстро понять, где теряются клиенты.",
+    scope: [
+      "1 филиал или кабинет",
+      "Яндекс Карты, 2ГИС, сайт/соцсети",
+      "До 5 конкурентов и 10 запросов",
+      "Карточки, услуги, фото, отзывы",
+      "План действий на 7 дней",
+    ],
+    cta: "Получить аудит",
+    href: "/launch?package=audit_start",
+    highlight: false,
+  },
+  {
+    name: "Аудит Рост",
+    price: "19 900",
+    period: "разово",
+    fit: "Основной аудит для бизнеса, которому нужны видимость, конкуренты и план роста.",
+    scope: [
+      "1-2 филиала",
+      "Яндекс Карты, 2ГИС, Авито, сайт, VK/Telegram",
+      "До 10 конкурентов и 20 запросов",
+      "Отзывы, гео-позиции, услуги, точки входа",
+      "План действий на 14 дней",
+    ],
+    cta: "Выбрать аудит",
+    href: "/launch?package=audit_growth",
+    highlight: true,
+  },
+  {
+    name: "Аудит Полный",
+    price: "29 900",
+    period: "разово",
+    fit: "Для конкурентной ниши, нескольких точек или сложной локальной выдачи.",
+    scope: [
+      "До 3-5 филиалов",
+      "Все релевантные площадки",
+      "До 20 конкурентов и 40 запросов",
+      "Авито, отзывы, формы и звонки при наличии данных",
+      "Оценка потерь в рублях и план на 30 дней",
+    ],
+    cta: "Заказать полный аудит",
+    href: "/launch?package=audit_full",
+    highlight: false,
+  },
+];
+
+const LAUNCH_PACKAGES = [
+  {
+    name: "Запуск Старт",
+    price: "49 000",
+    period: "30 дней",
+    fit: "Одна точка и одно направление услуг: быстро запустить первые точки входа.",
+    scope: [
+      "Аудит и упаковка карточек",
+      "Описание, услуги, FAQ и CTA",
+      "5-7 страниц под реальный спрос",
+      "Базовая настройка сбора отзывов",
+      "Недельный отчёт по первым данным",
+    ],
+    cta: "Запустить Старт",
+    href: "/launch?package=launch_start",
+    highlight: false,
+  },
+  {
+    name: "Запуск Рост",
+    price: "89 000",
+    period: "30 дней",
+    fit: "Главный пакет для клиник, салонов, юрфирм и локальных сервисов.",
+    scope: [
+      "1-2 точки или 2-3 направления",
+      "Карты, Авито, сайт/страницы, соцсети",
+      "10-15 страниц под спрос",
+      "Ежедневные задачи и сценарии отзывов",
+      "Учёт потерянных лидов и корректировки",
+    ],
+    cta: "Выбрать запуск",
+    href: "/launch?package=launch_growth",
+    highlight: true,
+  },
+  {
+    name: "Запуск Интенсив",
+    price: "150 000",
+    period: "30 дней",
+    fit: "Для высокой конкуренции, нескольких точек и быстрого ручного запуска.",
+    scope: [
+      "До 3-5 точек",
+      "Несколько направлений услуг",
+      "20-30 страниц под спрос",
+      "Отзывы, Авито, конкуренты, потерянные лиды",
+      "Контроль выполнения и отчёт по заявкам",
+    ],
+    cta: "Обсудить интенсив",
+    href: "/launch?package=launch_intensive",
+    highlight: false,
+  },
+];
+
+const SUPPORT_PACKAGES = [
+  {
+    name: "Контроль",
+    price: "39 000",
+    period: "/мес",
+    fit: "Одна точка, бизнес готов выполнять задачи самостоятельно.",
+    scope: [
+      "Мониторинг видимости",
+      "Гео-рейтинг и конкуренты",
+      "Ежедневные задачи",
+      "Недельный отчёт",
+      "Базовая аналитика заявок",
+    ],
+    cta: "Подключить контроль",
+    href: "/launch?package=support_control",
+    highlight: false,
+  },
+  {
+    name: "Сопровождение",
+    price: "69 000",
+    period: "/мес",
+    fit: "Основной managed-пакет: часть задач помогает выполнять команда НейроЭксперт.",
+    scope: [
+      "1-2 точки",
+      "Карточки, услуги, FAQ, отзывы, Авито",
+      "Контроль конкурентов",
+      "Работа с потерянными лидами",
+      "Отчёт по заявкам и точкам роста",
+    ],
+    cta: "Выбрать сопровождение",
+    href: "/launch?package=support_managed",
+    highlight: true,
+  },
+  {
+    name: "Рост",
+    price: "99 000",
+    period: "/мес",
+    fit: "Несколько точек, высокая конкуренция, нужен полный контур управления.",
+    scope: [
+      "До 3-5 точек",
+      "Все 5 систем",
+      "Ежедневное управление задачами",
+      "Отзывы, Авито, лиды, страницы под спрос",
+      "Регулярные созвоны и отчёт собственнику",
+    ],
+    cta: "Обсудить рост",
+    href: "/launch?package=support_growth",
+    highlight: false,
+  },
+];
+
+const SOLO_COMPARISON = [
+  { label: "Цена", free: "0 ₽", starter: "1 490 ₽/мес", pro: "2 990 ₽/мес", expert: "4 990 ₽/мес" },
+  { label: "Комиссия с клиентов", free: "15%", starter: "7%", pro: "3%", expert: "0%" },
+  { label: "Ниш", free: "1", starter: "2", pro: "3", expert: "5" },
+  { label: "Темы из карты спроса", free: "Без ограничений", starter: "Без ограничений", pro: "Без ограничений", expert: "Без ограничений" },
+  { label: "Страниц в месяц", free: "3", starter: "Без ограничений", pro: "Без ограничений", expert: "Без ограничений" },
+  { label: "Форматы контента", free: "2", starter: "Все 5", pro: "Все 5", expert: "Все 5" },
+  { label: "Кросспостинг", free: "—", starter: "—", pro: "да", expert: "да" },
+  { label: "Аналитика страниц и заявок", free: "—", starter: "—", pro: "—", expert: "да" },
+  { label: "Сравнение с конкурентами", free: "—", starter: "—", pro: "—", expert: "да" },
+];
+
+export function PricingContent() {
+  const [audience, setAudience] = useState<Audience>("business");
+
+  return (
+    <main>
+      <section className="bg-[#040714]/40 py-16 backdrop-blur-sm">
+        <div className="mx-auto max-w-5xl px-6 text-center">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">
+            Тарифы НейроЭксперт
+          </p>
+          <h1 className="mt-3 text-4xl font-bold text-white md:text-5xl">
+            Выберите свой путь к новым заявкам
+          </h1>
+          <p className="mx-auto mt-5 max-w-3xl text-lg text-gray-400">
+            Для экспертов это карта спроса и страницы под вопросы людей. Для бизнеса —
+            управляемая система локальной видимости, отзывов, Авито, ежедневных задач и потерянных лидов.
+          </p>
+
+          <div className="mx-auto mt-8 grid max-w-2xl grid-cols-2 gap-2 rounded-lg border border-white/10 bg-white/5 p-1">
+            <button
+              type="button"
+              aria-pressed={audience === "business"}
+              onClick={() => setAudience("business")}
+              className={`rounded-md px-4 py-3 text-sm font-semibold transition-colors ${
+                audience === "business"
+                  ? "bg-white text-gray-950"
+                  : "text-gray-300 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              Бизнес / организация
+            </button>
+            <button
+              type="button"
+              aria-pressed={audience === "expert"}
+              onClick={() => setAudience("expert")}
+              className={`rounded-md px-4 py-3 text-sm font-semibold transition-colors ${
+                audience === "expert"
+                  ? "bg-white text-gray-950"
+                  : "text-gray-300 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              Я эксперт
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {audience === "business" ? <BusinessPricing /> : <ExpertPricing />}
+    </main>
+  );
+}
+
+function BusinessPricing() {
+  return (
+    <>
+      <section className="py-12">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+            <div>
+              <p className="text-sm font-semibold text-cyan-300">НейроЭксперт Business / Local Sales OS</p>
+              <h2 className="mt-3 text-3xl font-bold text-white">
+                Для бизнеса мы продаём не доступ к платформе, а рост управляемого канала заявок
+              </h2>
+              <p className="mt-4 text-gray-400">
+                Сначала показываем, где бизнес невидим и теряет обращения. Затем запускаем точки входа
+                из карт, Авито, поиска, отзывов и нейросетей. После запуска ведём ежедневные задачи и недельный отчёт.
+              </p>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <Link
+                  href="/launch?package=b2b"
+                  className="rounded-lg bg-cyan-400 px-5 py-3 text-center text-sm font-semibold text-gray-950 hover:bg-cyan-300"
+                >
+                  Получить аудит видимости
+                </Link>
+                <Link
+                  href="/for-business"
+                  className="rounded-lg border border-white/15 px-5 py-3 text-center text-sm font-semibold text-white hover:bg-white/10"
+                >
+                  Посмотреть B2B-страницу
+                </Link>
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              {BUSINESS_SYSTEMS.map((item, index) => (
+                <div key={item} className="rounded-lg border border-white/10 bg-white/5 p-4">
+                  <div className="flex gap-3">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-cyan-400 text-sm font-bold text-gray-950">
+                      {index + 1}
+                    </span>
+                    <p className="text-sm text-gray-300">{item}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <BusinessPackageSection
+        eyebrow="Шаг 1"
+        title="Аудит видимости"
+        description="Подходит, когда бизнесу нужно понять, почему конкуренты выше в картах, Авито и локальной выдаче."
+        packages={AUDIT_PACKAGES}
+      />
+
+      <BusinessPackageSection
+        eyebrow="Шаг 2"
+        title="Запуск канала заявок за 30 дней"
+        description="После аудита упаковываем карточки, страницы, отзывы, FAQ и первые задачи так, чтобы появились измеримые точки входа."
+        packages={LAUNCH_PACKAGES}
+      />
+
+      <BusinessPackageSection
+        eyebrow="Шаг 3"
+        title="Local Sales OS: сопровождение"
+        description="Ежедневная система роста: видимость, конкуренты, отзывы, Авито, потерянные лиды и недельный отчёт."
+        packages={SUPPORT_PACKAGES}
+      />
+
+      <section className="py-12">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
+            <div>
+              <p className="text-sm font-semibold text-cyan-300">Почему цена отличается</p>
+              <h2 className="mt-3 text-3xl font-bold text-white">
+                Клиент сразу видит, за что платит 9 900, 49 000 или 99 000 ₽
+              </h2>
+              <p className="mt-4 text-gray-400">
+                Разброс цены завязан на объём точек, площадок, конкуренции и ручной работы.
+                Это не «цена с потолка», а понятная лестница сложности.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {PRICE_FACTORS.map((factor) => (
+                <div key={factor} className="rounded-lg border border-white/10 bg-white/5 p-4">
+                  <p className="text-sm text-gray-300">{factor}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-8 rounded-lg border border-amber-300/30 bg-amber-300/10 p-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h3 className="text-xl font-bold text-white">Сети, франшизы и 5+ филиалов</h3>
+                <p className="mt-2 text-sm text-amber-100/80">
+                  Для нескольких городов, SLA, расширенных интеграций, телефонии, CRM и команды исполнителей
+                  стоимость фиксируется индивидуально после аудита.
+                </p>
+              </div>
+              <Link
+                href="/launch?package=enterprise"
+                className="rounded-lg bg-amber-300 px-5 py-3 text-center text-sm font-semibold text-gray-950 hover:bg-amber-200"
+              >
+                Обсудить Enterprise
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}
+
+function ExpertPricing() {
+  return (
+    <>
+      <section className="py-12">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-sm font-semibold text-cyan-300">НейроЭксперт Solo</p>
+            <h2 className="mt-3 text-3xl font-bold text-white">
+              Для экспертов: спрос, голосовые ответы, страницы и заявки
+            </h2>
+            <p className="mt-4 text-gray-400">
+              Solo-тарифы нужны для частных экспертов: психологов, юристов, нутрициологов,
+              логопедов, консультантов. Это дешёвый вход, проверка спроса и рост личной экспертной видимости.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            {SOLO_PLANS.map((plan) => (
+              <PlanCard key={plan.id} plan={plan} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-[#040714]/40 py-12 backdrop-blur-sm">
+        <div className="mx-auto max-w-5xl px-6">
+          <h2 className="text-center text-2xl font-bold text-white">Сравнение Solo-тарифов</h2>
+          <div className="mt-8 overflow-x-auto rounded-lg border border-white/10 bg-white/5">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/10">
+                  <th className="w-1/3 px-4 py-3 text-left font-medium text-gray-400"></th>
+                  <th className="px-4 py-3 text-center font-semibold text-white">Free</th>
+                  <th className="px-4 py-3 text-center font-semibold text-white">Starter</th>
+                  <th className="px-4 py-3 text-center font-semibold text-cyan-300">Pro</th>
+                  <th className="px-4 py-3 text-center font-semibold text-white">Expert</th>
+                </tr>
+              </thead>
+              <tbody>
+                {SOLO_COMPARISON.map((row, index) => (
+                  <tr key={row.label} className={index % 2 === 0 ? "bg-white/5" : ""}>
+                    <td className="px-4 py-3 font-medium text-gray-300">{row.label}</td>
+                    <td className="px-4 py-3 text-center text-gray-300">{formatCell(row.free)}</td>
+                    <td className="px-4 py-3 text-center text-gray-300">{formatCell(row.starter)}</td>
+                    <td className="px-4 py-3 text-center font-medium text-cyan-300">{formatCell(row.pro)}</td>
+                    <td className="px-4 py-3 text-center text-gray-300">{formatCell(row.expert)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-4 text-center text-xs text-gray-500">
+            Главный результат Solo — не само AI-упоминание, а страница под реальный спрос, трафик, клики по записи и заявки.
+          </p>
+        </div>
+      </section>
+
+      <section className="py-14">
+        <div className="mx-auto max-w-4xl px-6 text-center">
+          <h2 className="text-2xl font-bold text-white">Одна консультация может окупить тариф</h2>
+          <p className="mt-4 text-gray-400">
+            Начните бесплатно, проверьте карту спроса и опубликуйте первые страницы.
+            Переходить на платные тарифы имеет смысл, когда появляются регулярные публикации и заявки.
+          </p>
+          <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
+            <Link href="/register" className="rounded-lg bg-white px-8 py-3 font-semibold text-gray-950 hover:bg-gray-100">
+              Начать бесплатно
+            </Link>
+            <Link href="/audit" className="rounded-lg border border-white/20 px-8 py-3 font-semibold text-white hover:bg-white/10">
+              Посмотреть карту спроса
+            </Link>
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}
+
+function BusinessPackageSection({
+  eyebrow,
+  title,
+  description,
+  packages,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+  packages: typeof AUDIT_PACKAGES;
+}) {
+  return (
+    <section className="py-12">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="max-w-3xl">
+          <p className="text-sm font-semibold text-cyan-300">{eyebrow}</p>
+          <h2 className="mt-2 text-3xl font-bold text-white">{title}</h2>
+          <p className="mt-3 text-gray-400">{description}</p>
+        </div>
+        <div className="mt-8 grid gap-5 lg:grid-cols-3">
+          {packages.map((pack) => (
+            <PackageCard key={pack.name} pack={pack} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PackageCard({ pack }: { pack: (typeof AUDIT_PACKAGES)[number] }) {
+  return (
+    <div
+      className={`relative flex flex-col rounded-lg border p-6 ${
+        pack.highlight ? "border-cyan-400 bg-cyan-400/10" : "border-white/10 bg-white/5"
+      }`}
+    >
+      {pack.highlight && (
+        <span className="absolute right-4 top-4 rounded-md bg-cyan-400 px-2 py-1 text-xs font-semibold text-gray-950">
+          Рекомендуемый
+        </span>
+      )}
+      <h3 className="pr-28 text-xl font-bold text-white">{pack.name}</h3>
+      <div className="mt-3">
+        <span className="text-3xl font-bold text-white">{pack.price} ₽</span>
+        <span className="ml-2 text-sm text-gray-400">{pack.period}</span>
+      </div>
+      <p className="mt-4 text-sm text-gray-400">{pack.fit}</p>
+      <ul className="mt-5 flex-1 space-y-2">
+        {pack.scope.map((item) => (
+          <li key={item} className="flex gap-2 text-sm text-gray-300">
+            <span className="mt-0.5 text-cyan-300">&#10003;</span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+      <Link
+        href={pack.href}
+        className={`mt-6 rounded-lg px-4 py-3 text-center text-sm font-semibold transition-colors ${
+          pack.highlight
+            ? "bg-cyan-400 text-gray-950 hover:bg-cyan-300"
+            : "bg-white/10 text-white hover:bg-white/15"
+        }`}
+      >
+        {pack.cta}
+      </Link>
+    </div>
+  );
+}
+
+function PlanCard({ plan }: { plan: (typeof SOLO_PLANS)[number] }) {
+  return (
+    <div
+      className={`relative flex flex-col rounded-lg border p-6 ${
+        plan.highlight ? "border-cyan-400 bg-cyan-400/10" : "border-white/10 bg-white/5"
+      }`}
+    >
+      {plan.highlight && (
+        <span className="absolute right-4 top-4 rounded-md bg-cyan-400 px-2 py-1 text-xs font-semibold text-gray-950">
+          Популярный
+        </span>
+      )}
+      <h3 className="text-xl font-bold text-white">{plan.name}</h3>
+      <div className="mt-3">
+        <span className="text-3xl font-bold text-white">{plan.price} ₽</span>
+        <span className="ml-2 text-sm text-gray-400">{plan.period}</span>
+      </div>
+      <span className="mt-3 inline-flex w-fit rounded-md bg-white/10 px-2 py-1 text-xs font-medium text-gray-300">
+        {plan.badge}
+      </span>
+      <p className="mt-4 text-sm text-gray-400">{plan.headline}</p>
+      <ul className="mt-5 flex-1 space-y-2">
+        {plan.features.map((item) => (
+          <li key={item} className="flex gap-2 text-sm text-gray-300">
+            <span className="mt-0.5 text-cyan-300">&#10003;</span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+      <Link
+        href={plan.href}
+        className={`mt-6 rounded-lg px-4 py-3 text-center text-sm font-semibold transition-colors ${
+          plan.highlight
+            ? "bg-cyan-400 text-gray-950 hover:bg-cyan-300"
+            : plan.id === "free"
+              ? "bg-white text-gray-950 hover:bg-gray-100"
+              : "bg-white/10 text-white hover:bg-white/15"
+        }`}
+      >
+        {plan.cta}
+      </Link>
+    </div>
+  );
+}
+
+function formatCell(value: string) {
+  if (value === "да") return <span className="font-semibold text-green-400">&#10003;</span>;
+  if (value === "—") return <span className="text-gray-600">&mdash;</span>;
+  return value;
+}
