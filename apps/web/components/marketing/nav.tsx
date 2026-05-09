@@ -4,9 +4,9 @@ import Link from "next/link";
 import { useState } from "react";
 
 const NAV_LINKS = [
+  { href: "/for-business", label: "Local Sales OS" },
   { href: "/for-experts", label: "Экспертам" },
   { href: "/launch", label: "Запуск под ключ" },
-  { href: "/for-business", label: "Бизнесу" },
   { href: "/for-agencies", label: "Агентствам" },
   { href: "/how-it-works", label: "Как работает" },
   { href: "/pricing", label: "Тарифы" },
@@ -65,7 +65,7 @@ export function MarketingHeader() {
           </svg>
           <div className="flex flex-col">
             <span>НейроЭксперт</span>
-            <span className="text-[10px] font-normal text-gray-500 tracking-wide -mt-0.5">Клиенты из поиска и нейросетей</span>
+            <span className="text-[10px] font-normal text-gray-500 tracking-wide -mt-0.5">Клиенты из поиска, карт и нейросетей</span>
           </div>
         </Link>
 
@@ -165,14 +165,14 @@ export function MarketingFooter() {
               <span className="text-base font-semibold text-white">НейроЭксперт</span>
             </div>
             <p className="text-sm text-gray-400 leading-relaxed">
-              Платформа, которая находит реальный спрос и превращает ответы экспертов
-              в страницы для заявок из поиска и нейросетей.
+              Система привлечения клиентов из поиска, карт, Авито, отзывов и нейросетей
+              для локального бизнеса и индивидуальных экспертов.
             </p>
             <Link
-              href="/audit"
+              href="/for-business"
               className="mt-2 inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
             >
-              Получить карту спроса
+              Получить аудит видимости
             </Link>
           </div>
 
@@ -185,14 +185,14 @@ export function MarketingFooter() {
             <Link href="/launch" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
               Запуск под ключ
             </Link>
+            <Link href="/for-business" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+              Local Sales OS
+            </Link>
             <Link href="/scan" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
               Scanner спроса в AI
             </Link>
             <Link href="/for-experts" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
               Экспертам
-            </Link>
-            <Link href="/for-business" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
-              Бизнесу
             </Link>
             <Link href="/for-agencies" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
               SEO-агентствам

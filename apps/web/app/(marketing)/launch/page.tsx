@@ -4,7 +4,7 @@ import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
 
 const TITLE = "Запуск канала привлечения клиентов под ключ | НейроЭксперт";
 const DESCRIPTION =
-  "За 30 дней запускаем экспертные страницы под реальные вопросы пользователей: карта спроса, упаковка профиля, публикации, дистрибуция и отчёт по трафику, кликам и заявкам.";
+  "За 30 дней запускаем канал заявок для бизнеса и экспертов: аудит видимости, карты, Авито, отзывы, страницы под спрос, AI-видимость и отчёт по трафику, кликам и заявкам.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -19,11 +19,11 @@ interface Props {
 }
 
 const STEPS = [
-  "Находим реальные вопросы людей в вашей нише",
-  "Упаковываем профиль, доверие и CTA для записи",
-  "Берём голосовые ответы и превращаем их в страницы",
-  "Публикуем, отправляем на индексацию и распространяем",
-  "Смотрим трафик, клики по записи и заявки",
+  "Проводим аудит видимости: поиск, карты, Авито, отзывы, сайт, Telegram и нейросети",
+  "Находим реальные вопросы людей и коммерческие точки входа в вашей нише",
+  "Упаковываем карточки, офферы, экспертные ответы, страницы и CTA для записи",
+  "Публикуем, отправляем на индексацию, усиливаем отзывы и площадки",
+  "Смотрим трафик, клики, заявки, пропущенные обращения и недельный отчёт",
 ];
 
 export default function LaunchPage({ searchParams }: Props) {
@@ -41,12 +41,13 @@ export default function LaunchPage({ searchParams }: Props) {
                 Запуск под ключ
               </p>
               <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">
-                Запускаем канал привлечения клиентов из поиска и нейросетей за 30 дней
+                Запускаем канал привлечения клиентов из поиска, карт, Авито, отзывов и нейросетей за 30 дней
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-relaxed text-gray-300">
-                Вы говорите голосом. Мы находим спрос, упаковываем экспертизу,
-                публикуем страницы под реальные вопросы и доводим до первых
-                измеримых результатов: индексации, трафика, кликов по записи и заявок.
+                Мы продаём не абстрактную платформу, а запуск результата: аудит,
+                упаковку, публикации, усиление карточек, сбор отзывов и первые
+                измеримые сигналы — индексацию, трафик, клики, заявки и найденные
+                потери во входящих обращениях.
               </p>
               <div className="mt-8 grid gap-3 sm:grid-cols-2">
                 {STEPS.map((step, i) => (
@@ -59,8 +60,9 @@ export default function LaunchPage({ searchParams }: Props) {
               <div className="mt-8 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-5">
                 <p className="text-sm text-amber-100">
                   Мы не обещаем фиксированное число клиентов без данных. Цель первого месяца —
-                  запустить рабочий канал и получить первые измеримые сигналы: страницы,
-                  индексацию, трафик, клики и заявки.
+                  запустить рабочий канал и получить первые измеримые сигналы: исправленные
+                  площадки, страницы, индексацию, трафик, клики, заявки и понятный список
+                  ежедневных действий.
                 </p>
               </div>
             </div>
@@ -74,7 +76,7 @@ export default function LaunchPage({ searchParams }: Props) {
 
               <h2 className="text-xl font-bold text-white">Получить план запуска</h2>
               <p className="mt-2 text-sm text-gray-400">
-                Оставьте контакты — подготовим первичный разбор ниши и формат запуска.
+                Оставьте контакты — подготовим первичный разбор видимости и формат запуска.
               </p>
 
               <form action="/api/service-orders" method="POST" className="mt-6 space-y-4">
@@ -111,15 +113,15 @@ export default function LaunchPage({ searchParams }: Props) {
                   <input
                     name="niche"
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-gray-500 outline-none focus:border-cyan-400"
-                    placeholder="Психология, юристы, клиника, школа..."
+                    placeholder="Стоматология, косметология, юристы, психолог..."
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm text-gray-300">Сайт или профиль</label>
+                  <label className="mb-1 block text-sm text-gray-300">Сайт или площадки</label>
                   <input
                     name="website"
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-gray-500 outline-none focus:border-cyan-400"
-                    placeholder="Сайт, Telegram, VK или другой профиль"
+                    placeholder="Сайт, Яндекс Карты, 2ГИС, Авито, VK, Telegram"
                   />
                 </div>
                 <div>

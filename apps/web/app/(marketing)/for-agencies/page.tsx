@@ -338,6 +338,11 @@ export default function ForAgenciesPage() {
                 Данные для SEO/GEO-аудитов, контент-планов и управляемых программ
                 лидогенерации клиентов без ручных опросов AI-платформ.
               </p>
+              <p className="mx-auto mt-4 max-w-2xl text-sm text-gray-500 leading-relaxed">
+                Важно: для конечного бизнеса мы продаём Local Sales OS и запуск заявок.
+                Для агентств — данные, API и white-label слой, который можно встроить
+                в собственные аудиты и клиентские кабинеты.
+              </p>
             </FadeIn>
 
             <FadeIn delay={450}>
@@ -351,10 +356,10 @@ export default function ForAgenciesPage() {
                   <span className="relative">Получить ключ</span>
                 </a>
                 <Link
-                  href="/api/v1/docs"
+                  href="/for-business"
                   className="rounded-2xl border border-purple-400/30 bg-white/5 px-10 py-4 text-lg font-semibold text-white backdrop-blur-md hover:bg-white/10 hover:border-purple-400/60 transition-all"
                 >
-                  OpenAPI-документация
+                  Для конечного бизнеса
                 </Link>
               </div>
             </FadeIn>
