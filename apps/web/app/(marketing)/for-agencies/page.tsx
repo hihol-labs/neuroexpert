@@ -8,18 +8,18 @@ import { FadeIn } from "@/components/marketing/fade-in";
 const PROBLEMS = [
   {
     icon: "🕵️",
-    title: "Клиент хочет заявки, а не отчёт про AI",
+    title: "Клиент хочет заявки, а не отчёт про нейросети",
     desc: "SEO/GEO звучит модно, но клиент спрашивает проще: какие вопросы уже задают мои покупатели и как из них получить обращения?",
   },
   {
     icon: "🌑",
     title: "Классические трекеры не показывают карту спроса",
-    desc: "Позиции по семантике есть, но не видно, где AI отвечает без клиента, где есть коммерческий intent и какие страницы запускать первыми.",
+    desc: "Позиции по семантике есть, но не видно, где нейросети отвечают без клиента, где есть коммерческое намерение и какие страницы запускать первыми.",
   },
   {
     icon: "📞",
     title: "Сложно обосновать чек на новый канал",
-    desc: "Нужны не общие слова, а цифры: вопрос, спрос/мес, intent, gap_score, слабость ответа, рекомендуемый CTA и прогнозируемый путь к заявке.",
+    desc: "Нужны не общие слова, а цифры: вопрос, спрос в месяц, намерение клиента, балл слабости ответа, целевое действие и прогнозируемый путь к заявке.",
   },
 ];
 
@@ -27,25 +27,25 @@ const FEATURES = [
   {
     icon: "🎯",
     title: "Карта возможностей спроса",
-    desc: "JSON со списком вопросов в нише: monthly_volume, intent, opportunity_score, gap_score, слабость AI-ответа и рекомендуемый CTA.",
+    desc: "Список вопросов в нише: спрос в месяц, намерение клиента, оценка возможности, балл слабости ответа нейросети и рекомендуемое целевое действие.",
     color: "purple",
   },
   {
     icon: "📊",
     title: "Реальный спрос",
-    desc: "monthly_volume из Wordstat + sub_queries (Query Fan-Out). Ранжируйте контент-план клиента по реальному поисковому объёму, а не интуиции.",
+    desc: "Спрос в месяц из Wordstat и похожие запросы. Ранжируйте контент-план клиента по реальному поисковому объёму, а не интуиции.",
     color: "violet",
   },
   {
     icon: "✅",
     title: "Готовые экспертные страницы",
-    desc: "В тарифах Pro+ — endpoint /answers: полные ответы, SEO-структура, TL;DR, FAQ, цитаты, аудио и лицензия с attribution. Источник для клиентских страниц и брифов.",
+    desc: "В тарифах Pro+ — полные ответы: структура для поиска, короткое резюме, FAQ, цитаты, аудио и лицензия с указанием источника. Источник для клиентских страниц и брифов.",
     color: "purple",
   },
   {
     icon: "🤖",
-    title: "Probing 4 AI-платформ",
-    desc: "ChatGPT + YandexGPT + Perplexity + GigaChat. Для каждого вопроса — реальный AI-ответ и разбор, почему клиент сейчас не попадает в ответ.",
+    title: "Проверка 4 нейросетевых платформ",
+    desc: "ChatGPT + YandexGPT + Perplexity + GigaChat. Для каждого вопроса — реальный ответ нейросети и разбор, почему клиент сейчас не попадает в ответ.",
     color: "violet",
   },
   {
@@ -65,23 +65,23 @@ const FEATURES = [
 const USE_CASES = [
   {
     niche: "Психология",
-    metric: "gap_score",
+    metric: "слабость",
     metricLabel: "0–10 по каждому вопросу",
-    insight: "GET /blind-spots?niche=psychology возвращает JSON: вопросы со спросом, intent, слабостью AI-ответа и CTA. Из списка собирается контент-план страниц под заявки.",
+    insight: "Запрос /blind-spots?niche=psychology возвращает вопросы со спросом, намерением клиента, слабостью ответа нейросети и целевым действием. Из списка собирается контент-план страниц под заявки.",
     color: "from-purple-500/15 to-violet-500/5 border-purple-500/30",
   },
   {
     niche: "Юриспруденция",
     metric: "TAM",
     metricLabel: "считается на стороне агентства",
-    insight: "GET /blind-spots?niche=legal отдаёт monthly_volume + opportunity_score по каждому вопросу. Ваша формула «volume × CTR × conversion × LTV» даёт оценку потенциала лидогенерации.",
+    insight: "Запрос /blind-spots?niche=legal отдаёт спрос в месяц и оценку возможности по каждому вопросу. Ваша формула оценки даёт потенциал лидогенерации.",
     color: "from-violet-500/15 to-purple-500/5 border-violet-500/30",
   },
   {
     niche: "Медицина",
     metric: "4 платформы",
     metricLabel: "ChatGPT · Perplexity · YandexGPT · GigaChat",
-    insight: "По каждому вопросу — probe всех 4 AI-платформ и разбор слабости ответа. Видно, где пациенту нужен конкретный врач, клиника или первичная запись, а в ответе только общий текст.",
+    insight: "По каждому вопросу — проверка всех 4 нейросетевых платформ и разбор слабости ответа. Видно, где пациенту нужен конкретный врач, клиника или первичная запись, а в ответе только общий текст.",
     color: "from-purple-500/15 to-violet-500/5 border-purple-500/30",
   },
 ];
@@ -96,8 +96,8 @@ const PLANS = [
     features: [
       "GET /experts — каталог экспертов",
       "GET /articles — публикации",
-      "GET /questions — вопросы + gap-маркеры",
-      "Без attribution-требований",
+      "GET /questions — вопросы + маркеры слабых ответов",
+      "Без требований к указанию источника",
     ],
     cta: "Получить ключ →",
     highlight: false,
@@ -111,25 +111,25 @@ const PLANS = [
     limit: "1 000 запросов/час",
     features: [
       "Всё из Read",
-      "GET /blind-spots — opportunity map",
+      "GET /blind-spots — карта возможностей спроса",
       "GET /answers — полные статьи + аудио + цитаты",
-      "Лицензия: коммерческое использование с attribution",
+      "Лицензия: коммерческое использование с указанием источника",
       "Email-поддержка ≤ 24 ч",
     ],
     cta: "Запросить Pro →",
     highlight: true,
   },
   {
-    name: "Enterprise",
+    name: "Индивидуальный",
     price: "По запросу",
     period: "",
-    desc: "Custom limits, SLA, white-label",
+    desc: "Индивидуальные лимиты, SLA, слой под вашим брендом",
     limit: "Без лимитов",
     features: [
       "Всё из Pro",
       "Webhook на новые возможности спроса в нише",
-      "White-label: ответы без attribution (по договору)",
-      "SLA 99.9%, dedicated channel",
+      "Слой под вашим брендом: ответы без указания источника по договору",
+      "SLA 99.9%, выделенный канал связи",
       "Персональный менеджер",
     ],
     cta: "Обсудить →",
@@ -155,7 +155,7 @@ curl -H "Authorization: Bearer ne_..." \\
         "has_source_link": false,
         "has_specific_numbers": true
       },
-      "weakness_summary": "AI отвечает абстрактно, без конкретного эксперта и источников",
+      "weakness_summary": "Нейросеть отвечает абстрактно, без конкретного эксперта и источников",
       "sub_queries": [
         "Подростковый психолог Москва цена",
         "Психолог для подростка с тревожностью"
@@ -314,7 +314,7 @@ export default function ForAgenciesPage() {
                   <span className="animate-ping absolute h-full w-full rounded-full bg-purple-400 opacity-75" />
                   <span className="relative h-2 w-2 rounded-full bg-purple-400" />
                 </span>
-                <span className="text-sm font-medium text-purple-300">Demand API · для SEO/GEO-агентств</span>
+                <span className="text-sm font-medium text-purple-300">API спроса для агентств</span>
               </div>
             </FadeIn>
 
@@ -330,17 +330,17 @@ export default function ForAgenciesPage() {
 
             <FadeIn delay={300}>
               <p className="mx-auto mt-8 max-w-2xl text-lg text-gray-300 leading-relaxed">
-                JSON-эндпоинты с реальными данными: какие вопросы люди задают
+                API с реальными данными: какие вопросы люди задают
                 в нише клиента, где поиск и нейросети отвечают слабо, какой
-                там спрос и какой CTA вести к заявке.
+                там спрос и какое целевое действие вести к заявке.
               </p>
               <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-300 leading-relaxed">
                 Данные для SEO/GEO-аудитов, контент-планов и управляемых программ
-                лидогенерации клиентов без ручных опросов AI-платформ.
+                лидогенерации клиентов без ручных опросов нейросетевых платформ.
               </p>
               <p className="mx-auto mt-4 max-w-2xl text-sm text-gray-500 leading-relaxed">
-                Важно: для конечного бизнеса мы продаём Local Sales OS и запуск заявок.
-                Для агентств — данные, API и white-label слой, который можно встроить
+                Важно: для конечного бизнеса мы продаём систему локальных продаж и запуск заявок.
+                Для агентств — данные, API и слой под вашим брендом, который можно встроить
                 в собственные аудиты и клиентские кабинеты.
               </p>
             </FadeIn>
@@ -394,9 +394,9 @@ export default function ForAgenciesPage() {
         <section className="py-24">
           <div className="mx-auto max-w-7xl px-6">
             <FadeIn className="text-center mb-14">
-              <h2 className="text-3xl font-bold text-white sm:text-4xl">Что внутри Demand API</h2>
+              <h2 className="text-3xl font-bold text-white sm:text-4xl">Что внутри API спроса</h2>
               <p className="mt-4 text-gray-400 max-w-2xl mx-auto">
-                Данные собираются ежедневно из Wordstat + Яндекс Кью + 4 AI-платформ. Готовое сырьё
+                Данные собираются ежедневно из Wordstat + Яндекс Кью + 4 нейросетевых платформ. Готовое сырьё
                 для SEO/GEO-аудитов, брифов и страниц под заявки.
               </p>
             </FadeIn>
@@ -495,9 +495,9 @@ export default function ForAgenciesPage() {
         <section className="py-24">
           <div className="mx-auto max-w-7xl px-6">
             <FadeIn className="text-center mb-14">
-              <h2 className="text-3xl font-bold text-white sm:text-4xl">Тарифы Demand API</h2>
+              <h2 className="text-3xl font-bold text-white sm:text-4xl">Тарифы API спроса</h2>
               <p className="mt-4 text-gray-400 max-w-xl mx-auto">
-                Read бесплатно навсегда. Pro и Enterprise — beta, выдаём вручную после короткого созвона.
+                Read бесплатно навсегда. Pro и индивидуальный тариф — тестовый запуск, выдаём вручную после короткого созвона.
               </p>
             </FadeIn>
 

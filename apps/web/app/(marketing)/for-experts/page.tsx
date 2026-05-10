@@ -27,29 +27,29 @@ const PAINS = [
     Icon: Clock,
     title: "Нет времени на контент",
     desc: "Работа с клиентами 6-8 часов. Писать посты — ещё 2 часа. Большинство бросает через 2 месяца.",
-    solution: "Наговорите 3-10 минут голосом в Telegram. Система создаст 5 форматов контента: статью, пост, карточки, Reels-скрипт и FAQ.",
+    solution: "Наговорите 3-10 минут голосом в Telegram. Система создаст 5 форматов: статью, пост, карточки, сценарий короткого видео и FAQ.",
   },
   {
     Icon: EyeOff,
     title: "Пишу, но никто не видит",
     desc: "Канал на 300 подписчиков, охват 50 человек. Нет сайта, не знаете SEO.",
-    solution: "Мы публикуем страницу под конкретный вопрос: понятный ответ, SEO-структура, AI-разметка и кнопка «Записаться к вам».",
+    solution: "Мы публикуем страницу под конкретный вопрос: понятный ответ, структура для поиска и нейросетей, кнопка «Записаться к вам».",
   },
   {
     Icon: BarChart3,
     title: "Не понимаю, что работает",
     desc: "Нет связи между контентом и клиентами. Пишете в пустоту.",
-    solution: "Дашборд показывает: какие страницы опубликованы, что индексируется, сколько пришло посетителей, кликов и заявок. Вы видите путь от темы к клиенту.",
+    solution: "Личный кабинет показывает: какие страницы опубликованы, что индексируется, сколько пришло посетителей, кликов и заявок. Вы видите путь от темы к клиенту.",
   },
   {
     Icon: Users,
     title: "Коллеги видимы, а я — нет",
     desc: "Специалисты с меньшим опытом собирают аудиторию благодаря активному ведению соцсетей. Вас — не видно.",
-    solution: "Мы целимся в вопросы, где есть спрос и слабые ответы. Ваша экспертиза закрывает пробел — и страница получает шанс работать в поиске и AI-ответах.",
+    solution: "Мы целимся в вопросы, где есть спрос и слабые ответы. Ваша экспертиза закрывает пробел — и страница получает шанс работать в поиске и ответах нейросетей.",
   },
   {
     Icon: Bot,
-    title: "AI даёт неточные советы по моей теме",
+    title: "Нейросети дают неточные советы по моей теме",
     desc: "ChatGPT рекомендует устаревшее, клиенты приходят с ложными ожиданиями.",
     solution: "Ваш экспертный ответ замещает неточный. Это и привлечение клиентов, и миссия — улучшение качества информации для людей.",
   },
@@ -57,7 +57,7 @@ const PAINS = [
 
 const PROOF_NUMBERS = [
   { value: "Спрос", label: "сначала ищем реальные вопросы людей, а не придумываем темы" },
-  { value: "Голос", label: "эксперт отвечает как человек, AI только структурирует материал" },
+  { value: "Голос", label: "эксперт отвечает как человек, нейросеть только структурирует материал" },
   { value: "Заявка", label: "каждая страница ведёт к действию: запись, разбор или консультация" },
 ];
 
@@ -71,12 +71,12 @@ const CLIENT_PATHS = [
     desc: "На странице есть ваш опыт, понятная структура, профиль эксперта, FAQ и ответ на коммерческий вопрос.",
   },
   {
-    title: "CTA ведёт к записи",
+    title: "Кнопка ведёт к записи",
     desc: "После ответа человек видит действие: записаться, задать вопрос, получить разбор или консультацию.",
   },
   {
     title: "Вы видите результат",
-    desc: "В кабинете считаются опубликованные страницы, индексация, просмотры, клики по записи, заявки и AI-упоминания.",
+    desc: "В кабинете считаются опубликованные страницы, индексация, просмотры, клики по записи, заявки и упоминания в нейросетях.",
   },
 ];
 
@@ -90,7 +90,7 @@ export default function ForExpertsPage() {
         <div className="mx-auto grid max-w-7xl gap-10 px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-300">
-              НейроЭксперт Solo
+              НейроЭксперт для экспертов
             </p>
             <h1 className="mt-4 text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-5xl">
               Ваши знания могут приводить{" "}
@@ -99,7 +99,7 @@ export default function ForExpertsPage() {
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-gray-300">
               НейроЭксперт находит вопросы, по которым люди уже ищут решение
               и выбирают специалиста. Вы отвечаете голосом, а мы превращаем
-              ответ в страницу с понятным CTA: записаться, задать вопрос или
+              ответ в страницу с понятным действием: записаться, задать вопрос или
               получить разбор.
             </p>
             <p className="mt-4 max-w-xl text-base text-gray-400">
@@ -163,7 +163,7 @@ export default function ForExpertsPage() {
               <ul className="mt-4 space-y-3 text-sm text-green-200/90">
                 <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Находим вопросы с подтверждённым спросом и понятным клиентским намерением</li>
                 <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Превращаем ваш голос в экспертную страницу под конкретный вопрос</li>
-                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Публикуем страницу с SEO-структурой, AI-разметкой и вашим профилем</li>
+                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Публикуем страницу со структурой для поиска, нейросетей и вашим профилем</li>
                 <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>На каждой странице — кнопка записи, консультации или разбора</li>
                 <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Отслеживаем индексацию, трафик, клики и заявки</li>
                 <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Корректируем следующие темы по фактическому результату</li>
@@ -173,7 +173,7 @@ export default function ForExpertsPage() {
               <h3 className="text-lg font-semibold text-amber-300">Чего мы не обещаем</h3>
               <ul className="mt-4 space-y-3 text-sm text-amber-200/90">
                 <li className="flex gap-2"><span className="text-amber-400 flex-shrink-0">&mdash;</span>«N клиентов в месяц» — результат зависит от ниши, конкуренции, качества ответов</li>
-                <li className="flex gap-2"><span className="text-amber-400 flex-shrink-0">&mdash;</span>100% попадание каждой страницы в AI-ответы — это дополнительный канал, а не единственная цель</li>
+                <li className="flex gap-2"><span className="text-amber-400 flex-shrink-0">&mdash;</span>100% попадание каждой страницы в ответы нейросетей — это дополнительный канал, а не единственная цель</li>
                 <li className="flex gap-2"><span className="text-amber-400 flex-shrink-0">&mdash;</span>Мгновенный поток клиентов — поиску, индексации и доверию нужно время</li>
               </ul>
               <p className="mt-4 text-sm text-amber-200/80">
@@ -224,7 +224,7 @@ export default function ForExpertsPage() {
             <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6">
               <h3 className="text-lg font-semibold text-red-300">Контент-фабрики</h3>
               <p className="mt-2 text-sm text-red-200/80">
-                AI-копирайтеры генерируют текст <strong>из обучающих данных LLM</strong>.
+                Нейросетевые копирайтеры генерируют текст <strong>из обучающих данных больших языковых моделей</strong>.
                 Это рерайт интернета. Нового знания — ноль. О чём писать, где публиковать,
                 как оптимизировать, кто прочитает — ваша проблема.
               </p>
@@ -232,7 +232,7 @@ export default function ForExpertsPage() {
             <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-6">
               <h3 className="text-lg font-semibold text-blue-300">НейроЭксперт</h3>
               <p className="mt-2 text-sm text-blue-200/80">
-                Содержание приходит <strong>от вас через голос</strong>. AI только форматирует и структурирует.
+                Содержание приходит <strong>от вас через голос</strong>. Нейросеть только форматирует и структурирует.
                 Это как журналист берёт интервью и пишет статью — источник знания не журналист, а вы.
                 Ваши кейсы, ваш опыт, ваш стиль.
               </p>
@@ -246,7 +246,7 @@ export default function ForExpertsPage() {
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400 font-bold text-sm flex-shrink-0">1</div>
                 <div>
                   <p className="text-sm font-medium text-white">Авторский стиль</p>
-                  <p className="text-sm text-gray-400">AI структурирует, но сохраняет ваши формулировки и примеры из практики</p>
+                  <p className="text-sm text-gray-400">Нейросеть структурирует, но сохраняет ваши формулировки и примеры из практики</p>
                 </div>
               </div>
               <div className="flex gap-3">
@@ -267,7 +267,7 @@ export default function ForExpertsPage() {
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400 font-bold text-sm flex-shrink-0">4</div>
                 <div>
                   <p className="text-sm font-medium text-white">Минимальная обработка</p>
-                  <p className="text-sm text-gray-400">Опция: AI только чистит «эээ» и повторы. Текст остаётся на 90% вашим</p>
+                  <p className="text-sm text-gray-400">Опция: нейросеть только чистит «эээ» и повторы. Текст остаётся на 90% вашим</p>
                 </div>
               </div>
             </div>
@@ -369,7 +369,7 @@ export default function ForExpertsPage() {
         </div>
       </section>
 
-      {/* CTA */}
+      {/* Призыв к действию */}
       <section className="bg-blue-600 py-16">
         <div className="mx-auto max-w-3xl px-6 text-center">
           <h2 className="text-3xl font-bold text-white">

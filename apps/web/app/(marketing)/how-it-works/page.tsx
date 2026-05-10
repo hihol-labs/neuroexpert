@@ -1,410 +1,442 @@
+"use client";
+
 import Link from "next/link";
-import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
-import { PipelineStep, type PipelineIcon } from "./pipeline-step";
-import { LocalSalesCockpitMockup, SevenDayResultPanel } from "@/components/marketing/product-mockups";
+import { useState } from "react";
+import type { LucideIcon } from "lucide-react";
+import {
+  ArrowRight,
+  BarChart3,
+  CheckCircle2,
+  CircleDollarSign,
+  ClipboardCheck,
+  FileText,
+  ListChecks,
+  MapPinned,
+  Megaphone,
+  Mic2,
+  PhoneMissed,
+  Radar,
+  Search,
+  Star,
+  TrendingUp,
+  UserCheck,
+  Users,
+} from "lucide-react";
+import { MarketingFooter, MarketingHeader } from "@/components/marketing/nav";
+import {
+  LocalSalesCockpitMockup,
+  SevenDayResultPanel,
+  SoloDemandSignalMockup,
+} from "@/components/marketing/product-mockups";
 
-const PIPELINE_STEPS: Array<{
-  num: string;
+type Audience = "business" | "expert";
+
+type Step = {
   title: string;
-  short: string;
-  icon: PipelineIcon;
-  details: string[];
-}> = [
-  {
-    num: "01",
-    title: "Карта спроса",
-    short: "Система находит реальные вопросы людей и оценивает, какие из них ближе всего к заявке.",
-    icon: "search",
-    details: [
-      "Собираем вопросы из Wordstat, Яндекс Кью, поисковых подсказок и AI-ответов",
-      "Смотрим спрос в месяц, intent, конкуренцию и слабость текущего ответа в нейросетях",
-      "Отделяем темы «почитать» от тем, где человек уже выбирает эксперта, клинику, юриста или услугу",
-      "Результат: список возможностей спроса с приоритетом, потенциалом заявки и рекомендуемым CTA",
-    ],
-  },
-  {
-    num: "02",
-    title: "Возможность спроса",
-    short: "Вы получаете карточку темы: вопрос, спрос, intent, слабость AI-ответа и рекомендуемый следующий шаг.",
-    icon: "clipboard",
-    details: [
-      "Формулировка вопроса и примерная частотность",
-      "Почему по теме может прийти заявка: запись, разбор, консультация или расчёт",
-      "Что в текущих ответах поиска и нейросетей слабое: нет эксперта, примеров, цифр или источников",
-      "Принять или пропустить тему можно из dashboard или Telegram",
-    ],
-  },
-  {
-    num: "03",
-    title: "Голос эксперта",
-    short: "Наговариваете 3-10 минут в Telegram или на сайте. Ваши кейсы, ваш опыт, ваш стиль.",
-    icon: "mic",
-    details: [
-      "Голосовое сообщение в Telegram-боте или Web Audio на сайте",
-      "Whisper AI транскрибирует с точностью 95%+ на русском",
-      "Содержание идёт от вас: практика, кейсы, ограничения, честные нюансы",
-      "AI не заменяет эксперта, а превращает вашу речь в структуру страницы",
-      "Стоимость транскрибации: ~5 рублей за 10 минут",
-    ],
-  },
-  {
-    num: "04",
-    title: "Страница под вопрос",
-    short: "Голос превращается в экспертную страницу под конкретный спрос, а дополнительные форматы помогают распространению.",
-    icon: "fileText",
-    details: [
-      "SEO-страница с понятным ответом, TL;DR, таблицами, FAQ и источниками",
-      "Блок доверия: профиль эксперта, опыт, специализация, голосовая основа материала",
-      "CTA под intent: записаться, получить разбор, задать вопрос или рассчитать стоимость",
-      "Дополнительно: Telegram-пост, карточки, Reels/Shorts-сценарий и FAQ для ваших каналов",
-    ],
-  },
-  {
-    num: "05",
-    title: "Публикация и продвижение",
-    short: "Страница публикуется, отправляется на индексацию и получает первые точки входа из поиска и нейросетей.",
-    icon: "rocket",
-    details: [
-      "SSR-рендер на стороне сервера (Next.js) — контент отдаётся без задержки на загрузку JavaScript",
-      "Schema.org: Article + FAQPage + Person + BreadcrumbList + HowTo",
-      "robots.txt открыт для поисковых систем и AI-краулеров",
-      "Автоматическая подача в Google, Яндекс и Bing через sitemap",
-      "Кросспост на Дзен, Хабр, Яндекс Кью (тариф Pro+)",
-      "Кнопка «Записаться к эксперту» на каждой странице",
-    ],
-  },
-  {
-    num: "06",
-    title: "Трекинг результата",
-    short: "Отслеживаем опубликованные страницы, индексацию, трафик, клики по записи, заявки и AI-упоминания.",
-    icon: "barChart",
-    details: [
-      "Воронка в dashboard: опубликовано -> проиндексировано -> трафик -> клики -> заявки",
-      "Мониторинг позиций в Яндексе и Google",
-      "Проверка AI-ответов: появился ли эксперт или страница в ответе нейросети",
-      "Топ страниц по кликам и заявкам",
-      "Рекомендации: какие темы обновить, усилить или продвинуть следующими",
-    ],
-  },
-];
+  desc: string;
+  icon: LucideIcon;
+};
 
-const MODULES = [
-  {
-    name: "Demand Finder",
-    tagline: "Карта реального спроса",
-    desc: "Находит вопросы, которые люди уже задают в поиске и нейросетях, и ранжирует их по спросу, intent и потенциалу заявки.",
-    color: "bg-red-500/10 border-red-500/20",
-    textColor: "text-red-300",
-  },
-  {
-    name: "Voice Engine",
-    tagline: "Голос в экспертный материал",
-    desc: "10 минут голоса в Telegram превращаются в структурированный ответ. AI оформляет, но содержание ваше: кейсы, примеры, авторский стиль, прямые цитаты.",
-    color: "bg-orange-500/10 border-orange-500/20",
-    textColor: "text-orange-300",
-  },
-  {
-    name: "Page Builder",
-    tagline: "Страница под вопрос",
-    desc: "Создаёт SEO-страницу с E-E-A-T, FAQ, Schema.org, аудиоосновой и CTA. Каждая страница работает как вход в консультацию или услугу.",
-    color: "bg-blue-500/10 border-blue-500/20",
-    textColor: "text-blue-300",
-  },
-  {
-    name: "Distribution Layer",
-    tagline: "Индексация и распространение",
-    desc: "Отправляет страницы в sitemap, помогает с кросспостом и делает контент доступным для Яндекса, Google и AI-краулеров.",
-    color: "bg-purple-500/10 border-purple-500/20",
-    textColor: "text-purple-300",
-  },
-  {
-    name: "Result Analytics",
-    tagline: "Метрики результата",
-    desc: "Показывает путь от темы к клиенту: страницы, индексацию, просмотры, клики по записи, заявки, поисковые позиции и AI-упоминания.",
-    color: "bg-green-500/10 border-green-500/20",
-    textColor: "text-green-300",
-  },
-];
+type Module = {
+  title: string;
+  desc: string;
+  icon: LucideIcon;
+};
 
-const DEMAND_SIGNALS = [
-  { marker: "Спрос", question: "Сколько людей ищут этот вопрос и похожие формулировки?" },
-  { marker: "Intent", question: "Человек просто изучает тему или уже выбирает специалиста, услугу, цену и формат помощи?" },
-  { marker: "Слабость ответа", question: "Даёт ли поиск или AI общий ответ без эксперта, примеров, цифр и источников?" },
-  { marker: "CTA", question: "Какое действие естественно после ответа: запись, разбор, диагностика, расчёт или консультация?" },
-];
-
-const B2B_WORKFLOW = [
+const businessSteps: Step[] = [
   {
-    stage: "01",
-    title: "Собираем входные точки",
-    desc: "Карты, 2ГИС, Авито, сайт, отзывы, AI-ответы, звонки, формы, мессенджеры и конкуренты.",
+    title: "Собираем точки входа",
+    desc: "Карты, 2ГИС, Авито, сайт, отзывы, мессенджеры, звонки, формы, конкуренты и ответы нейросетей.",
+    icon: Search,
   },
   {
-    stage: "02",
     title: "Находим потери",
-    desc: "Показываем, где клиент не видит бизнес, где видит конкурента, где не дозвонился или не получил follow-up.",
+    desc: "Показываем, где клиента забирает конкурент, где карточка слабая, где нет ответа и где обращение не вернулось в продажу.",
+    icon: MapPinned,
   },
   {
-    stage: "03",
-    title: "Превращаем в задачи",
-    desc: "Не общий отчёт, а список действий: фото, услуги, отзывы, FAQ, оффер, Авито, AI-источники и возврат лидов.",
+    title: "Превращаем выводы в задачи",
+    desc: "Владелец получает не длинный отчёт, а список действий на сегодня: фото, услуги, цены, отзывы, оффер, перезвон.",
+    icon: ListChecks,
   },
   {
-    stage: "04",
-    title: "Измеряем динамику",
-    desc: "Каждую неделю видно, что сделано, что изменилось, какие лиды вернули и где ещё теряются деньги.",
+    title: "Измеряем изменения",
+    desc: "Каждую неделю видно, что исправлено, где выросла видимость, какие обращения вернули и где ещё теряются деньги.",
+    icon: BarChart3,
   },
 ];
 
-const ACQUISITION_MECHANICS = [
+const businessModules: Module[] = [
   {
-    title: "Одна страница под один вопрос",
-    desc: "Страница не расплывается по теме. Она отвечает на конкретный вопрос пользователя и ведёт к конкретному действию.",
+    title: "Аудит видимости",
+    desc: "Проверяем карточки, сайт, отзывы, Авито, поиск и нейросети: где бизнес выглядит слабее конкурентов.",
+    icon: Radar,
   },
   {
-    title: "SEO + Schema.org",
-    desc: "Article, FAQPage, Person, BreadcrumbList и HowTo помогают поиску и нейросетям понять автора, вопрос, ответ и структуру.",
+    title: "Конкуренты и нейросети",
+    desc: "Сравниваем, кого видит клиент в выдаче, кого советуют нейросети и почему алгоритмы чаще доверяют конкурентам.",
+    icon: Users,
   },
   {
-    title: "Открыто для поиска и AI",
-    desc: "Страницы доступны Google, Яндексу, Bing и AI-краулерам. AI-ответы становятся дополнительным каналом привлечения.",
+    title: "Ежедневные задачи",
+    desc: "Формируем конкретный план: что добавить, переписать, обновить, кому ответить и кому перезвонить.",
+    icon: ClipboardCheck,
   },
   {
-    title: "Доверие к эксперту",
-    desc: "Профиль, опыт, специализация, аудиооснова и авторские цитаты показывают, что за ответом стоит практик.",
+    title: "Отзывы и доверие",
+    desc: "Помогаем собирать свежие отзывы, снижать публичный негатив и усиливать доверие в местах выбора.",
+    icon: Star,
   },
   {
-    title: "CTA под намерение",
-    desc: "На странице нет абстрактного «свяжитесь с нами». CTA выбирается под вопрос: запись, разбор, расчёт, диагностика или консультация.",
-  },
-  {
-    title: "Улучшение по данным",
-    desc: "Мы видим, какие страницы получили показы, клики и заявки, и усиливаем именно те темы, где спрос подтверждается поведением людей.",
+    title: "Потерянные обращения",
+    desc: "Находим пропущенные звонки, долгие ответы, забытые переписки и клиентов, которых можно вернуть.",
+    icon: PhoneMissed,
   },
 ];
+
+const expertSteps: Step[] = [
+  {
+    title: "Находим спрос",
+    desc: "Система собирает вопросы людей из поиска, Яндекс Кью, подсказок и ответов нейросетей.",
+    icon: Search,
+  },
+  {
+    title: "Выбираем темы ближе к заявке",
+    desc: "Отделяем информационные вопросы от тех, где человек уже выбирает специалиста, цену, услугу или формат помощи.",
+    icon: TrendingUp,
+  },
+  {
+    title: "Записываем голос эксперта",
+    desc: "Эксперт наговаривает ответ в Telegram или на сайте. Содержание остаётся авторским: кейсы, опыт, ограничения, нюансы.",
+    icon: Mic2,
+  },
+  {
+    title: "Собираем страницу под вопрос",
+    desc: "Из ответа получается страница для поиска и нейросетей: структура, FAQ, таблицы, источники и кнопка записи.",
+    icon: FileText,
+  },
+  {
+    title: "Распространяем и измеряем",
+    desc: "Страница индексируется, получает первые показы, клики и заявки. Сильные темы обновляются и продвигаются дальше.",
+    icon: Megaphone,
+  },
+];
+
+const expertModules: Module[] = [
+  {
+    title: "Карта спроса",
+    desc: "Показывает темы, которые люди уже ищут, и оценивает шанс на консультацию или запись.",
+    icon: Radar,
+  },
+  {
+    title: "Голосовой ответ",
+    desc: "Превращает живую речь эксперта в основу материала без потери авторского смысла.",
+    icon: Mic2,
+  },
+  {
+    title: "Страница под вопрос",
+    desc: "Создаёт публичную страницу, которую могут понять поиск, нейросети и будущий клиент.",
+    icon: FileText,
+  },
+  {
+    title: "Публикация",
+    desc: "Помогает отдавать страницу поисковикам, добавлять разметку и готовить материалы для каналов.",
+    icon: Megaphone,
+  },
+  {
+    title: "Результат",
+    desc: "Показывает, какие темы принесли показы, клики, записи и упоминания в нейросетях.",
+    icon: BarChart3,
+  },
+];
+
+const resultRows = [
+  ["0-7 дней", "аудит, карта спроса, первые задачи", "понятно, где теряются клиенты"],
+  ["7-30 дней", "исправления, страницы, отзывы, возврат обращений", "закрыты быстрые потери"],
+  ["30-90 дней", "динамика видимости, клики, заявки, сильные темы", "видно, что усиливать дальше"],
+];
+
+function AudienceSwitch({ audience, onChange }: { audience: Audience; onChange: (value: Audience) => void }) {
+  return (
+    <div className="mx-auto mt-8 grid max-w-xl gap-2 rounded-2xl border border-white/10 bg-white/[0.04] p-2 sm:grid-cols-2">
+      {[
+        ["business", "Для бизнеса", "карты, отзывы, заявки, продажи"],
+        ["expert", "Для эксперта", "спрос, ответы, страницы, запись"],
+      ].map(([value, label, hint]) => {
+        const active = audience === value;
+        return (
+          <button
+            key={value}
+            type="button"
+            onClick={() => onChange(value as Audience)}
+            className={`rounded-xl px-5 py-4 text-left transition ${
+              active
+                ? "bg-emerald-300 text-[#08110f] shadow-lg shadow-emerald-950/20"
+                : "text-gray-300 hover:bg-white/[0.05] hover:text-white"
+            }`}
+          >
+            <span className="block text-sm font-bold">{label}</span>
+            <span className={`mt-1 block text-xs ${active ? "text-[#25433b]" : "text-gray-500"}`}>{hint}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function StepList({ steps }: { steps: Step[] }) {
+  return (
+    <div className="space-y-3">
+      {steps.map((step, index) => {
+        const Icon = step.icon;
+        return (
+          <div key={step.title} className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:grid-cols-[64px_1fr]">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-300/12 text-emerald-200 ring-1 ring-emerald-300/20">
+              <Icon className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-600">{String(index + 1).padStart(2, "0")}</span>
+                <h3 className="font-semibold text-white">{step.title}</h3>
+              </div>
+              <p className="mt-2 text-sm leading-relaxed text-gray-400">{step.desc}</p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ModuleGrid({ modules }: { modules: Module[] }) {
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      {modules.map((item) => {
+        const Icon = item.icon;
+        return (
+          <div key={item.title} className="rounded-2xl border border-white/10 bg-[#101715]/75 p-5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-300/10 text-emerald-200 ring-1 ring-emerald-300/20">
+              <Icon className="h-5 w-5" />
+            </div>
+            <h3 className="mt-4 text-base font-semibold text-white">{item.title}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-gray-400">{item.desc}</p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ResultsTable() {
+  return (
+    <div className="overflow-x-auto rounded-2xl border border-white/10 bg-[#101715]/70">
+      <div className="min-w-[680px]">
+        <div className="grid grid-cols-[0.7fr_1.2fr_1fr] gap-4 bg-white/[0.04] px-5 py-4 text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">
+          <span>Период</span>
+          <span>Что делаем</span>
+          <span>Что становится видно</span>
+        </div>
+        {resultRows.map(([period, work, result]) => (
+          <div key={period} className="grid grid-cols-[0.7fr_1.2fr_1fr] gap-4 border-t border-white/10 px-5 py-4 text-sm">
+            <span className="font-semibold text-white">{period}</span>
+            <span className="text-gray-400">{work}</span>
+            <span className="text-emerald-100">{result}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function HowItWorksPage() {
+  const [audience, setAudience] = useState<Audience>("business");
+  const isBusiness = audience === "business";
+
   return (
     <div className="min-h-screen">
       <MarketingHeader />
 
-      {/* Hero */}
-      <section className="pb-16 pt-16">
+      <section className="pb-12 pt-16">
         <div className="mx-auto max-w-4xl px-6 text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
-            Как работает{" "}
-            <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">НейроЭксперт</span>
-          </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-300">
-            Два сценария внутри одной логики: Solo-эксперт превращает спрос в
-            экспертные страницы, а локальный бизнес через Local Sales OS видит,
-            где теряет клиентов, и получает задачи роста.
+          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-300">
+            Два сценария в одном проекте
           </p>
+          <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">
+            Как НейроЭксперт приводит клиентов бизнесу и экспертам
+          </h1>
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-gray-300">
+            Выберите свой сценарий. Для бизнеса мы показываем, где теряются клиенты и деньги.
+            Для эксперта — какие вопросы уже ведут к записи и как превратить опыт в страницы,
+            которые находят люди и нейросети.
+          </p>
+          <AudienceSwitch audience={audience} onChange={setAudience} />
         </div>
       </section>
 
-      {/* Пайплайн: 6 шагов */}
-      <section className="py-16">
-        <div className="mx-auto max-w-5xl px-6">
-          <h2 className="text-3xl font-bold text-white text-center">
-            Solo: 6 шагов от вопроса до клиента
-          </h2>
-          <div className="mt-12 space-y-6">
-            {PIPELINE_STEPS.map((step) => (
-              <PipelineStep key={step.num} step={step} />
-            ))}
-          </div>
-        </div>
-      </section>
+      {isBusiness ? (
+        <>
+          <section className="py-14">
+            <div className="mx-auto grid max-w-7xl gap-8 px-6 lg:grid-cols-[0.88fr_1.12fr] lg:items-start">
+              <div>
+                <p className="text-sm font-semibold text-emerald-300">Для бизнеса</p>
+                <h2 className="mt-3 text-3xl font-bold text-white">Система локальных продаж</h2>
+                <p className="mt-4 leading-relaxed text-gray-400">
+                  Главная задача — не выдать владельцу ещё один сложный отчёт,
+                  а показать конкретные места, где бизнес уже теряет клиентов:
+                  видимость, отзывы, конкуренты, нейросети, звонки и переписки.
+                </p>
+                <div className="mt-7">
+                  <StepList steps={businessSteps} />
+                </div>
+              </div>
+              <LocalSalesCockpitMockup />
+            </div>
+          </section>
 
-      {/* B2B workflow */}
-      <section className="py-16">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
-            <div>
-              <p className="text-sm font-semibold text-cyan-300">Local Sales OS для B2B</p>
-              <h2 className="mt-3 text-3xl font-bold text-white">
-                Как это работает для локального бизнеса
-              </h2>
-              <p className="mt-4 text-gray-400">
-                У B2B-клиента другой сценарий: ему важен не текстовый контент сам по себе,
-                а контроль точек, где уже теряются клиенты: карты, отзывы, конкуренты,
-                AI-выдача, звонки, мессенджеры и повторные касания.
-              </p>
-              <div className="mt-8 space-y-3">
-                {B2B_WORKFLOW.map((item) => (
-                  <div key={item.stage} className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:grid-cols-[64px_1fr]">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-300 text-sm font-bold text-slate-950">
-                      {item.stage}
+          <section className="py-14">
+            <div className="mx-auto max-w-7xl px-6">
+              <div className="mb-8 max-w-3xl">
+                <p className="text-sm font-semibold text-emerald-300">5 рабочих модулей</p>
+                <h2 className="mt-3 text-3xl font-bold text-white">
+                  От видимости до возврата потерянных обращений
+                </h2>
+              </div>
+              <ModuleGrid modules={businessModules} />
+            </div>
+          </section>
+
+          <section className="py-14">
+            <div className="mx-auto grid max-w-7xl gap-6 px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+              <SevenDayResultPanel />
+              <div className="rounded-2xl border border-white/10 bg-[#101715]/75 p-6">
+                <div className="flex items-center gap-2 text-sm font-semibold text-emerald-300">
+                  <CircleDollarSign className="h-4 w-4" />
+                  Почему это понятно собственнику
+                </div>
+                <h3 className="mt-3 text-2xl font-bold text-white">
+                  Каждый вывод связан с выручкой
+                </h3>
+                <p className="mt-4 leading-relaxed text-gray-400">
+                  Мы не говорим “у вас слабый маркетинг”. Мы показываем:
+                  карточка не заполнена, нейросети советуют конкурента,
+                  12 обращений не получили повторного контакта, а средний чек
+                  превращает это в риск недополученной выручки.
+                </p>
+                <div className="mt-6 space-y-3">
+                  {["где клиент не увидел бизнес", "где клиент выбрал конкурента", "какие обращения можно вернуть"].map((item) => (
+                    <div key={item} className="flex items-center gap-3 text-sm text-gray-300">
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-300" />
+                      {item}
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-white">{item.title}</h3>
-                      <p className="mt-1 text-sm leading-relaxed text-gray-400">{item.desc}</p>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
-            <LocalSalesCockpitMockup />
-          </div>
-        </div>
-      </section>
+          </section>
 
-      <section className="py-16">
-        <div className="mx-auto max-w-6xl px-6">
-          <SevenDayResultPanel />
-        </div>
-      </section>
+          <section className="py-14">
+            <div className="mx-auto max-w-5xl px-6">
+              <ResultsTable />
+            </div>
+          </section>
 
-      {/* 5 модулей */}
-      <section className="bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 py-16">
-        <div className="mx-auto max-w-7xl px-6">
-          <h2 className="text-3xl font-bold text-white text-center">
-            5 модулей платформы
-          </h2>
-          <p className="mt-4 text-center text-gray-400 max-w-2xl mx-auto">
-            Каждый модуль решает конкретную задачу: найти спрос, получить ответ эксперта,
-            опубликовать страницу и измерить путь до заявки.
-          </p>
-          <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {MODULES.map((mod, i) => (
-              <div
-                key={mod.name}
-                className={`rounded-2xl border p-6 ${mod.color} backdrop-blur-sm ${i === 4 ? "md:col-span-2 lg:col-span-1" : ""}`}
-              >
-                <div className={`text-xs font-semibold uppercase tracking-wider ${mod.textColor}`}>
-                  Модуль {i + 1}
+          <section className="py-16">
+            <div className="mx-auto max-w-4xl rounded-3xl border border-emerald-300/20 bg-emerald-300/[0.08] px-6 py-10 text-center">
+              <h2 className="text-3xl font-bold text-white">Начните с аудита продаж</h2>
+              <p className="mx-auto mt-4 max-w-2xl text-gray-300">
+                За первые 7 дней станет видно, где бизнес теряет клиентов,
+                что исправить первым и какие обращения ещё можно вернуть.
+              </p>
+              <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+                <Link href="/for-business" className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-300 px-7 py-3 font-semibold text-[#08110f] transition hover:bg-emerald-200">
+                  Посмотреть сценарий для бизнеса
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link href="/pricing" className="inline-flex items-center justify-center rounded-xl border border-white/15 px-7 py-3 font-semibold text-white transition hover:bg-white/[0.06]">
+                  Смотреть тарифы
+                </Link>
+              </div>
+            </div>
+          </section>
+        </>
+      ) : (
+        <>
+          <section className="py-14">
+            <div className="mx-auto grid max-w-7xl gap-8 px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+              <div>
+                <p className="text-sm font-semibold text-cyan-300">Для эксперта</p>
+                <h2 className="mt-3 text-3xl font-bold text-white">
+                  Спрос превращается в страницу, страница — в заявку
+                </h2>
+                <p className="mt-4 leading-relaxed text-gray-400">
+                  Эксперту не нужно угадывать темы для контента. Система показывает,
+                  что люди уже спрашивают, где ответы слабые, и помогает быстро
+                  собрать страницу на основе живого экспертного голоса.
+                </p>
+                <div className="mt-7">
+                  <StepList steps={expertSteps} />
                 </div>
-                <h3 className="mt-2 text-lg font-bold text-white">{mod.name}</h3>
-                <p className="text-sm font-medium text-gray-400">{mod.tagline}</p>
-                <p className="mt-3 text-sm text-gray-300">{mod.desc}</p>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+              <SoloDemandSignalMockup />
+            </div>
+          </section>
 
-      {/* Как страница приводит заявки */}
-      <section className="py-16">
-        <div className="mx-auto max-w-5xl px-6">
-          <h2 className="text-3xl font-bold text-white text-center">
-            Как страница превращается в канал заявок
-          </h2>
-          <p className="mt-4 text-center text-gray-400 max-w-3xl mx-auto">
-            Сначала мы выбираем вопрос, где уже есть спрос. Затем публикуем ответ эксперта
-            так, чтобы его могли найти люди в Яндексе, Google и нейросетях, а после чтения
-            перейти к понятному действию.
-          </p>
-          <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {ACQUISITION_MECHANICS.map((mech, i) => (
-              <div key={mech.title} className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white text-sm font-bold">
-                  {i + 1}
+          <section className="py-14">
+            <div className="mx-auto max-w-7xl px-6">
+              <div className="mb-8 max-w-3xl">
+                <p className="text-sm font-semibold text-cyan-300">5 рабочих блоков</p>
+                <h2 className="mt-3 text-3xl font-bold text-white">
+                  От вопроса пользователя до записи к эксперту
+                </h2>
+              </div>
+              <ModuleGrid modules={expertModules} />
+            </div>
+          </section>
+
+          <section className="py-14">
+            <div className="mx-auto grid max-w-7xl gap-6 px-6 lg:grid-cols-3">
+              {[
+                ["Что ищут", "вопросы, цены, сравнения, симптомы, ситуации выбора"],
+                ["Что публикуем", "страницы с ответом, FAQ, таблицами, источниками и кнопкой записи"],
+                ["Что измеряем", "показы, клики, заявки, позиции и упоминания в нейросетях"],
+              ].map(([title, desc]) => (
+                <div key={title} className="rounded-2xl border border-white/10 bg-[#101715]/75 p-6">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-300/10 text-cyan-200 ring-1 ring-cyan-300/20">
+                    <UserCheck className="h-5 w-5" />
+                  </div>
+                  <h3 className="mt-4 text-xl font-semibold text-white">{title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-400">{desc}</p>
                 </div>
-                <h3 className="mt-3 text-base font-semibold text-white">{mech.title}</h3>
-                <p className="mt-2 text-sm text-gray-400">{mech.desc}</p>
+              ))}
+            </div>
+          </section>
+
+          <section className="py-14">
+            <div className="mx-auto max-w-5xl px-6">
+              <ResultsTable />
+            </div>
+          </section>
+
+          <section className="py-16">
+            <div className="mx-auto max-w-4xl rounded-3xl border border-cyan-300/20 bg-cyan-300/[0.08] px-6 py-10 text-center">
+              <h2 className="text-3xl font-bold text-white">Начните с карты спроса</h2>
+              <p className="mx-auto mt-4 max-w-2xl text-gray-300">
+                Вы увидите вопросы, по которым люди уже ищут помощь,
+                и поймёте, какие страницы стоит запускать первыми.
+              </p>
+              <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+                <Link href="/audit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-300 px-7 py-3 font-semibold text-[#071116] transition hover:bg-cyan-200">
+                  Получить карту спроса
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link href="/for-experts" className="inline-flex items-center justify-center rounded-xl border border-white/15 px-7 py-3 font-semibold text-white transition hover:bg-white/[0.06]">
+                  Подробнее для экспертов
+                </Link>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Выбор вопросов */}
-      <section className="bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 py-16">
-        <div className="mx-auto max-w-4xl px-6">
-          <h2 className="text-3xl font-bold text-white text-center">
-            Как мы выбираем вопросы с шансом на заявку
-          </h2>
-          <p className="mt-4 text-center text-gray-400 max-w-2xl mx-auto">
-            Нейросети важны, но это не единственный критерий. Мы смотрим на реальный спрос,
-            намерение человека и то, может ли экспертный ответ естественно привести к записи.
-          </p>
-          <div className="mt-10 grid gap-4 sm:grid-cols-2">
-            {DEMAND_SIGNALS.map((item) => (
-              <div key={item.marker} className="rounded-xl bg-white/5 border border-white/10 p-5">
-                <div className="text-sm font-semibold text-blue-400">{item.marker}</div>
-                <p className="mt-1 text-sm text-gray-300">{item.question}</p>
-              </div>
-            ))}
-          </div>
-          <p className="mt-8 text-center text-sm text-gray-400">
-            Поэтому карточка темы показывает не только gap_score, но и спрос/мес,
-            intent, слабость AI-ответа, потенциал заявки и рекомендуемый CTA.
-          </p>
-        </div>
-      </section>
-
-      {/* Реалистичные результаты */}
-      <section className="py-16">
-        <div className="mx-auto max-w-4xl px-6 text-center">
-          <h2 className="text-3xl font-bold text-white">
-            Первые измеримые результаты
-          </h2>
-          <p className="mt-4 text-gray-400 max-w-2xl mx-auto">
-            Никто не может честно гарантировать фиксированное число клиентов без данных.
-            Поэтому первый запуск оцениваем по этапам воронки, а не по красивым обещаниям.
-          </p>
-          <div className="mt-10 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/10">
-                  <th className="px-4 py-3 text-left font-medium text-gray-500">Период</th>
-                  <th className="px-4 py-3 text-center font-medium text-gray-500">Что измеряем</th>
-                  <th className="px-4 py-3 text-center font-medium text-gray-500">Что считаем успехом</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-b border-white/10">
-                  <td className="px-4 py-3 font-medium text-white">0-30 дней</td>
-                  <td className="px-4 py-3 text-center text-gray-400">страницы, индексация, первые показы</td>
-                  <td className="px-4 py-3 text-gray-400">канал запущен, страницы доступны поиску и AI</td>
-                </tr>
-                <tr className="border-b border-white/10">
-                  <td className="px-4 py-3 font-medium text-white">30-60 дней</td>
-                  <td className="px-4 py-3 text-center text-gray-400">трафик, клики по записи, заявки</td>
-                  <td className="px-4 py-3 text-gray-400">видно, какие темы начинают приводить людей</td>
-                </tr>
-                <tr>
-                  <td className="px-4 py-3 font-medium text-white">60-90 дней</td>
-                  <td className="px-4 py-3 text-center text-blue-400 font-semibold">рост сильных страниц</td>
-                  <td className="px-4 py-3 text-gray-400">обновляем и продвигаем темы, где спрос подтвердился</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p className="mt-6 text-sm text-gray-500">
-            AI-упоминания остаются важной метрикой, но в отчёте они стоят рядом
-            с более коммерческими сигналами: трафиком, кликами по записи и заявками.
-          </p>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="bg-blue-600 py-16">
-        <div className="mx-auto max-w-3xl px-6 text-center">
-          <h2 className="text-3xl font-bold text-white">
-            Начните с карты спроса
-          </h2>
-          <p className="mt-4 text-lg text-blue-100">
-            Увидите вопросы, по которым люди уже ищут решение, и поймёте,
-            какие страницы стоит запускать первыми.
-          </p>
-          <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/audit"
-              className="rounded-lg bg-white px-10 py-4 text-lg font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
-            >
-              Получить карту спроса
-            </Link>
-            <Link
-              href="/pricing"
-              className="rounded-lg border-2 border-white/50 px-10 py-4 text-lg font-semibold text-white hover:bg-white/10 transition-colors"
-            >
-              Тарифы
-            </Link>
-          </div>
-        </div>
-      </section>
+            </div>
+          </section>
+        </>
+      )}
 
       <MarketingFooter />
     </div>

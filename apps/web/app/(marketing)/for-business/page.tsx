@@ -43,7 +43,7 @@ const LOSS_ZONES = [
     desc: "Пропущенные звонки, поздний перезвон, нет SLA и непонятно, сколько денег уже потеряно на входящих обращениях.",
   },
   {
-    title: "AI-выдача",
+    title: "Ответы нейросетей",
     desc: "ChatGPT, Алиса, Perplexity и другие системы не знают бизнес, называют агрегаторы или увереннее рекомендуют конкурентов.",
   },
 ];
@@ -51,19 +51,19 @@ const LOSS_ZONES = [
 const MODULES = [
   {
     title: "1. Аудит видимости",
-    checks: "Карты, 2ГИС, Авито, сайт, отзывы, формы, мессенджеры, звонки, поиск и AI-ответы.",
-    actions: "Фиксируем слабые места: фото, услуги, цены, CTA, категории, отзывы, негатив, пустые каналы и точки потери заявки.",
+    checks: "Карты, 2ГИС, Авито, сайт, отзывы, формы, мессенджеры, звонки, поиск и ответы нейросетей.",
+    actions: "Фиксируем слабые места: фото, услуги, цены, кнопки заявки, категории, отзывы, негатив, пустые каналы и точки потери заявки.",
     result: "Карта потерь и список приоритетов: что мешает получать обращения уже сейчас.",
   },
   {
-    title: "2. Гео-рейтинг, AI и конкуренты",
+    title: "2. Гео-рейтинг, нейросети и конкуренты",
     checks: "Запросы рядом, цена, срочно, район, лучший, записаться; топ конкурентов в картах, поиске, Авито и нейросетях.",
-    actions: "Сравниваем рейтинг, отзывы, фото, услуги, офферы, скорость ответа, AI-упоминания и причины, почему конкуренты выглядят сильнее.",
+    actions: "Сравниваем рейтинг, отзывы, фото, услуги, офферы, скорость ответа, упоминания в нейросетях и причины, почему конкуренты выглядят сильнее.",
     result: "Понятный ответ: почему клиент видит и слышит о конкурентах раньше, чем о вас.",
   },
   {
     title: "3. Ежедневные задачи",
-    checks: "Какие действия быстрее двигают заявки: карточки, отзывы, Авито, FAQ, офферы, страницы, follow-up.",
+    checks: "Какие действия быстрее двигают заявки: карточки, отзывы, Авито, FAQ, офферы, страницы, повторные касания.",
     actions: "Даём задачи с приоритетом, ответственным, сроком, ожидаемым эффектом, метрикой и доказательством выполнения.",
     result: "Не “разберитесь с маркетингом”, а список действий на сегодня, неделю и 30 дней.",
   },
@@ -71,12 +71,12 @@ const MODULES = [
     title: "4. Сбор и возврат отзывов",
     checks: "Свежесть отзывов, рейтинг, ответы на негатив, площадки, где отзывов не хватает, и сценарий запроса после услуги.",
     actions: "Настраиваем маршрут: довольный клиент идёт на Яндекс/2ГИС, недовольный сначала пишет владельцу или администратору.",
-    result: "Больше цифрового доверия, меньше публичного негатива, сильнее карточки и AI/search-сигналы.",
+    result: "Больше цифрового доверия, меньше публичного негатива, сильнее карточки, поиск и ответы нейросетей.",
   },
   {
-    title: "5. Потерянные лиды",
-    checks: "Пропущенные звонки, сообщения без ответа, заявки без follow-up, клиенты после расчёта цены, старые обращения.",
-    actions: "Собираем список возврата: кому перезвонить, что написать, какой оффер предложить, какие лиды ещё можно вернуть.",
+    title: "5. Потерянные обращения",
+    checks: "Пропущенные звонки, сообщения без ответа, заявки без повторного касания, клиенты после расчёта цены, старые обращения.",
+    actions: "Собираем список возврата: кому перезвонить, что написать, какой оффер предложить, какие обращения ещё можно вернуть.",
     result: "Оценка потерянной выручки и действия, которые возвращают уже пришедший спрос.",
   },
 ];
@@ -94,11 +94,11 @@ const DELIVERABLES = [
   "индекс локальной видимости",
   "карта слабых мест по каналам",
   "сравнение с 5-10 конкурентами",
-  "кто упоминается в AI-ответах",
+  "кого называют нейросети",
   "задачи на первые 7 дней",
   "план роста на 30 дней",
   "оценка потерянных обращений",
-  "рекомендация: делать самим, Setup или сопровождение",
+  "рекомендация: делать самим, запускать с нами или брать сопровождение",
 ];
 
 const METRICS = [
@@ -108,8 +108,8 @@ const METRICS = [
   "ответы на негатив",
   "клики по звонку, маршруту и записи",
   "скорость ответа в мессенджерах",
-  "пропущенные звонки и лиды без follow-up",
-  "AI-упоминания вас и конкурентов",
+  "пропущенные звонки и обращения без повторного касания",
+  "упоминания вас и конкурентов в нейросетях",
   "заявки, записи и повторные касания",
 ];
 
@@ -128,31 +128,31 @@ const INDUSTRIES = [
 
 const PLANS = [
   {
-    name: "Local Sales Audit",
+    name: "Аудит продаж",
     price: "9 900-29 900",
     period: "₽",
     desc: "За 3-7 дней показать, где бизнес теряет клиентов",
     features: [
-      "карты, 2ГИС, Авито, сайт, отзывы и AI-ответы",
+      "карты, 2ГИС, Авито, сайт, отзывы и ответы нейросетей",
       "до 5-10 конкурентов по локальным запросам",
       "карта потерь и индекс видимости",
       "задачи на 7 дней и план на 30 дней",
-      "если запускаем Setup, аудит засчитывается в работу",
+      "если запускаем внедрение, аудит засчитывается в работу",
     ],
     cta: "Получить аудит",
     href: "#form",
     highlight: false,
   },
   {
-    name: "Setup за 30 дней",
+    name: "Запуск за 30 дней",
     price: "49 000-150 000",
     period: "₽",
     desc: "Запустить первые точки входа под ключ",
     features: [
-      "упаковка карточек, услуг, CTA и офферов",
+      "упаковка карточек, услуг, кнопок заявки и офферов",
       "первые страницы под локальный спрос",
       "сценарии отзывов и ответы на негатив",
-      "базовый учёт потерянных лидов",
+      "базовый учёт потерянных обращений",
       "недельный отчёт по внедрению и сигналам",
     ],
     cta: "Запустить канал",
@@ -160,14 +160,14 @@ const PLANS = [
     highlight: true,
   },
   {
-    name: "Local Sales OS",
+    name: "Сопровождение продаж",
     price: "39 000-99 000",
     period: "₽/мес",
     desc: "Ежемесячное управление ростом обращений",
     features: [
       "ежедневные задачи роста и контроль выполнения",
-      "мониторинг конкурентов, отзывов, Авито и AI",
-      "возврат потерянных лидов и повторные касания",
+      "мониторинг конкурентов, отзывов, Авито и нейросетей",
+      "возврат потерянных обращений и повторные касания",
       "экспертные страницы под новые вопросы",
       "недельный отчёт: что сделано, что изменилось, где деньги",
     ],
@@ -260,7 +260,7 @@ function B2BLeadForm() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <TextArea label="3-5 конкурентов" value={form.competitors} onChange={(v) => updateField("competitors", v)} placeholder="Кого считаете сильными в городе" rows={3} />
-        <TextArea label="Заявки и потери" value={form.current_leads} onChange={(v) => updateField("current_leads", v)} placeholder="Заявок в месяц, пропущенные звонки, CRM/телефония, лиды без follow-up" rows={3} />
+        <TextArea label="Заявки и потери" value={form.current_leads} onChange={(v) => updateField("current_leads", v)} placeholder="Заявок в месяц, пропущенные звонки, CRM/телефония, обращения без повторного касания" rows={3} />
       </div>
 
       <TextArea
@@ -278,9 +278,9 @@ function B2BLeadForm() {
         disabled={submitting}
         className="group relative w-full rounded-2xl px-8 py-4 text-lg font-semibold text-white overflow-hidden transition-transform hover:scale-[1.02] disabled:opacity-50"
       >
-        <span className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-600" />
-        <span className="absolute -inset-2 bg-gradient-to-r from-cyan-500 to-blue-600 blur-xl opacity-40 group-hover:opacity-60 transition-opacity" />
-        <span className="relative">{submitting ? "Отправка..." : "Получить аудит видимости"}</span>
+        <span className="absolute inset-0 bg-emerald-300" />
+        <span className="absolute -inset-2 bg-emerald-300 blur-xl opacity-20 group-hover:opacity-30 transition-opacity" />
+        <span className="relative text-[#07100e]">{submitting ? "Отправка..." : "Получить аудит видимости"}</span>
       </button>
 
       <p className="text-center text-xs text-gray-500">
@@ -354,13 +354,13 @@ export default function ForBusinessPage() {
         <div className="mx-auto grid max-w-7xl gap-12 px-6 py-20 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
           <div>
             <FadeIn>
-              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-5 py-2 backdrop-blur-md">
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/25 bg-emerald-300/10 px-5 py-2 backdrop-blur-md">
                 <span className="relative flex h-2 w-2">
-                  <span className="absolute h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" />
-                  <span className="relative h-2 w-2 rounded-full bg-cyan-400" />
+                  <span className="absolute h-full w-full animate-ping rounded-full bg-emerald-300 opacity-75" />
+                  <span className="relative h-2 w-2 rounded-full bg-emerald-300" />
                 </span>
-                <span className="text-sm font-medium text-cyan-200">
-                  Local Sales OS для локального бизнеса
+                <span className="text-sm font-medium text-emerald-200">
+                  Система локальных продаж для бизнеса
                 </span>
               </div>
             </FadeIn>
@@ -374,7 +374,7 @@ export default function ForBusinessPage() {
             <FadeIn delay={300}>
               <p className="mt-6 max-w-2xl text-lg leading-relaxed text-gray-300">
                 За 7 дней проверим карты, 2ГИС, Авито, отзывы, сайт,
-                мессенджеры, звонки, локальную выдачу и AI-ответы. Покажем,
+                мессенджеры, звонки, локальную выдачу и ответы нейросетей. Покажем,
                 кто забирает ваш спрос, где теряются деньги и какие действия
                 нужно сделать первыми.
               </p>
@@ -384,9 +384,9 @@ export default function ForBusinessPage() {
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <a
                   href="#form"
-                  className="rounded-2xl bg-cyan-300 px-8 py-4 text-base font-semibold text-slate-950 transition-colors hover:bg-cyan-200"
+                  className="rounded-2xl bg-emerald-300 px-8 py-4 text-base font-semibold text-[#07100e] transition-colors hover:bg-emerald-200"
                 >
-                  Получить Local Sales Audit
+                  Получить аудит продаж
                 </a>
                 <Link
                   href="/pricing"
@@ -422,9 +422,9 @@ export default function ForBusinessPage() {
       <section className="py-20">
         <div className="mx-auto max-w-7xl px-6">
           <FadeIn className="mb-10 text-center">
-            <p className="text-sm font-semibold text-cyan-300">Продуктовый слой</p>
+            <p className="text-sm font-semibold text-emerald-300">Рабочая панель</p>
             <h2 className="mt-3 text-3xl font-bold text-white sm:text-4xl">
-              Cockpit собственника: видимость, конкуренты, отзывы, задачи и lost leads
+              Панель собственника: видимость, конкуренты, отзывы, задачи и потерянные обращения
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-gray-400">
               Клиент должен видеть не PDF-аудит, а живую систему: где проседает
@@ -452,7 +452,7 @@ export default function ForBusinessPage() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {LOSS_ZONES.map((zone, i) => (
               <FadeIn key={zone.title} delay={i * 60}>
-                <div className="h-full rounded-2xl border border-white/10 bg-[#04080f]/60 p-5 backdrop-blur-xl hover:border-cyan-400/30 transition-all">
+                  <div className="h-full rounded-2xl border border-white/10 bg-[#101715]/70 p-5 backdrop-blur-xl hover:border-emerald-300/30 transition-all">
                   <h3 className="text-base font-semibold text-white">{zone.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-gray-400">{zone.desc}</p>
                 </div>
@@ -466,7 +466,7 @@ export default function ForBusinessPage() {
         <div className="mx-auto max-w-7xl px-6">
           <FadeIn className="text-center mb-14">
             <h2 className="text-3xl font-bold text-white sm:text-4xl">
-              5 модулей Local Sales OS
+              5 модулей системы локальных продаж
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-gray-400">
               Каждый модуль показывает не только проблему, но и практический
@@ -478,7 +478,7 @@ export default function ForBusinessPage() {
             {MODULES.map((module, i) => (
               <FadeIn key={module.title} delay={i * 80}>
                 <div className="grid gap-4 rounded-3xl border border-white/10 bg-[#04080f]/60 p-6 backdrop-blur-xl lg:grid-cols-[1.1fr_1fr_1fr_1fr]">
-                  <h3 className="text-xl font-semibold text-cyan-300">{module.title}</h3>
+                    <h3 className="text-xl font-semibold text-emerald-300">{module.title}</h3>
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Проверяем</p>
                     <p className="mt-2 text-sm leading-relaxed text-gray-300">{module.checks}</p>
@@ -501,9 +501,9 @@ export default function ForBusinessPage() {
       <section className="py-20">
         <div className="mx-auto max-w-7xl px-6">
           <FadeIn className="mb-10 text-center">
-            <p className="text-sm font-semibold text-cyan-300">Сценарии по вертикалям</p>
+            <p className="text-sm font-semibold text-emerald-300">Сценарии по отраслям</p>
             <h2 className="mt-3 text-3xl font-bold text-white sm:text-4xl">
-              Один cockpit, разные точки потерь
+              Одна панель управления, разные точки потерь
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-gray-400">
               В стоматологии важны услуги, отзывы и рассрочка. В автосервисе — срочность,
@@ -537,23 +537,23 @@ export default function ForBusinessPage() {
         <div className="mx-auto max-w-6xl px-6">
           <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
             <FadeIn>
-              <p className="text-sm font-semibold text-cyan-300">AI-выдача уже влияет на выбор</p>
+              <p className="text-sm font-semibold text-emerald-300">Ответы нейросетей уже влияют на выбор</p>
               <h2 className="mt-3 text-3xl font-bold text-white sm:text-4xl">
                 Клиенты спрашивают нейросети, кого выбрать
               </h2>
               <p className="mt-5 text-gray-400 leading-relaxed">
                 Мы проверяем, попадает ли бизнес в ответы ChatGPT, Алисы,
-                Perplexity, YandexGPT и других систем, кого AI рекомендует
+                Perplexity, YandexGPT и других систем, кого нейросети рекомендуют
                 вместо него и какие источники нужно усилить: карточки, отзывы,
                 страницы, FAQ, экспертные ответы и локальные доказательства.
               </p>
             </FadeIn>
             <FadeIn delay={150}>
-              <div className="rounded-3xl border border-purple-500/20 bg-purple-500/10 p-6 backdrop-blur-xl">
-                <p className="text-sm font-semibold text-purple-200">Примеры запросов клиентов</p>
+              <div className="rounded-3xl border border-emerald-300/20 bg-emerald-300/10 p-6 backdrop-blur-xl">
+                <p className="text-sm font-semibold text-emerald-100">Примеры запросов клиентов</p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {AI_QUERIES.map((query) => (
-                    <div key={query} className="rounded-xl border border-white/10 bg-[#04080f]/70 p-4 text-sm text-gray-300">
+                    <div key={query} className="rounded-xl border border-white/10 bg-[#101715]/70 p-4 text-sm text-gray-300">
                       “{query}”
                     </div>
                   ))}
@@ -599,15 +599,15 @@ export default function ForBusinessPage() {
               <p className="mt-5 text-gray-400 leading-relaxed">
                 Мы не начинаем с тяжёлых интеграций. Сначала используем открытые
                 данные, ваши ссылки, ручную проверку и выгрузки. После первых
-                платных пилотов подключаем полуавтоматические источники и dashboard.
+                платных пилотов подключаем полуавтоматические источники и личный кабинет.
               </p>
             </FadeIn>
 
             <div className="grid gap-4 md:grid-cols-3">
               {[
-                ["7 дней", "Аудит", "Потери, конкуренты, AI-ответы, задачи на неделю и план на 30 дней."],
-                ["30 дней", "Setup", "Упаковка карточек, отзывов, Авито, страниц, CTA и первых follow-up."],
-                ["каждый месяц", "Local Sales OS", "Ежедневные задачи, недельный отчёт, возврат лидов и рост точек входа."],
+                ["7 дней", "Аудит", "Потери, конкуренты, ответы нейросетей, задачи на неделю и план на 30 дней."],
+                ["30 дней", "Запуск", "Упаковка карточек, отзывов, Авито, страниц, кнопок заявки и первых повторных касаний."],
+                ["каждый месяц", "Сопровождение", "Ежедневные задачи, недельный отчёт, возврат обращений и рост точек входа."],
               ].map(([term, title, desc], i) => (
                 <FadeIn key={title} delay={i * 100}>
                   <div className="h-full rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
@@ -664,20 +664,20 @@ export default function ForBusinessPage() {
                 <div
                   className={`relative h-full rounded-3xl border p-8 backdrop-blur-xl overflow-hidden ${
                     plan.highlight
-                      ? "border-cyan-500/30 bg-cyan-500/5 shadow-[0_0_30px_rgba(34,211,238,0.08)]"
+                        ? "border-emerald-300/30 bg-emerald-300/5 shadow-[0_0_30px_rgba(16,185,129,0.08)]"
                       : "border-white/10 bg-[#04080f]/60"
                   }`}
                 >
                   <h3 className="text-2xl font-bold text-white">{plan.name}</h3>
                   <p className="text-sm text-gray-400 mt-1">{plan.desc}</p>
                   <div className="mt-4 flex items-baseline gap-1">
-                    <span className="text-4xl font-bold text-cyan-400">{plan.price}</span>
+                    <span className="text-4xl font-bold text-emerald-300">{plan.price}</span>
                     <span className="text-gray-500">{plan.period}</span>
                   </div>
                   <ul className="mt-6 space-y-3">
                     {plan.features.map((feature) => (
                       <li key={feature} className="flex items-start gap-2 text-sm text-gray-300">
-                        <span className="text-cyan-400 flex-shrink-0">✓</span>
+                        <span className="text-emerald-300 flex-shrink-0">✓</span>
                         {feature}
                       </li>
                     ))}
@@ -686,7 +686,7 @@ export default function ForBusinessPage() {
                     href={plan.href}
                     className={`mt-8 block w-full rounded-2xl py-3 text-center font-semibold transition-all ${
                       plan.highlight
-                        ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:opacity-90"
+                        ? "bg-emerald-300 text-[#07100e] hover:bg-emerald-200"
                         : "border border-white/15 bg-white/5 text-white hover:bg-white/10"
                     }`}
                   >
@@ -731,9 +731,9 @@ export default function ForBusinessPage() {
                 <h2 className="text-2xl font-bold text-white">Что делаем</h2>
                 <ul className="mt-5 space-y-3 text-sm text-green-100/90">
                   <li>✓ показываем потери по каналам и конкурентам</li>
-                  <li>✓ запускаем страницы, карточки, отзывы, CTA и follow-up</li>
+                  <li>✓ запускаем страницы, карточки, отзывы, кнопки заявки и повторные касания</li>
                   <li>✓ даём ежедневные задачи и недельный отчёт</li>
-                  <li>✓ измеряем клики, обращения, записи, AI-упоминания и возврат лидов</li>
+                  <li>✓ измеряем клики, обращения, записи, упоминания в нейросетях и возврат обращений</li>
                 </ul>
               </div>
             </FadeIn>
@@ -755,15 +755,15 @@ export default function ForBusinessPage() {
       <section id="form" className="py-24">
         <div className="mx-auto max-w-3xl px-6">
           <FadeIn>
-            <div className="rounded-3xl border border-cyan-500/20 bg-[#04080f]/60 p-10 backdrop-blur-xl overflow-hidden relative">
-              <div className="absolute -top-px left-10 right-10 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
+            <div className="rounded-3xl border border-emerald-300/20 bg-[#101715]/70 p-10 backdrop-blur-xl overflow-hidden relative">
+              <div className="absolute -top-px left-10 right-10 h-px bg-gradient-to-r from-transparent via-emerald-300/50 to-transparent" />
               <h2 className="text-2xl font-bold text-white text-center mb-2">
                 Получить аудит локального спроса
               </h2>
               <p className="text-gray-400 text-center mb-8">
                 Оставьте контакты и ссылки на основные площадки. Мы скажем,
-                где стоит начинать: карты, 2ГИС, Авито, отзывы, сайт, AI-выдача
-                или потерянные лиды.
+                где стоит начинать: карты, 2ГИС, Авито, отзывы, сайт, ответы нейросетей
+                или потерянные обращения.
               </p>
               <B2BLeadForm />
             </div>

@@ -168,7 +168,7 @@ export default function AuditPage() {
                 </h1>
                 <p className="mt-2 text-gray-300">
                   {gaps.length} {gaps.length === 1 ? "вопрос" : "вопроса"} проверено по{" "}
-                  {gaps[0]?.platforms?.length || 0} AI-платформам
+                  {gaps[0]?.platforms?.length || 0} нейросетевым платформам
                 </p>
               </div>
 
@@ -199,7 +199,7 @@ export default function AuditPage() {
                           {gap.avg_gap_score}/10
                         </p>
                         <p className="text-xs text-gray-400">
-                          слабость текущего ответа AI
+                          слабость текущего ответа нейросети
                         </p>
                       </div>
                       {gap.estimated_monthly_volume && (
@@ -316,7 +316,7 @@ export default function AuditPage() {
                 ))}
               </div>
 
-              {/* CTA */}
+              {/* Призыв к действию */}
               <div className="mt-12 rounded-2xl border border-cyan-500/20 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 backdrop-blur-md p-8 text-center">
                 <h2 className="text-2xl font-bold text-white">
                   Хотите превратить эти вопросы в заявки?

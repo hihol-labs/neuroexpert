@@ -66,7 +66,7 @@ export default function ScanPage() {
             <>
               <div className="text-center">
                 <h1 className="text-4xl font-bold text-gray-900">
-                  Scanner спроса в нейросетях
+                  Проверка спроса в нейросетях
                 </h1>
                 <p className="mt-4 text-lg text-gray-600">
                   Проверьте, находят ли нейросети вас, когда человек ищет
@@ -112,7 +112,7 @@ export default function ScanPage() {
                   type="submit"
                   className="w-full rounded-xl bg-blue-600 px-8 py-4 text-lg font-semibold text-white hover:bg-blue-700 transition-colors"
                 >
-                  Проверить спрос в AI
+                  Проверить спрос в нейросетях
                 </button>
 
                 {error && (
@@ -139,7 +139,7 @@ export default function ScanPage() {
                     Сравнение спроса
                   </h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    Вы vs конкурент — кто попадает в ответы
+                    Вы и конкурент — кого нейросети находят чаще
                   </p>
                 </div>
                 <div className="rounded-xl border border-gray-200 p-6 text-center">
