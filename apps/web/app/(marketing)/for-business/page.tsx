@@ -81,6 +81,34 @@ const MODULES = [
   },
 ];
 
+const IMPLEMENTATION_TOOLS = [
+  {
+    title: "Сбор данных",
+    desc: "Начинаем с открытых источников и ссылок клиента: карты, 2ГИС, Авито, сайт, отзывы, формы, мессенджеры, телефония и CRM при наличии доступа.",
+    tools: "ручной аудит, таблица источников, снимки доказательств, выгрузки, открытые карточки, клиентские данные",
+  },
+  {
+    title: "Проверка спроса и конкурентов",
+    desc: "Смотрим реальные запросы рядом/цена/срочно/район, сравниваем карточки, отзывы, услуги, офферы и ответы нейросетей.",
+    tools: "Wordstat/XMLRiver, SerpAPI, гео-запросы, проверка ChatGPT/Алисы/Perplexity/YandexGPT/GigaChat, матрица конкурентов",
+  },
+  {
+    title: "Карта потерь",
+    desc: "Каждая проблема привязывается к каналу и коммерческому риску: клиент не увидел, не поверил, ушёл к конкуренту или не получил ответ.",
+    tools: "индекс видимости, оценка выручки под риском, список потерянных обращений, приоритеты 7/30 дней",
+  },
+  {
+    title: "Внедрение задач",
+    desc: "Исправляем не всё подряд, а то, что быстрее влияет на заявки: услуги, цены, FAQ, отзывы, офферы, кнопки заявки, страницы под спрос.",
+    tools: "ежедневные задачи, ответственный, срок, доказательство выполнения, шаблоны описаний, сценарии отзывов и повторных касаний",
+  },
+  {
+    title: "Измерение результата",
+    desc: "После правок смотрим не красивые отчёты, а изменение видимости, кликов, обращений, скорости ответа и возврата клиентов.",
+    tools: "недельный отчёт, метрики карточек, заявки, звонки, клики, позиции, упоминания в нейросетях, список следующих действий",
+  },
+];
+
 const AI_QUERIES = [
   "какая стоматология рядом лучше",
   "где сделать имплантацию цена",
@@ -490,6 +518,41 @@ export default function ForBusinessPage() {
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Измеряем</p>
                     <p className="mt-2 text-sm leading-relaxed text-gray-300">{module.result}</p>
+                  </div>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20">
+        <div className="mx-auto max-w-7xl px-6">
+          <FadeIn className="mb-10 max-w-3xl">
+            <p className="text-sm font-semibold text-emerald-300">Как реализуем на практике</p>
+            <h2 className="mt-3 text-3xl font-bold text-white sm:text-4xl">
+              Не лозунги, а рабочий контур аудита, задач и измерения
+            </h2>
+            <p className="mt-4 text-gray-400">
+              B2B-клиент должен понимать, из чего складывается результат. Поэтому каждый этап
+              привязан к источникам данных, инструментам и измеримому выходу.
+            </p>
+          </FadeIn>
+
+          <div className="space-y-4">
+            {IMPLEMENTATION_TOOLS.map((item, index) => (
+              <FadeIn key={item.title} delay={index * 80}>
+                <div className="grid gap-5 rounded-2xl border border-white/10 bg-[#101715]/75 p-6 lg:grid-cols-[0.7fr_1fr_1.1fr]">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">
+                      Этап {index + 1}
+                    </p>
+                    <h3 className="mt-2 text-xl font-semibold text-white">{item.title}</h3>
+                  </div>
+                  <p className="text-sm leading-relaxed text-gray-300">{item.desc}</p>
+                  <div className="rounded-xl border border-emerald-300/15 bg-emerald-300/[0.06] p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-200">Инструменты</p>
+                    <p className="mt-2 text-sm leading-relaxed text-emerald-50/85">{item.tools}</p>
                   </div>
                 </div>
               </FadeIn>

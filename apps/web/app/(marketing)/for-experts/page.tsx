@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { BarChart3, Bot, Clock, EyeOff, Lightbulb, Users } from "lucide-react";
+import { BarChart3, Bot, Clock, EyeOff, FileText, Lightbulb, Megaphone, Mic2, Radar, Users } from "lucide-react";
 import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
 import { SoloDemandSignalMockup } from "@/components/marketing/product-mockups";
 
@@ -80,6 +80,44 @@ const CLIENT_PATHS = [
   },
 ];
 
+const EXPERT_MECHANISMS = [
+  {
+    Icon: Radar,
+    title: "1. Карта спроса",
+    result: "Показывает вопросы, где человек уже близок к записи или консультации.",
+    tools: "Wordstat/XMLRiver, Яндекс Кью через SerpAPI, поисковые подсказки, похожие вопросы, проверка ответов нейросетей, оценка слабости ответа.",
+    output: "Карточка темы: спрос в месяц, намерение пользователя, слабость текущего ответа, шанс на заявку и рекомендуемое действие.",
+  },
+  {
+    Icon: Mic2,
+    title: "2. Голос эксперта",
+    result: "Сохраняет вашу экспертизу, кейсы, ограничения и стиль ответа.",
+    tools: "Telegram-бот, запись на сайте, Whisper/Yandex SpeechKit, уточняющие вопросы после записи, режим минимальной обработки.",
+    output: "Транскрипт, авторские цитаты, структура ответа, FAQ и фактура для страницы.",
+  },
+  {
+    Icon: FileText,
+    title: "3. Страница под вопрос",
+    result: "Делает из ответа публичную страницу, которую понимают поиск, нейросети и клиент.",
+    tools: "SSR-страницы, Schema.org Article/Person/FAQPage, E-E-A-T-блок, FAQ, таблицы, короткое резюме, кнопка записи.",
+    output: "Индексируемая страница под конкретный вопрос с профилем эксперта и понятным действием.",
+  },
+  {
+    Icon: Megaphone,
+    title: "4. Публикация и распространение",
+    result: "Даёт странице первые точки входа и помогает ей попасть в индекс.",
+    tools: "Sitemap, robots.txt, отправка в Google/Яндекс/Bing, кросспостинг, внутренние ссылки, страницы ниш и каталога.",
+    output: "Опубликованная страница, материалы для каналов и первые сигналы индексации.",
+  },
+  {
+    Icon: BarChart3,
+    title: "5. Аналитика результата",
+    result: "Показывает путь от темы к просмотрам, кликам по записи и заявкам.",
+    tools: "События страниц, заявки, позиции, упоминания в нейросетях, Trust Score, рекомендации на обновление.",
+    output: "В личном кабинете видно, какие темы работают, что усилить и какие страницы обновить.",
+  },
+];
+
 export default function ForExpertsPage() {
   return (
     <div className="min-h-screen">
@@ -122,6 +160,45 @@ export default function ForExpertsPage() {
           </div>
           <div>
             <SoloDemandSignalMockup />
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-sm font-semibold text-cyan-300">Механика платформы</p>
+            <h2 className="mt-3 text-3xl font-bold text-white">
+              За счёт чего эксперт получает видимость
+            </h2>
+            <p className="mt-4 text-gray-400">
+              Это не “нейросеть пишет посты”. Платформа собирает спрос, проверяет слабые ответы,
+              берёт ваш голос как источник экспертизы и превращает его в страницы, которые можно измерять.
+            </p>
+          </div>
+
+          <div className="mt-10 space-y-4">
+            {EXPERT_MECHANISMS.map((item) => (
+              <div key={item.title} className="grid gap-5 rounded-2xl border border-white/10 bg-[#101715]/75 p-6 lg:grid-cols-[0.9fr_1.1fr_1.1fr]">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-300/10 text-cyan-200 ring-1 ring-cyan-300/20">
+                      <item.Icon className="h-5 w-5" />
+                    </div>
+                    <h3 className="font-semibold text-white">{item.title}</h3>
+                  </div>
+                  <p className="mt-3 text-sm leading-relaxed text-gray-400">{item.result}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">Инструменты</p>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-300">{item.tools}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">Что получает эксперт</p>
+                  <p className="mt-2 text-sm leading-relaxed text-cyan-100">{item.output}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
