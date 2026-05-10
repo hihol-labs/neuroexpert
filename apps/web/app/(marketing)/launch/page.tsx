@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 interface Props {
-  searchParams: { success?: string };
+  searchParams: { success?: string; package?: string };
 }
 
 const STEPS = [
@@ -26,8 +26,18 @@ const STEPS = [
   "Смотрим трафик, клики, заявки, пропущенные обращения и недельный отчёт",
 ];
 
+function resolvePackageType(packageName?: string): "audit" | "launch_30d" | "managed_monthly" | "b2b" {
+  if (!packageName) return "launch_30d";
+  if (packageName.includes("audit")) return "audit";
+  if (packageName.includes("support") || packageName.includes("managed")) return "managed_monthly";
+  if (packageName.includes("b2b") || packageName.includes("local_sales")) return "b2b";
+  return "launch_30d";
+}
+
 export default function LaunchPage({ searchParams }: Props) {
   const success = searchParams.success === "1";
+  const packageType = resolvePackageType(searchParams.package);
+  const isB2B = packageType === "b2b" || packageType === "audit" || packageType === "managed_monthly";
 
   return (
     <div className="min-h-screen">
@@ -41,13 +51,14 @@ export default function LaunchPage({ searchParams }: Props) {
                 Запуск под ключ
               </p>
               <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">
-                Запускаем канал привлечения клиентов из поиска, карт, Авито, отзывов и нейросетей за 30 дней
+                Запускаем канал привлечения клиентов из поиска, карт, Авито, отзывов, AI и входящих обращений
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-relaxed text-gray-300">
-                Мы продаём не абстрактную платформу, а запуск результата: аудит,
-                упаковку, публикации, усиление карточек, сбор отзывов и первые
-                измеримые сигналы — индексацию, трафик, клики, заявки и найденные
-                потери во входящих обращениях.
+                Мы продаём не абстрактную платформу, а запуск результата:
+                аудит потерь, упаковку точек входа, усиление карточек, сбор
+                отзывов, экспертные страницы и первые измеримые сигналы —
+                индексацию, трафик, клики, заявки, записи и найденные потери
+                во входящих обращениях.
               </p>
               <div className="mt-8 grid gap-3 sm:grid-cols-2">
                 {STEPS.map((step, i) => (
@@ -74,13 +85,17 @@ export default function LaunchPage({ searchParams }: Props) {
                 </div>
               ) : null}
 
-              <h2 className="text-xl font-bold text-white">Получить план запуска</h2>
+              <h2 className="text-xl font-bold text-white">
+                {isB2B ? "Получить аудит и план запуска" : "Получить план запуска"}
+              </h2>
               <p className="mt-2 text-sm text-gray-400">
-                Оставьте контакты — подготовим первичный разбор видимости и формат запуска.
+                Оставьте контакты и базовый контекст — подготовим первичный
+                разбор видимости и формат запуска.
               </p>
 
               <form action="/api/service-orders" method="POST" className="mt-6 space-y-4">
-                <input type="hidden" name="package_type" value="launch_30d" />
+                <input type="hidden" name="package_type" value={packageType} />
+                <input type="hidden" name="package_label" value={searchParams.package || "launch_30d"} />
                 <div>
                   <label className="mb-1 block text-sm text-gray-300">Имя *</label>
                   <input
@@ -117,6 +132,14 @@ export default function LaunchPage({ searchParams }: Props) {
                   />
                 </div>
                 <div>
+                  <label className="mb-1 block text-sm text-gray-300">Город / район</label>
+                  <input
+                    name="city"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-gray-500 outline-none focus:border-cyan-400"
+                    placeholder="Город, район или филиалы"
+                  />
+                </div>
+                <div>
                   <label className="mb-1 block text-sm text-gray-300">Сайт или площадки</label>
                   <input
                     name="website"
@@ -125,12 +148,21 @@ export default function LaunchPage({ searchParams }: Props) {
                   />
                 </div>
                 <div>
+                  <label className="mb-1 block text-sm text-gray-300">Конкуренты</label>
+                  <textarea
+                    name="competitors"
+                    rows={2}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-gray-500 outline-none focus:border-cyan-400"
+                    placeholder="3-5 компаний, с которыми вас сравнивают"
+                  />
+                </div>
+                <div>
                   <label className="mb-1 block text-sm text-gray-300">Цель</label>
                   <textarea
                     name="goal"
                     rows={3}
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-gray-500 outline-none focus:border-cyan-400"
-                    placeholder="Каких клиентов хотите привлекать и какая услуга самая важная"
+                    placeholder="Каких клиентов хотите привлекать, какая услуга важнее всего, есть ли пропущенные звонки или лиды без follow-up"
                   />
                 </div>
                 <button

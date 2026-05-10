@@ -51,67 +51,50 @@
       "command": "pnpm typecheck"
     }
   ],
-  "selectedGates": [
-    {
-      "gate": "build",
-      "script": "build",
-      "command": "pnpm build"
-    },
-    {
-      "gate": "lint",
-      "script": "lint",
-      "command": "pnpm lint"
-    },
-    {
-      "gate": "tests",
-      "script": "test",
-      "command": "pnpm test"
-    },
-    {
-      "gate": "tests",
-      "script": "typecheck",
-      "command": "pnpm typecheck"
-    }
-  ],
-  "gateRuns": [
-    {
-      "gate": "build",
-      "script": "build",
-      "command": "pnpm build",
-      "status": "PASS",
-      "exitCode": 0,
-      "summary": "Command completed successfully.",
-      "outputTail": "web:build: ├ ○ /profile                             3.67 kB         146 kB\nweb:build: ├ ƒ /questions                           208 B          96.2 kB\nweb:build: ├ ƒ /questions/[slug]                    208 B          96.2 kB\nweb:build: ├ ○ /register                            5.38 kB         157 kB\nweb:build: ├ ○ /requisites                          185 B          98.8 kB\nweb:build: ├ ○ /robots.txt                          0 B                0 B\nweb:build: ├ ○ /scan                                2.09 kB         101 kB\nweb:build: ├ ƒ /scan/[slug]                         189 B          98.8 kB\nweb:build: ├ ƒ /sitemap.xml                         0 B                0 B\nweb:build: ├ ○ /team                                3.27 kB        99.3 kB\nweb:build: ├ ○ /terms                               185 B          98.8 kB\nweb:build: └ ƒ /track/[token]                       208 B          96.2 kB\nweb:build: + First Load JS shared by all            87.3 kB\nweb:build:   ├ chunks/2749-34c413b392683b6f.js      31.7 kB\nweb:build:   ├ chunks/5b8f0dd8-a86d9eaff2fb0233.js  53.6 kB\nweb:build:   └ other shared chunks (total)          1.96 kB\nweb:build: \nweb:build: \nweb:build: ƒ Middleware                             75.2 kB\nweb:build: \nweb:build: ○  (Static)   prerendered as static content\nweb:build: ƒ  (Dynamic)  server-rendered on demand\nweb:build: \n\n Tasks:    4 successful, 4 total\nCached:    4 cached, 4 total\n  Time:    3.031s >>> FULL TURBO\n\n\n• turbo 2.8.16"
-    },
-    {
-      "gate": "lint",
-      "script": "lint",
-      "command": "pnpm lint",
-      "status": "PASS",
-      "exitCode": 0,
-      "summary": "Command completed successfully.",
-      "outputTail": "> neuroexpert@ lint /home/hihol/projects/neuroexpert\n> turbo lint\n\n• Packages in scope: bot, shared, web, worker\n• Running lint in 4 packages\n• Remote caching disabled\nshared:build: cache hit, replaying logs 2e119e00272d3823\nshared:build: \nshared:build: > shared@0.1.0 build /home/hihol/projects/neuroexpert/packages/shared\nshared:build: > tsc\nshared:build: \nbot:build: cache hit, replaying logs cf66945483cf0d1e\nbot:build: \nbot:build: > bot@0.1.0 build /home/hihol/projects/neuroexpert/apps/bot\nbot:build: > tsc\nbot:build: \nweb:lint: cache hit, replaying logs 99a60588538e5b26\nweb:lint: \nweb:lint: > web@0.1.0 lint /home/hihol/projects/neuroexpert/apps/web\nweb:lint: > next lint\nweb:lint: \nweb:lint: ✔ No ESLint warnings or errors\n\n Tasks:    3 successful, 3 total\nCached:    3 cached, 3 total\n  Time:    92ms >>> FULL TURBO\n\n\n• turbo 2.8.16"
-    },
-    {
-      "gate": "tests",
-      "script": "test",
-      "command": "pnpm test",
-      "status": "PASS",
-      "exitCode": 0,
-      "summary": "Command completed successfully.",
-      "outputTail": "> pnpm --filter shared test\n\n\n> shared@0.1.0 test /home/hihol/projects/neuroexpert/packages/shared\n> pnpm build && node --test tests/*.test.cjs\n\n\n> shared@0.1.0 build /home/hihol/projects/neuroexpert/packages/shared\n> tsc\n\nTAP version 13\n# Subtest: /home/hihol/projects/neuroexpert/packages/shared/tests/slug.test.cjs\nok 1 - /home/hihol/projects/neuroexpert/packages/shared/tests/slug.test.cjs\n  ---\n  duration_ms: 131.607365\n  ...\n# Subtest: /home/hihol/projects/neuroexpert/packages/shared/tests/subscription-tiers.test.cjs\nok 2 - /home/hihol/projects/neuroexpert/packages/shared/tests/subscription-tiers.test.cjs\n  ---\n  duration_ms: 126.144613\n  ...\n1..2\n# tests 2\n# suites 0\n# pass 2\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 157.683842"
-    },
-    {
-      "gate": "tests",
-      "script": "typecheck",
-      "command": "pnpm typecheck",
-      "status": "PASS",
-      "exitCode": 0,
-      "summary": "Command completed successfully.",
-      "outputTail": "web:build: ├ ○ /profile                             3.67 kB         146 kB\nweb:build: ├ ƒ /questions                           208 B          96.2 kB\nweb:build: ├ ƒ /questions/[slug]                    208 B          96.2 kB\nweb:build: ├ ○ /register                            5.38 kB         157 kB\nweb:build: ├ ○ /requisites                          185 B          98.8 kB\nweb:build: ├ ○ /robots.txt                          0 B                0 B\nweb:build: ├ ○ /scan                                2.09 kB         101 kB\nweb:build: ├ ƒ /scan/[slug]                         189 B          98.8 kB\nweb:build: ├ ƒ /sitemap.xml                         0 B                0 B\nweb:build: ├ ○ /team                                3.27 kB        99.3 kB\nweb:build: ├ ○ /terms                               185 B          98.8 kB\nweb:build: └ ƒ /track/[token]                       208 B          96.2 kB\nweb:build: + First Load JS shared by all            87.3 kB\nweb:build:   ├ chunks/2749-34c413b392683b6f.js      31.7 kB\nweb:build:   ├ chunks/5b8f0dd8-a86d9eaff2fb0233.js  53.6 kB\nweb:build:   └ other shared chunks (total)          1.96 kB\nweb:build: \nweb:build: \nweb:build: ƒ Middleware                             75.2 kB\nweb:build: \nweb:build: ○  (Static)   prerendered as static content\nweb:build: ƒ  (Dynamic)  server-rendered on demand\nweb:build: \n\n Tasks:    4 successful, 4 total\nCached:    4 cached, 4 total\n  Time:    160ms >>> FULL TURBO\n\n\n• turbo 2.8.16"
-    }
-  ],
+  "selectedGates": [],
+  "gateRuns": [],
   "securityFindings": [],
+  "contractGate": {
+    "status": "BLOCKED",
+    "changedFiles": [
+      "AGENTS.md",
+      "CODEX.md"
+    ],
+    "riskClasses": [
+      "business_logic_change",
+      "dependency_change",
+      "deployment_change",
+      "documentation_change",
+      "security_change"
+    ],
+    "missingContracts": [],
+    "placeholderContracts": [
+      ".pfo/PROJECT_CONTRACT.md",
+      ".pfo/FORBIDDEN_CHANGES.md",
+      ".pfo/FALLBACK_POLICY.md",
+      ".pfo/SCOPE_LOCK.md"
+    ],
+    "blockers": [
+      "AGENTS.md: added possible silent substitution: Then route work through `/task`, update `.codex-memory/STATE.json`, and respect `.pfo/` contracts. Project-local rules may add constraints, but they do not repl",
+      "CODEX.md: added possible silent substitution: Then route work through `/task`, update `.codex-memory/STATE.json`, and respect `.pfo/` contracts. Project-local rules may add constraints, but they do not repl"
+    ],
+    "warnings": [
+      "placeholder contract content: .pfo/PROJECT_CONTRACT.md",
+      "placeholder contract content: .pfo/FORBIDDEN_CHANGES.md",
+      "placeholder contract content: .pfo/FALLBACK_POLICY.md",
+      "placeholder contract content: .pfo/SCOPE_LOCK.md"
+    ],
+    "gates": {
+      "scopeLock": "BLOCKED",
+      "dataAuthenticity": "BLOCKED",
+      "goldenFlows": "PASS",
+      "regressionContract": "PASS_WITH_WARNINGS",
+      "fallbackPolicy": "BLOCKED",
+      "diffRisk": "PASS_WITH_WARNINGS",
+      "noSilentSubstitution": "BLOCKED"
+    }
+  },
+  "createdContracts": [],
   "classification": {
     "productType": "SaaS Application + Messaging Bot + Background Worker",
     "domain": "existing project inferred from repository docs and stack",
@@ -140,5 +123,5 @@
     "auth": "Supabase auth or project-specific auth",
     "deployment": "Docker Compose"
   },
-  "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 4 gate command(s)."
+  "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 0 gate command(s)."
 }

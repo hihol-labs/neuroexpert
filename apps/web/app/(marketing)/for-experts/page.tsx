@@ -2,9 +2,9 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
 
-const TITLE = "Карта спроса и заявки для экспертов | НейроЭксперт";
+const TITLE = "Новые клиенты для экспертов из поиска и нейросетей | НейроЭксперт";
 const DESCRIPTION =
-  "НейроЭксперт находит реальные вопросы людей в вашей нише и превращает голосовые ответы эксперта в страницы для привлечения заявок.";
+  "НейроЭксперт находит реальные вопросы клиентов, превращает голосовые ответы эксперта в страницы с кнопкой записи и помогает получать заявки из поиска и нейросетей.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -59,6 +59,25 @@ const PROOF_NUMBERS = [
   { value: "Заявка", label: "каждая страница ведёт к действию: запись, разбор или консультация" },
 ];
 
+const CLIENT_PATHS = [
+  {
+    title: "Человек ищет проблему",
+    desc: "В Яндексе, Google или нейросети он спрашивает не “ваш бренд”, а конкретную боль, цену, выбор или риск.",
+  },
+  {
+    title: "Страница даёт экспертный ответ",
+    desc: "На странице есть ваш опыт, понятная структура, профиль эксперта, FAQ и ответ на коммерческий вопрос.",
+  },
+  {
+    title: "CTA ведёт к записи",
+    desc: "После ответа человек видит действие: записаться, задать вопрос, получить разбор или консультацию.",
+  },
+  {
+    title: "Вы видите результат",
+    desc: "В кабинете считаются опубликованные страницы, индексация, просмотры, клики по записи, заявки и AI-упоминания.",
+  },
+];
+
 export default function ForExpertsPage() {
   return (
     <div className="min-h-screen">
@@ -68,17 +87,57 @@ export default function ForExpertsPage() {
       <section className="pb-16 pt-16">
         <div className="mx-auto max-w-4xl px-6 text-center">
           <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
-            Не контент ради контента —{" "}
-            <span className="text-blue-400">страницы под реальный спрос</span>
+            Ваши знания могут приводить{" "}
+            <span className="text-blue-400">новых клиентов</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-300">
-            НейроЭксперт находит вопросы, по которым люди уже ищут решение.
-            Вы отвечаете голосом, а мы превращаем ответ в страницу с понятным CTA:
-            записаться, задать вопрос или получить разбор.
+            НейроЭксперт находит вопросы, по которым люди уже ищут решение
+            и выбирают специалиста. Вы отвечаете голосом, а мы превращаем
+            ответ в страницу с понятным CTA: записаться, задать вопрос или
+            получить разбор.
           </p>
           <p className="mx-auto mt-4 max-w-xl text-base text-gray-400">
-            Логика простая: спрос → экспертный ответ → страница → трафик → заявка.
+            Логика простая: спрос → экспертный ответ → страница → трафик → клик по записи → заявка.
           </p>
+          <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/audit"
+              className="rounded-lg bg-blue-500 px-8 py-3 text-base font-semibold text-white hover:bg-blue-400 transition-colors"
+            >
+              Найти спрос в моей нише
+            </Link>
+            <Link
+              href="/pricing"
+              className="rounded-lg border border-white/15 px-8 py-3 text-base font-semibold text-white hover:bg-white/10 transition-colors"
+            >
+              Посмотреть тарифы
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Путь к клиенту */}
+      <section className="py-16">
+        <div className="mx-auto max-w-6xl px-6">
+          <h2 className="text-3xl font-bold text-white text-center">
+            Как экспертный ответ превращается в заявку
+          </h2>
+          <p className="mt-4 text-center text-gray-400 max-w-2xl mx-auto">
+            Мы не просим вас вести контент-машину каждый день. Система берёт
+            ваш голос и превращает его в точки входа, где будущий клиент уже
+            ищет решение.
+          </p>
+          <div className="mt-10 grid gap-4 md:grid-cols-4">
+            {CLIENT_PATHS.map((item, index) => (
+              <div key={item.title} className="rounded-2xl border border-white/10 bg-white/5 p-5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/20 text-sm font-bold text-blue-300">
+                  {index + 1}
+                </div>
+                <h3 className="mt-4 text-base font-semibold text-white">{item.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-gray-400">{item.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -95,7 +154,7 @@ export default function ForExpertsPage() {
                 <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Находим вопросы с подтверждённым спросом и понятным клиентским намерением</li>
                 <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Превращаем ваш голос в экспертную страницу под конкретный вопрос</li>
                 <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Публикуем страницу с SEO-структурой, AI-разметкой и вашим профилем</li>
-                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>На каждой странице — кнопка «Записаться к эксперту»</li>
+                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>На каждой странице — кнопка записи, консультации или разбора</li>
                 <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Отслеживаем индексацию, трафик, клики и заявки</li>
                 <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Корректируем следующие темы по фактическому результату</li>
               </ul>

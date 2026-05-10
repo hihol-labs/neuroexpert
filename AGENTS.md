@@ -266,3 +266,21 @@ packages/
 9. **TL;DR — первый абзац.** Featured Snippets мигрируют в ChatGPT почти 100%. Не пропускай.
 10. **CWV: FCP < 0.4 сек.** Проверяй после шага 7. Медленная страница = -3x цитирований.
 11. **Первые 72 часа после публикации — критичны.** Шеринг в Telegram-чаты создаёт поведенческие факторы. Не откладывай crosspost_social.
+
+<!-- PFO_PROJECT_RUNTIME_START -->
+## Product Factory OS Runtime
+
+This existing project is adopted into Product Factory OS.
+
+- Workspace: `/home/hihol/projects`
+- Methodology: `/home/hihol/projects/product-factory-os`
+- Project: `/home/hihol/projects/neuroexpert`
+
+Before substantial implementation, Codex must use:
+
+```bash
+pfo adopt /home/hihol/projects/neuroexpert --analyze
+```
+
+Then route work through `/task`, update `.codex-memory/STATE.json`, and respect `.pfo/` contracts. Project-local rules may add constraints, but they do not replace PFO gates, memory, or scope/data/fallback contracts.
+<!-- PFO_PROJECT_RUNTIME_END -->

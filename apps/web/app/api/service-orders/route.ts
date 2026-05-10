@@ -51,8 +51,11 @@ export async function POST(request: NextRequest) {
       email,
       niche,
       website,
+      city,
+      competitors,
       goal,
       package_type,
+      package_label,
       utm_source,
       utm_medium,
       utm_campaign,
@@ -66,6 +69,15 @@ export async function POST(request: NextRequest) {
     }
 
     const admin = getAdmin();
+    const enrichedGoal = [
+      goal || null,
+      city ? `Город/район: ${city}` : null,
+      competitors ? `Конкуренты: ${competitors}` : null,
+      package_label ? `Пакет/метка: ${package_label}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
     const { data, error } = await admin
       .from("service_orders")
       .insert({
@@ -74,7 +86,7 @@ export async function POST(request: NextRequest) {
         email: email || null,
         niche: niche || null,
         website: website || null,
-        goal: goal || null,
+        goal: enrichedGoal || null,
         package_type: package_type || "launch_30d",
         source: "launch_page",
         referrer: request.headers.get("referer") || null,

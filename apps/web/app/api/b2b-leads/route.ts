@@ -30,7 +30,20 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { name, company, contact, experts_count, message } = body;
+    const {
+      name,
+      company,
+      contact,
+      experts_count,
+      city,
+      niche,
+      website,
+      platforms,
+      competitors,
+      avg_check,
+      current_leads,
+      message,
+    } = body;
 
     if (!name || !company || !contact) {
       return NextResponse.json(
@@ -40,7 +53,20 @@ export async function POST(request: NextRequest) {
     }
 
     // B2B leads go directly to Telegram (leads table requires expert_id NOT NULL)
-    await sendTelegramNotification(name, company, contact, experts_count, message);
+    await sendTelegramNotification({
+      name,
+      company,
+      contact,
+      expertsCount: experts_count,
+      city,
+      niche,
+      website,
+      platforms,
+      competitors,
+      avgCheck: avg_check,
+      currentLeads: current_leads,
+      message,
+    });
 
     return NextResponse.json({ ok: true });
   } catch (err) {
@@ -52,25 +78,39 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function sendTelegramNotification(
-  name: string,
-  company: string,
-  contact: string,
-  expertsCount?: string,
-  message?: string,
-): Promise<void> {
+async function sendTelegramNotification(payload: {
+  name: string;
+  company: string;
+  contact: string;
+  expertsCount?: string;
+  city?: string;
+  niche?: string;
+  website?: string;
+  platforms?: string;
+  competitors?: string;
+  avgCheck?: string;
+  currentLeads?: string;
+  message?: string;
+}): Promise<void> {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
   if (!botToken || !adminChatId) return;
 
   const text = [
-    "🏢 Новая B2B-заявка!",
+    "🏢 Новая B2B-заявка на Local Sales Audit!",
     "",
-    `👤 ${name}`,
-    `🏢 ${company}`,
-    `📱 ${contact}`,
-    ...(expertsCount ? [`👥 Экспертов: ${expertsCount}`] : []),
-    ...(message ? [`💬 ${message}`] : []),
+    `👤 ${payload.name}`,
+    `🏢 ${payload.company}`,
+    `📱 ${payload.contact}`,
+    ...(payload.expertsCount ? [`👥 Экспертов/точек: ${payload.expertsCount}`] : []),
+    ...(payload.city ? [`📍 Город: ${payload.city}`] : []),
+    ...(payload.niche ? [`🧩 Ниша: ${payload.niche}`] : []),
+    ...(payload.website ? [`🌐 Сайт: ${payload.website}`] : []),
+    ...(payload.platforms ? ["", `🔗 Площадки:\n${payload.platforms}`] : []),
+    ...(payload.competitors ? ["", `🥊 Конкуренты:\n${payload.competitors}`] : []),
+    ...(payload.avgCheck ? [`💰 Средний чек: ${payload.avgCheck}`] : []),
+    ...(payload.currentLeads ? [`📈 Заявки/потери: ${payload.currentLeads}`] : []),
+    ...(payload.message ? ["", `💬 Задача:\n${payload.message}`] : []),
   ].join("\n");
 
   try {

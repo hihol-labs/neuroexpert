@@ -1,7 +1,7 @@
 {
   "sessionState": "ACTIVE",
-  "currentStage": "STAGE_1_RESTORE_LOGIN_AND_BASIC_AVAILABILITY",
-  "intent": "NeuroExpert work must strictly follow CURRENT_PLAN.md in order; no stage skipping unless the user explicitly changes the sequence.",
+  "currentStage": "EXISTING_PROJECT_ANALYZED",
+  "intent": "Existing project `neuroexpert` analyzed by Product Factory OS.",
   "classification": {
     "productType": "SaaS Application + Messaging Bot + Background Worker",
     "domain": "existing project inferred from repository docs and stack",
@@ -57,18 +57,25 @@
       "pnpm typecheck"
     ],
     "currentTaskRoute": "/task -> adoption-check -> repository-analysis -> task-classification -> gates -> state-save",
-    "lastAnalysisSummary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 4 gate command(s)."
+    "lastAnalysisSummary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 0 gate command(s)."
   },
   "currentNode": "stage-1.1-yandex-360-balance-and-smtp-restore",
   "gateResults": {
     "strategy": "PASS",
     "architecture": "PASS",
-    "tests": "PASS",
-    "review": "PASS",
+    "tests": "NOT_CONFIGURED",
+    "review": "NOT_RUN",
     "security": "PASS",
     "dependencies": "NOT_RUN",
     "hardening": "NOT_RUN",
-    "deploymentReadiness": "PASS"
+    "deploymentReadiness": "BLOCKED",
+    "scopeLock": "BLOCKED",
+    "dataAuthenticity": "BLOCKED",
+    "goldenFlows": "PASS",
+    "regressionContract": "PASS_WITH_WARNINGS",
+    "fallbackPolicy": "BLOCKED",
+    "diffRisk": "PASS_WITH_WARNINGS",
+    "noSilentSubstitution": "BLOCKED"
   },
   "verificationHistory": [
     {
@@ -155,6 +162,12 @@
       "stage": "REVIEWING",
       "status": "PASS",
       "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 4 gate command(s)."
+    },
+    {
+      "mode": "existing-project-analyze",
+      "stage": "EXISTING_PROJECT_ANALYZED",
+      "status": "BLOCKED",
+      "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 0 gate command(s)."
     }
   ],
   "decisionLog": [
@@ -217,6 +230,10 @@
     {
       "event": "strict current plan sequence locked",
       "note": "2026-05-04: User explicitly required all future NeuroExpert work to follow CURRENT_PLAN.md strictly in order. No skipping stages; first active item remains Yandex 360 payment/refill and SMTP/magic-link restoration."
+    },
+    {
+      "event": "existing project analyzer run",
+      "note": "runGates=False"
     }
   ],
   "artifactHashes": {},
@@ -228,12 +245,15 @@
     "PFO_EXISTING_PROJECT_ANALYSIS.json",
     "PFO_REPORT.md",
     ".codex-memory/NEUROEXPERT_EXECUTION_SEQUENCE.md",
-    "CURRENT_PLAN.md"
+    "CURRENT_PLAN.md",
+    "PFO_CONTRACT_GATE.json"
   ],
   "completedModules": [],
   "failedValidations": [],
   "blockers": [
-    "Yandex 360 services are in viewing mode due to insufficient balance; SMTP is disabled, so Supabase magic links fail."
+    "AGENTS.md: added possible silent substitution: Then route work through `/task`, update `.codex-memory/STATE.json`, and respect `.pfo/` contracts. Project-local rules may add constraints, but they do not repl",
+    "CODEX.md: added possible silent substitution: Then route work through `/task`, update `.codex-memory/STATE.json`, and respect `.pfo/` contracts. Project-local rules may add constraints, but they do not repl",
+    "No root test/typecheck script was detected."
   ],
-  "nextAction": "Start every NeuroExpert work session by reading AGENTS.md and CURRENT_PLAN.md. Active first item: pay/refill Yandex 360, remove viewing mode, restart supabase-auth, and verify magic link /otp returns 200."
+  "nextAction": "Resolve analyzer blockers before deploy readiness."
 }
