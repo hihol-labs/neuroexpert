@@ -2,31 +2,37 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Building2, LayoutDashboard, Search, TrendingUp, Users } from "lucide-react";
 import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
 import { FadeIn } from "@/components/marketing/fade-in";
+import {
+  LocalSalesAuditMockup,
+  RevenueCalculatorMockup,
+  SevenDayResultPanel,
+} from "@/components/marketing/product-mockups";
 
 const ALL_NICHES = [
-  { icon: "🦷", name: "Стоматологии", focus: true },
-  { icon: "✨", name: "Косметологии", focus: true },
-  { icon: "💆", name: "Салоны красоты", focus: true },
-  { icon: "🚗", name: "Автосервисы", focus: true },
-  { icon: "⚖️", name: "Юрфирмы", focus: true },
-  { icon: "🏥", name: "Медцентры", focus: false },
-  { icon: "🧒", name: "Детские центры", focus: false },
-  { icon: "🗣️", name: "Логопеды", focus: false },
-  { icon: "🧠", name: "Психологи", focus: false },
-  { icon: "🏠", name: "Ремонт квартир", focus: false },
-  { icon: "🧼", name: "Клининг", focus: false },
-  { icon: "❄️", name: "Кондиционеры", focus: false },
-  { icon: "🪟", name: "Окна и двери", focus: false },
-  { icon: "🎓", name: "Образование", focus: false },
-  { icon: "💪", name: "Фитнес", focus: false },
+  { Icon: Building2, name: "Стоматологии", focus: true },
+  { Icon: Building2, name: "Косметологии", focus: true },
+  { Icon: Building2, name: "Салоны красоты", focus: true },
+  { Icon: Building2, name: "Автосервисы", focus: true },
+  { Icon: Building2, name: "Юрфирмы", focus: true },
+  { Icon: Users, name: "Медцентры", focus: false },
+  { Icon: Users, name: "Детские центры", focus: false },
+  { Icon: Users, name: "Логопеды", focus: false },
+  { Icon: Users, name: "Психологи", focus: false },
+  { Icon: Users, name: "Ремонт квартир", focus: false },
+  { Icon: Users, name: "Клининг", focus: false },
+  { Icon: Users, name: "Кондиционеры", focus: false },
+  { Icon: Users, name: "Окна и двери", focus: false },
+  { Icon: Users, name: "Образование", focus: false },
+  { Icon: Users, name: "Фитнес", focus: false },
 ];
 
 const STEPS = [
-  { num: "01", title: "Находим спрос и потери", desc: "Смотрим поиск, карты, Авито, отзывы, сайт, звонки и нейросети. Видно, где клиент не доходит до заявки или выбирает конкурента.", icon: "🔍" },
-  { num: "02", title: "Запускаем точки входа", desc: "Упаковываем карточки, страницы, FAQ, CTA, отзывы и экспертные ответы под реальные вопросы людей.", icon: "🧩" },
-  { num: "03", title: "Доводим до продаж", desc: "Даём ежедневные задачи, возвращаем потерянные лиды и считаем трафик, клики, обращения, записи и повторные касания.", icon: "📈" },
+  { num: "01", title: "Находим спрос и потери", desc: "Смотрим поиск, карты, Авито, отзывы, сайт, звонки и нейросети. Видно, где клиент не доходит до заявки или выбирает конкурента.", Icon: Search },
+  { num: "02", title: "Запускаем точки входа", desc: "Упаковываем карточки, страницы, FAQ, CTA, отзывы и экспертные ответы под реальные вопросы людей.", Icon: LayoutDashboard },
+  { num: "03", title: "Доводим до продаж", desc: "Даём ежедневные задачи, возвращаем потерянные лиды и считаем трафик, клики, обращения, записи и повторные касания.", Icon: TrendingUp },
 ];
 
 const STATS = [
@@ -125,59 +131,57 @@ export default function LandingPage() {
       <MarketingHeader />
 
         {/* ===== HERO ===== */}
-        <section className="min-h-[92vh] flex items-center justify-center">
-          <div className="mx-auto max-w-4xl px-6 py-20 text-center">
-            <FadeIn>
-              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-5 py-2 backdrop-blur-md">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute h-full w-full rounded-full bg-cyan-400 opacity-75" />
-                  <span className="relative h-2 w-2 rounded-full bg-cyan-400" />
-                </span>
-                <span className="text-sm font-medium text-cyan-300">Local Sales OS + НейроЭксперт Solo</span>
-              </div>
-            </FadeIn>
+        <section className="min-h-[92vh]">
+          <div className="mx-auto grid max-w-7xl gap-12 px-6 py-20 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+            <div>
+              <FadeIn>
+                <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-5 py-2 backdrop-blur-md">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" />
+                    <span className="relative h-2 w-2 rounded-full bg-cyan-400" />
+                  </span>
+                  <span className="text-sm font-medium text-cyan-200">Local Sales OS + НейроЭксперт Solo</span>
+                </div>
+              </FadeIn>
 
-            <FadeIn delay={150}>
-              <h1 className="mt-10 text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl leading-[1.1]">
-                <span className="text-white">Запускаем систему</span>
-                <br />
-                <span className="text-cyan-400 [text-shadow:_0_0_40px_rgba(34,211,238,0.5),_0_0_80px_rgba(34,211,238,0.2)]">
-                  роста клиентского потока
-                </span>
-                <br />
-                <span className="text-white">из поиска, карт и AI</span>
-              </h1>
-            </FadeIn>
+              <FadeIn delay={150}>
+                <h1 className="mt-8 max-w-3xl text-4xl font-bold leading-[1.08] text-white sm:text-5xl lg:text-6xl">
+                  Найдём, где бизнес теряет клиентов, и запустим рост продаж
+                </h1>
+              </FadeIn>
 
-            <FadeIn delay={300}>
-              <p className="mx-auto mt-8 max-w-2xl text-lg text-gray-300 leading-relaxed">
-                Для локального бизнеса и экспертов: находим реальный спрос,
-                показываем, где теряются клиенты, усиливаем видимость в поиске,
-                картах, Авито, отзывах и нейросетях, а затем доводим канал до
-                кликов, заявок, записей и продаж.
-              </p>
-            </FadeIn>
+              <FadeIn delay={300}>
+                <p className="mt-6 max-w-2xl text-lg leading-relaxed text-gray-300">
+                  Показываем не абстрактную “AI-видимость”, а конкретные точки потерь:
+                  карты, 2ГИС, Авито, отзывы, AI-ответы, звонки, переписки,
+                  конкурентов и задачи, которые двигают заявки.
+                </p>
+              </FadeIn>
 
-            <FadeIn delay={450}>
-              <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  href="/audit"
-                  className="group relative rounded-2xl px-10 py-4 text-lg font-semibold text-white overflow-hidden transition-all hover:scale-105 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.3)] hover:shadow-[0_0_25px_rgba(34,211,238,0.5)]"
-                >
-                  <span className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl" />
-                  <span className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <span className="absolute -inset-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl blur-xl opacity-50 group-hover:opacity-80 transition-opacity duration-300" />
-                  <span className="relative">Получить аудит видимости</span>
-                </Link>
-                <Link
-                  href="/for-business"
-                  className="rounded-2xl border border-cyan-400/30 bg-white/5 px-10 py-4 text-lg font-semibold text-white backdrop-blur-md shadow-[0_0_10px_rgba(34,211,238,0.15)] hover:bg-white/10 hover:border-cyan-400/60 hover:shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-all"
-                >
-                  Local Sales OS
-                </Link>
-              </div>
-            </FadeIn>
+              <FadeIn delay={420}>
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                  <Link
+                    href="/for-business"
+                    className="rounded-2xl bg-cyan-300 px-8 py-4 text-base font-semibold text-slate-950 transition-colors hover:bg-cyan-200"
+                  >
+                    Получить Local Sales Audit
+                  </Link>
+                  <Link
+                    href="/how-it-works"
+                    className="rounded-2xl border border-white/15 bg-white/[0.04] px-8 py-4 text-base font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/10"
+                  >
+                    Как это работает
+                  </Link>
+                </div>
+                <p className="mt-4 text-sm text-gray-500">
+                  Для Solo-экспертов: карта спроса, голосовые ответы, страницы и заявки.
+                </p>
+              </FadeIn>
+            </div>
 
+            <FadeIn delay={260}>
+              <LocalSalesAuditMockup />
+            </FadeIn>
           </div>
         </section>
 
@@ -240,6 +244,18 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
+            </FadeIn>
+          </div>
+        </section>
+
+        {/* ===== ПРИМЕР ОТЧЁТА ===== */}
+        <section className="py-20">
+          <div className="mx-auto grid max-w-7xl gap-6 px-6 lg:grid-cols-[1.2fr_0.8fr]">
+            <FadeIn>
+              <SevenDayResultPanel />
+            </FadeIn>
+            <FadeIn delay={140}>
+              <RevenueCalculatorMockup />
             </FadeIn>
           </div>
         </section>
@@ -315,7 +331,7 @@ export default function LandingPage() {
                   <div className="relative h-full rounded-3xl border border-white/10 bg-[#04080f]/60 p-8 backdrop-blur-xl hover:border-cyan-500/20 transition-all overflow-hidden">
                     <div className="absolute -top-px left-10 right-10 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                     <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-1.5 text-sm font-bold text-white shadow-[0_0_20px_rgba(34,211,238,0.25)]">
-                      <span>{step.icon}</span> Шаг {step.num}
+                      <step.Icon className="h-4 w-4" /> Шаг {step.num}
                     </div>
                     <h3 className="mt-5 text-xl font-semibold text-white">{step.title}</h3>
                     <p className="mt-3 text-gray-400 leading-relaxed">{step.desc}</p>
@@ -353,7 +369,7 @@ export default function LandingPage() {
                       ? "border-cyan-500/25 bg-cyan-500/10 hover:border-cyan-400/50 shadow-[0_0_15px_rgba(34,211,238,0.08)]"
                       : "border-white/10 bg-[#04080f]/50 hover:border-cyan-500/20 hover:bg-cyan-500/5"
                   }`}>
-                    <span className="text-2xl group-hover:scale-110 inline-block transition-transform">{niche.icon}</span>
+                    <niche.Icon className={`mx-auto h-6 w-6 transition-transform group-hover:scale-110 ${niche.focus ? "text-cyan-300" : "text-gray-500"}`} />
                     <h3 className={`mt-2 text-sm font-semibold ${niche.focus ? "text-cyan-300" : "text-gray-400"}`}>{niche.name}</h3>
                   </div>
                 </FadeIn>

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { BarChart3, Bot, Clock, EyeOff, Lightbulb, Users } from "lucide-react";
 import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
+import { SoloDemandSignalMockup } from "@/components/marketing/product-mockups";
 
 const TITLE = "Новые клиенты для экспертов из поиска и нейросетей | НейроЭксперт";
 const DESCRIPTION =
@@ -16,37 +18,37 @@ export const metadata: Metadata = {
 
 const PAINS = [
   {
-    icon: "😐",
+    Icon: Lightbulb,
     title: "Не знаю, о чём писать",
     desc: "Садитесь за пост — и зависаете. Выбираете тему наугад. Результата нет.",
     solution: "Система находит вопросы с подтверждённым спросом и показывает, какие из них ближе всего к заявке. Вы точно знаете: эта тема нужна людям.",
   },
   {
-    icon: "😩",
+    Icon: Clock,
     title: "Нет времени на контент",
     desc: "Работа с клиентами 6-8 часов. Писать посты — ещё 2 часа. Большинство бросает через 2 месяца.",
     solution: "Наговорите 3-10 минут голосом в Telegram. Система создаст 5 форматов контента: статью, пост, карточки, Reels-скрипт и FAQ.",
   },
   {
-    icon: "👻",
+    Icon: EyeOff,
     title: "Пишу, но никто не видит",
     desc: "Канал на 300 подписчиков, охват 50 человек. Нет сайта, не знаете SEO.",
     solution: "Мы публикуем страницу под конкретный вопрос: понятный ответ, SEO-структура, AI-разметка и кнопка «Записаться к вам».",
   },
   {
-    icon: "📉",
+    Icon: BarChart3,
     title: "Не понимаю, что работает",
     desc: "Нет связи между контентом и клиентами. Пишете в пустоту.",
     solution: "Дашборд показывает: какие страницы опубликованы, что индексируется, сколько пришло посетителей, кликов и заявок. Вы видите путь от темы к клиенту.",
   },
   {
-    icon: "😤",
+    Icon: Users,
     title: "Коллеги видимы, а я — нет",
     desc: "Специалисты с меньшим опытом собирают аудиторию благодаря активному ведению соцсетей. Вас — не видно.",
     solution: "Мы целимся в вопросы, где есть спрос и слабые ответы. Ваша экспертиза закрывает пробел — и страница получает шанс работать в поиске и AI-ответах.",
   },
   {
-    icon: "🤖",
+    Icon: Bot,
     title: "AI даёт неточные советы по моей теме",
     desc: "ChatGPT рекомендует устаревшее, клиенты приходят с ложными ожиданиями.",
     solution: "Ваш экспертный ответ замещает неточный. Это и привлечение клиентов, и миссия — улучшение качества информации для людей.",
@@ -85,33 +87,41 @@ export default function ForExpertsPage() {
 
       {/* Hero */}
       <section className="pb-16 pt-16">
-        <div className="mx-auto max-w-4xl px-6 text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
-            Ваши знания могут приводить{" "}
-            <span className="text-blue-400">новых клиентов</span>
-          </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-300">
-            НейроЭксперт находит вопросы, по которым люди уже ищут решение
-            и выбирают специалиста. Вы отвечаете голосом, а мы превращаем
-            ответ в страницу с понятным CTA: записаться, задать вопрос или
-            получить разбор.
-          </p>
-          <p className="mx-auto mt-4 max-w-xl text-base text-gray-400">
-            Логика простая: спрос → экспертный ответ → страница → трафик → клик по записи → заявка.
-          </p>
-          <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/audit"
-              className="rounded-lg bg-blue-500 px-8 py-3 text-base font-semibold text-white hover:bg-blue-400 transition-colors"
-            >
-              Найти спрос в моей нише
-            </Link>
-            <Link
-              href="/pricing"
-              className="rounded-lg border border-white/15 px-8 py-3 text-base font-semibold text-white hover:bg-white/10 transition-colors"
-            >
-              Посмотреть тарифы
-            </Link>
+        <div className="mx-auto grid max-w-7xl gap-10 px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-300">
+              НейроЭксперт Solo
+            </p>
+            <h1 className="mt-4 text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-5xl">
+              Ваши знания могут приводить{" "}
+              <span className="text-blue-400">новых клиентов</span>
+            </h1>
+            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-gray-300">
+              НейроЭксперт находит вопросы, по которым люди уже ищут решение
+              и выбирают специалиста. Вы отвечаете голосом, а мы превращаем
+              ответ в страницу с понятным CTA: записаться, задать вопрос или
+              получить разбор.
+            </p>
+            <p className="mt-4 max-w-xl text-base text-gray-400">
+              Логика простая: спрос → экспертный ответ → страница → трафик → клик по записи → заявка.
+            </p>
+            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+              <Link
+                href="/audit"
+                className="rounded-lg bg-blue-500 px-8 py-3 text-center text-base font-semibold text-white transition-colors hover:bg-blue-400"
+              >
+                Найти спрос в моей нише
+              </Link>
+              <Link
+                href="/pricing"
+                className="rounded-lg border border-white/15 px-8 py-3 text-center text-base font-semibold text-white transition-colors hover:bg-white/10"
+              >
+                Посмотреть тарифы
+              </Link>
+            </div>
+          </div>
+          <div>
+            <SoloDemandSignalMockup />
           </div>
         </div>
       </section>
@@ -187,7 +197,9 @@ export default function ForExpertsPage() {
           <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {PAINS.map((pain) => (
               <div key={pain.title} className="rounded-2xl bg-white/5 border border-white/10 p-6 backdrop-blur-sm">
-                <span className="text-3xl">{pain.icon}</span>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-400/20">
+                  <pain.Icon className="h-5 w-5" />
+                </div>
                 <h3 className="mt-3 text-lg font-semibold text-white">{pain.title}</h3>
                 <p className="mt-1 text-sm text-gray-400">{pain.desc}</p>
                 <div className="mt-4 rounded-xl bg-blue-500/10 border border-blue-500/20 p-4">

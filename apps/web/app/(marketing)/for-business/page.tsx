@@ -4,6 +4,14 @@ import Link from "next/link";
 import { useState } from "react";
 import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
 import { FadeIn } from "@/components/marketing/fade-in";
+import {
+  BeforeAfterPanel,
+  LocalSalesAuditMockup,
+  LocalSalesCockpitMockup,
+  RevenueCalculatorMockup,
+  SevenDayResultPanel,
+  VerticalScenarioGrid,
+} from "@/components/marketing/product-mockups";
 
 const LOSS_ZONES = [
   {
@@ -342,62 +350,89 @@ export default function ForBusinessPage() {
     <>
       <MarketingHeader />
 
-      <section className="min-h-[88vh] flex items-center justify-center">
-        <div className="mx-auto max-w-5xl px-6 py-20 text-center">
+      <section className="min-h-[88vh]">
+        <div className="mx-auto grid max-w-7xl gap-12 px-6 py-20 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+          <div>
+            <FadeIn>
+              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-5 py-2 backdrop-blur-md">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" />
+                  <span className="relative h-2 w-2 rounded-full bg-cyan-400" />
+                </span>
+                <span className="text-sm font-medium text-cyan-200">
+                  Local Sales OS для локального бизнеса
+                </span>
+              </div>
+            </FadeIn>
+
+            <FadeIn delay={150}>
+              <h1 className="mt-8 max-w-3xl text-4xl font-bold leading-[1.08] text-white sm:text-5xl lg:text-6xl">
+                Найдём, где бизнес теряет клиентов, и запустим рост продаж
+              </h1>
+            </FadeIn>
+
+            <FadeIn delay={300}>
+              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-gray-300">
+                За 7 дней проверим карты, 2ГИС, Авито, отзывы, сайт,
+                мессенджеры, звонки, локальную выдачу и AI-ответы. Покажем,
+                кто забирает ваш спрос, где теряются деньги и какие действия
+                нужно сделать первыми.
+              </p>
+            </FadeIn>
+
+            <FadeIn delay={450}>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <a
+                  href="#form"
+                  className="rounded-2xl bg-cyan-300 px-8 py-4 text-base font-semibold text-slate-950 transition-colors hover:bg-cyan-200"
+                >
+                  Получить Local Sales Audit
+                </a>
+                <Link
+                  href="/pricing"
+                  className="rounded-2xl border border-white/15 bg-white/[0.04] px-8 py-4 text-base font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/10"
+                >
+                  Смотреть пакеты
+                </Link>
+              </div>
+              <p className="mt-4 text-sm text-gray-500">
+                Не обещаем “100 лидов”. Сначала показываем реальные потери,
+                конкурентов, задачи и план на 30 дней.
+              </p>
+            </FadeIn>
+          </div>
+
+          <FadeIn delay={260}>
+            <LocalSalesAuditMockup />
+          </FadeIn>
+        </div>
+      </section>
+
+      <section className="py-20">
+        <div className="mx-auto grid max-w-7xl gap-6 px-6 lg:grid-cols-[1.2fr_0.8fr]">
           <FadeIn>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-5 py-2 backdrop-blur-md">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute h-full w-full rounded-full bg-cyan-400 opacity-75" />
-                <span className="relative h-2 w-2 rounded-full bg-cyan-400" />
-              </span>
-              <span className="text-sm font-medium text-cyan-300">
-                Local Sales OS для локального бизнеса
-              </span>
-            </div>
+            <SevenDayResultPanel />
           </FadeIn>
-
           <FadeIn delay={150}>
-            <h1 className="mt-10 text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl leading-[1.1]">
-              <span className="text-white">Найдём, где бизнес</span>
-              <br />
-              <span className="text-cyan-400 [text-shadow:_0_0_40px_rgba(34,211,238,0.5),_0_0_80px_rgba(34,211,238,0.2)]">
-                теряет заявки
-              </span>
-              <br />
-              <span className="text-white">и запустим рост продаж</span>
-            </h1>
+            <RevenueCalculatorMockup />
           </FadeIn>
+        </div>
+      </section>
 
-          <FadeIn delay={300}>
-            <p className="mx-auto mt-8 max-w-3xl text-lg text-gray-300 leading-relaxed">
-              За 7 дней проверим карты, 2ГИС, Авито, отзывы, сайт,
-              мессенджеры, звонки, локальную выдачу и AI-ответы. Покажем,
-              кто забирает ваш спрос, почему клиент выбирает конкурентов
-              и какие действия дадут быстрый коммерческий эффект.
+      <section className="py-20">
+        <div className="mx-auto max-w-7xl px-6">
+          <FadeIn className="mb-10 text-center">
+            <p className="text-sm font-semibold text-cyan-300">Продуктовый слой</p>
+            <h2 className="mt-3 text-3xl font-bold text-white sm:text-4xl">
+              Cockpit собственника: видимость, конкуренты, отзывы, задачи и lost leads
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-gray-400">
+              Клиент должен видеть не PDF-аудит, а живую систему: где проседает
+              поток клиентов, кто отвечает, какие задачи на сегодня и что изменилось за неделю.
             </p>
           </FadeIn>
-
-          <FadeIn delay={450}>
-            <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
-              <a
-                href="#form"
-                className="group relative rounded-2xl px-10 py-4 text-lg font-semibold text-white overflow-hidden transition-all hover:scale-105 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.3)] hover:shadow-[0_0_25px_rgba(34,211,238,0.5)]"
-              >
-                <span className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl" />
-                <span className="absolute -inset-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl blur-xl opacity-50 group-hover:opacity-80 transition-opacity duration-300" />
-                <span className="relative">Получить Local Sales Audit</span>
-              </a>
-              <Link
-                href="/pricing"
-                className="rounded-2xl border border-cyan-400/30 bg-white/5 px-10 py-4 text-lg font-semibold text-white backdrop-blur-md hover:bg-white/10 hover:border-cyan-400/60 transition-all"
-              >
-                Смотреть пакеты
-              </Link>
-            </div>
-            <p className="mt-5 text-sm text-gray-500">
-              Не обещаем “100 лидов”. Сначала показываем реальные потери,
-              конкурентов, задачи и план на 30 дней.
-            </p>
+          <FadeIn>
+            <LocalSalesCockpitMockup />
           </FadeIn>
         </div>
       </section>
@@ -460,6 +495,41 @@ export default function ForBusinessPage() {
               </FadeIn>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="py-20">
+        <div className="mx-auto max-w-7xl px-6">
+          <FadeIn className="mb-10 text-center">
+            <p className="text-sm font-semibold text-cyan-300">Сценарии по вертикалям</p>
+            <h2 className="mt-3 text-3xl font-bold text-white sm:text-4xl">
+              Один cockpit, разные точки потерь
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-gray-400">
+              В стоматологии важны услуги, отзывы и рассрочка. В автосервисе — срочность,
+              цены и доверие. В юрфирме — кейсы, сроки и первичная консультация.
+            </p>
+          </FadeIn>
+          <FadeIn>
+            <VerticalScenarioGrid />
+          </FadeIn>
+        </div>
+      </section>
+
+      <section className="py-20">
+        <div className="mx-auto max-w-6xl px-6">
+          <FadeIn className="mb-10 text-center">
+            <h2 className="text-3xl font-bold text-white sm:text-4xl">
+              Было → нашли потери → сделали → измеряем
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-gray-400">
+              Такой формат должен стать основой кейсов: не “мы настроили маркетинг”,
+              а что именно нашли, что исправили и какой показатель отслеживаем.
+            </p>
+          </FadeIn>
+          <FadeIn>
+            <BeforeAfterPanel />
+          </FadeIn>
         </div>
       </section>
 

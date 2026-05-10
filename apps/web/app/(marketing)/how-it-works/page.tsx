@@ -1,13 +1,20 @@
 import Link from "next/link";
 import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
-import { PipelineStep } from "./pipeline-step";
+import { PipelineStep, type PipelineIcon } from "./pipeline-step";
+import { LocalSalesCockpitMockup, SevenDayResultPanel } from "@/components/marketing/product-mockups";
 
-const PIPELINE_STEPS = [
+const PIPELINE_STEPS: Array<{
+  num: string;
+  title: string;
+  short: string;
+  icon: PipelineIcon;
+  details: string[];
+}> = [
   {
     num: "01",
     title: "Карта спроса",
     short: "Система находит реальные вопросы людей и оценивает, какие из них ближе всего к заявке.",
-    icon: "🔍",
+    icon: "search",
     details: [
       "Собираем вопросы из Wordstat, Яндекс Кью, поисковых подсказок и AI-ответов",
       "Смотрим спрос в месяц, intent, конкуренцию и слабость текущего ответа в нейросетях",
@@ -19,7 +26,7 @@ const PIPELINE_STEPS = [
     num: "02",
     title: "Возможность спроса",
     short: "Вы получаете карточку темы: вопрос, спрос, intent, слабость AI-ответа и рекомендуемый следующий шаг.",
-    icon: "📲",
+    icon: "clipboard",
     details: [
       "Формулировка вопроса и примерная частотность",
       "Почему по теме может прийти заявка: запись, разбор, консультация или расчёт",
@@ -31,7 +38,7 @@ const PIPELINE_STEPS = [
     num: "03",
     title: "Голос эксперта",
     short: "Наговариваете 3-10 минут в Telegram или на сайте. Ваши кейсы, ваш опыт, ваш стиль.",
-    icon: "🎙️",
+    icon: "mic",
     details: [
       "Голосовое сообщение в Telegram-боте или Web Audio на сайте",
       "Whisper AI транскрибирует с точностью 95%+ на русском",
@@ -44,7 +51,7 @@ const PIPELINE_STEPS = [
     num: "04",
     title: "Страница под вопрос",
     short: "Голос превращается в экспертную страницу под конкретный спрос, а дополнительные форматы помогают распространению.",
-    icon: "✍️",
+    icon: "fileText",
     details: [
       "SEO-страница с понятным ответом, TL;DR, таблицами, FAQ и источниками",
       "Блок доверия: профиль эксперта, опыт, специализация, голосовая основа материала",
@@ -56,7 +63,7 @@ const PIPELINE_STEPS = [
     num: "05",
     title: "Публикация и продвижение",
     short: "Страница публикуется, отправляется на индексацию и получает первые точки входа из поиска и нейросетей.",
-    icon: "🚀",
+    icon: "rocket",
     details: [
       "SSR-рендер на стороне сервера (Next.js) — контент отдаётся без задержки на загрузку JavaScript",
       "Schema.org: Article + FAQPage + Person + BreadcrumbList + HowTo",
@@ -70,7 +77,7 @@ const PIPELINE_STEPS = [
     num: "06",
     title: "Трекинг результата",
     short: "Отслеживаем опубликованные страницы, индексацию, трафик, клики по записи, заявки и AI-упоминания.",
-    icon: "📊",
+    icon: "barChart",
     details: [
       "Воронка в dashboard: опубликовано -> проиндексировано -> трафик -> клики -> заявки",
       "Мониторинг позиций в Яндексе и Google",
@@ -126,6 +133,29 @@ const DEMAND_SIGNALS = [
   { marker: "CTA", question: "Какое действие естественно после ответа: запись, разбор, диагностика, расчёт или консультация?" },
 ];
 
+const B2B_WORKFLOW = [
+  {
+    stage: "01",
+    title: "Собираем входные точки",
+    desc: "Карты, 2ГИС, Авито, сайт, отзывы, AI-ответы, звонки, формы, мессенджеры и конкуренты.",
+  },
+  {
+    stage: "02",
+    title: "Находим потери",
+    desc: "Показываем, где клиент не видит бизнес, где видит конкурента, где не дозвонился или не получил follow-up.",
+  },
+  {
+    stage: "03",
+    title: "Превращаем в задачи",
+    desc: "Не общий отчёт, а список действий: фото, услуги, отзывы, FAQ, оффер, Авито, AI-источники и возврат лидов.",
+  },
+  {
+    stage: "04",
+    title: "Измеряем динамику",
+    desc: "Каждую неделю видно, что сделано, что изменилось, какие лиды вернули и где ещё теряются деньги.",
+  },
+];
+
 const ACQUISITION_MECHANICS = [
   {
     title: "Одна страница под один вопрос",
@@ -166,8 +196,9 @@ export default function HowItWorksPage() {
             <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">НейроЭксперт</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-300">
-            Полный цикл: от вопроса с массовым спросом до клиента, который записался к вам.
-            Шесть шагов, пять модулей, понятная воронка от страницы к заявке.
+            Два сценария внутри одной логики: Solo-эксперт превращает спрос в
+            экспертные страницы, а локальный бизнес через Local Sales OS видит,
+            где теряет клиентов, и получает задачи роста.
           </p>
         </div>
       </section>
@@ -176,13 +207,52 @@ export default function HowItWorksPage() {
       <section className="py-16">
         <div className="mx-auto max-w-5xl px-6">
           <h2 className="text-3xl font-bold text-white text-center">
-            6 шагов от вопроса до клиента
+            Solo: 6 шагов от вопроса до клиента
           </h2>
           <div className="mt-12 space-y-6">
             {PIPELINE_STEPS.map((step) => (
               <PipelineStep key={step.num} step={step} />
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* B2B workflow */}
+      <section className="py-16">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+            <div>
+              <p className="text-sm font-semibold text-cyan-300">Local Sales OS для B2B</p>
+              <h2 className="mt-3 text-3xl font-bold text-white">
+                Как это работает для локального бизнеса
+              </h2>
+              <p className="mt-4 text-gray-400">
+                У B2B-клиента другой сценарий: ему важен не текстовый контент сам по себе,
+                а контроль точек, где уже теряются клиенты: карты, отзывы, конкуренты,
+                AI-выдача, звонки, мессенджеры и повторные касания.
+              </p>
+              <div className="mt-8 space-y-3">
+                {B2B_WORKFLOW.map((item) => (
+                  <div key={item.stage} className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:grid-cols-[64px_1fr]">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-300 text-sm font-bold text-slate-950">
+                      {item.stage}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white">{item.title}</h3>
+                      <p className="mt-1 text-sm leading-relaxed text-gray-400">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <LocalSalesCockpitMockup />
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16">
+        <div className="mx-auto max-w-6xl px-6">
+          <SevenDayResultPanel />
         </div>
       </section>
 

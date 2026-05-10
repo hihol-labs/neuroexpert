@@ -1,17 +1,30 @@
 "use client";
 
 import { useState } from "react";
+import { BarChart3, ClipboardList, FileText, Mic, Rocket, Search } from "lucide-react";
+
+const ICONS = {
+  barChart: BarChart3,
+  clipboard: ClipboardList,
+  fileText: FileText,
+  mic: Mic,
+  rocket: Rocket,
+  search: Search,
+};
+
+export type PipelineIcon = keyof typeof ICONS;
 
 type Step = {
   num: string;
   title: string;
   short: string;
-  icon: string;
+  icon: PipelineIcon;
   details: string[];
 };
 
 export function PipelineStep({ step }: { step: Step }) {
   const [open, setOpen] = useState(false);
+  const Icon = ICONS[step.icon];
 
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden backdrop-blur-sm">
@@ -24,7 +37,7 @@ export function PipelineStep({ step }: { step: Step }) {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-xl">{step.icon}</span>
+            <Icon className="h-5 w-5 text-blue-300" />
             <h3 className="text-lg font-semibold text-white">{step.title}</h3>
           </div>
           <p className="mt-1 text-sm text-gray-400">{step.short}</p>
