@@ -10,9 +10,12 @@ import {
   ListChecks,
   MapPinned,
   PhoneMissed,
-  Radar,
+  Scale,
+  Scissors,
   Star,
+  Stethoscope,
   TrendingUp,
+  Wrench,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -36,20 +39,48 @@ const ownerPanelCards = [
   { icon: MapPinned, label: "Карты", value: "62/100", hint: "слабые услуги", tone: "warning" },
   { icon: Star, label: "Отзывы", value: "3.9", hint: "мало свежих", tone: "warning" },
   { icon: Bot, label: "AI-ответы", value: "2/10", hint: "видят конкурентов", tone: "info" },
-  { icon: PhoneMissed, label: "Потерянные обращения", value: "12", hint: "без перезвона", tone: "danger" },
+  { icon: PhoneMissed, label: "Вернуть в работу", value: "12", hint: "без перезвона", tone: "danger" },
 ];
 
 const scenarios = [
-  { name: "Стоматология", signal: "растёт спрос на имплантацию под ключ", task: "услуги, FAQ, отзывы, страница" },
-  { name: "Салон", signal: "конкуренты усиливают первый визит", task: "пакеты услуг и карточки" },
-  { name: "Автосервис", signal: "нейросети советуют агрегаторы", task: "цены, срочность, доверие" },
-  { name: "Юрфирма", signal: "клиенты сравнивают цену и сроки", task: "кейсы и первичный разбор" },
+  {
+    name: "Стоматология",
+    icon: Stethoscope,
+    signal: "люди сравнивают цену, врача, рассрочку и отзывы",
+    task: "усилить карточки, FAQ по цене, страницу услуги и сбор отзывов",
+    metric: "записи на консультацию",
+    tone: "blue",
+  },
+  {
+    name: "Салон красоты",
+    icon: Scissors,
+    signal: "первый визит решается по фото, цене и ближайшему времени",
+    task: "обновить фото, пакеты услуг, кнопки записи и оффер первого визита",
+    metric: "записи через карты и мессенджеры",
+    tone: "green",
+  },
+  {
+    name: "Автосервис",
+    icon: Wrench,
+    signal: "клиенту важны срочность, цена, гарантия и доверие",
+    task: "вывести цены, сроки, отзывы, срочные услуги и быстрый звонок",
+    metric: "звонки на диагностику",
+    tone: "amber",
+  },
+  {
+    name: "Юрфирма",
+    icon: Scale,
+    signal: "человек сравнивает опыт, срок, цену и первый разбор",
+    task: "показать кейсы, условия консультации, страницы под частые вопросы",
+    metric: "записи на первичный разбор",
+    tone: "rose",
+  },
 ];
 
 const soloSignals = [
   { topic: "панические атаки после увольнения", score: "91", signal: "растущий спрос", action: "записать ответ" },
   { topic: "как выбрать юриста по наследству", score: "84", signal: "слабый AI-ответ", action: "страница с записью" },
-  { topic: "анализы перед консультацией нутрициолога", score: "78", signal: "близко к заявке", action: "FAQ и запись" },
+  { topic: "анализы перед консультацией нутрициолога", score: "78", signal: "близко к записи", action: "FAQ и запись" },
 ];
 
 function SeverityBadge({ value }: { value: string }) {
@@ -90,11 +121,11 @@ function ProductFrame({
   right?: ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-200 bg-slate-950 px-5 py-4 text-white">
+    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-blue-800 bg-blue-700 px-5 py-4 text-white">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">{subtitle}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-100">{subtitle}</p>
             <h3 className="mt-1 text-base font-semibold">{title}</h3>
           </div>
           {right}
@@ -108,9 +139,9 @@ function ProductFrame({
 export function LocalSalesAuditMockup({ compact = false }: { compact?: boolean }) {
   return (
     <ProductFrame
-      title="Карта потерь за 7 дней"
+      title="План привлечения клиентов за 7 дней"
       subtitle="Local Sales OS"
-      right={<span className="rounded-md bg-white/10 px-3 py-1 text-xs font-semibold text-white">пример отчёта</span>}
+      right={<span className="rounded-md bg-white/15 px-3 py-1 text-xs font-semibold text-white">пример плана</span>}
     >
       <div className="grid gap-4 p-4 sm:grid-cols-2">
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
@@ -130,10 +161,10 @@ export function LocalSalesAuditMockup({ compact = false }: { compact?: boolean }
         <div className="rounded-lg border border-rose-200 bg-rose-50 p-4">
           <div className="flex items-center gap-2 text-sm font-medium text-rose-700">
             <CircleDollarSign className="h-4 w-4" />
-            Выручка под риском
+            Потенциал возврата
           </div>
           <p className="mt-3 text-3xl font-bold text-slate-950">до 480 000 ₽</p>
-          <p className="mt-2 text-xs text-rose-700/80">по среднему чеку и непроданным обращениям</p>
+          <p className="mt-2 text-xs text-rose-700/80">по среднему чеку и обращениям без повторного касания</p>
         </div>
       </div>
 
@@ -142,9 +173,9 @@ export function LocalSalesAuditMockup({ compact = false }: { compact?: boolean }
           <div className="min-w-[620px]">
             <div className="grid grid-cols-[1fr_1.35fr_0.8fr_auto] gap-3 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase text-slate-500">
               <span>Канал</span>
-              <span>Что нашли</span>
+              <span>Что улучшить</span>
               <span>Ответственный</span>
-              <span>Риск</span>
+              <span>Приоритет</span>
             </div>
             {lossRows.slice(0, compact ? 4 : lossRows.length).map((row) => (
               <div
@@ -161,7 +192,7 @@ export function LocalSalesAuditMockup({ compact = false }: { compact?: boolean }
         </div>
       </div>
 
-      <div className="grid gap-4 border-t border-slate-200 bg-slate-50 p-4 sm:grid-cols-[1fr_0.9fr]">
+      <div className="grid gap-4 border-t border-blue-100 bg-blue-50 p-4 sm:grid-cols-[1fr_0.9fr]">
         <div className="rounded-lg border border-slate-200 bg-white p-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
             <ListChecks className="h-4 w-4 text-slate-700" />
@@ -208,17 +239,17 @@ export function SevenDayResultPanel() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-blue-700">Пример результата за 7 дней</p>
-          <h3 className="mt-2 text-2xl font-bold text-slate-950">Отчёт, который превращается в действия</h3>
+          <h3 className="mt-2 text-2xl font-bold text-slate-950">План, который приводит к обращениям</h3>
         </div>
         <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
-          Риск потери: до 480 000 ₽
+          Потенциал возврата: до 480 000 ₽
         </div>
       </div>
       <div className="mt-6 overflow-x-auto rounded-lg border border-slate-200">
         <div className="min-w-[560px]">
           <div className="grid grid-cols-[0.8fr_1fr_1.25fr] gap-3 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase text-slate-500">
             <span>Канал</span>
-            <span>Потеря</span>
+            <span>Что мешает обращению</span>
             <span>Действие</span>
           </div>
           {rows.map(([channel, loss, action]) => (
@@ -242,13 +273,13 @@ export function RevenueCalculatorMockup() {
     <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex items-center gap-2 text-sm font-semibold text-rose-700">
         <CircleDollarSign className="h-4 w-4" />
-        Оценка потерь
+        Оценка возврата обращений
       </div>
       <div className="mt-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
         {[
           ["12", "обращений без ответа"],
           ["40 000 ₽", "средний чек"],
-          ["480 000 ₽", "выручка под риском"],
+          ["480 000 ₽", "потенциал возврата"],
         ].map(([value, label]) => (
           <div key={label} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
             <p className="text-2xl font-bold text-slate-950">{value}</p>
@@ -257,8 +288,8 @@ export function RevenueCalculatorMockup() {
         ))}
       </div>
       <p className="mt-4 text-sm leading-relaxed text-slate-600">
-        Сначала считаем уже пришедшие обращения: пропущенные звонки, поздние
-        ответы и клиентов без повторного касания.
+        Сначала считаем обращения, за которые бизнес уже заплатил вниманием,
+        временем или рекламой: звонки, переписки и повторные касания.
       </p>
     </div>
   );
@@ -324,11 +355,11 @@ export function SoloDemandSignalMockup() {
 
 export function LocalSalesCockpitMockup() {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-lg border border-blue-100 bg-white p-5 shadow-sm shadow-blue-900/5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-blue-700">Панель собственника</p>
-          <h3 className="mt-1 text-2xl font-bold text-slate-950">Где теряются клиенты</h3>
+          <h3 className="mt-1 text-2xl font-bold text-slate-950">Как появляются новые обращения</h3>
         </div>
         <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
           <ClipboardCheck className="h-4 w-4 text-green-700" />
@@ -364,13 +395,13 @@ export function LocalSalesCockpitMockup() {
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
             <BarChart3 className="h-4 w-4 text-blue-700" />
-            Карта потерь
+            Каналы роста
           </div>
           <div className="mt-4 space-y-3">
             {[
               ["карты", "68%", "bg-amber-500"],
               ["отзывы", "42%", "bg-amber-500"],
-              ["видимость в нейросетях", "24%", "bg-blue-600"],
+              ["AI-видимость", "24%", "bg-blue-600"],
               ["скорость ответа", "38%", "bg-red-500"],
             ].map(([name, width, color]) => (
               <div key={name}>
@@ -389,12 +420,12 @@ export function LocalSalesCockpitMockup() {
         <div className="rounded-lg border border-slate-200 bg-white p-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
             <ListChecks className="h-4 w-4 text-green-700" />
-            План на неделю
+            План роста на неделю
           </div>
           <div className="mt-4 space-y-2">
-            {["карточки", "отзывы", "оффер", "перезвон"].map((task, index) => (
+            {["обновить карточки", "собрать отзывы", "усилить оффер", "вернуть обращения"].map((task, index) => (
               <div key={task} className="flex items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-slate-950 text-xs font-bold text-white">
+                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-700 text-xs font-bold text-white">
                   {index + 1}
                 </span>
                 <span>{task}</span>
@@ -410,49 +441,90 @@ export function LocalSalesCockpitMockup() {
 export function VerticalScenarioGrid() {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {scenarios.map((item) => (
-        <div key={item.name} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
-            <Radar className="h-4 w-4 text-blue-700" />
-            {item.name}
+      {scenarios.map((item) => {
+        const Icon = item.icon;
+        const toneClass =
+          item.tone === "green"
+            ? "border-green-200 bg-green-50 text-green-800"
+            : item.tone === "amber"
+              ? "border-amber-200 bg-amber-50 text-amber-800"
+              : item.tone === "rose"
+                ? "border-rose-200 bg-rose-50 text-rose-800"
+                : "border-blue-200 bg-blue-50 text-blue-800";
+
+        return (
+          <div key={item.name} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
+              <span className={`flex h-8 w-8 items-center justify-center rounded-md border ${toneClass}`}>
+                <Icon className="h-4 w-4" />
+              </span>
+              {item.name}
+            </div>
+            <p className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Сигнал</p>
+            <p className="mt-1 text-sm leading-relaxed text-slate-600">{item.signal}</p>
+            <p className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Что делаем</p>
+            <p className="mt-1 text-sm leading-relaxed text-slate-700">
+              {item.task}
+            </p>
+            <p className={`mt-4 rounded-md border px-3 py-2 text-sm font-semibold ${toneClass}`}>
+              Цель: {item.metric}
+            </p>
           </div>
-          <p className="mt-3 text-sm leading-relaxed text-slate-600">{item.signal}</p>
-          <p className="mt-4 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
-            {item.task}
-          </p>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
 
 export function BeforeAfterPanel() {
+  const rows = [
+    {
+      issue: "В карточках нет цен и понятных услуг",
+      action: "добавляем услуги, цены, фото, FAQ и кнопку записи",
+      metric: "клики по звонку и записи из карт",
+    },
+    {
+      issue: "Отзывы старые, негатив без ответа",
+      action: "запускаем сценарий сбора отзывов и ответы администратора",
+      metric: "рейтинг, свежие отзывы, доля отзывов с ответом",
+    },
+    {
+      issue: "Конкуренты чаще появляются в AI-ответах",
+      action: "усиливаем страницы, FAQ, доказательства и локальные формулировки",
+      metric: "упоминания бизнеса и конкурентов в AI-проверках",
+    },
+    {
+      issue: "Звонки и переписки остаются без возврата",
+      action: "формируем список повторных касаний и скрипт возврата",
+      metric: "возвращённые обращения и записи после касания",
+    },
+  ];
+
   return (
-    <div className="grid gap-5 lg:grid-cols-2">
-      <div className="rounded-lg border border-rose-200 bg-rose-50 p-6">
-        <div className="flex items-center gap-2 text-sm font-semibold text-rose-800">
-          <AlertTriangle className="h-4 w-4" />
-          Было
-        </div>
-        <ul className="mt-4 space-y-3 text-sm text-rose-800/90">
-          <li>пустые карточки и 8 устаревших отзывов</li>
-          <li>нет услуг, цен, FAQ и сильного оффера</li>
-          <li>нейросети чаще называют конкурентов</li>
-          <li>звонки и переписки теряются без возврата</li>
-        </ul>
+    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="grid min-w-[760px] grid-cols-[1fr_1.1fr_1fr] gap-3 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+        <span>Что мешает обращению</span>
+        <span>Что делаем</span>
+        <span>Что измеряем</span>
       </div>
-      <div className="rounded-lg border border-green-200 bg-green-50 p-6">
-        <div className="flex items-center gap-2 text-sm font-semibold text-green-800">
-          <CheckCircle2 className="h-4 w-4" />
-          Стало
+      {rows.map((row) => (
+        <div
+          key={row.issue}
+          className="grid min-w-[760px] grid-cols-[1fr_1.1fr_1fr] gap-3 border-t border-slate-200 px-4 py-4 text-sm"
+        >
+          <div className="flex gap-2 text-rose-800">
+            <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+            <span>{row.issue}</span>
+          </div>
+          <div className="flex gap-2 text-slate-700">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-700" />
+            <span>{row.action}</span>
+          </div>
+          <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-blue-900">
+            {row.metric}
+          </div>
         </div>
-        <ul className="mt-4 space-y-3 text-sm text-green-800/90">
-          <li>услуги, фото, FAQ, кнопки заявки и отзывы приведены к спросу</li>
-          <li>видно, кто из конкурентов сильнее и почему</li>
-          <li>есть страницы под вопросы, районы, цены и сравнения</li>
-          <li>каждый день есть задачи и контроль потерянных обращений</li>
-        </ul>
-      </div>
+      ))}
     </div>
   );
 }

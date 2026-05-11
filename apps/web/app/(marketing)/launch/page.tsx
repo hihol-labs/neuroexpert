@@ -4,7 +4,7 @@ import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
 
 const TITLE = "Запуск канала привлечения клиентов под ключ | НейроЭксперт";
 const DESCRIPTION =
-  "За 30 дней запускаем канал заявок для бизнеса и экспертов: аудит видимости, карты, Авито, отзывы, страницы под спрос, видимость в нейросетях и отчёт по трафику, кликам и заявкам.";
+  "За 30 дней запускаем канал привлечения клиентов для бизнеса и экспертов: аудит видимости, карты, Авито, отзывы, страницы под спрос, видимость в нейросетях и отчёт по трафику, кликам и обращениям.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -55,10 +55,10 @@ export default function LaunchPage({ searchParams }: Props) {
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-700">
                 Мы продаём не абстрактную платформу, а запуск результата:
-                аудит потерь, упаковку точек входа, усиление карточек, сбор
+                аудит каналов, упаковку точек входа, усиление карточек, сбор
                 отзывов, экспертные страницы и первые измеримые сигналы —
-                индексацию, трафик, клики, заявки, записи и найденные потери
-                во входящих обращениях.
+                индексацию, трафик, клики, обращения, записи и список клиентов
+                для повторного касания.
               </p>
               <div className="mt-8 grid gap-3 sm:grid-cols-2">
                 {STEPS.map((step, i) => (
@@ -72,7 +72,7 @@ export default function LaunchPage({ searchParams }: Props) {
                 <p className="text-sm text-amber-800">
                   Мы не обещаем фиксированное число клиентов без данных. Цель первого месяца —
                   запустить рабочий канал и получить первые измеримые сигналы: исправленные
-                  площадки, страницы, индексацию, трафик, клики, заявки и понятный список
+                  площадки, страницы, индексацию, трафик, клики, обращения и понятный список
                   ежедневных действий.
                 </p>
               </div>
@@ -167,7 +167,7 @@ export default function LaunchPage({ searchParams }: Props) {
                 </div>
                 <button
                   type="submit"
-                  className="w-full rounded-xl bg-slate-950 px-5 py-3 font-semibold text-white transition-colors hover:bg-slate-800"
+                  className="w-full rounded-xl bg-blue-700 px-5 py-3 font-semibold text-white transition-colors hover:bg-blue-800"
                 >
                   Отправить заявку
                 </button>

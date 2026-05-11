@@ -287,7 +287,7 @@ function AgencyLeadForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full rounded-2xl bg-slate-950 px-8 py-4 text-lg font-semibold text-white transition-colors hover:bg-slate-800 disabled:opacity-50"
+        className="w-full rounded-2xl bg-blue-700 px-8 py-4 text-lg font-semibold text-white transition-colors hover:bg-blue-800 disabled:opacity-50"
       >
         {submitting ? "Отправка..." : "Получить ключ"}
       </button>
@@ -334,7 +334,7 @@ export default function ForAgenciesPage() {
                 лидогенерации клиентов без ручных опросов нейросетевых платформ.
               </p>
               <p className="mx-auto mt-4 max-w-2xl text-sm text-slate-500 leading-relaxed">
-                Важно: для конечного бизнеса мы продаём систему локальных продаж и запуск заявок.
+                Важно: для конечного бизнеса мы продаём систему локальных продаж и запуск канала привлечения клиентов.
                 Для агентств — данные, API и слой под вашим брендом, который можно встроить
                 в собственные аудиты и клиентские кабинеты.
               </p>
@@ -344,7 +344,7 @@ export default function ForAgenciesPage() {
               <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
                 <a
                   href="#form"
-                  className="rounded-2xl bg-slate-950 px-10 py-4 text-lg font-semibold text-white transition-colors hover:bg-slate-800"
+                  className="rounded-2xl bg-blue-700 px-10 py-4 text-lg font-semibold text-white transition-colors hover:bg-blue-800"
                 >
                   Получить ключ
                 </a>
@@ -531,7 +531,7 @@ export default function ForAgenciesPage() {
                       href="#form"
                       className={`mt-8 block w-full rounded-2xl py-3 text-center font-semibold transition-all ${
                         plan.highlight
-                          ? "bg-slate-950 text-slate-950 hover:opacity-90"
+                          ? "bg-blue-700 text-white hover:bg-blue-800"
                           : "border border-slate-300 bg-white text-slate-950 hover:bg-slate-100"
                       }`}
                     >

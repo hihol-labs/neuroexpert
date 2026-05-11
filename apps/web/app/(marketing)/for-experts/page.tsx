@@ -123,7 +123,7 @@ export default function ForExpertsPage() {
     <div className="min-h-screen bg-slate-50 text-slate-950">
       <MarketingHeader />
 
-      <section className="border-b border-slate-200 bg-white pb-16 pt-16">
+      <section className="border-b border-blue-100 bg-gradient-to-br from-blue-50 via-white to-emerald-50 pb-16 pt-16">
         <div className="mx-auto grid max-w-7xl gap-10 px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">
@@ -139,12 +139,12 @@ export default function ForExpertsPage() {
               получить разбор.
             </p>
             <p className="mt-4 max-w-xl text-base text-slate-600">
-              Логика простая: спрос → экспертный ответ → страница → трафик → клик по записи → заявка.
+              Логика простая: спрос → экспертный ответ → страница → трафик → клик по записи → обращение.
             </p>
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">
               <Link
                 href="/audit"
-                className="rounded-md bg-slate-950 px-8 py-3 text-center text-base font-semibold text-white transition-colors hover:bg-slate-800"
+                className="rounded-md bg-blue-700 px-8 py-3 text-center text-base font-semibold text-white transition-colors hover:bg-blue-800"
               >
                 Найти спрос в моей нише
               </Link>
@@ -204,7 +204,7 @@ export default function ForExpertsPage() {
       <section className="border-y border-slate-200 bg-white py-16">
         <div className="mx-auto max-w-6xl px-6">
           <h2 className="text-center text-3xl font-bold text-slate-950">
-            Как экспертный ответ превращается в заявку
+            Как экспертный ответ превращается в запись
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-slate-600">
             Мы не просим вас вести контент-машину каждый день. Система берёт
@@ -214,7 +214,7 @@ export default function ForExpertsPage() {
           <div className="mt-10 grid gap-4 md:grid-cols-4">
             {CLIENT_PATHS.map((item, index) => (
               <div key={item.title} className="rounded-lg border border-slate-200 bg-slate-50 p-5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-950 text-sm font-bold text-white">
+                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-700 text-sm font-bold text-white">
                   {index + 1}
                 </div>
                 <h3 className="mt-4 text-base font-semibold text-slate-950">{item.title}</h3>
@@ -238,7 +238,7 @@ export default function ForExpertsPage() {
                 <li className="flex gap-2"><span className="flex-shrink-0 text-green-700">&#10003;</span>Превращаем ваш голос в экспертную страницу под конкретный вопрос</li>
                 <li className="flex gap-2"><span className="flex-shrink-0 text-green-700">&#10003;</span>Публикуем страницу со структурой для поиска, нейросетей и вашим профилем</li>
                 <li className="flex gap-2"><span className="flex-shrink-0 text-green-700">&#10003;</span>На каждой странице — кнопка записи, консультации или разбора</li>
-                <li className="flex gap-2"><span className="flex-shrink-0 text-green-700">&#10003;</span>Отслеживаем индексацию, трафик, клики и заявки</li>
+                <li className="flex gap-2"><span className="flex-shrink-0 text-green-700">&#10003;</span>Отслеживаем индексацию, трафик, клики и обращения</li>
                 <li className="flex gap-2"><span className="flex-shrink-0 text-green-700">&#10003;</span>Корректируем следующие темы по фактическому результату</li>
               </ul>
             </div>
@@ -251,7 +251,7 @@ export default function ForExpertsPage() {
               </ul>
               <p className="mt-4 text-sm text-amber-900/80">
                 Мы создаём систему, где каждая публикация начинается с реального спроса
-                и заканчивается измеримым действием: просмотром, кликом или заявкой.
+                и заканчивается измеримым действием: просмотром, кликом или обращением.
               </p>
             </div>
           </div>
@@ -314,28 +314,28 @@ export default function ForExpertsPage() {
             <h3 className="text-lg font-semibold text-slate-950">4 меры сохранения аутентичности</h3>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div className="flex gap-3">
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-slate-950 text-sm font-bold text-white">1</div>
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-blue-700 text-sm font-bold text-white">1</div>
                 <div>
                   <p className="text-sm font-medium text-slate-950">Авторский стиль</p>
                   <p className="text-sm text-slate-600">Нейросеть структурирует, но сохраняет ваши формулировки и примеры из практики</p>
                 </div>
               </div>
               <div className="flex gap-3">
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-slate-950 text-sm font-bold text-white">2</div>
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-blue-700 text-sm font-bold text-white">2</div>
                 <div>
                   <p className="text-sm font-medium text-slate-950">Прямые цитаты</p>
                   <p className="text-sm text-slate-600">Ключевые фразы из вашей речи выделяются как авторские цитаты</p>
                 </div>
               </div>
               <div className="flex gap-3">
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-slate-950 text-sm font-bold text-white">3</div>
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-blue-700 text-sm font-bold text-white">3</div>
                 <div>
                   <p className="text-sm font-medium text-slate-950">Аудиозапись на странице</p>
                   <p className="text-sm text-slate-600">Ваш голос прикреплён к статье — доказательство, что за контентом стоит человек</p>
                 </div>
               </div>
               <div className="flex gap-3">
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-slate-950 text-sm font-bold text-white">4</div>
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-blue-700 text-sm font-bold text-white">4</div>
                 <div>
                   <p className="text-sm font-medium text-slate-950">Минимальная обработка</p>
                   <p className="text-sm text-slate-600">Опция: нейросеть только чистит «эээ» и повторы. Текст остаётся на 90% вашим</p>
@@ -364,7 +364,7 @@ export default function ForExpertsPage() {
             ))}
           </div>
           <p className="mt-8 text-center text-xs text-slate-500">
-            Это продуктовая логика НейроЭксперта: сначала карта спроса, затем голос эксперта, затем страница для заявки.
+            Это продуктовая логика НейроЭксперта: сначала карта спроса, затем голос эксперта, затем страница для записи.
           </p>
         </div>
       </section>
@@ -376,7 +376,7 @@ export default function ForExpertsPage() {
           </h2>
           <div className="mt-10 rounded-lg border border-slate-200 bg-white p-8 shadow-sm">
             <div className="flex items-start gap-4">
-              <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-lg bg-slate-950 text-2xl font-bold text-white">
+              <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-lg bg-blue-700 text-2xl font-bold text-white">
                 А
               </div>
               <div>
@@ -396,7 +396,7 @@ export default function ForExpertsPage() {
               </div>
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center">
                 <div className="text-2xl font-bold text-slate-950">2-14</div>
-                <div className="text-sm text-slate-600">заявок и кликов по записи в месяц</div>
+                <div className="text-sm text-slate-600">обращений и кликов по записи в месяц</div>
               </div>
             </div>
 
@@ -424,10 +424,10 @@ export default function ForExpertsPage() {
               { tier: "Pro", niches: "3 ниши", desc: "Полный охват экспертизы", highlight: true },
               { tier: "Expert", niches: "5 ниш", desc: "Широкий профиль, личный бренд", highlight: false },
             ].map((item) => (
-              <div key={item.tier} className={`rounded-lg border p-4 ${item.highlight ? "border-slate-950 bg-slate-950 text-white" : "border-slate-200 bg-slate-50"}`}>
-                <div className={item.highlight ? "text-sm font-semibold text-slate-300" : "text-sm font-semibold text-slate-500"}>{item.tier}</div>
+              <div key={item.tier} className={`rounded-lg border p-4 ${item.highlight ? "border-blue-700 bg-blue-700 text-white" : "border-slate-200 bg-slate-50"}`}>
+                <div className={item.highlight ? "text-sm font-semibold text-blue-100" : "text-sm font-semibold text-slate-500"}>{item.tier}</div>
                 <div className={item.highlight ? "mt-1 text-xl font-bold text-white" : "mt-1 text-xl font-bold text-slate-950"}>{item.niches}</div>
-                <p className={item.highlight ? "mt-1 text-xs text-slate-300" : "mt-1 text-xs text-slate-600"}>{item.desc}</p>
+                <p className={item.highlight ? "mt-1 text-xs text-blue-100" : "mt-1 text-xs text-slate-600"}>{item.desc}</p>
               </div>
             ))}
           </div>
@@ -437,12 +437,12 @@ export default function ForExpertsPage() {
         </div>
       </section>
 
-      <section className="bg-slate-950 py-16 text-white">
+      <section className="bg-blue-700 py-16 text-white">
         <div className="mx-auto max-w-3xl px-6 text-center">
           <h2 className="text-3xl font-bold text-white">
             Узнайте, где в вашей нише уже есть спрос
           </h2>
-          <p className="mt-4 text-lg text-slate-300">
+          <p className="mt-4 text-lg text-blue-50">
             Бесплатная карта покажет вопросы с клиентским потенциалом и подскажет,
             какие страницы стоит сделать первыми.
           </p>

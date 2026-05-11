@@ -83,9 +83,9 @@ const SOLO_PLANS = [
 const BUSINESS_SYSTEMS = [
   "Аудит видимости: Яндекс Карты, 2ГИС, Авито, сайт, VK, Telegram, отзывы",
   "Гео-рейтинг, ответы нейросетей и конкуренты по запросам «рядом», «цена», «срочно», «на районе»",
-  "Ежедневные задачи для роста заявок, записей и продаж плюс недельный отчёт собственнику",
+  "Ежедневные задачи для роста обращений, записей и продаж плюс недельный отчёт собственнику",
   "Сбор положительных отзывов и перехват негатива до публичной публикации",
-  "Потерянные обращения: пропущенные звонки, поздние ответы, клиенты без повторного касания",
+  "Повторные касания: пропущенные звонки, поздние ответы, клиенты без возврата",
 ];
 
 const PRICE_FACTORS = [
@@ -100,7 +100,7 @@ const PRICE_FACTORS = [
 const BUSINESS_MODULE_MATRIX = [
   {
     module: "Аудит видимости",
-    audit: "Находим пустые карточки, слабые фото, услуги, отзывы и точки потери заявок.",
+    audit: "Находим пустые карточки, слабые фото, услуги, отзывы и точки, где клиент не доходит до обращения.",
     launch: "Исправляем карточки, описания, услуги, фото-рекомендации, FAQ и точки входа.",
     support: "Следим за заполненностью, позициями, изменениями площадок и новыми проблемами.",
   },
@@ -123,10 +123,10 @@ const BUSINESS_MODULE_MATRIX = [
     support: "Поддерживаем поток отзывов, ответы, перехват негатива и рост доверия.",
   },
   {
-    module: "Потерянные обращения",
+    module: "Повторные касания",
     audit: "Ищем пропущенные звонки, поздние ответы, формы без реакции и клиентов без повторного касания.",
-    launch: "Вводим учёт обращений, возврат непроданных заявок и базовые сценарии доведения до продажи.",
-    support: "Показываем потери в рублях, контролируем реакции и возвращаем старых клиентов.",
+    launch: "Вводим учёт обращений, повторные касания и базовые сценарии доведения до продажи.",
+    support: "Показываем коммерческий потенциал возврата и возвращаем старых клиентов в работу.",
   },
 ];
 
@@ -135,7 +135,7 @@ const AUDIT_PACKAGES = [
     name: "Аудит Старт",
     price: "9 900",
     period: "разово",
-    fit: "Одна точка, один город, нужно быстро понять, где теряются клиенты.",
+    fit: "Одна точка, один город, нужно быстро понять, откуда привлечь больше клиентов.",
     scope: [
       "1 филиал или кабинет",
       "Яндекс Карты, 2ГИС, сайт/соцсети",
@@ -173,7 +173,7 @@ const AUDIT_PACKAGES = [
       "Все релевантные площадки",
       "До 20 конкурентов и 40 запросов",
       "Авито, отзывы, формы и звонки при наличии данных",
-      "Оценка потерь в рублях и план на 30 дней",
+      "Оценка коммерческого потенциала и план на 30 дней",
     ],
     cta: "Заказать полный аудит",
     href: "/launch?package=audit_full",
@@ -208,7 +208,7 @@ const LAUNCH_PACKAGES = [
       "Карты, Авито, сайт/страницы, соцсети",
       "10-15 страниц под спрос",
       "Ежедневные задачи и сценарии отзывов",
-      "Учёт потерянных лидов и корректировки",
+      "Учёт обращений для повторного касания",
     ],
     cta: "Выбрать запуск",
     href: "/launch?package=launch_growth",
@@ -223,8 +223,8 @@ const LAUNCH_PACKAGES = [
       "До 3-5 точек",
       "Несколько направлений услуг",
       "20-30 страниц под спрос",
-      "Отзывы, Авито, конкуренты, потерянные обращения",
-      "Контроль выполнения и отчёт по заявкам",
+      "Отзывы, Авито, конкуренты, повторные касания",
+      "Ритм внедрения и отчёт по обращениям",
     ],
     cta: "Обсудить интенсив",
     href: "/launch?package=launch_intensive",
@@ -234,7 +234,7 @@ const LAUNCH_PACKAGES = [
 
 const SUPPORT_PACKAGES = [
   {
-    name: "Контроль",
+    name: "Сопровождение Лайт",
     price: "39 000",
     period: "/мес",
     fit: "Одна точка, бизнес готов выполнять задачи самостоятельно.",
@@ -245,7 +245,7 @@ const SUPPORT_PACKAGES = [
       "Недельный отчёт",
       "Базовая аналитика заявок",
     ],
-    cta: "Подключить контроль",
+    cta: "Начать сопровождение",
     href: "/launch?package=support_control",
     highlight: false,
   },
@@ -257,8 +257,8 @@ const SUPPORT_PACKAGES = [
     scope: [
       "1-2 точки",
       "Карточки, услуги, FAQ, отзывы, Авито",
-      "Контроль конкурентов",
-      "Работа с потерянными лидами",
+      "Динамика конкурентов",
+      "Работа с обращениями для возврата",
       "Отчёт по заявкам и точкам роста",
     ],
     cta: "Выбрать сопровождение",
@@ -300,17 +300,17 @@ export function PricingContent() {
 
   return (
     <main>
-      <section className="bg-slate-50 py-16 ">
+      <section className="bg-gradient-to-br from-blue-50 via-white to-emerald-50 py-16">
         <div className="mx-auto max-w-5xl px-6 text-center">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">
             Тарифы НейроЭксперт
           </p>
           <h1 className="mt-3 text-4xl font-bold text-slate-950 md:text-5xl">
-            Выберите свой путь к новым заявкам
+            Выберите свой путь к новым клиентам
           </h1>
           <p className="mx-auto mt-5 max-w-3xl text-lg text-slate-600">
             Для экспертов это карта спроса и страницы под вопросы людей. Для бизнеса —
-            управляемая система локальной видимости, отзывов, Авито, ежедневных задач и потерянных лидов.
+            система локальной видимости, отзывов, Авито, ежедневных задач и повторных касаний.
           </p>
 
           <div className="mx-auto mt-8 grid max-w-2xl grid-cols-2 gap-2 rounded-lg border border-slate-200 bg-white p-1">
@@ -320,8 +320,8 @@ export function PricingContent() {
               onClick={() => setAudience("business")}
               className={`rounded-md px-4 py-3 text-sm font-semibold transition-colors ${
                 audience === "business"
-                  ? "bg-slate-950 text-white"
-                  : "text-slate-700 hover:bg-slate-100 hover:text-slate-950"
+                  ? "bg-blue-700 text-white"
+                  : "text-slate-700 hover:bg-blue-50 hover:text-blue-800"
               }`}
             >
               Бизнес / организация
@@ -332,8 +332,8 @@ export function PricingContent() {
               onClick={() => setAudience("expert")}
               className={`rounded-md px-4 py-3 text-sm font-semibold transition-colors ${
                 audience === "expert"
-                  ? "bg-slate-950 text-white"
-                  : "text-slate-700 hover:bg-slate-100 hover:text-slate-950"
+                  ? "bg-blue-700 text-white"
+                  : "text-slate-700 hover:bg-blue-50 hover:text-blue-800"
               }`}
             >
               Я эксперт
@@ -356,17 +356,17 @@ function BusinessPricing() {
             <div>
               <p className="text-sm font-semibold text-blue-700">НейроЭксперт для бизнеса</p>
               <h2 className="mt-3 text-3xl font-bold text-slate-950">
-                Для бизнеса мы продаём не доступ к платформе, а рост управляемого канала заявок
+                Для бизнеса мы продаём не доступ к платформе, а канал привлечения клиентов
               </h2>
               <p className="mt-4 text-slate-600">
-                Сначала показываем, где бизнес невидим и теряет обращения. Затем запускаем точки входа
+                Сначала показываем, где бизнесу не хватает видимости и доверия. Затем запускаем точки входа
                 из карт, Авито, поиска, отзывов, ответов нейросетей и входящих обращений. После запуска ведём
-                ежедневные задачи, недельный отчёт и работу с потерянными обращениями.
+                ежедневные задачи, недельный отчёт и повторные касания клиентов.
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/launch?package=b2b"
-                  className="rounded-lg bg-slate-950 px-5 py-3 text-center text-sm font-semibold text-white hover:bg-slate-800"
+                  className="rounded-lg bg-blue-700 px-5 py-3 text-center text-sm font-semibold text-white hover:bg-blue-800"
                 >
                   Получить аудит видимости
                 </Link>
@@ -383,7 +383,7 @@ function BusinessPricing() {
               {BUSINESS_SYSTEMS.map((item, index) => (
                 <div key={item} className="rounded-lg border border-slate-200 bg-white p-4">
                   <div className="flex gap-3">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-950 text-sm font-bold text-white">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-700 text-sm font-bold text-white">
                       {index + 1}
                     </span>
                     <p className="text-sm text-slate-700">{item}</p>
@@ -406,7 +406,7 @@ function BusinessPricing() {
 
       <BusinessPackageSection
         eyebrow="Шаг 2"
-        title="Запуск канала заявок за 30 дней"
+        title="Запуск канала привлечения за 30 дней"
         description="После аудита упаковываем карточки, страницы, отзывы, FAQ и первые задачи так, чтобы появились измеримые точки входа."
         packages={LAUNCH_PACKAGES}
       />
@@ -414,7 +414,7 @@ function BusinessPricing() {
       <BusinessPackageSection
         eyebrow="Шаг 3"
         title="Сопровождение продаж"
-        description="Ежедневная система роста: видимость, конкуренты, отзывы, Авито, потерянные обращения и недельный отчёт."
+        description="Ежемесячный ритм роста: видимость, конкуренты, отзывы, Авито, повторные касания и недельный отчёт."
         packages={SUPPORT_PACKAGES}
       />
 
@@ -465,16 +465,16 @@ function BusinessPricing() {
 
 function BusinessModuleMatrix() {
   return (
-    <section className="bg-slate-50 py-12 ">
+    <section className="bg-blue-50 py-12">
       <div className="mx-auto max-w-6xl px-6">
         <div className="max-w-3xl">
-          <p className="text-sm font-semibold text-blue-700">Операционная система заявок</p>
+          <p className="text-sm font-semibold text-blue-700">Система привлечения клиентов</p>
           <h2 className="mt-2 text-3xl font-bold text-slate-950">
             5 модулей системы × аудит, запуск и сопровождение
           </h2>
           <p className="mt-3 text-slate-600">
             Это не разовый маркетинговый отчёт. Каждый модуль проходит путь от диагностики
-            к внедрению и постоянному управлению ростом заявок.
+            к внедрению и регулярному развитию канала привлечения.
           </p>
         </div>
 
@@ -575,7 +575,7 @@ function ExpertPricing() {
             Переходить на платные тарифы имеет смысл, когда появляются регулярные публикации и заявки.
           </p>
           <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
-            <Link href="/register" className="rounded-lg bg-slate-950 px-8 py-3 font-semibold text-white hover:bg-slate-800">
+            <Link href="/register" className="rounded-lg bg-blue-700 px-8 py-3 font-semibold text-white hover:bg-blue-800">
               Начать бесплатно
             </Link>
             <Link href="/audit" className="rounded-lg border border-slate-300 px-8 py-3 font-semibold text-slate-950 hover:bg-slate-100">
@@ -621,11 +621,11 @@ function PackageCard({ pack }: { pack: (typeof AUDIT_PACKAGES)[number] }) {
   return (
     <div
       className={`relative flex flex-col rounded-lg border p-6 ${
-        pack.highlight ? "border-blue-200 bg-blue-50" : "border-slate-200 bg-white"
+        pack.highlight ? "border-blue-200 bg-blue-50 shadow-sm shadow-blue-900/10" : "border-slate-200 bg-white"
       }`}
     >
       {pack.highlight && (
-        <span className="absolute right-4 top-4 rounded-md bg-slate-950 px-2 py-1 text-xs font-semibold text-white">
+        <span className="absolute right-4 top-4 rounded-md bg-blue-700 px-2 py-1 text-xs font-semibold text-white">
           Рекомендуемый
         </span>
       )}
@@ -647,8 +647,8 @@ function PackageCard({ pack }: { pack: (typeof AUDIT_PACKAGES)[number] }) {
         href={pack.href}
         className={`mt-6 rounded-lg px-4 py-3 text-center text-sm font-semibold transition-colors ${
           pack.highlight
-            ? "bg-slate-950 text-white hover:bg-slate-800"
-            : "bg-slate-100 text-slate-950 hover:bg-slate-100"
+            ? "bg-blue-700 text-white hover:bg-blue-800"
+            : "bg-blue-50 text-blue-800 hover:bg-blue-100"
         }`}
       >
         {pack.cta}
@@ -661,11 +661,11 @@ function PlanCard({ plan }: { plan: (typeof SOLO_PLANS)[number] }) {
   return (
     <div
       className={`relative flex flex-col rounded-lg border p-6 ${
-        plan.highlight ? "border-blue-200 bg-blue-50" : "border-slate-200 bg-white"
+        plan.highlight ? "border-blue-200 bg-blue-50 shadow-sm shadow-blue-900/10" : "border-slate-200 bg-white"
       }`}
     >
       {plan.highlight && (
-        <span className="absolute right-4 top-4 rounded-md bg-slate-950 px-2 py-1 text-xs font-semibold text-white">
+        <span className="absolute right-4 top-4 rounded-md bg-blue-700 px-2 py-1 text-xs font-semibold text-white">
           Популярный
         </span>
       )}
@@ -690,9 +690,9 @@ function PlanCard({ plan }: { plan: (typeof SOLO_PLANS)[number] }) {
         href={plan.href}
         className={`mt-6 rounded-lg px-4 py-3 text-center text-sm font-semibold transition-colors ${
           plan.highlight
-            ? "bg-slate-950 text-white hover:bg-slate-800"
+            ? "bg-blue-700 text-white hover:bg-blue-800"
             : plan.id === "free"
-              ? "bg-slate-100 text-slate-950 hover:bg-slate-200"
+              ? "bg-blue-50 text-blue-800 hover:bg-blue-100"
               : "bg-slate-100 text-slate-950 hover:bg-slate-100"
         }`}
       >

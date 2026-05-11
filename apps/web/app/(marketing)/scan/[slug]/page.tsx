@@ -297,7 +297,7 @@ export default async function ScanResultPage({
             <div className="mt-6 flex flex-col sm:flex-row justify-center gap-4">
               <Link
                 href={`/launch?from=scan&niche=${encodeURIComponent(result.query)}`}
-                className="rounded-lg bg-slate-950 px-8 py-3 text-base font-semibold text-white transition-colors hover:bg-slate-800"
+                className="rounded-lg bg-blue-700 px-8 py-3 text-base font-semibold text-white transition-colors hover:bg-blue-800"
               >
                 Получить план запуска
               </Link>

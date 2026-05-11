@@ -328,7 +328,7 @@ export default function AuditPage() {
                 <div className="mt-6">
                   <Link
                     href="/launch"
-                    className="rounded-lg bg-slate-950 px-8 py-3 text-base font-semibold text-white transition-colors hover:bg-slate-800"
+                    className="rounded-lg bg-blue-700 px-8 py-3 text-base font-semibold text-white transition-colors hover:bg-blue-800"
                   >
                     Получить план запуска
                   </Link>

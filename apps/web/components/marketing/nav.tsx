@@ -15,7 +15,7 @@ const NAV_LINKS = [
 
 function LogoMark({ className = "h-9 w-9" }: { className?: string }) {
   return (
-    <div className={`${className} flex shrink-0 items-center justify-center rounded-lg bg-slate-950 text-sm font-bold tracking-tight text-white`}>
+    <div className={`${className} flex shrink-0 items-center justify-center rounded-lg bg-blue-700 text-sm font-bold tracking-tight text-white shadow-sm shadow-blue-700/20`}>
       НЭ
     </div>
   );
@@ -32,7 +32,7 @@ export function MarketingHeader() {
           <div className="flex flex-col">
             <span>НейроЭксперт</span>
             <span className="-mt-0.5 text-[10px] font-medium tracking-wide text-slate-500">
-              Контроль клиентского потока
+              Клиенты из карт, поиска и AI
             </span>
           </div>
         </Link>
@@ -51,7 +51,7 @@ export function MarketingHeader() {
 
         <Link
           href="/login"
-          className="hidden rounded-md bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-800 md:inline-flex"
+          className="hidden rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-800 md:inline-flex"
         >
           Войти
         </Link>
@@ -87,7 +87,7 @@ export function MarketingHeader() {
             ))}
             <Link
               href="/login"
-              className="mt-2 block rounded-md bg-slate-950 px-4 py-2.5 text-center text-sm font-semibold text-white"
+              className="mt-2 block rounded-md bg-blue-700 px-4 py-2.5 text-center text-sm font-semibold text-white"
               onClick={() => setOpen(false)}
             >
               Войти
@@ -110,12 +110,12 @@ export function MarketingFooter() {
               <span className="text-base font-semibold text-slate-950">НейроЭксперт</span>
             </div>
             <p className="text-sm leading-relaxed text-slate-600">
-              SaaS-платформа контроля клиентского потока: спрос, видимость,
-              задачи, отзывы, конкуренты и потерянные обращения.
+              Платформа привлечения клиентов: спрос, видимость, страницы,
+              отзывы, конкуренты, задачи и повторные касания.
             </p>
             <Link
               href="/for-business"
-              className="mt-2 inline-flex w-fit items-center rounded-md bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+              className="mt-2 inline-flex w-fit items-center rounded-md bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-800"
             >
               Получить аудит
             </Link>
