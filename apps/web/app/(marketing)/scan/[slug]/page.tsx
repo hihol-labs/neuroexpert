@@ -188,7 +188,7 @@ export default async function ScanResultPage({
 
                 {/* VS */}
                 <div className="text-center">
-                  <span className="text-lg font-bold text-gray-300">против</span>
+                  <span className="text-lg font-bold text-slate-400">против</span>
                 </div>
 
                 {/* Competitor */}
@@ -222,7 +222,7 @@ export default async function ScanResultPage({
                       >
                         {p.mentioned ? "✓ Вы" : "✗ Вы"}
                       </span>
-                      <span className="text-gray-300">|</span>
+                      <span className="text-slate-300">|</span>
                       <span
                         className={`text-sm font-medium ${compPlatform?.mentioned ? "text-green-600" : "text-red-500"}`}
                       >
@@ -276,8 +276,8 @@ export default async function ScanResultPage({
           </div>
 
           {/* Основной призыв к действию */}
-          <div className="mt-12 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 p-8 text-center">
-            <h2 className="text-2xl font-bold text-white">
+          <div className="mt-12 rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <h2 className="text-2xl font-bold text-slate-950">
               {result.visibility_percent === 0
                 ? "Нейросети не находят вас по этому спросу. Это можно превратить в план страниц."
                 : result.visibility_percent < 50
@@ -290,20 +290,20 @@ export default async function ScanResultPage({
                     ? `Хороший старт! Но ${result.total_platforms - result.mentioned_count} платформ ещё не связывают этот спрос с вами.`
                     : "Отличный старт! Теперь важно вести людей со страниц к записи и заявке."}
             </h2>
-            <p className="mt-3 text-blue-100">
+            <p className="mt-3 text-slate-700">
               Наговорите ответ за 10 минут — мы превратим его в страницу под вопрос,
               добавим кнопку заявки и начнём измерять трафик, клики и заявки.
             </p>
             <div className="mt-6 flex flex-col sm:flex-row justify-center gap-4">
               <Link
                 href={`/launch?from=scan&niche=${encodeURIComponent(result.query)}`}
-                className="rounded-lg bg-white px-8 py-3 text-base font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
+                className="rounded-lg bg-slate-950 px-8 py-3 text-base font-semibold text-white transition-colors hover:bg-slate-800"
               >
                 Получить план запуска
               </Link>
               <Link
                 href="/scan"
-                className="rounded-lg border border-white/40 px-8 py-3 text-base font-semibold text-white hover:bg-white/10 transition-colors"
+                className="rounded-lg border border-slate-300 px-8 py-3 text-base font-semibold text-slate-950 transition-colors hover:bg-slate-100"
               >
                 Проверить ещё
               </Link>

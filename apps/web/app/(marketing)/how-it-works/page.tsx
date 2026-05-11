@@ -213,7 +213,7 @@ const resultRows = [
 
 function AudienceSwitch({ audience, onChange }: { audience: Audience; onChange: (value: Audience) => void }) {
   return (
-    <div className="mx-auto mt-8 grid max-w-xl gap-2 rounded-2xl border border-white/10 bg-white/[0.04] p-2 sm:grid-cols-2">
+    <div className="mx-auto mt-8 grid max-w-xl gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-sm sm:grid-cols-2">
       {[
         ["business", "Для бизнеса", "карты, отзывы, заявки, продажи"],
         ["expert", "Для эксперта", "спрос, ответы, страницы, запись"],
@@ -224,14 +224,14 @@ function AudienceSwitch({ audience, onChange }: { audience: Audience; onChange: 
             key={value}
             type="button"
             onClick={() => onChange(value as Audience)}
-            className={`rounded-xl px-5 py-4 text-left transition ${
+            className={`rounded-md px-5 py-4 text-left transition ${
               active
-                ? "bg-emerald-300 text-[#08110f] shadow-lg shadow-emerald-950/20"
-                : "text-gray-300 hover:bg-white/[0.05] hover:text-white"
+                ? "bg-slate-950 text-white"
+                : "text-slate-700 hover:bg-slate-100 hover:text-slate-950"
             }`}
           >
             <span className="block text-sm font-bold">{label}</span>
-            <span className={`mt-1 block text-xs ${active ? "text-[#25433b]" : "text-gray-500"}`}>{hint}</span>
+            <span className={`mt-1 block text-xs ${active ? "text-slate-300" : "text-slate-500"}`}>{hint}</span>
           </button>
         );
       })}
@@ -245,16 +245,16 @@ function StepList({ steps }: { steps: Step[] }) {
       {steps.map((step, index) => {
         const Icon = step.icon;
         return (
-          <div key={step.title} className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:grid-cols-[64px_1fr]">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-300/12 text-emerald-200 ring-1 ring-emerald-300/20">
+          <div key={step.title} className="grid gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-[64px_1fr]">
+            <div className="flex h-12 w-12 items-center justify-center rounded-md bg-slate-100 text-slate-700 ring-1 ring-slate-200">
               <Icon className="h-5 w-5" />
             </div>
             <div>
               <div className="flex items-center gap-3">
-                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-600">{String(index + 1).padStart(2, "0")}</span>
-                <h3 className="font-semibold text-white">{step.title}</h3>
+                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{String(index + 1).padStart(2, "0")}</span>
+                <h3 className="font-semibold text-slate-950">{step.title}</h3>
               </div>
-              <p className="mt-2 text-sm leading-relaxed text-gray-400">{step.desc}</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">{step.desc}</p>
             </div>
           </div>
         );
@@ -263,16 +263,13 @@ function StepList({ steps }: { steps: Step[] }) {
   );
 }
 
-function MechanismGrid({ modules, accent = "emerald" }: { modules: Mechanism[]; accent?: "emerald" | "cyan" }) {
-  const accentClass =
-    accent === "cyan"
-      ? "bg-cyan-300/10 text-cyan-200 ring-cyan-300/20"
-      : "bg-emerald-300/10 text-emerald-200 ring-emerald-300/20";
-  const summaryClass = accent === "cyan" ? "text-cyan-200" : "text-emerald-200";
+function MechanismGrid({ modules, accent = "neutral" }: { modules: Mechanism[]; accent?: "neutral" | "blue" }) {
+  const accentClass = accent === "blue" ? "bg-blue-50 text-blue-700 ring-blue-200" : "bg-slate-100 text-slate-700 ring-slate-200";
+  const summaryClass = accent === "blue" ? "text-blue-800" : "text-slate-800";
   const badgeClass =
-    accent === "cyan"
-      ? "border-cyan-300/20 bg-cyan-300/[0.07] text-cyan-100"
-      : "border-emerald-300/20 bg-emerald-300/[0.07] text-emerald-100";
+    accent === "blue"
+      ? "border-blue-200 bg-blue-50 text-blue-800"
+      : "border-slate-200 bg-slate-100 text-slate-700";
 
   return (
     <div className="space-y-4">
@@ -282,7 +279,7 @@ function MechanismGrid({ modules, accent = "emerald" }: { modules: Mechanism[]; 
           <details
             key={item.title}
             open={index === 0}
-            className="group rounded-2xl border border-white/10 bg-[#101715]/80 p-5 backdrop-blur-sm"
+            className="group rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
           >
             <summary className="flex cursor-pointer list-none items-start gap-4">
               <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 ${accentClass}`}>
@@ -290,16 +287,16 @@ function MechanismGrid({ modules, accent = "emerald" }: { modules: Mechanism[]; 
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <h3 className="text-lg font-semibold text-white">{item.title}</h3>
+                  <h3 className="text-lg font-semibold text-slate-950">{item.title}</h3>
                   <span className={`w-fit rounded-md border px-2.5 py-1 text-xs font-semibold ${badgeClass}`}>
                     раскрыть механику
                   </span>
                 </div>
-                <p className="mt-2 text-sm leading-relaxed text-gray-400">{item.promise}</p>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">{item.promise}</p>
               </div>
             </summary>
 
-            <div className="mt-5 grid gap-4 border-t border-white/10 pt-5 lg:grid-cols-5">
+            <div className="mt-5 grid gap-4 border-t border-slate-200 pt-5 lg:grid-cols-5">
               {[
                 ["Источники", item.sources],
                 ["Что проверяем", item.checks],
@@ -307,11 +304,11 @@ function MechanismGrid({ modules, accent = "emerald" }: { modules: Mechanism[]; 
                 ["Что получает пользователь", item.output],
                 ["Метрики", item.metrics],
               ].map(([title, values]) => (
-                <div key={title as string} className="rounded-xl border border-white/10 bg-white/[0.035] p-4">
+                <div key={title as string} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                   <h4 className={`text-sm font-semibold ${summaryClass}`}>{title as string}</h4>
                   <ul className="mt-3 space-y-2">
                     {(values as string[]).map((value) => (
-                      <li key={value} className="text-sm leading-relaxed text-gray-400">
+                      <li key={value} className="text-sm leading-relaxed text-slate-600">
                         {value}
                       </li>
                     ))}
@@ -328,18 +325,18 @@ function MechanismGrid({ modules, accent = "emerald" }: { modules: Mechanism[]; 
 
 function ResultsTable() {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-white/10 bg-[#101715]/70">
+    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
       <div className="min-w-[680px]">
-        <div className="grid grid-cols-[0.7fr_1.2fr_1fr] gap-4 bg-white/[0.04] px-5 py-4 text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">
+        <div className="grid grid-cols-[0.7fr_1.2fr_1fr] gap-4 bg-slate-50 px-5 py-4 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
           <span>Период</span>
           <span>Что делаем</span>
           <span>Что становится видно</span>
         </div>
         {resultRows.map(([period, work, result]) => (
-          <div key={period} className="grid grid-cols-[0.7fr_1.2fr_1fr] gap-4 border-t border-white/10 px-5 py-4 text-sm">
-            <span className="font-semibold text-white">{period}</span>
-            <span className="text-gray-400">{work}</span>
-            <span className="text-emerald-100">{result}</span>
+          <div key={period} className="grid grid-cols-[0.7fr_1.2fr_1fr] gap-4 border-t border-slate-200 px-5 py-4 text-sm">
+            <span className="font-semibold text-slate-950">{period}</span>
+            <span className="text-slate-600">{work}</span>
+            <span className="text-slate-800">{result}</span>
           </div>
         ))}
       </div>
@@ -352,18 +349,18 @@ export default function HowItWorksPage() {
   const isBusiness = audience === "business";
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-slate-50 text-slate-950">
       <MarketingHeader />
 
-      <section className="pb-12 pt-16">
+      <section className="border-b border-slate-200 bg-white pb-12 pt-16">
         <div className="mx-auto max-w-4xl px-6 text-center">
-          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-300">
+          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-blue-700">
             Два сценария в одном проекте
           </p>
-          <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">
+          <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl">
             Как НейроЭксперт приводит клиентов бизнесу и экспертам
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-gray-300">
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-700">
             Выберите свой сценарий. Для бизнеса мы показываем, где теряются клиенты и деньги.
             Для эксперта — какие вопросы уже ведут к записи и как превратить опыт в страницы,
             которые находят люди и нейросети.
@@ -377,9 +374,9 @@ export default function HowItWorksPage() {
           <section className="py-14">
             <div className="mx-auto grid max-w-7xl gap-8 px-6 lg:grid-cols-[0.88fr_1.12fr] lg:items-start">
               <div>
-                <p className="text-sm font-semibold text-emerald-300">Для бизнеса</p>
-                <h2 className="mt-3 text-3xl font-bold text-white">Система локальных продаж</h2>
-                <p className="mt-4 leading-relaxed text-gray-400">
+                <p className="text-sm font-semibold text-blue-700">Для бизнеса</p>
+                <h2 className="mt-3 text-3xl font-bold text-slate-950">Система локальных продаж</h2>
+                <p className="mt-4 leading-relaxed text-slate-600">
                   Главная задача — не выдать владельцу ещё один сложный отчёт,
                   а показать конкретные места, где бизнес уже теряет клиентов:
                   видимость, отзывы, конкуренты, нейросети, звонки и переписки.
@@ -395,11 +392,11 @@ export default function HowItWorksPage() {
           <section className="py-14">
             <div className="mx-auto max-w-7xl px-6">
               <div className="mb-8 max-w-3xl">
-                <p className="text-sm font-semibold text-emerald-300">5 рабочих модулей</p>
-                <h2 className="mt-3 text-3xl font-bold text-white">
+                <p className="text-sm font-semibold text-blue-700">5 рабочих модулей</p>
+                <h2 className="mt-3 text-3xl font-bold text-slate-950">
                   За счёт чего система находит потери и двигает продажи
                 </h2>
-                <p className="mt-3 text-gray-400">
+                <p className="mt-3 text-slate-600">
                   Ниже не обещания, а механика: какие источники проверяются,
                   какие инструменты используются, что получает собственник и по каким метрикам видно движение.
                 </p>
@@ -411,15 +408,15 @@ export default function HowItWorksPage() {
           <section className="py-14">
             <div className="mx-auto grid max-w-7xl gap-6 px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
               <SevenDayResultPanel />
-              <div className="rounded-2xl border border-white/10 bg-[#101715]/75 p-6">
-                <div className="flex items-center gap-2 text-sm font-semibold text-emerald-300">
+              <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="flex items-center gap-2 text-sm font-semibold text-blue-700">
                   <CircleDollarSign className="h-4 w-4" />
                   Почему это понятно собственнику
                 </div>
-                <h3 className="mt-3 text-2xl font-bold text-white">
+                <h3 className="mt-3 text-2xl font-bold text-slate-950">
                   Каждый вывод связан с выручкой
                 </h3>
-                <p className="mt-4 leading-relaxed text-gray-400">
+                <p className="mt-4 leading-relaxed text-slate-600">
                   Мы не говорим “у вас слабый маркетинг”. Мы показываем:
                   карточка не заполнена, нейросети советуют конкурента,
                   12 обращений не получили повторного контакта, а средний чек
@@ -427,8 +424,8 @@ export default function HowItWorksPage() {
                 </p>
                 <div className="mt-6 space-y-3">
                   {["где клиент не увидел бизнес", "где клиент выбрал конкурента", "какие обращения можно вернуть"].map((item) => (
-                    <div key={item} className="flex items-center gap-3 text-sm text-gray-300">
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-300" />
+                    <div key={item} className="flex items-center gap-3 text-sm text-slate-700">
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-green-700" />
                       {item}
                     </div>
                   ))}
@@ -444,18 +441,18 @@ export default function HowItWorksPage() {
           </section>
 
           <section className="py-16">
-            <div className="mx-auto max-w-4xl rounded-3xl border border-emerald-300/20 bg-emerald-300/[0.08] px-6 py-10 text-center">
-              <h2 className="text-3xl font-bold text-white">Начните с аудита продаж</h2>
-              <p className="mx-auto mt-4 max-w-2xl text-gray-300">
+            <div className="mx-auto max-w-4xl rounded-lg border border-slate-200 bg-white px-6 py-10 text-center shadow-sm">
+              <h2 className="text-3xl font-bold text-slate-950">Начните с аудита продаж</h2>
+              <p className="mx-auto mt-4 max-w-2xl text-slate-600">
                 За первые 7 дней станет видно, где бизнес теряет клиентов,
                 что исправить первым и какие обращения ещё можно вернуть.
               </p>
               <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-                <Link href="/for-business" className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-300 px-7 py-3 font-semibold text-[#08110f] transition hover:bg-emerald-200">
+                <Link href="/for-business" className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-950 px-7 py-3 font-semibold text-white transition hover:bg-slate-800">
                   Посмотреть сценарий для бизнеса
                   <ArrowRight className="h-4 w-4" />
                 </Link>
-                <Link href="/pricing" className="inline-flex items-center justify-center rounded-xl border border-white/15 px-7 py-3 font-semibold text-white transition hover:bg-white/[0.06]">
+                <Link href="/pricing" className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-7 py-3 font-semibold text-slate-950 transition hover:bg-slate-100">
                   Смотреть тарифы
                 </Link>
               </div>
@@ -467,11 +464,11 @@ export default function HowItWorksPage() {
           <section className="py-14">
             <div className="mx-auto grid max-w-7xl gap-8 px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
               <div>
-                <p className="text-sm font-semibold text-cyan-300">Для эксперта</p>
-                <h2 className="mt-3 text-3xl font-bold text-white">
+                <p className="text-sm font-semibold text-blue-700">Для эксперта</p>
+                <h2 className="mt-3 text-3xl font-bold text-slate-950">
                   Спрос превращается в страницу, страница — в заявку
                 </h2>
-                <p className="mt-4 leading-relaxed text-gray-400">
+                <p className="mt-4 leading-relaxed text-slate-600">
                   Эксперту не нужно угадывать темы для контента. Система показывает,
                   что люди уже спрашивают, где ответы слабые, и помогает быстро
                   собрать страницу на основе живого экспертного голоса.
@@ -487,16 +484,16 @@ export default function HowItWorksPage() {
           <section className="py-14">
             <div className="mx-auto max-w-7xl px-6">
               <div className="mb-8 max-w-3xl">
-                <p className="text-sm font-semibold text-cyan-300">5 рабочих блоков</p>
-                <h2 className="mt-3 text-3xl font-bold text-white">
+                <p className="text-sm font-semibold text-blue-700">5 рабочих блоков</p>
+                <h2 className="mt-3 text-3xl font-bold text-slate-950">
                   За счёт чего эксперт получает видимость и заявки
                 </h2>
-                <p className="mt-3 text-gray-400">
+                <p className="mt-3 text-slate-600">
                   Здесь раскрыта внутренняя логика платформы: от сбора массовых запросов
                   до страницы, индексации, упоминаний в нейросетях и кликов по записи.
                 </p>
               </div>
-              <MechanismGrid modules={expertModules} accent="cyan" />
+              <MechanismGrid modules={expertModules} accent="blue" />
             </div>
           </section>
 
@@ -507,12 +504,12 @@ export default function HowItWorksPage() {
                 ["Что публикуем", "страницы с ответом, FAQ, таблицами, источниками и кнопкой записи"],
                 ["Что измеряем", "показы, клики, заявки, позиции и упоминания в нейросетях"],
               ].map(([title, desc]) => (
-                <div key={title} className="rounded-2xl border border-white/10 bg-[#101715]/75 p-6">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-300/10 text-cyan-200 ring-1 ring-cyan-300/20">
+                <div key={title} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-blue-50 text-blue-700 ring-1 ring-blue-200">
                     <UserCheck className="h-5 w-5" />
                   </div>
-                  <h3 className="mt-4 text-xl font-semibold text-white">{title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-gray-400">{desc}</p>
+                  <h3 className="mt-4 text-xl font-semibold text-slate-950">{title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{desc}</p>
                 </div>
               ))}
             </div>
@@ -525,18 +522,18 @@ export default function HowItWorksPage() {
           </section>
 
           <section className="py-16">
-            <div className="mx-auto max-w-4xl rounded-3xl border border-cyan-300/20 bg-cyan-300/[0.08] px-6 py-10 text-center">
-              <h2 className="text-3xl font-bold text-white">Начните с карты спроса</h2>
-              <p className="mx-auto mt-4 max-w-2xl text-gray-300">
+            <div className="mx-auto max-w-4xl rounded-lg border border-slate-200 bg-white px-6 py-10 text-center shadow-sm">
+              <h2 className="text-3xl font-bold text-slate-950">Начните с карты спроса</h2>
+              <p className="mx-auto mt-4 max-w-2xl text-slate-600">
                 Вы увидите вопросы, по которым люди уже ищут помощь,
                 и поймёте, какие страницы стоит запускать первыми.
               </p>
               <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-                <Link href="/audit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-300 px-7 py-3 font-semibold text-[#071116] transition hover:bg-cyan-200">
+                <Link href="/audit" className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-950 px-7 py-3 font-semibold text-white transition hover:bg-slate-800">
                   Получить карту спроса
                   <ArrowRight className="h-4 w-4" />
                 </Link>
-                <Link href="/for-experts" className="inline-flex items-center justify-center rounded-xl border border-white/15 px-7 py-3 font-semibold text-white transition hover:bg-white/[0.06]">
+                <Link href="/for-experts" className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-7 py-3 font-semibold text-slate-950 transition hover:bg-slate-100">
                   Подробнее для экспертов
                 </Link>
               </div>

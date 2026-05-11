@@ -112,10 +112,10 @@ export default function AuditPage() {
           {step === "select" && (
             <>
               <div className="text-center">
-                <h1 className="text-3xl font-bold text-white">
+                <h1 className="text-3xl font-bold text-slate-950">
                   Бесплатная карта спроса
                 </h1>
-                <p className="mt-4 text-lg text-gray-300">
+                <p className="mt-4 text-lg text-slate-700">
                   Выберите свою нишу — мы найдём вопросы, по которым люди уже
                   ищут решение, и покажем, какие из них стоит превратить в страницы для заявок.
                 </p>
@@ -125,14 +125,14 @@ export default function AuditPage() {
                   <button
                     key={niche.id}
                     onClick={() => handleNicheSelect(niche.id, niche.name)}
-                    className={`rounded-xl border p-5 text-center transition-all hover:shadow-lg hover:scale-105 cursor-pointer backdrop-blur-md ${
+                    className={`rounded-xl border p-5 text-center transition-all hover:shadow-sm cursor-pointer ${
                       niche.focus
-                        ? "border-cyan-500/30 bg-white/10 hover:border-cyan-400/50 hover:bg-white/15"
-                        : "border-white/10 bg-white/5 hover:border-cyan-400/30 hover:bg-white/10"
+                        ? "border-blue-200 bg-blue-50 hover:border-blue-300"
+                        : "border-slate-200 bg-white hover:border-blue-200 hover:bg-slate-50"
                     }`}
                   >
                     <span className="text-3xl">{niche.icon}</span>
-                    <h3 className="mt-2 text-sm font-semibold text-white">
+                    <h3 className="mt-2 text-sm font-semibold text-slate-950">
                       {niche.name}
                     </h3>
                   </button>
@@ -144,11 +144,11 @@ export default function AuditPage() {
           {/* Step 2: Loading */}
           {step === "loading" && (
             <div className="flex flex-col items-center justify-center py-20">
-              <div className="h-12 w-12 animate-spin rounded-full border-4 border-cyan-400/30 border-t-cyan-400" />
-              <p className="mt-6 text-lg text-white">
+              <div className="h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600" />
+              <p className="mt-6 text-lg text-slate-950">
                 Анализируем нишу &laquo;{nicheName}&raquo;...
               </p>
-              <p className="mt-2 text-sm text-gray-400">
+              <p className="mt-2 text-sm text-slate-600">
                 Собираем вопросы, проверяем текущие ответы нейросетей и
                 оцениваем потенциал темы. Это займёт 15-30 секунд —
                 мы ищем не просто контент-идеи, а возможности для заявок.
@@ -160,13 +160,13 @@ export default function AuditPage() {
           {step === "results" && (
             <>
               <div className="text-center">
-                <p className="text-sm font-medium text-cyan-400">
+                <p className="text-sm font-medium text-blue-700">
                   Карта спроса
                 </p>
-                <h1 className="mt-2 text-3xl font-bold text-white">
+                <h1 className="mt-2 text-3xl font-bold text-slate-950">
                   {nicheName}
                 </h1>
-                <p className="mt-2 text-gray-300">
+                <p className="mt-2 text-slate-700">
                   {gaps.length} {gaps.length === 1 ? "вопрос" : "вопроса"} проверено по{" "}
                   {gaps[0]?.platforms?.length || 0} нейросетевым платформам
                 </p>
@@ -176,14 +176,14 @@ export default function AuditPage() {
                 {gaps.map((gap, i) => (
                   <div
                     key={gap.id}
-                    className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-6"
+                    className="rounded-2xl border border-slate-200 bg-white  p-6"
                   >
                     {/* Question header */}
                     <div className="flex items-center gap-3">
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-500/20 text-sm font-bold text-red-400">
                         {i + 1}
                       </span>
-                      <h3 className="text-lg font-semibold text-white">
+                      <h3 className="text-lg font-semibold text-slate-950">
                         {gap.question}
                       </h3>
                     </div>
@@ -198,25 +198,25 @@ export default function AuditPage() {
                         }`}>
                           {gap.avg_gap_score}/10
                         </p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-slate-600">
                           слабость текущего ответа нейросети
                         </p>
                       </div>
                       {gap.estimated_monthly_volume && (
                         <div className="text-center">
-                          <p className="text-2xl font-bold text-cyan-400">
+                          <p className="text-2xl font-bold text-blue-700">
                             {gap.estimated_monthly_volume.toLocaleString("ru-RU")}
                           </p>
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-slate-600">
                             запросов/мес
                           </p>
                         </div>
                       )}
                       {gap.search_intent && (
                         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          gap.search_intent === "commercial" ? "bg-green-500/20 text-green-300" :
-                          gap.search_intent === "transactional" ? "bg-purple-500/20 text-purple-300" :
-                          "bg-blue-500/20 text-blue-300"
+                          gap.search_intent === "commercial" ? "bg-green-50 text-green-700" :
+                          gap.search_intent === "transactional" ? "bg-blue-50 text-blue-700" :
+                          "bg-slate-100 text-slate-700"
                         }`}>
                           {gap.search_intent === "commercial" ? "Коммерческий" :
                            gap.search_intent === "transactional" ? "Транзакционный" :
@@ -226,10 +226,10 @@ export default function AuditPage() {
                     </div>
 
                     {/* Platform comparison table */}
-                    <div className="mt-5 overflow-hidden rounded-lg border border-white/10">
+                    <div className="mt-5 overflow-hidden rounded-lg border border-slate-200">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="bg-white/5 text-left text-xs font-medium text-gray-400 uppercase">
+                          <tr className="bg-white text-left text-xs font-medium text-slate-600 uppercase">
                             <th className="px-4 py-2">Платформа</th>
                             {MARKER_LABELS.map((m) => (
                               <th key={m.key} className="px-2 py-2 text-center">
@@ -239,7 +239,7 @@ export default function AuditPage() {
                             <th className="px-3 py-2 text-center">Балл</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5">
+                        <tbody className="divide-y divide-slate-100">
                           {gap.platforms.map((p) => {
                             const key = `${gap.id}-${p.platform}`;
                             const isExpanded = expandedPlatform === key;
@@ -247,12 +247,12 @@ export default function AuditPage() {
                               <>
                                 <tr
                                   key={key}
-                                  className="cursor-pointer hover:bg-white/5 transition-colors"
+                                  className="cursor-pointer hover:bg-white transition-colors"
                                   onClick={() => togglePlatform(key)}
                                 >
-                                  <td className="px-4 py-3 font-medium text-white">
+                                  <td className="px-4 py-3 font-medium text-slate-950">
                                     <span className="inline-flex items-center gap-1">
-                                      <span className={`text-gray-500 text-xs transition-transform ${isExpanded ? "rotate-90" : ""}`}>&#9654;</span>
+                                      <span className={`text-slate-500 text-xs transition-transform ${isExpanded ? "rotate-90" : ""}`}>&#9654;</span>
                                       {p.platform}
                                     </span>
                                   </td>
@@ -290,17 +290,17 @@ export default function AuditPage() {
                                   <tr key={`${key}-detail`}>
                                     <td
                                       colSpan={6}
-                                      className="bg-white/5 px-4 py-3"
+                                      className="bg-white px-4 py-3"
                                     >
                                       {p.weakness && (
-                                        <p className="text-sm text-orange-400 font-medium mb-2">
+                                        <p className="text-sm text-orange-700 font-medium mb-2">
                                           {p.weakness}
                                         </p>
                                       )}
-                                      <p className="text-xs font-medium text-gray-400 mb-1">
+                                      <p className="text-xs font-medium text-slate-600 mb-1">
                                         Ответ {p.platform} (в реальном времени):
                                       </p>
-                                      <p className="text-sm text-gray-300 whitespace-pre-line">
+                                      <p className="text-sm text-slate-700 whitespace-pre-line">
                                         {p.ai_response}
                                       </p>
                                     </td>
@@ -317,22 +317,22 @@ export default function AuditPage() {
               </div>
 
               {/* Призыв к действию */}
-              <div className="mt-12 rounded-2xl border border-cyan-500/20 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 backdrop-blur-md p-8 text-center">
-                <h2 className="text-2xl font-bold text-white">
+              <div className="mt-12 rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+                <h2 className="text-2xl font-bold text-slate-950">
                   Хотите превратить эти вопросы в заявки?
                 </h2>
-                <p className="mt-2 text-gray-300">
+                <p className="mt-2 text-slate-700">
                   Наговорите ответ за 10 минут — мы превратим его в страницу
                   под реальный спрос, добавим кнопку записи и начнём измерять результат.
                 </p>
                 <div className="mt-6">
                   <Link
                     href="/launch"
-                    className="rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 px-8 py-3 text-base font-semibold text-white hover:from-cyan-400 hover:to-blue-500 transition-all"
+                    className="rounded-lg bg-slate-950 px-8 py-3 text-base font-semibold text-white transition-colors hover:bg-slate-800"
                   >
                     Получить план запуска
                   </Link>
-                  <p className="mt-3 text-xs text-gray-400">
+                  <p className="mt-3 text-xs text-slate-600">
                     Без карты · Ответим с планом запуска · Можно начать с пилота
                   </p>
                 </div>
@@ -344,7 +344,7 @@ export default function AuditPage() {
                     setStep("select");
                     setGaps([]);
                   }}
-                  className="text-sm text-gray-400 hover:text-white transition-colors"
+                  className="text-sm text-slate-600 hover:text-slate-950 transition-colors"
                 >
                   &larr; Выбрать другую нишу
                 </button>
@@ -361,7 +361,7 @@ export default function AuditPage() {
                   setStep("select");
                   setError("");
                 }}
-                className="mt-6 text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
+                className="mt-6 text-sm text-blue-700 hover:text-blue-700 transition-colors"
               >
                 &larr; Попробовать снова
               </button>

@@ -120,39 +120,37 @@ const EXPERT_MECHANISMS = [
 
 export default function ForExpertsPage() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-slate-50 text-slate-950">
       <MarketingHeader />
 
-      {/* Hero */}
-      <section className="pb-16 pt-16">
+      <section className="border-b border-slate-200 bg-white pb-16 pt-16">
         <div className="mx-auto grid max-w-7xl gap-10 px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-300">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">
               НейроЭксперт для экспертов
             </p>
-            <h1 className="mt-4 text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-5xl">
-              Ваши знания могут приводить{" "}
-              <span className="text-blue-400">новых клиентов</span>
+            <h1 className="mt-4 text-4xl font-bold leading-[1.08] tracking-tight text-slate-950 sm:text-5xl">
+              Ваши знания превращаются в страницы, которые приводят клиентов
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-gray-300">
+            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-700">
               НейроЭксперт находит вопросы, по которым люди уже ищут решение
               и выбирают специалиста. Вы отвечаете голосом, а мы превращаем
               ответ в страницу с понятным действием: записаться, задать вопрос или
               получить разбор.
             </p>
-            <p className="mt-4 max-w-xl text-base text-gray-400">
+            <p className="mt-4 max-w-xl text-base text-slate-600">
               Логика простая: спрос → экспертный ответ → страница → трафик → клик по записи → заявка.
             </p>
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">
               <Link
                 href="/audit"
-                className="rounded-lg bg-blue-500 px-8 py-3 text-center text-base font-semibold text-white transition-colors hover:bg-blue-400"
+                className="rounded-md bg-slate-950 px-8 py-3 text-center text-base font-semibold text-white transition-colors hover:bg-slate-800"
               >
                 Найти спрос в моей нише
               </Link>
               <Link
                 href="/pricing"
-                className="rounded-lg border border-white/15 px-8 py-3 text-center text-base font-semibold text-white transition-colors hover:bg-white/10"
+                className="rounded-md border border-slate-300 bg-white px-8 py-3 text-center text-base font-semibold text-slate-950 transition-colors hover:bg-slate-100"
               >
                 Посмотреть тарифы
               </Link>
@@ -164,14 +162,14 @@ export default function ForExpertsPage() {
         </div>
       </section>
 
-      <section className="py-16">
+      <section className="bg-slate-50 py-16">
         <div className="mx-auto max-w-7xl px-6">
           <div className="mx-auto max-w-3xl text-center">
-            <p className="text-sm font-semibold text-cyan-300">Механика платформы</p>
-            <h2 className="mt-3 text-3xl font-bold text-white">
+            <p className="text-sm font-semibold text-blue-700">Механика платформы</p>
+            <h2 className="mt-3 text-3xl font-bold text-slate-950">
               За счёт чего эксперт получает видимость
             </h2>
-            <p className="mt-4 text-gray-400">
+            <p className="mt-4 text-slate-600">
               Это не “нейросеть пишет посты”. Платформа собирает спрос, проверяет слабые ответы,
               берёт ваш голос как источник экспертизы и превращает его в страницы, которые можно измерять.
             </p>
@@ -179,23 +177,23 @@ export default function ForExpertsPage() {
 
           <div className="mt-10 space-y-4">
             {EXPERT_MECHANISMS.map((item) => (
-              <div key={item.title} className="grid gap-5 rounded-2xl border border-white/10 bg-[#101715]/75 p-6 lg:grid-cols-[0.9fr_1.1fr_1.1fr]">
+              <div key={item.title} className="grid gap-5 rounded-lg border border-slate-200 bg-white p-6 shadow-sm lg:grid-cols-[0.9fr_1.1fr_1.1fr]">
                 <div>
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-300/10 text-cyan-200 ring-1 ring-cyan-300/20">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-blue-50 text-blue-700 ring-1 ring-blue-200">
                       <item.Icon className="h-5 w-5" />
                     </div>
-                    <h3 className="font-semibold text-white">{item.title}</h3>
+                    <h3 className="font-semibold text-slate-950">{item.title}</h3>
                   </div>
-                  <p className="mt-3 text-sm leading-relaxed text-gray-400">{item.result}</p>
+                  <p className="mt-3 text-sm leading-relaxed text-slate-600">{item.result}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">Инструменты</p>
-                  <p className="mt-2 text-sm leading-relaxed text-gray-300">{item.tools}</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Инструменты</p>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{item.tools}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">Что получает эксперт</p>
-                  <p className="mt-2 text-sm leading-relaxed text-cyan-100">{item.output}</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Что получает эксперт</p>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-800">{item.output}</p>
                 </div>
               </div>
             ))}
@@ -203,57 +201,55 @@ export default function ForExpertsPage() {
         </div>
       </section>
 
-      {/* Путь к клиенту */}
-      <section className="py-16">
+      <section className="border-y border-slate-200 bg-white py-16">
         <div className="mx-auto max-w-6xl px-6">
-          <h2 className="text-3xl font-bold text-white text-center">
+          <h2 className="text-center text-3xl font-bold text-slate-950">
             Как экспертный ответ превращается в заявку
           </h2>
-          <p className="mt-4 text-center text-gray-400 max-w-2xl mx-auto">
+          <p className="mx-auto mt-4 max-w-2xl text-center text-slate-600">
             Мы не просим вас вести контент-машину каждый день. Система берёт
             ваш голос и превращает его в точки входа, где будущий клиент уже
             ищет решение.
           </p>
           <div className="mt-10 grid gap-4 md:grid-cols-4">
             {CLIENT_PATHS.map((item, index) => (
-              <div key={item.title} className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/20 text-sm font-bold text-blue-300">
+              <div key={item.title} className="rounded-lg border border-slate-200 bg-slate-50 p-5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-950 text-sm font-bold text-white">
                   {index + 1}
                 </div>
-                <h3 className="mt-4 text-base font-semibold text-white">{item.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-gray-400">{item.desc}</p>
+                <h3 className="mt-4 text-base font-semibold text-slate-950">{item.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">{item.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Честное позиционирование */}
-      <section className="py-16">
+      <section className="bg-slate-50 py-16">
         <div className="mx-auto max-w-4xl px-6">
-          <h2 className="text-3xl font-bold text-white text-center">
+          <h2 className="text-center text-3xl font-bold text-slate-950">
             Что мы делаем — и чего не обещаем
           </h2>
           <div className="mt-10 grid gap-6 md:grid-cols-2">
-            <div className="rounded-2xl border border-green-500/20 bg-green-500/10 p-6">
-              <h3 className="text-lg font-semibold text-green-300">Что мы делаем</h3>
-              <ul className="mt-4 space-y-3 text-sm text-green-200/90">
-                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Находим вопросы с подтверждённым спросом и понятным клиентским намерением</li>
-                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Превращаем ваш голос в экспертную страницу под конкретный вопрос</li>
-                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Публикуем страницу со структурой для поиска, нейросетей и вашим профилем</li>
-                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>На каждой странице — кнопка записи, консультации или разбора</li>
-                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Отслеживаем индексацию, трафик, клики и заявки</li>
-                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">&#10003;</span>Корректируем следующие темы по фактическому результату</li>
+            <div className="rounded-lg border border-green-200 bg-green-50 p-6">
+              <h3 className="text-lg font-semibold text-green-900">Что мы делаем</h3>
+              <ul className="mt-4 space-y-3 text-sm text-green-900">
+                <li className="flex gap-2"><span className="flex-shrink-0 text-green-700">&#10003;</span>Находим вопросы с подтверждённым спросом и понятным клиентским намерением</li>
+                <li className="flex gap-2"><span className="flex-shrink-0 text-green-700">&#10003;</span>Превращаем ваш голос в экспертную страницу под конкретный вопрос</li>
+                <li className="flex gap-2"><span className="flex-shrink-0 text-green-700">&#10003;</span>Публикуем страницу со структурой для поиска, нейросетей и вашим профилем</li>
+                <li className="flex gap-2"><span className="flex-shrink-0 text-green-700">&#10003;</span>На каждой странице — кнопка записи, консультации или разбора</li>
+                <li className="flex gap-2"><span className="flex-shrink-0 text-green-700">&#10003;</span>Отслеживаем индексацию, трафик, клики и заявки</li>
+                <li className="flex gap-2"><span className="flex-shrink-0 text-green-700">&#10003;</span>Корректируем следующие темы по фактическому результату</li>
               </ul>
             </div>
-            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-6">
-              <h3 className="text-lg font-semibold text-amber-300">Чего мы не обещаем</h3>
-              <ul className="mt-4 space-y-3 text-sm text-amber-200/90">
-                <li className="flex gap-2"><span className="text-amber-400 flex-shrink-0">&mdash;</span>«N клиентов в месяц» — результат зависит от ниши, конкуренции, качества ответов</li>
-                <li className="flex gap-2"><span className="text-amber-400 flex-shrink-0">&mdash;</span>100% попадание каждой страницы в ответы нейросетей — это дополнительный канал, а не единственная цель</li>
-                <li className="flex gap-2"><span className="text-amber-400 flex-shrink-0">&mdash;</span>Мгновенный поток клиентов — поиску, индексации и доверию нужно время</li>
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-6">
+              <h3 className="text-lg font-semibold text-amber-900">Чего мы не обещаем</h3>
+              <ul className="mt-4 space-y-3 text-sm text-amber-900">
+                <li className="flex gap-2"><span className="flex-shrink-0 text-amber-700">&mdash;</span>«N клиентов в месяц» — результат зависит от ниши, конкуренции, качества ответов</li>
+                <li className="flex gap-2"><span className="flex-shrink-0 text-amber-700">&mdash;</span>100% попадание каждой страницы в ответы нейросетей — это дополнительный канал, а не единственная цель</li>
+                <li className="flex gap-2"><span className="flex-shrink-0 text-amber-700">&mdash;</span>Мгновенный поток клиентов — поиску, индексации и доверию нужно время</li>
               </ul>
-              <p className="mt-4 text-sm text-amber-200/80">
+              <p className="mt-4 text-sm text-amber-900/80">
                 Мы создаём систему, где каждая публикация начинается с реального спроса
                 и заканчивается измеримым действием: просмотром, кликом или заявкой.
               </p>
@@ -262,25 +258,24 @@ export default function ForExpertsPage() {
         </div>
       </section>
 
-      {/* 6 Болей */}
-      <section className="bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 py-16">
+      <section className="border-y border-slate-200 bg-white py-16">
         <div className="mx-auto max-w-7xl px-6">
-          <h2 className="text-3xl font-bold text-white text-center">
+          <h2 className="text-center text-3xl font-bold text-slate-950">
             Знакомо?
           </h2>
-          <p className="mt-4 text-center text-gray-400 max-w-2xl mx-auto">
+          <p className="mx-auto mt-4 max-w-2xl text-center text-slate-600">
             Шесть болей, которые мы решаем. Для каждой — конкретное решение внутри платформы.
           </p>
           <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {PAINS.map((pain) => (
-              <div key={pain.title} className="rounded-2xl bg-white/5 border border-white/10 p-6 backdrop-blur-sm">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-400/20">
+              <div key={pain.title} className="rounded-lg border border-slate-200 bg-slate-50 p-6">
+                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-blue-50 text-blue-700 ring-1 ring-blue-200">
                   <pain.Icon className="h-5 w-5" />
                 </div>
-                <h3 className="mt-3 text-lg font-semibold text-white">{pain.title}</h3>
-                <p className="mt-1 text-sm text-gray-400">{pain.desc}</p>
-                <div className="mt-4 rounded-xl bg-blue-500/10 border border-blue-500/20 p-4">
-                  <p className="text-sm text-blue-300">
+                <h3 className="mt-3 text-lg font-semibold text-slate-950">{pain.title}</h3>
+                <p className="mt-1 text-sm text-slate-600">{pain.desc}</p>
+                <div className="mt-4 rounded-md border border-blue-200 bg-white p-4">
+                  <p className="text-sm text-blue-900">
                     <span className="font-semibold">Решение: </span>
                     {pain.solution}
                   </p>
@@ -291,24 +286,23 @@ export default function ForExpertsPage() {
         </div>
       </section>
 
-      {/* Не контент-фабрика */}
-      <section className="py-16">
+      <section className="bg-slate-50 py-16">
         <div className="mx-auto max-w-4xl px-6">
-          <h2 className="text-3xl font-bold text-white text-center">
+          <h2 className="text-center text-3xl font-bold text-slate-950">
             Почему мы — не контент-фабрика
           </h2>
           <div className="mt-10 grid gap-6 md:grid-cols-2">
-            <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6">
-              <h3 className="text-lg font-semibold text-red-300">Контент-фабрики</h3>
-              <p className="mt-2 text-sm text-red-200/80">
+            <div className="rounded-lg border border-red-200 bg-red-50 p-6">
+              <h3 className="text-lg font-semibold text-red-900">Контент-фабрики</h3>
+              <p className="mt-2 text-sm text-red-900/80">
                 Нейросетевые копирайтеры генерируют текст <strong>из обучающих данных больших языковых моделей</strong>.
                 Это рерайт интернета. Нового знания — ноль. О чём писать, где публиковать,
                 как оптимизировать, кто прочитает — ваша проблема.
               </p>
             </div>
-            <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-6">
-              <h3 className="text-lg font-semibold text-blue-300">НейроЭксперт</h3>
-              <p className="mt-2 text-sm text-blue-200/80">
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-6">
+              <h3 className="text-lg font-semibold text-blue-900">НейроЭксперт</h3>
+              <p className="mt-2 text-sm text-blue-900/80">
                 Содержание приходит <strong>от вас через голос</strong>. Нейросеть только форматирует и структурирует.
                 Это как журналист берёт интервью и пишет статью — источник знания не журналист, а вы.
                 Ваши кейсы, ваш опыт, ваш стиль.
@@ -316,35 +310,35 @@ export default function ForExpertsPage() {
             </div>
           </div>
 
-          <div className="mt-8 rounded-2xl bg-white/5 border border-white/10 p-6">
-            <h3 className="text-lg font-semibold text-white">4 меры сохранения аутентичности</h3>
+          <div className="mt-8 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 className="text-lg font-semibold text-slate-950">4 меры сохранения аутентичности</h3>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div className="flex gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400 font-bold text-sm flex-shrink-0">1</div>
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-slate-950 text-sm font-bold text-white">1</div>
                 <div>
-                  <p className="text-sm font-medium text-white">Авторский стиль</p>
-                  <p className="text-sm text-gray-400">Нейросеть структурирует, но сохраняет ваши формулировки и примеры из практики</p>
+                  <p className="text-sm font-medium text-slate-950">Авторский стиль</p>
+                  <p className="text-sm text-slate-600">Нейросеть структурирует, но сохраняет ваши формулировки и примеры из практики</p>
                 </div>
               </div>
               <div className="flex gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400 font-bold text-sm flex-shrink-0">2</div>
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-slate-950 text-sm font-bold text-white">2</div>
                 <div>
-                  <p className="text-sm font-medium text-white">Прямые цитаты</p>
-                  <p className="text-sm text-gray-400">Ключевые фразы из вашей речи выделяются как авторские цитаты</p>
+                  <p className="text-sm font-medium text-slate-950">Прямые цитаты</p>
+                  <p className="text-sm text-slate-600">Ключевые фразы из вашей речи выделяются как авторские цитаты</p>
                 </div>
               </div>
               <div className="flex gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400 font-bold text-sm flex-shrink-0">3</div>
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-slate-950 text-sm font-bold text-white">3</div>
                 <div>
-                  <p className="text-sm font-medium text-white">Аудиозапись на странице</p>
-                  <p className="text-sm text-gray-400">Ваш голос прикреплён к статье — доказательство, что за контентом стоит человек</p>
+                  <p className="text-sm font-medium text-slate-950">Аудиозапись на странице</p>
+                  <p className="text-sm text-slate-600">Ваш голос прикреплён к статье — доказательство, что за контентом стоит человек</p>
                 </div>
               </div>
               <div className="flex gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400 font-bold text-sm flex-shrink-0">4</div>
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-slate-950 text-sm font-bold text-white">4</div>
                 <div>
-                  <p className="text-sm font-medium text-white">Минимальная обработка</p>
-                  <p className="text-sm text-gray-400">Опция: нейросеть только чистит «эээ» и повторы. Текст остаётся на 90% вашим</p>
+                  <p className="text-sm font-medium text-slate-950">Минимальная обработка</p>
+                  <p className="text-sm text-slate-600">Опция: нейросеть только чистит «эээ» и повторы. Текст остаётся на 90% вашим</p>
                 </div>
               </div>
             </div>
@@ -352,77 +346,74 @@ export default function ForExpertsPage() {
         </div>
       </section>
 
-      {/* Цифры рынка */}
-      <section className="py-16">
+      <section className="border-y border-slate-200 bg-white py-16">
         <div className="mx-auto max-w-5xl px-6">
-          <h2 className="text-3xl font-bold text-white text-center">
+          <h2 className="text-center text-3xl font-bold text-slate-950">
             Почему это работает лучше обычного контента
           </h2>
-          <p className="mt-4 text-center text-gray-400 max-w-2xl mx-auto">
+          <p className="mx-auto mt-4 max-w-2xl text-center text-slate-600">
             Эксперты часто пишут то, что удобно написать. Мы начинаем с другого:
             смотрим, что люди уже спрашивают, и строим страницу под этот спрос.
           </p>
           <div className="mt-12 grid gap-8 md:grid-cols-3">
             {PROOF_NUMBERS.map((item) => (
-              <div key={item.value} className="text-center">
+              <div key={item.value} className="rounded-lg border border-slate-200 bg-slate-50 p-6 text-center">
                 <div className="text-4xl font-bold text-blue-400">{item.value}</div>
-                <p className="mt-2 text-sm text-gray-300">{item.label}</p>
+                <p className="mt-2 text-sm text-slate-600">{item.label}</p>
               </div>
             ))}
           </div>
-          <p className="mt-8 text-center text-xs text-gray-500">
+          <p className="mt-8 text-center text-xs text-slate-500">
             Это продуктовая логика НейроЭксперта: сначала карта спроса, затем голос эксперта, затем страница для заявки.
           </p>
         </div>
       </section>
 
-      {/* Пример Анны */}
-      <section className="py-16">
+      <section className="bg-slate-50 py-16">
         <div className="mx-auto max-w-4xl px-6">
-          <h2 className="text-3xl font-bold text-white text-center">
+          <h2 className="text-center text-3xl font-bold text-slate-950">
             Как это выглядит на практике
           </h2>
-          <div className="mt-10 rounded-2xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 p-8">
+          <div className="mt-10 rounded-lg border border-slate-200 bg-white p-8 shadow-sm">
             <div className="flex items-start gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-2xl text-white flex-shrink-0 font-bold">
+              <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-lg bg-slate-950 text-2xl font-bold text-white">
                 А
               </div>
               <div>
-                <h3 className="text-xl font-bold text-white">Анна, 34 года, психолог</h3>
-                <p className="mt-1 text-sm text-gray-400">Практикует 8 лет, приём 5 000 &#8381;. Пробовала вести Telegram — бросила. Пробовала ChatGPT — «красиво, но не моё». Нанимала SMM за 25К/мес — ноль клиентов.</p>
+                <h3 className="text-xl font-bold text-slate-950">Анна, 34 года, психолог</h3>
+                <p className="mt-1 text-sm text-slate-600">Практикует 8 лет, приём 5 000 &#8381;. Пробовала вести Telegram — бросила. Пробовала ChatGPT — «красиво, но не моё». Нанимала SMM за 25К/мес — ноль клиентов.</p>
               </div>
             </div>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              <div className="rounded-xl bg-white/5 border border-white/10 p-4 text-center">
-                <div className="text-2xl font-bold text-white">24</div>
-                <div className="text-sm text-gray-400">страницы за 6 месяцев</div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center">
+                <div className="text-2xl font-bold text-slate-950">24</div>
+                <div className="text-sm text-slate-600">страницы за 6 месяцев</div>
               </div>
-              <div className="rounded-xl bg-white/5 border border-white/10 p-4 text-center">
-                <div className="text-2xl font-bold text-white">250-1 400</div>
-                <div className="text-sm text-gray-400">посетителей в месяц</div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center">
+                <div className="text-2xl font-bold text-slate-950">250-1 400</div>
+                <div className="text-sm text-slate-600">посетителей в месяц</div>
               </div>
-              <div className="rounded-xl bg-white/5 border border-white/10 p-4 text-center">
-                <div className="text-2xl font-bold text-white">2-14</div>
-                <div className="text-sm text-gray-400">заявок и кликов по записи в месяц</div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center">
+                <div className="text-2xl font-bold text-slate-950">2-14</div>
+                <div className="text-sm text-slate-600">заявок и кликов по записи в месяц</div>
               </div>
             </div>
 
             <p className="mt-6 text-center text-sm font-medium text-blue-300">
               Цель — довести страницы до первых измеримых сигналов. Эксперт тратит около 10 минут в неделю на запись голоса.
             </p>
-            <p className="mt-3 text-center text-xs text-gray-500">
+            <p className="mt-3 text-center text-xs text-slate-500">
               Модельный сценарий для иллюстрации воронки. Реальные результаты зависят от ниши, конкуренции и качества ответов.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Ниши как рост */}
-      <section className="py-16">
+      <section className="border-y border-slate-200 bg-white py-16">
         <div className="mx-auto max-w-4xl px-6 text-center">
-          <h2 className="text-3xl font-bold text-white">Растите — добавляйте ниши</h2>
-          <p className="mt-4 text-gray-400 max-w-2xl mx-auto">
+          <h2 className="text-3xl font-bold text-slate-950">Растите — добавляйте ниши</h2>
+          <p className="mx-auto mt-4 max-w-2xl text-slate-600">
             Начните с одной ниши бесплатно. Увидите результат — добавьте смежные направления.
             Ниши масштабируются вместе с вашей экспертизой.
           </p>
@@ -433,39 +424,38 @@ export default function ForExpertsPage() {
               { tier: "Pro", niches: "3 ниши", desc: "Полный охват экспертизы", highlight: true },
               { tier: "Expert", niches: "5 ниш", desc: "Широкий профиль, личный бренд", highlight: false },
             ].map((item) => (
-              <div key={item.tier} className={`rounded-xl border p-4 ${item.highlight ? "border-blue-500/50 bg-blue-500/10" : "border-white/10 bg-white/5"}`}>
-                <div className="text-sm font-semibold text-gray-400">{item.tier}</div>
-                <div className="mt-1 text-xl font-bold text-white">{item.niches}</div>
-                <p className="mt-1 text-xs text-gray-400">{item.desc}</p>
+              <div key={item.tier} className={`rounded-lg border p-4 ${item.highlight ? "border-slate-950 bg-slate-950 text-white" : "border-slate-200 bg-slate-50"}`}>
+                <div className={item.highlight ? "text-sm font-semibold text-slate-300" : "text-sm font-semibold text-slate-500"}>{item.tier}</div>
+                <div className={item.highlight ? "mt-1 text-xl font-bold text-white" : "mt-1 text-xl font-bold text-slate-950"}>{item.niches}</div>
+                <p className={item.highlight ? "mt-1 text-xs text-slate-300" : "mt-1 text-xs text-slate-600"}>{item.desc}</p>
               </div>
             ))}
           </div>
-          <Link href="/pricing" className="mt-6 inline-block text-sm text-cyan-400 hover:text-cyan-300">
+          <Link href="/pricing" className="mt-6 inline-block text-sm font-semibold text-blue-700 hover:text-blue-900">
             Сравнить все тарифы &rarr;
           </Link>
         </div>
       </section>
 
-      {/* Призыв к действию */}
-      <section className="bg-blue-600 py-16">
+      <section className="bg-slate-950 py-16 text-white">
         <div className="mx-auto max-w-3xl px-6 text-center">
           <h2 className="text-3xl font-bold text-white">
             Узнайте, где в вашей нише уже есть спрос
           </h2>
-          <p className="mt-4 text-lg text-blue-100">
+          <p className="mt-4 text-lg text-slate-300">
             Бесплатная карта покажет вопросы с клиентским потенциалом и подскажет,
             какие страницы стоит сделать первыми.
           </p>
-          <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
             <Link
               href="/audit"
-              className="rounded-lg bg-white px-10 py-4 text-lg font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
+              className="rounded-md bg-white px-10 py-4 text-lg font-semibold text-slate-950 transition-colors hover:bg-slate-100"
             >
               Получить карту спроса
             </Link>
             <Link
               href="/how-it-works"
-              className="rounded-lg border-2 border-white/50 px-10 py-4 text-lg font-semibold text-white hover:bg-white/10 transition-colors"
+              className="rounded-md border border-white/30 px-10 py-4 text-lg font-semibold text-white transition-colors hover:bg-white/10"
             >
               Как это работает
             </Link>

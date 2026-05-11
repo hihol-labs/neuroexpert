@@ -28,37 +28,37 @@ const FEATURES = [
     icon: "🎯",
     title: "Карта возможностей спроса",
     desc: "Список вопросов в нише: спрос в месяц, намерение клиента, оценка возможности, балл слабости ответа нейросети и рекомендуемое целевое действие.",
-    color: "purple",
+    color: "blue",
   },
   {
     icon: "📊",
     title: "Реальный спрос",
     desc: "Спрос в месяц из Wordstat и похожие запросы. Ранжируйте контент-план клиента по реальному поисковому объёму, а не интуиции.",
-    color: "violet",
+    color: "sky",
   },
   {
     icon: "✅",
     title: "Готовые экспертные страницы",
     desc: "В тарифах Pro+ — полные ответы: структура для поиска, короткое резюме, FAQ, цитаты, аудио и лицензия с указанием источника. Источник для клиентских страниц и брифов.",
-    color: "purple",
+    color: "blue",
   },
   {
     icon: "🤖",
     title: "Проверка 4 нейросетевых платформ",
     desc: "ChatGPT + YandexGPT + Perplexity + GigaChat. Для каждого вопроса — реальный ответ нейросети и разбор, почему клиент сейчас не попадает в ответ.",
-    color: "violet",
+    color: "sky",
   },
   {
     icon: "🔌",
     title: "REST + OpenAPI 3.0",
     desc: "Bearer auth, JSON-only, документация по стандарту OpenAPI. Простая интеграция в любой ваш дашборд / Bitrix / Google Sheets через Apps Script.",
-    color: "purple",
+    color: "blue",
   },
   {
     icon: "🇷🇺",
     title: "Российские источники",
     desc: "Wordstat, Яндекс Кью, YandexGPT, GigaChat — данные релевантны рунету, не американскому SERP. Без VPN, без обхода блокировок, законно.",
-    color: "violet",
+    color: "sky",
   },
 ];
 
@@ -68,21 +68,21 @@ const USE_CASES = [
     metric: "слабость",
     metricLabel: "0–10 по каждому вопросу",
     insight: "Запрос /blind-spots?niche=psychology возвращает вопросы со спросом, намерением клиента, слабостью ответа нейросети и целевым действием. Из списка собирается контент-план страниц под заявки.",
-    color: "from-purple-500/15 to-violet-500/5 border-purple-500/30",
+    color: "bg-blue-50 border-blue-500/30",
   },
   {
     niche: "Юриспруденция",
     metric: "TAM",
     metricLabel: "считается на стороне агентства",
     insight: "Запрос /blind-spots?niche=legal отдаёт спрос в месяц и оценку возможности по каждому вопросу. Ваша формула оценки даёт потенциал лидогенерации.",
-    color: "from-violet-500/15 to-purple-500/5 border-violet-500/30",
+    color: "bg-blue-50 border-sky-500/30",
   },
   {
     niche: "Медицина",
     metric: "4 платформы",
     metricLabel: "ChatGPT · Perplexity · YandexGPT · GigaChat",
     insight: "По каждому вопросу — проверка всех 4 нейросетевых платформ и разбор слабости ответа. Видно, где пациенту нужен конкретный врач, клиника или первичная запись, а в ответе только общий текст.",
-    color: "from-purple-500/15 to-violet-500/5 border-purple-500/30",
+    color: "bg-blue-50 border-blue-500/30",
   },
 ];
 
@@ -204,11 +204,11 @@ function AgencyLeadForm() {
     return (
       <div className="text-center py-8">
         <div className="text-5xl mb-4">✅</div>
-        <h3 className="text-xl font-semibold text-white mb-2">Заявка получена</h3>
-        <p className="text-gray-400">
+        <h3 className="text-xl font-semibold text-slate-950 mb-2">Заявка получена</h3>
+        <p className="text-slate-600">
           Свяжемся в течение 24 часов и выдадим ключ для тестирования. Параллельно
           можно изучить{" "}
-          <Link href="/api/v1/docs" className="text-purple-400 hover:text-purple-300 underline">
+          <Link href="/api/v1/docs" className="text-blue-700 hover:text-blue-700 underline">
             OpenAPI-документацию
           </Link>
           .
@@ -221,47 +221,47 @@ function AgencyLeadForm() {
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <label className="mb-2 block text-sm font-medium text-gray-300">Ваше имя</label>
+          <label className="mb-2 block text-sm font-medium text-slate-700">Ваше имя</label>
           <input
             type="text"
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-gray-500 backdrop-blur-md focus:border-purple-500/50 focus:outline-none focus:ring-1 focus:ring-purple-500/30"
+            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-950 placeholder-gray-500  focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
             placeholder="Имя"
           />
         </div>
         <div>
-          <label className="mb-2 block text-sm font-medium text-gray-300">Агентство / компания</label>
+          <label className="mb-2 block text-sm font-medium text-slate-700">Агентство / компания</label>
           <input
             type="text"
             required
             value={agency}
             onChange={(e) => setAgency(e.target.value)}
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-gray-500 backdrop-blur-md focus:border-purple-500/50 focus:outline-none focus:ring-1 focus:ring-purple-500/30"
+            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-950 placeholder-gray-500  focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
             placeholder="Название агентства"
           />
         </div>
       </div>
 
       <div>
-        <label className="mb-2 block text-sm font-medium text-gray-300">Email или Telegram</label>
+        <label className="mb-2 block text-sm font-medium text-slate-700">Email или Telegram</label>
         <input
           type="text"
           required
           value={contact}
           onChange={(e) => setContact(e.target.value)}
-          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-gray-500 backdrop-blur-md focus:border-purple-500/50 focus:outline-none focus:ring-1 focus:ring-purple-500/30"
+          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-950 placeholder-gray-500  focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
           placeholder="you@agency.ru или @username"
         />
       </div>
 
       <div>
-        <label className="mb-2 block text-sm font-medium text-gray-300">Какой тариф интересует</label>
+        <label className="mb-2 block text-sm font-medium text-slate-700">Какой тариф интересует</label>
         <select
           value={plan}
           onChange={(e) => setPlan(e.target.value as "read" | "pro" | "enterprise")}
-          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white backdrop-blur-md focus:border-purple-500/50 focus:outline-none focus:ring-1 focus:ring-purple-500/30"
+          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-950  focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
         >
           <option value="read">Read (Free)</option>
           <option value="pro">Pro ($99/мес · оплата в ₽)</option>
@@ -270,30 +270,28 @@ function AgencyLeadForm() {
       </div>
 
       <div>
-        <label className="mb-2 block text-sm font-medium text-gray-300">
+        <label className="mb-2 block text-sm font-medium text-slate-700">
           Какие ниши интересуют (опционально)
         </label>
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           rows={3}
-          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-gray-500 backdrop-blur-md focus:border-purple-500/50 focus:outline-none focus:ring-1 focus:ring-purple-500/30 resize-none"
+          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-950 placeholder-gray-500  focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/30 resize-none"
           placeholder="Психология, юриспруденция, медицина..."
         />
       </div>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
       <button
         type="submit"
         disabled={submitting}
-        className="group relative w-full rounded-2xl px-8 py-4 text-lg font-semibold text-white overflow-hidden transition-transform hover:scale-[1.02] disabled:opacity-50"
+        className="w-full rounded-2xl bg-slate-950 px-8 py-4 text-lg font-semibold text-white transition-colors hover:bg-slate-800 disabled:opacity-50"
       >
-        <span className="absolute inset-0 bg-gradient-to-r from-purple-500 to-violet-600" />
-        <span className="absolute -inset-2 bg-gradient-to-r from-purple-500 to-violet-600 blur-xl opacity-40 group-hover:opacity-60 transition-opacity" />
-        <span className="relative">{submitting ? "Отправка..." : "Получить ключ"}</span>
+        {submitting ? "Отправка..." : "Получить ключ"}
       </button>
-      <p className="text-xs text-center text-gray-500">
+      <p className="text-xs text-center text-slate-500">
         Pro и Enterprise сейчас в beta — выдаём ключи вручную после короткого созвона
       </p>
     </form>
@@ -309,36 +307,33 @@ export default function ForAgenciesPage() {
         <section className="min-h-[85vh] flex items-center justify-center">
           <div className="mx-auto max-w-4xl px-6 py-20 text-center">
             <FadeIn>
-              <div className="inline-flex items-center gap-2 rounded-full border border-purple-400/30 bg-purple-400/10 px-5 py-2 backdrop-blur-md">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute h-full w-full rounded-full bg-purple-400 opacity-75" />
-                  <span className="relative h-2 w-2 rounded-full bg-purple-400" />
-                </span>
-                <span className="text-sm font-medium text-purple-300">API спроса для агентств</span>
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-5 py-2">
+                <span className="h-2 w-2 rounded-full bg-blue-600" />
+                <span className="text-sm font-medium text-blue-700">API спроса для агентств</span>
               </div>
             </FadeIn>
 
             <FadeIn delay={150}>
               <h1 className="mt-10 text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl leading-[1.1]">
-                <span className="text-purple-400 [text-shadow:_0_0_40px_rgba(168,85,247,0.5),_0_0_80px_rgba(168,85,247,0.2)]">
+                <span className="text-blue-700 ">
                   Карта спроса
                 </span>
                 <br />
-                <span className="text-white">для агентств</span>
+                <span className="text-slate-950">для агентств</span>
               </h1>
             </FadeIn>
 
             <FadeIn delay={300}>
-              <p className="mx-auto mt-8 max-w-2xl text-lg text-gray-300 leading-relaxed">
+              <p className="mx-auto mt-8 max-w-2xl text-lg text-slate-700 leading-relaxed">
                 API с реальными данными: какие вопросы люди задают
                 в нише клиента, где поиск и нейросети отвечают слабо, какой
                 там спрос и какое целевое действие вести к заявке.
               </p>
-              <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-300 leading-relaxed">
+              <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-700 leading-relaxed">
                 Данные для SEO/GEO-аудитов, контент-планов и управляемых программ
                 лидогенерации клиентов без ручных опросов нейросетевых платформ.
               </p>
-              <p className="mx-auto mt-4 max-w-2xl text-sm text-gray-500 leading-relaxed">
+              <p className="mx-auto mt-4 max-w-2xl text-sm text-slate-500 leading-relaxed">
                 Важно: для конечного бизнеса мы продаём систему локальных продаж и запуск заявок.
                 Для агентств — данные, API и слой под вашим брендом, который можно встроить
                 в собственные аудиты и клиентские кабинеты.
@@ -349,15 +344,13 @@ export default function ForAgenciesPage() {
               <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
                 <a
                   href="#form"
-                  className="group relative rounded-2xl px-10 py-4 text-lg font-semibold text-white overflow-hidden transition-all hover:scale-105 border border-purple-400/40 shadow-[0_0_15px_rgba(168,85,247,0.3)] hover:shadow-[0_0_25px_rgba(168,85,247,0.5)]"
+                  className="rounded-2xl bg-slate-950 px-10 py-4 text-lg font-semibold text-white transition-colors hover:bg-slate-800"
                 >
-                  <span className="absolute inset-0 bg-gradient-to-r from-purple-500 to-violet-600 rounded-2xl" />
-                  <span className="absolute -inset-2 bg-gradient-to-r from-purple-500 to-violet-600 rounded-2xl blur-xl opacity-50 group-hover:opacity-80 transition-opacity duration-300" />
-                  <span className="relative">Получить ключ</span>
+                  Получить ключ
                 </a>
                 <Link
                   href="/for-business"
-                  className="rounded-2xl border border-purple-400/30 bg-white/5 px-10 py-4 text-lg font-semibold text-white backdrop-blur-md hover:bg-white/10 hover:border-purple-400/60 transition-all"
+                  className="rounded-2xl border border-blue-400/30 bg-white px-10 py-4 text-lg font-semibold text-slate-950  hover:bg-slate-100 hover:border-blue-400/60 transition-all"
                 >
                   Для конечного бизнеса
                 </Link>
@@ -370,7 +363,7 @@ export default function ForAgenciesPage() {
         <section className="py-24">
           <div className="mx-auto max-w-7xl px-6">
             <FadeIn className="text-center mb-14">
-              <h2 className="text-3xl font-bold text-white sm:text-4xl">
+              <h2 className="text-3xl font-bold text-slate-950 sm:text-4xl">
                 Знакомые проблемы агентства?
               </h2>
             </FadeIn>
@@ -378,11 +371,10 @@ export default function ForAgenciesPage() {
             <div className="grid gap-6 md:grid-cols-3">
               {PROBLEMS.map((p, i) => (
                 <FadeIn key={p.title} delay={i * 150}>
-                  <div className="relative h-full rounded-3xl border border-red-500/15 bg-[#04080f]/60 p-8 backdrop-blur-xl hover:border-red-400/30 transition-all overflow-hidden">
-                    <div className="absolute -top-px left-10 right-10 h-px bg-gradient-to-r from-transparent via-red-400/30 to-transparent" />
+                  <div className="relative h-full rounded-3xl border border-red-100 bg-white p-8 transition-all hover:border-red-200 hover:shadow-sm">
                     <span className="text-4xl">{p.icon}</span>
-                    <h3 className="mt-4 text-xl font-semibold text-white">{p.title}</h3>
-                    <p className="mt-3 text-gray-400 leading-relaxed">{p.desc}</p>
+                    <h3 className="mt-4 text-xl font-semibold text-slate-950">{p.title}</h3>
+                    <p className="mt-3 text-slate-600 leading-relaxed">{p.desc}</p>
                   </div>
                 </FadeIn>
               ))}
@@ -394,8 +386,8 @@ export default function ForAgenciesPage() {
         <section className="py-24">
           <div className="mx-auto max-w-7xl px-6">
             <FadeIn className="text-center mb-14">
-              <h2 className="text-3xl font-bold text-white sm:text-4xl">Что внутри API спроса</h2>
-              <p className="mt-4 text-gray-400 max-w-2xl mx-auto">
+              <h2 className="text-3xl font-bold text-slate-950 sm:text-4xl">Что внутри API спроса</h2>
+              <p className="mt-4 text-slate-600 max-w-2xl mx-auto">
                 Данные собираются ежедневно из Wordstat + Яндекс Кью + 4 нейросетевых платформ. Готовое сырьё
                 для SEO/GEO-аудитов, брифов и страниц под заявки.
               </p>
@@ -405,34 +397,29 @@ export default function ForAgenciesPage() {
               {FEATURES.map((b, i) => (
                 <FadeIn key={b.title} delay={i * 100}>
                   <div
-                    className={`relative h-full rounded-3xl border bg-[#04080f]/60 p-8 backdrop-blur-xl transition-all overflow-hidden ${
-                      b.color === "violet"
-                        ? "border-violet-500/20 hover:border-violet-400/40"
-                        : "border-purple-500/20 hover:border-purple-400/40"
+                    className={`relative h-full rounded-3xl border bg-white p-8 transition-all hover:shadow-sm ${
+                      b.color === "sky"
+                        ? "border-sky-500/20 hover:border-sky-400/40"
+                        : "border-blue-500/20 hover:border-blue-400/40"
                     }`}
                   >
                     <div
-                      className={`absolute -top-px left-10 right-10 h-px bg-gradient-to-r from-transparent to-transparent ${
-                        b.color === "violet" ? "via-violet-400/30" : "via-purple-400/30"
-                      }`}
-                    />
-                    <div
                       className={`flex h-12 w-12 items-center justify-center rounded-2xl border ${
-                        b.color === "violet"
-                          ? "bg-violet-500/15 border-violet-500/25"
-                          : "bg-purple-500/15 border-purple-500/25"
+                        b.color === "sky"
+                          ? "bg-sky-500/15 border-sky-500/25"
+                          : "bg-blue-500/15 border-blue-500/25"
                       }`}
                     >
                       <span className="text-2xl">{b.icon}</span>
                     </div>
                     <h3
                       className={`mt-4 text-lg font-semibold ${
-                        b.color === "violet" ? "text-violet-300" : "text-purple-300"
+                        b.color === "sky" ? "text-blue-700" : "text-blue-700"
                       }`}
                     >
                       {b.title}
                     </h3>
-                    <p className="mt-2 text-sm text-gray-400 leading-relaxed">{b.desc}</p>
+                    <p className="mt-2 text-sm text-slate-600 leading-relaxed">{b.desc}</p>
                   </div>
                 </FadeIn>
               ))}
@@ -444,8 +431,8 @@ export default function ForAgenciesPage() {
         <section className="py-24">
           <div className="mx-auto max-w-6xl px-6">
             <FadeIn className="text-center mb-14">
-              <h2 className="text-3xl font-bold text-white sm:text-4xl">Сырые данные из API</h2>
-              <p className="mt-4 text-gray-400 max-w-2xl mx-auto">
+              <h2 className="text-3xl font-bold text-slate-950 sm:text-4xl">Сырые данные из API</h2>
+              <p className="mt-4 text-slate-600 max-w-2xl mx-auto">
                 Что возвращает /blind-spots — структура ответа для карты спроса по 3 примерным нишам
               </p>
             </FadeIn>
@@ -453,11 +440,11 @@ export default function ForAgenciesPage() {
             <div className="grid gap-6 md:grid-cols-3">
               {USE_CASES.map((c, i) => (
                 <FadeIn key={c.niche} delay={i * 150}>
-                  <div className={`relative h-full rounded-3xl border bg-gradient-to-br ${c.color} p-8 backdrop-blur-xl overflow-hidden`}>
-                    <div className="text-sm font-medium text-purple-300 mb-2">{c.niche}</div>
-                    <div className="text-5xl font-bold text-white tracking-tight">{c.metric}</div>
-                    <div className="text-xs text-gray-400 uppercase tracking-wider mt-1">{c.metricLabel}</div>
-                    <p className="mt-6 text-sm text-gray-300 leading-relaxed">{c.insight}</p>
+                  <div className={`relative h-full rounded-3xl ${c.color} p-8`}>
+                    <div className="text-sm font-medium text-blue-700 mb-2">{c.niche}</div>
+                    <div className="text-5xl font-bold text-slate-950 tracking-tight">{c.metric}</div>
+                    <div className="text-xs text-slate-600 uppercase tracking-wider mt-1">{c.metricLabel}</div>
+                    <p className="mt-6 text-sm text-slate-700 leading-relaxed">{c.insight}</p>
                   </div>
                 </FadeIn>
               ))}
@@ -469,21 +456,21 @@ export default function ForAgenciesPage() {
         <section className="py-24">
           <div className="mx-auto max-w-5xl px-6">
             <FadeIn className="text-center mb-10">
-              <h2 className="text-3xl font-bold text-white sm:text-4xl">Один cURL — карта спроса на месяц</h2>
-              <p className="mt-4 text-gray-400 max-w-xl mx-auto">
+              <h2 className="text-3xl font-bold text-slate-950 sm:text-4xl">Один cURL — карта спроса на месяц</h2>
+              <p className="mt-4 text-slate-600 max-w-xl mx-auto">
                 Bearer-токен, JSON, без обёрток. Совместимо с любым стеком.
               </p>
             </FadeIn>
 
             <FadeIn>
-              <div className="rounded-3xl border border-purple-500/20 bg-[#04080f]/80 backdrop-blur-xl overflow-hidden">
-                <div className="flex items-center gap-2 border-b border-white/5 px-6 py-3">
+              <div className="rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+                <div className="flex items-center gap-2 border-b border-slate-200 px-6 py-3">
                   <span className="h-3 w-3 rounded-full bg-red-400/60" />
                   <span className="h-3 w-3 rounded-full bg-yellow-400/60" />
                   <span className="h-3 w-3 rounded-full bg-green-400/60" />
-                  <span className="ml-3 text-xs text-gray-500 font-mono">terminal · curl</span>
+                  <span className="ml-3 text-xs text-slate-500 font-mono">terminal · curl</span>
                 </div>
-                <pre className="px-6 py-5 text-sm text-gray-300 font-mono overflow-x-auto leading-relaxed">
+                <pre className="px-6 py-5 text-sm text-slate-700 font-mono overflow-x-auto leading-relaxed">
                   <code>{CODE_SAMPLE}</code>
                 </pre>
               </div>
@@ -495,8 +482,8 @@ export default function ForAgenciesPage() {
         <section className="py-24">
           <div className="mx-auto max-w-7xl px-6">
             <FadeIn className="text-center mb-14">
-              <h2 className="text-3xl font-bold text-white sm:text-4xl">Тарифы API спроса</h2>
-              <p className="mt-4 text-gray-400 max-w-xl mx-auto">
+              <h2 className="text-3xl font-bold text-slate-950 sm:text-4xl">Тарифы API спроса</h2>
+              <p className="mt-4 text-slate-600 max-w-xl mx-auto">
                 Read бесплатно навсегда. Pro и индивидуальный тариф — тестовый запуск, выдаём вручную после короткого созвона.
               </p>
             </FadeIn>
@@ -505,37 +492,36 @@ export default function ForAgenciesPage() {
               {PLANS.map((plan, i) => (
                 <FadeIn key={plan.name} delay={i * 100}>
                   <div
-                    className={`relative h-full rounded-3xl border p-8 backdrop-blur-xl overflow-hidden flex flex-col ${
+                    className={`relative h-full rounded-3xl border p-8  overflow-hidden flex flex-col ${
                       plan.highlight
-                        ? "border-purple-500/30 bg-purple-500/5 shadow-[0_0_30px_rgba(168,85,247,0.08)]"
-                        : "border-white/10 bg-[#04080f]/60"
+                        ? "border-blue-200 bg-blue-50"
+                        : "border-slate-200 bg-white"
                     }`}
                   >
                     {plan.highlight && (
                       <>
-                        <div className="absolute -top-px left-10 right-10 h-px bg-gradient-to-r from-transparent via-purple-400/50 to-transparent" />
-                        <div className="absolute top-4 right-4 rounded-full bg-purple-500/20 border border-purple-500/30 px-3 py-1 text-xs font-medium text-purple-300">
+                        <div className="absolute top-4 right-4 rounded-full bg-white border border-blue-200 px-3 py-1 text-xs font-medium text-blue-700">
                           Популярный
                         </div>
                       </>
                     )}
 
-                    <h3 className="text-2xl font-bold text-white">{plan.name}</h3>
-                    <p className="text-sm text-gray-400 mt-1">{plan.desc}</p>
+                    <h3 className="text-2xl font-bold text-slate-950">{plan.name}</h3>
+                    <p className="text-sm text-slate-600 mt-1">{plan.desc}</p>
 
                     <div className="mt-4 flex items-baseline gap-1">
-                      <span className="text-4xl font-bold text-purple-400">{plan.price}</span>
-                      {plan.period && <span className="text-gray-500">{plan.period}</span>}
+                      <span className="text-4xl font-bold text-blue-700">{plan.price}</span>
+                      {plan.period && <span className="text-slate-500">{plan.period}</span>}
                     </div>
                     {plan.priceNote && (
-                      <div className="mt-1 text-xs text-gray-500">{plan.priceNote}</div>
+                      <div className="mt-1 text-xs text-slate-500">{plan.priceNote}</div>
                     )}
-                    <div className="mt-2 text-xs text-purple-300/70 uppercase tracking-wider">{plan.limit}</div>
+                    <div className="mt-2 text-xs text-blue-700/70 uppercase tracking-wider">{plan.limit}</div>
 
                     <ul className="mt-6 space-y-3 flex-1">
                       {plan.features.map((f) => (
-                        <li key={f} className="flex items-start gap-2 text-sm text-gray-300">
-                          <span className="text-purple-400 flex-shrink-0 mt-0.5">✓</span>
+                        <li key={f} className="flex items-start gap-2 text-sm text-slate-700">
+                          <span className="text-blue-700 flex-shrink-0 mt-0.5">✓</span>
                           <span>{f}</span>
                         </li>
                       ))}
@@ -545,8 +531,8 @@ export default function ForAgenciesPage() {
                       href="#form"
                       className={`mt-8 block w-full rounded-2xl py-3 text-center font-semibold transition-all ${
                         plan.highlight
-                          ? "bg-gradient-to-r from-purple-500 to-violet-600 text-white hover:opacity-90"
-                          : "border border-white/15 bg-white/5 text-white hover:bg-white/10"
+                          ? "bg-slate-950 text-slate-950 hover:opacity-90"
+                          : "border border-slate-300 bg-white text-slate-950 hover:bg-slate-100"
                       }`}
                     >
                       {plan.cta}
@@ -562,10 +548,9 @@ export default function ForAgenciesPage() {
         <section id="form" className="py-24">
           <div className="mx-auto max-w-2xl px-6">
             <FadeIn>
-              <div className="rounded-3xl border border-purple-500/20 bg-[#04080f]/60 p-10 backdrop-blur-xl overflow-hidden relative">
-                <div className="absolute -top-px left-10 right-10 h-px bg-gradient-to-r from-transparent via-purple-400/50 to-transparent" />
-                <h2 className="text-2xl font-bold text-white text-center mb-2">Получить ключ</h2>
-                <p className="text-gray-400 text-center mb-8">
+              <div className="rounded-3xl border border-slate-200 bg-white p-10 shadow-sm">
+                <h2 className="text-2xl font-bold text-slate-950 text-center mb-2">Получить ключ</h2>
+                <p className="text-slate-600 text-center mb-8">
                   Read-ключ выдаём сразу после регистрации. Pro/Enterprise — после короткого созвона.
                 </p>
                 <AgencyLeadForm />

@@ -20,23 +20,23 @@ export default function TermsPage() {
 
       <section className="py-16">
         <div className="mx-auto max-w-3xl px-6">
-          <h1 className="text-3xl font-bold text-white">Публичная оферта</h1>
-          <p className="mt-2 text-gray-400 text-sm">
+          <h1 className="text-3xl font-bold text-slate-950">Публичная оферта</h1>
+          <p className="mt-2 text-slate-600 text-sm">
             (Условия использования платформы НейроЭксперт)
           </p>
-          <p className="mt-4 text-gray-400">
+          <p className="mt-4 text-slate-600">
             Последнее обновление: 21 апреля 2026 г.
           </p>
 
-          <div className="mt-12 space-y-10 text-gray-300 text-sm leading-relaxed">
+          <div className="mt-12 space-y-10 text-slate-700 text-sm leading-relaxed">
             {/* Общие условия */}
             <div>
-              <h2 className="text-xl font-semibold text-white mb-4">1. Общие положения</h2>
+              <h2 className="text-xl font-semibold text-slate-950 mb-4">1. Общие положения</h2>
               <p>
                 Настоящий документ является публичной офертой (далее — Оферта) в соответствии
                 со ст. 437 Гражданского кодекса РФ. Исполнитель — самозанятый Хихол Дмитрий
                 Николаевич (ИНН 683306354810), полные реквизиты на странице{" "}
-                <a href="/requisites" className="text-cyan-400 hover:underline">
+                <a href="/requisites" className="text-blue-700 hover:underline">
                   /requisites
                 </a>
                 .
@@ -54,13 +54,13 @@ export default function TermsPage() {
 
             {/* Тарифы */}
             <div>
-              <h2 className="text-xl font-semibold text-white mb-4">2. Тарифы и стоимость</h2>
+              <h2 className="text-xl font-semibold text-slate-950 mb-4">2. Тарифы и стоимость</h2>
               <p>
                 Платформа предлагает шесть тарифов: Free (0 ₽/мес), Starter (1 490 ₽/мес),
                 Pro (2 990 ₽/мес), Expert (4 990 ₽/мес), Business (24 990 ₽/мес) и
                 Enterprise (индивидуальные условия, договор согласовывается отдельно).
                 Актуальные цены и состав услуг тарифов указаны на странице{" "}
-                <a href="/pricing" className="text-cyan-400 hover:underline">
+                <a href="/pricing" className="text-blue-700 hover:underline">
                   /pricing
                 </a>
                 .
@@ -73,7 +73,7 @@ export default function TermsPage() {
 
             {/* Порядок оплаты */}
             <div>
-              <h2 className="text-xl font-semibold text-white mb-4">3. Порядок оплаты</h2>
+              <h2 className="text-xl font-semibold text-slate-950 mb-4">3. Порядок оплаты</h2>
               <p>
                 Оплата подписки и консультаций производится через платёжный сервис ЮKassa
                 (ООО НКО «ЮMoney») в рублях РФ. Возможные способы оплаты: банковская карта
@@ -90,13 +90,13 @@ export default function TermsPage() {
 
             {/* Способ получения услуги */}
             <div>
-              <h2 className="text-xl font-semibold text-white mb-4">4. Способ получения услуги</h2>
+              <h2 className="text-xl font-semibold text-slate-950 mb-4">4. Способ получения услуги</h2>
               <p>
                 НейроЭксперт оказывает цифровые услуги в электронной форме. После
                 успешного платежа подписка активируется автоматически в течение 1–2 минут.
                 Доступ ко всему функционалу тарифа предоставляется в личном кабинете по
                 адресу{" "}
-                <a href="https://neuroexpertise.ru/dashboard" className="text-cyan-400 hover:underline">
+                <a href="https://neuroexpertise.ru/dashboard" className="text-blue-700 hover:underline">
                   neuroexpertise.ru/dashboard
                 </a>
                 . Уведомление об активации направляется на email, указанный при
@@ -110,42 +110,42 @@ export default function TermsPage() {
 
             {/* Измеримые результаты и возврат */}
             <div id="guarantee">
-              <h2 className="text-xl font-semibold text-white mb-4">5. Измеримые результаты и возврат средств</h2>
+              <h2 className="text-xl font-semibold text-slate-950 mb-4">5. Измеримые результаты и возврат средств</h2>
 
-              <h3 className="font-semibold text-white mb-2">5.1 Общий порядок возврата</h3>
+              <h3 className="font-semibold text-slate-950 mb-2">5.1 Общий порядок возврата</h3>
               <p>
                 Поскольку доступ к цифровым материалам и тарифу предоставляется
                 незамедлительно после оплаты, Пользователь имеет право требовать возврата
                 средств в случаях, предусмотренных п. 5.2, либо при
                 наличии существенных технических проблем, препятствующих использованию
                 услуги по вине Платформы. Заявление о возврате направляется на{" "}
-                <a href="mailto:info@neuroexpertise.ru" className="text-cyan-400 hover:underline">
+                <a href="mailto:info@neuroexpertise.ru" className="text-blue-700 hover:underline">
                   info@neuroexpertise.ru
                 </a>
                 ; рассмотрение — до 10 рабочих дней, возврат на ту же карту — до 10 рабочих
                 дней после одобрения.
               </p>
 
-              <h3 className="font-semibold text-white mt-6 mb-2">5.2 Что считается измеримым результатом</h3>
+              <h3 className="font-semibold text-slate-950 mt-6 mb-2">5.2 Что считается измеримым результатом</h3>
 
-              <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-6 mb-6">
+              <div className="rounded-xl border border-blue-200 bg-blue-50 p-6 mb-6">
                 <div className="space-y-3">
                   <div className="flex gap-3">
-                    <span className="text-cyan-400 font-bold mt-0.5">Публикации</span>
+                    <span className="text-blue-700 font-bold mt-0.5">Публикации</span>
                     <span>страницы, карточки и материалы под реальные вопросы пользователей</span>
                   </div>
                   <div className="flex gap-3">
-                    <span className="text-cyan-400 font-bold mt-0.5">Индексация</span>
+                    <span className="text-blue-700 font-bold mt-0.5">Индексация</span>
                     <span>страницы доступны поисковым системам и краулерам нейросетей</span>
                   </div>
                   <div className="flex gap-3">
-                    <span className="text-cyan-400 font-bold mt-0.5">Воронка</span>
+                    <span className="text-blue-700 font-bold mt-0.5">Воронка</span>
                     <span>фиксируются просмотры, клики по записи, заявки и упоминания в нейросетях</span>
                   </div>
                 </div>
               </div>
 
-              <h3 className="font-semibold text-white mb-2">5.3 Что не гарантируется</h3>
+              <h3 className="font-semibold text-slate-950 mb-2">5.3 Что не гарантируется</h3>
               <p>
                 Платформа не гарантирует фиксированное количество клиентов, заявок,
                 поисковых позиций или упоминаний в нейросетях. Итоговые показатели
@@ -153,7 +153,7 @@ export default function TermsPage() {
                 регулярности публикаций и поведения поисковых систем.
               </p>
 
-              <h3 className="font-semibold text-white mt-6 mb-2">5.4 Сроки</h3>
+              <h3 className="font-semibold text-slate-950 mt-6 mb-2">5.4 Сроки</h3>
               <p>
                 Отсчёт измеримых результатов начинается с даты первой опубликованной
                 страницы на Платформе. Первые технические результаты обычно оцениваются
@@ -161,7 +161,7 @@ export default function TermsPage() {
                 кликам по записи и заявкам.
               </p>
 
-              <h3 className="font-semibold text-white mt-6 mb-2">5.5 Условия возврата</h3>
+              <h3 className="font-semibold text-slate-950 mt-6 mb-2">5.5 Условия возврата</h3>
               <p>
                 Возврат возможен при существенной технической невозможности пользоваться
                 оплаченным функционалом по вине Платформы либо по индивидуально
@@ -169,7 +169,7 @@ export default function TermsPage() {
                 в течение 10 рабочих дней после одобрения заявления.
               </p>
 
-              <h3 className="font-semibold text-white mt-6 mb-2">5.6 Когда возврат не производится</h3>
+              <h3 className="font-semibold text-slate-950 mt-6 mb-2">5.6 Когда возврат не производится</h3>
               <ul className="list-disc pl-5 space-y-1 mt-2">
                 <li>Тариф Free (бесплатный)</li>
                 <li>Профиль не заполнен (нет фото, квалификации, опыта работы)</li>
@@ -181,7 +181,7 @@ export default function TermsPage() {
 
             {/* Контент */}
             <div>
-              <h2 className="text-xl font-semibold text-white mb-4">6. Контент</h2>
+              <h2 className="text-xl font-semibold text-slate-950 mb-4">6. Контент</h2>
               <p>
                 Контент, созданный на Платформе, принадлежит эксперту. Платформа получает
                 неисключительную лицензию на публикацию и распространение контента
@@ -194,7 +194,7 @@ export default function TermsPage() {
 
             {/* Конфиденциальность */}
             <div>
-              <h2 className="text-xl font-semibold text-white mb-4">7. Конфиденциальность</h2>
+              <h2 className="text-xl font-semibold text-slate-950 mb-4">7. Конфиденциальность</h2>
               <p>
                 Мы не передаём персональные данные третьим лицам без вашего согласия.
                 Данные хранятся на серверах в РФ. Подробнее — в Политике конфиденциальности.
@@ -203,12 +203,12 @@ export default function TermsPage() {
 
             {/* Реквизиты + контакты */}
             <div>
-              <h2 className="text-xl font-semibold text-white mb-4">8. Реквизиты исполнителя и контакты</h2>
+              <h2 className="text-xl font-semibold text-slate-950 mb-4">8. Реквизиты исполнителя и контакты</h2>
               <p>
                 Исполнитель — самозанятый Хихол Дмитрий Николаевич, ИНН 683306354810,
                 г. Тамбов. Полные реквизиты, включая контактный телефон и способы связи,
                 размещены на странице{" "}
-                <a href="/requisites" className="text-cyan-400 hover:underline">
+                <a href="/requisites" className="text-blue-700 hover:underline">
                   /requisites
                 </a>
                 .
@@ -217,7 +217,7 @@ export default function TermsPage() {
                 По вопросам оплаты, возвратов и общим обращениям:{" "}
                 <a
                   href="mailto:info@neuroexpertise.ru"
-                  className="text-cyan-400 hover:underline"
+                  className="text-blue-700 hover:underline"
                 >
                   info@neuroexpertise.ru
                 </a>

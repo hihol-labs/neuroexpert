@@ -103,7 +103,7 @@ export default function ScanPage() {
                     maxLength={200}
                     className="w-full rounded-xl border border-gray-300 px-5 py-4 text-lg text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                   />
-                  <p className="mt-1 text-xs text-gray-400">
+                  <p className="mt-1 text-xs text-slate-500">
                     Добавьте конкурента — увидите, кому нейросети отдают спрос сейчас
                   </p>
                 </div>
@@ -162,7 +162,7 @@ export default function ScanPage() {
                 Спрашиваем нейросети о &laquo;{query}&raquo;
                 {competitor && <> и &laquo;{competitor}&raquo;</>}...
               </p>
-              <p className="mt-2 text-sm text-gray-400">
+              <p className="mt-2 text-sm text-slate-500">
                 Проверяем ChatGPT, Perplexity и YandexGPT. Это займёт{" "}
                 {competitor ? "20-40" : "10-20"} секунд.
               </p>

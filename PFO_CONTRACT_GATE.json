@@ -1,16 +1,7 @@
 {
-  "status": "BLOCKED",
-  "changedFiles": [
-    "AGENTS.md",
-    "CODEX.md"
-  ],
-  "riskClasses": [
-    "business_logic_change",
-    "dependency_change",
-    "deployment_change",
-    "documentation_change",
-    "security_change"
-  ],
+  "status": "PASS_WITH_WARNINGS",
+  "changedFiles": [],
+  "riskClasses": [],
   "missingContracts": [],
   "placeholderContracts": [
     ".pfo/PROJECT_CONTRACT.md",
@@ -18,10 +9,7 @@
     ".pfo/FALLBACK_POLICY.md",
     ".pfo/SCOPE_LOCK.md"
   ],
-  "blockers": [
-    "AGENTS.md: added possible silent substitution: Then route work through `/task`, update `.codex-memory/STATE.json`, and respect `.pfo/` contracts. Project-local rules may add constraints, but they do not repl",
-    "CODEX.md: added possible silent substitution: Then route work through `/task`, update `.codex-memory/STATE.json`, and respect `.pfo/` contracts. Project-local rules may add constraints, but they do not repl"
-  ],
+  "blockers": [],
   "warnings": [
     "placeholder contract content: .pfo/PROJECT_CONTRACT.md",
     "placeholder contract content: .pfo/FORBIDDEN_CHANGES.md",
@@ -29,12 +17,12 @@
     "placeholder contract content: .pfo/SCOPE_LOCK.md"
   ],
   "gates": {
-    "scopeLock": "BLOCKED",
-    "dataAuthenticity": "BLOCKED",
+    "scopeLock": "PASS_WITH_WARNINGS",
+    "dataAuthenticity": "PASS",
     "goldenFlows": "PASS",
     "regressionContract": "PASS_WITH_WARNINGS",
-    "fallbackPolicy": "BLOCKED",
+    "fallbackPolicy": "PASS",
     "diffRisk": "PASS_WITH_WARNINGS",
-    "noSilentSubstitution": "BLOCKED"
+    "noSilentSubstitution": "PASS"
   }
 }

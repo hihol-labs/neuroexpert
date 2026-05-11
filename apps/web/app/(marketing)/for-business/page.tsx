@@ -261,10 +261,10 @@ function B2BLeadForm() {
 
   if (success) {
     return (
-      <div className="rounded-3xl border border-green-500/20 bg-green-500/10 p-8 text-center backdrop-blur-xl">
-        <div className="text-5xl mb-4">✓</div>
-        <h3 className="text-2xl font-bold text-white">Заявка отправлена</h3>
-        <p className="mt-3 text-gray-400">
+      <div className="rounded-lg border border-green-200 bg-green-50 p-8 text-center">
+        <div className="mb-4 text-4xl font-bold text-green-700">✓</div>
+        <h3 className="text-2xl font-bold text-slate-950">Заявка отправлена</h3>
+        <p className="mt-3 text-slate-600">
           Мы свяжемся с вами, уточним площадки и предложим формат аудита.
         </p>
       </div>
@@ -309,14 +309,12 @@ function B2BLeadForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="group relative w-full rounded-2xl px-8 py-4 text-lg font-semibold text-white overflow-hidden transition-transform hover:scale-[1.02] disabled:opacity-50"
+        className="w-full rounded-md bg-slate-950 px-8 py-4 text-lg font-semibold text-white transition-colors hover:bg-slate-800 disabled:opacity-50"
       >
-        <span className="absolute inset-0 bg-emerald-300" />
-        <span className="absolute -inset-2 bg-emerald-300 blur-xl opacity-20 group-hover:opacity-30 transition-opacity" />
-        <span className="relative text-[#07100e]">{submitting ? "Отправка..." : "Получить аудит видимости"}</span>
+        {submitting ? "Отправка..." : "Получить аудит видимости"}
       </button>
 
-      <p className="text-center text-xs text-gray-500">
+      <p className="text-center text-xs text-slate-500">
         Для первого разбора достаточно ссылок и контекста. Доступы к CRM, телефонии и кабинетам нужны только после согласования.
       </p>
     </form>
@@ -338,13 +336,13 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="block text-sm text-gray-400 mb-1">{label}</span>
+      <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         required={required}
-        className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-gray-500 backdrop-blur-md focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
+        className="w-full rounded-md border border-slate-300 bg-white px-4 py-3 text-slate-950 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
         placeholder={placeholder}
       />
     </label>
@@ -366,12 +364,12 @@ function TextArea({
 }) {
   return (
     <label className="block">
-      <span className="block text-sm text-gray-400 mb-1">{label}</span>
+      <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={rows}
-        className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-gray-500 backdrop-blur-md focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30 resize-none"
+        className="w-full resize-none rounded-md border border-slate-300 bg-white px-4 py-3 text-slate-950 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
         placeholder={placeholder}
       />
     </label>
@@ -383,29 +381,23 @@ export default function ForBusinessPage() {
     <>
       <MarketingHeader />
 
-      <section className="min-h-[88vh]">
-        <div className="mx-auto grid max-w-7xl gap-12 px-6 py-20 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+      <section className="border-b border-slate-200 bg-white">
+        <div className="mx-auto grid max-w-7xl gap-12 px-6 py-16 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
           <div>
             <FadeIn>
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/25 bg-emerald-300/10 px-5 py-2 backdrop-blur-md">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute h-full w-full animate-ping rounded-full bg-emerald-300 opacity-75" />
-                  <span className="relative h-2 w-2 rounded-full bg-emerald-300" />
-                </span>
-                <span className="text-sm font-medium text-emerald-200">
-                  Система локальных продаж для бизнеса
-                </span>
+              <div className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
+                Система локальных продаж для бизнеса
               </div>
             </FadeIn>
 
             <FadeIn delay={150}>
-              <h1 className="mt-8 max-w-3xl text-4xl font-bold leading-[1.08] text-white sm:text-5xl lg:text-6xl">
+              <h1 className="mt-7 max-w-3xl text-4xl font-bold leading-[1.06] tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
                 Найдём, где бизнес теряет клиентов, и запустим рост продаж
               </h1>
             </FadeIn>
 
             <FadeIn delay={300}>
-              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-gray-300">
+              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-700">
                 За 7 дней проверим карты, 2ГИС, Авито, отзывы, сайт,
                 мессенджеры, звонки, локальную выдачу и ответы нейросетей. Покажем,
                 кто забирает ваш спрос, где теряются деньги и какие действия
@@ -417,18 +409,18 @@ export default function ForBusinessPage() {
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <a
                   href="#form"
-                  className="rounded-2xl bg-emerald-300 px-8 py-4 text-base font-semibold text-[#07100e] transition-colors hover:bg-emerald-200"
+                  className="rounded-md bg-slate-950 px-7 py-3.5 text-center text-base font-semibold text-white transition-colors hover:bg-slate-800"
                 >
                   Получить аудит продаж
                 </a>
                 <Link
                   href="/pricing"
-                  className="rounded-2xl border border-white/15 bg-white/[0.04] px-8 py-4 text-base font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/10"
+                  className="rounded-md border border-slate-300 bg-white px-7 py-3.5 text-center text-base font-semibold text-slate-950 transition-colors hover:bg-slate-100"
                 >
                   Смотреть пакеты
                 </Link>
               </div>
-              <p className="mt-4 text-sm text-gray-500">
+              <p className="mt-4 text-sm text-slate-500">
                 Не обещаем “100 лидов”. Сначала показываем реальные потери,
                 конкурентов, задачи и план на 30 дней.
               </p>
@@ -441,7 +433,7 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="py-20">
+      <section className="bg-slate-50 py-16">
         <div className="mx-auto grid max-w-7xl gap-6 px-6 lg:grid-cols-[1.2fr_0.8fr]">
           <FadeIn>
             <SevenDayResultPanel />
@@ -452,14 +444,14 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="py-20">
+      <section className="border-y border-slate-200 bg-white py-20">
         <div className="mx-auto max-w-7xl px-6">
           <FadeIn className="mb-10 text-center">
-            <p className="text-sm font-semibold text-emerald-300">Рабочая панель</p>
-            <h2 className="mt-3 text-3xl font-bold text-white sm:text-4xl">
+            <p className="text-sm font-semibold text-blue-700">Рабочая панель</p>
+            <h2 className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl">
               Панель собственника: видимость, конкуренты, отзывы, задачи и потерянные обращения
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-gray-400">
+            <p className="mx-auto mt-4 max-w-2xl text-slate-600">
               Клиент должен видеть не PDF-аудит, а живую систему: где проседает
               поток клиентов, кто отвечает, какие задачи на сегодня и что изменилось за неделю.
             </p>
@@ -470,13 +462,13 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="py-24">
+      <section className="bg-slate-50 py-20">
         <div className="mx-auto max-w-7xl px-6">
-          <FadeIn className="text-center mb-14">
-            <h2 className="text-3xl font-bold text-white sm:text-4xl">
+          <FadeIn className="mb-12 text-center">
+            <h2 className="text-3xl font-bold text-slate-950 sm:text-4xl">
               Где локальный бизнес теряет заявки
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-gray-400">
+            <p className="mx-auto mt-4 max-w-2xl text-slate-600">
               Клиент уже ищет услугу, сравнивает отзывы, смотрит карточки,
               спрашивает нейросети и звонит. Вопрос в том, кто заберёт обращение.
             </p>
@@ -485,9 +477,9 @@ export default function ForBusinessPage() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {LOSS_ZONES.map((zone, i) => (
               <FadeIn key={zone.title} delay={i * 60}>
-                  <div className="h-full rounded-2xl border border-white/10 bg-[#101715]/70 p-5 backdrop-blur-xl hover:border-emerald-300/30 transition-all">
-                  <h3 className="text-base font-semibold text-white">{zone.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-gray-400">{zone.desc}</p>
+                <div className="h-full rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                  <h3 className="text-base font-semibold text-slate-950">{zone.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{zone.desc}</p>
                 </div>
               </FadeIn>
             ))}
@@ -495,13 +487,13 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="py-24">
+      <section className="bg-white py-20">
         <div className="mx-auto max-w-7xl px-6">
-          <FadeIn className="text-center mb-14">
-            <h2 className="text-3xl font-bold text-white sm:text-4xl">
+          <FadeIn className="mb-12 text-center">
+            <h2 className="text-3xl font-bold text-slate-950 sm:text-4xl">
               5 модулей системы локальных продаж
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-gray-400">
+            <p className="mx-auto mt-4 max-w-2xl text-slate-600">
               Каждый модуль показывает не только проблему, но и практический
               следующий шаг: что проверяем, что делаем и какой результат измеряем.
             </p>
@@ -510,19 +502,19 @@ export default function ForBusinessPage() {
           <div className="space-y-4">
             {MODULES.map((module, i) => (
               <FadeIn key={module.title} delay={i * 80}>
-                <div className="grid gap-4 rounded-3xl border border-white/10 bg-[#04080f]/60 p-6 backdrop-blur-xl lg:grid-cols-[1.1fr_1fr_1fr_1fr]">
-                    <h3 className="text-xl font-semibold text-emerald-300">{module.title}</h3>
+                <div className="grid gap-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm lg:grid-cols-[1.1fr_1fr_1fr_1fr]">
+                  <h3 className="text-xl font-semibold text-slate-950">{module.title}</h3>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Проверяем</p>
-                    <p className="mt-2 text-sm leading-relaxed text-gray-300">{module.checks}</p>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Проверяем</p>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600">{module.checks}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Делаем</p>
-                    <p className="mt-2 text-sm leading-relaxed text-gray-300">{module.actions}</p>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Делаем</p>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600">{module.actions}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Измеряем</p>
-                    <p className="mt-2 text-sm leading-relaxed text-gray-300">{module.result}</p>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Измеряем</p>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600">{module.result}</p>
                   </div>
                 </div>
               </FadeIn>
@@ -531,14 +523,14 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="py-20">
+      <section className="border-y border-slate-200 bg-slate-50 py-20">
         <div className="mx-auto max-w-7xl px-6">
           <FadeIn className="mb-10 max-w-3xl">
-            <p className="text-sm font-semibold text-emerald-300">Как реализуем на практике</p>
-            <h2 className="mt-3 text-3xl font-bold text-white sm:text-4xl">
+            <p className="text-sm font-semibold text-blue-700">Как реализуем на практике</p>
+            <h2 className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl">
               Не лозунги, а рабочий контур аудита, задач и измерения
             </h2>
-            <p className="mt-4 text-gray-400">
+            <p className="mt-4 text-slate-600">
               B2B-клиент должен понимать, из чего складывается результат. Поэтому каждый этап
               привязан к источникам данных, инструментам и измеримому выходу.
             </p>
@@ -547,17 +539,17 @@ export default function ForBusinessPage() {
           <div className="space-y-4">
             {IMPLEMENTATION_TOOLS.map((item, index) => (
               <FadeIn key={item.title} delay={index * 80}>
-                <div className="grid gap-5 rounded-2xl border border-white/10 bg-[#101715]/75 p-6 lg:grid-cols-[0.7fr_1fr_1.1fr]">
+                <div className="grid gap-5 rounded-lg border border-slate-200 bg-white p-6 shadow-sm lg:grid-cols-[0.7fr_1fr_1.1fr]">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                       Этап {index + 1}
                     </p>
-                    <h3 className="mt-2 text-xl font-semibold text-white">{item.title}</h3>
+                    <h3 className="mt-2 text-xl font-semibold text-slate-950">{item.title}</h3>
                   </div>
-                  <p className="text-sm leading-relaxed text-gray-300">{item.desc}</p>
-                  <div className="rounded-xl border border-emerald-300/15 bg-emerald-300/[0.06] p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-200">Инструменты</p>
-                    <p className="mt-2 text-sm leading-relaxed text-emerald-50/85">{item.tools}</p>
+                  <p className="text-sm leading-relaxed text-slate-600">{item.desc}</p>
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-800">Инструменты</p>
+                    <p className="mt-2 text-sm leading-relaxed text-blue-900">{item.tools}</p>
                   </div>
                 </div>
               </FadeIn>
@@ -566,14 +558,14 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="py-20">
+      <section className="bg-white py-20">
         <div className="mx-auto max-w-7xl px-6">
           <FadeIn className="mb-10 text-center">
-            <p className="text-sm font-semibold text-emerald-300">Сценарии по отраслям</p>
-            <h2 className="mt-3 text-3xl font-bold text-white sm:text-4xl">
+            <p className="text-sm font-semibold text-blue-700">Сценарии по отраслям</p>
+            <h2 className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl">
               Одна панель управления, разные точки потерь
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-gray-400">
+            <p className="mx-auto mt-4 max-w-2xl text-slate-600">
               В стоматологии важны услуги, отзывы и рассрочка. В автосервисе — срочность,
               цены и доверие. В юрфирме — кейсы, сроки и первичная консультация.
             </p>
@@ -584,13 +576,13 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="py-20">
+      <section className="border-y border-slate-200 bg-slate-50 py-20">
         <div className="mx-auto max-w-6xl px-6">
           <FadeIn className="mb-10 text-center">
-            <h2 className="text-3xl font-bold text-white sm:text-4xl">
+            <h2 className="text-3xl font-bold text-slate-950 sm:text-4xl">
               Было → нашли потери → сделали → измеряем
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-gray-400">
+            <p className="mx-auto mt-4 max-w-2xl text-slate-600">
               Такой формат должен стать основой кейсов: не “мы настроили маркетинг”,
               а что именно нашли, что исправили и какой показатель отслеживаем.
             </p>
@@ -601,15 +593,15 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="py-24">
+      <section className="bg-white py-20">
         <div className="mx-auto max-w-6xl px-6">
           <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
             <FadeIn>
-              <p className="text-sm font-semibold text-emerald-300">Ответы нейросетей уже влияют на выбор</p>
-              <h2 className="mt-3 text-3xl font-bold text-white sm:text-4xl">
+              <p className="text-sm font-semibold text-blue-700">Ответы нейросетей уже влияют на выбор</p>
+              <h2 className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl">
                 Клиенты спрашивают нейросети, кого выбрать
               </h2>
-              <p className="mt-5 text-gray-400 leading-relaxed">
+              <p className="mt-5 leading-relaxed text-slate-600">
                 Мы проверяем, попадает ли бизнес в ответы ChatGPT, Алисы,
                 Perplexity, YandexGPT и других систем, кого нейросети рекомендуют
                 вместо него и какие источники нужно усилить: карточки, отзывы,
@@ -617,11 +609,11 @@ export default function ForBusinessPage() {
               </p>
             </FadeIn>
             <FadeIn delay={150}>
-              <div className="rounded-3xl border border-emerald-300/20 bg-emerald-300/10 p-6 backdrop-blur-xl">
-                <p className="text-sm font-semibold text-emerald-100">Примеры запросов клиентов</p>
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-6">
+                <p className="text-sm font-semibold text-blue-900">Примеры запросов клиентов</p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {AI_QUERIES.map((query) => (
-                    <div key={query} className="rounded-xl border border-white/10 bg-[#101715]/70 p-4 text-sm text-gray-300">
+                    <div key={query} className="rounded-md border border-blue-200 bg-white p-4 text-sm text-slate-700">
                       “{query}”
                     </div>
                   ))}
@@ -632,13 +624,13 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="py-24">
+      <section className="border-y border-slate-200 bg-slate-50 py-20">
         <div className="mx-auto max-w-7xl px-6">
-          <FadeIn className="text-center mb-14">
-            <h2 className="text-3xl font-bold text-white sm:text-4xl">
+          <FadeIn className="mb-12 text-center">
+            <h2 className="text-3xl font-bold text-slate-950 sm:text-4xl">
               Что вы получите через 7 дней
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-gray-400">
+            <p className="mx-auto mt-4 max-w-2xl text-slate-600">
               Первый результат — не “доступ к платформе”, а понятная карта
               потерь и управленческий план, что делать дальше.
             </p>
@@ -647,7 +639,7 @@ export default function ForBusinessPage() {
           <div className="grid gap-4 md:grid-cols-4">
             {DELIVERABLES.map((item, i) => (
               <FadeIn key={item} delay={i * 60}>
-                <div className="h-full rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-5 text-sm font-medium text-cyan-50">
+                <div className="h-full rounded-lg border border-slate-200 bg-white p-5 text-sm font-medium text-slate-700 shadow-sm">
                   {item}
                 </div>
               </FadeIn>
@@ -656,15 +648,15 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="py-24">
+      <section className="bg-white py-20">
         <div className="mx-auto max-w-7xl px-6">
           <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr]">
             <FadeIn>
-              <p className="text-sm font-semibold text-cyan-300">Как внедряем</p>
-              <h2 className="mt-3 text-3xl font-bold text-white sm:text-4xl">
+              <p className="text-sm font-semibold text-blue-700">Как внедряем</p>
+              <h2 className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl">
                 Сначала аудит, затем запуск, потом операционная система
               </h2>
-              <p className="mt-5 text-gray-400 leading-relaxed">
+              <p className="mt-5 leading-relaxed text-slate-600">
                 Мы не начинаем с тяжёлых интеграций. Сначала используем открытые
                 данные, ваши ссылки, ручную проверку и выгрузки. После первых
                 платных пилотов подключаем полуавтоматические источники и личный кабинет.
@@ -678,10 +670,10 @@ export default function ForBusinessPage() {
                 ["каждый месяц", "Сопровождение", "Ежедневные задачи, недельный отчёт, возврат обращений и рост точек входа."],
               ].map(([term, title, desc], i) => (
                 <FadeIn key={title} delay={i * 100}>
-                  <div className="h-full rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-                    <div className="text-sm font-bold text-cyan-300">{term}</div>
-                    <h3 className="mt-3 text-xl font-semibold text-white">{title}</h3>
-                    <p className="mt-3 text-sm leading-relaxed text-gray-400">{desc}</p>
+                  <div className="h-full rounded-lg border border-slate-200 bg-slate-50 p-6">
+                    <div className="text-sm font-bold text-blue-700">{term}</div>
+                    <h3 className="mt-3 text-xl font-semibold text-slate-950">{title}</h3>
+                    <p className="mt-3 text-sm leading-relaxed text-slate-600">{desc}</p>
                   </div>
                 </FadeIn>
               ))}
@@ -690,13 +682,13 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="py-24">
+      <section className="border-y border-slate-200 bg-slate-50 py-20">
         <div className="mx-auto max-w-7xl px-6">
-          <FadeIn className="text-center mb-14">
-            <h2 className="text-3xl font-bold text-white sm:text-4xl">
+          <FadeIn className="mb-12 text-center">
+            <h2 className="text-3xl font-bold text-slate-950 sm:text-4xl">
               Эффективность измеряем по коммерческим сигналам
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-gray-400">
+            <p className="mx-auto mt-4 max-w-2xl text-slate-600">
               Мы не обещаем фиксированное число клиентов без данных. Но показываем
               метрики, которые влияют на поток обращений, записи и продажи.
             </p>
@@ -705,7 +697,7 @@ export default function ForBusinessPage() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {METRICS.map((metric) => (
               <FadeIn key={metric}>
-                <div className="rounded-2xl border border-white/10 bg-[#04080f]/60 p-4 text-sm text-gray-300">
+                <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700 shadow-sm">
                   {metric}
                 </div>
               </FadeIn>
@@ -714,13 +706,13 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="py-24">
+      <section className="bg-white py-20">
         <div className="mx-auto max-w-5xl px-6">
-          <FadeIn className="text-center mb-14">
-            <h2 className="text-3xl font-bold text-white sm:text-4xl">
+          <FadeIn className="mb-12 text-center">
+            <h2 className="text-3xl font-bold text-slate-950 sm:text-4xl">
               Пакеты внедрения
             </h2>
-            <p className="mt-4 text-gray-400 max-w-2xl mx-auto">
+            <p className="mx-auto mt-4 max-w-2xl text-slate-600">
               Клиент покупает не набор функций, а степень нашего участия:
               диагностика, запуск под ключ или ежемесячное управление ростом.
             </p>
@@ -730,22 +722,22 @@ export default function ForBusinessPage() {
             {PLANS.map((plan, i) => (
               <FadeIn key={plan.name} delay={i * 150}>
                 <div
-                  className={`relative h-full rounded-3xl border p-8 backdrop-blur-xl overflow-hidden ${
+                  className={`relative h-full overflow-hidden rounded-lg border p-8 shadow-sm ${
                     plan.highlight
-                        ? "border-emerald-300/30 bg-emerald-300/5 shadow-[0_0_30px_rgba(16,185,129,0.08)]"
-                      : "border-white/10 bg-[#04080f]/60"
+                      ? "border-slate-950 bg-slate-950 text-white"
+                      : "border-slate-200 bg-white text-slate-950"
                   }`}
                 >
-                  <h3 className="text-2xl font-bold text-white">{plan.name}</h3>
-                  <p className="text-sm text-gray-400 mt-1">{plan.desc}</p>
+                  <h3 className={plan.highlight ? "text-2xl font-bold text-white" : "text-2xl font-bold text-slate-950"}>{plan.name}</h3>
+                  <p className={plan.highlight ? "mt-1 text-sm text-slate-300" : "mt-1 text-sm text-slate-600"}>{plan.desc}</p>
                   <div className="mt-4 flex items-baseline gap-1">
-                    <span className="text-4xl font-bold text-emerald-300">{plan.price}</span>
-                    <span className="text-gray-500">{plan.period}</span>
+                    <span className={plan.highlight ? "text-4xl font-bold text-white" : "text-4xl font-bold text-slate-950"}>{plan.price}</span>
+                    <span className={plan.highlight ? "text-slate-400" : "text-slate-500"}>{plan.period}</span>
                   </div>
                   <ul className="mt-6 space-y-3">
                     {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2 text-sm text-gray-300">
-                        <span className="text-emerald-300 flex-shrink-0">✓</span>
+                      <li key={feature} className={plan.highlight ? "flex items-start gap-2 text-sm text-slate-200" : "flex items-start gap-2 text-sm text-slate-700"}>
+                        <span className={plan.highlight ? "flex-shrink-0 text-green-300" : "flex-shrink-0 text-green-700"}>✓</span>
                         {feature}
                       </li>
                     ))}
@@ -754,8 +746,8 @@ export default function ForBusinessPage() {
                     href={plan.href}
                     className={`mt-8 block w-full rounded-2xl py-3 text-center font-semibold transition-all ${
                       plan.highlight
-                        ? "bg-emerald-300 text-[#07100e] hover:bg-emerald-200"
-                        : "border border-white/15 bg-white/5 text-white hover:bg-white/10"
+                        ? "bg-white text-slate-950 hover:bg-slate-100"
+                        : "border border-slate-300 bg-white text-slate-950 hover:bg-slate-50"
                     }`}
                   >
                     {plan.cta}
@@ -767,13 +759,13 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="py-24">
+      <section className="border-y border-slate-200 bg-slate-50 py-20">
         <div className="mx-auto max-w-5xl px-6">
-          <FadeIn className="text-center mb-14">
-            <h2 className="text-3xl font-bold text-white sm:text-4xl">
+          <FadeIn className="mb-12 text-center">
+            <h2 className="text-3xl font-bold text-slate-950 sm:text-4xl">
               Для каких компаний
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-gray-400">
+            <p className="mx-auto mt-4 max-w-2xl text-slate-600">
               Лучше всего работает там, где высокий чек, локальная конкуренция,
               важны отзывы и клиент сравнивает несколько вариантов перед заявкой.
             </p>
@@ -782,8 +774,8 @@ export default function ForBusinessPage() {
           <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
             {INDUSTRIES.map((industry, i) => (
               <FadeIn key={industry} delay={Math.min(i * 50, 400)}>
-                <div className="rounded-2xl border border-white/10 bg-[#04080f]/50 p-4 text-center backdrop-blur-xl hover:border-cyan-500/20 hover:bg-cyan-500/5 transition-all">
-                  <p className="text-sm font-medium text-gray-300">{industry}</p>
+                <div className="rounded-lg border border-slate-200 bg-white p-4 text-center shadow-sm">
+                  <p className="text-sm font-medium text-slate-700">{industry}</p>
                 </div>
               </FadeIn>
             ))}
@@ -791,13 +783,13 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="py-24">
+      <section className="bg-white py-20">
         <div className="mx-auto max-w-5xl px-6">
           <div className="grid gap-6 md:grid-cols-2">
             <FadeIn>
-              <div className="h-full rounded-3xl border border-green-500/20 bg-green-500/10 p-8">
-                <h2 className="text-2xl font-bold text-white">Что делаем</h2>
-                <ul className="mt-5 space-y-3 text-sm text-green-100/90">
+              <div className="h-full rounded-lg border border-green-200 bg-green-50 p-8">
+                <h2 className="text-2xl font-bold text-slate-950">Что делаем</h2>
+                <ul className="mt-5 space-y-3 text-sm text-green-900">
                   <li>✓ показываем потери по каналам и конкурентам</li>
                   <li>✓ запускаем страницы, карточки, отзывы, кнопки заявки и повторные касания</li>
                   <li>✓ даём ежедневные задачи и недельный отчёт</li>
@@ -806,9 +798,9 @@ export default function ForBusinessPage() {
               </div>
             </FadeIn>
             <FadeIn delay={150}>
-              <div className="h-full rounded-3xl border border-amber-500/20 bg-amber-500/10 p-8">
-                <h2 className="text-2xl font-bold text-white">Чего не обещаем</h2>
-                <ul className="mt-5 space-y-3 text-sm text-amber-100/90">
+              <div className="h-full rounded-lg border border-amber-200 bg-amber-50 p-8">
+                <h2 className="text-2xl font-bold text-slate-950">Чего не обещаем</h2>
+                <ul className="mt-5 space-y-3 text-sm text-amber-900">
                   <li>— фиксированное число клиентов без данных</li>
                   <li>— первое место в картах или поиске за любой срок</li>
                   <li>— гарантированное цитирование в нейросетях</li>
@@ -820,15 +812,14 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section id="form" className="py-24">
+      <section id="form" className="border-t border-slate-200 bg-slate-50 py-20">
         <div className="mx-auto max-w-3xl px-6">
           <FadeIn>
-            <div className="rounded-3xl border border-emerald-300/20 bg-[#101715]/70 p-10 backdrop-blur-xl overflow-hidden relative">
-              <div className="absolute -top-px left-10 right-10 h-px bg-gradient-to-r from-transparent via-emerald-300/50 to-transparent" />
-              <h2 className="text-2xl font-bold text-white text-center mb-2">
+            <div className="rounded-lg border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
+              <h2 className="mb-2 text-center text-2xl font-bold text-slate-950">
                 Получить аудит локального спроса
               </h2>
-              <p className="text-gray-400 text-center mb-8">
+              <p className="mb-8 text-center text-slate-600">
                 Оставьте контакты и ссылки на основные площадки. Мы скажем,
                 где стоит начинать: карты, 2ГИС, Авито, отзывы, сайт, ответы нейросетей
                 или потерянные обращения.

@@ -31,19 +31,17 @@ type Card = {
 const routeCards = [
   {
     label: "Для бизнеса",
-    title: "Найдём, где теряются клиенты",
-    desc: "Карты, 2ГИС, Авито, отзывы, сайт, нейросети, звонки и переписки собираются в понятную карту потерь и задач.",
+    title: "Панель потерь и задач",
+    desc: "Карты, 2ГИС, Авито, отзывы, сайт, AI-ответы, звонки и переписки собираются в управленческую панель.",
     href: "/for-business",
     action: "Сценарий для бизнеса",
-    accent: "emerald",
   },
   {
     label: "Для эксперта",
-    title: "Превратим спрос в страницы и запись",
+    title: "Карта спроса и страницы",
     desc: "Система находит вопросы людей, помогает записать экспертный ответ и публикует страницу с кнопкой записи.",
     href: "/for-experts",
     action: "Сценарий для эксперта",
-    accent: "cyan",
   },
 ];
 
@@ -65,7 +63,7 @@ const lossCards: Card[] = [
   },
   {
     title: "Нет ежедневного плана",
-    desc: "Вместо общего отчёта владелец получает конкретные задачи: что исправить сегодня и что измерить через неделю.",
+    desc: "Владелец получает конкретные задачи: что исправить сегодня и что измерить через неделю.",
     icon: ClipboardCheck,
   },
 ];
@@ -73,17 +71,17 @@ const lossCards: Card[] = [
 const steps: Card[] = [
   {
     title: "Собираем точки входа",
-    desc: "Смотрим, где клиент выбирает: поиск, карты, отзывы, объявления, нейросети, формы, звонки и мессенджеры.",
+    desc: "Поиск, карты, отзывы, объявления, нейросети, формы, звонки и мессенджеры.",
     icon: Search,
   },
   {
     title: "Считаем потери",
-    desc: "Показываем, где бизнес не виден, где сильнее конкурент и сколько выручки может быть под риском.",
+    desc: "Показываем, где бизнес не виден, где сильнее конкурент и сколько выручки под риском.",
     icon: BarChart3,
   },
   {
     title: "Запускаем рост",
-    desc: "Исправляем карточки, отзывы, страницы, офферы, повторные касания и ежедневно ведём список действий.",
+    desc: "Исправляем карточки, отзывы, страницы, офферы, повторные касания и ежедневные задачи.",
     icon: TrendingUp,
   },
 ];
@@ -123,20 +121,18 @@ function PlatformStatsSection() {
   if (items.length === 0) return null;
 
   return (
-    <section className="py-8">
+    <section className="border-y border-slate-200 bg-white py-8">
       <div className="mx-auto max-w-5xl px-6">
-        <div className="rounded-3xl border border-white/10 bg-[#101715]/75 p-6 backdrop-blur-xl">
-          <p className="text-center text-xs uppercase tracking-[0.18em] text-gray-500">Платформа в цифрах</p>
-          <div className={`mt-5 grid gap-6 ${items.length <= 3 ? "md:grid-cols-3" : "md:grid-cols-4"}`}>
-            {items.map((item) => (
-              <div key={item.label} className="text-center">
-                <div className="text-3xl font-bold text-emerald-300">
-                  {item.value.toLocaleString("ru-RU")}
-                </div>
-                <p className="mt-1 text-xs text-gray-400">{item.label}</p>
+        <p className="text-center text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Платформа в цифрах</p>
+        <div className={`mt-5 grid gap-6 ${items.length <= 3 ? "md:grid-cols-3" : "md:grid-cols-4"}`}>
+          {items.map((item) => (
+            <div key={item.label} className="rounded-lg border border-slate-200 bg-slate-50 p-5 text-center">
+              <div className="text-3xl font-bold text-slate-950">
+                {item.value.toLocaleString("ru-RU")}
               </div>
-            ))}
-          </div>
+              <p className="mt-1 text-xs text-slate-500">{item.label}</p>
+            </div>
+          ))}
         </div>
       </div>
     </section>
@@ -148,32 +144,26 @@ export default function LandingPage() {
     <>
       <MarketingHeader />
 
-      <section className="min-h-[88vh]">
-        <div className="mx-auto grid max-w-7xl gap-12 px-6 py-20 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+      <section className="border-b border-slate-200 bg-slate-50">
+        <div className="mx-auto grid max-w-7xl gap-12 px-6 py-16 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
           <div>
             <FadeIn>
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/25 bg-emerald-300/10 px-5 py-2 backdrop-blur-md">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute h-full w-full animate-ping rounded-full bg-emerald-300 opacity-75" />
-                  <span className="relative h-2 w-2 rounded-full bg-emerald-300" />
-                </span>
-                <span className="text-sm font-medium text-emerald-200">
-                  Клиенты из поиска, карт, отзывов и нейросетей
-                </span>
+              <div className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">
+                SaaS-платформа контроля клиентского потока
               </div>
             </FadeIn>
 
             <FadeIn delay={120}>
-              <h1 className="mt-8 max-w-3xl text-4xl font-bold leading-[1.08] text-white sm:text-5xl lg:text-6xl">
+              <h1 className="mt-7 max-w-3xl text-4xl font-bold leading-[1.06] tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
                 Найдём, где бизнес теряет клиентов, и запустим рост продаж
               </h1>
             </FadeIn>
 
             <FadeIn delay={240}>
-              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-gray-300">
+              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-700">
                 НейроЭксперт показывает конкретные точки потерь: слабые карточки,
                 конкурентов в выдаче, ответы нейросетей, пропущенные обращения
-                и действия, которые влияют на заявки, записи и выручку.
+                и задачи, которые влияют на заявки, записи и выручку.
               </p>
             </FadeIn>
 
@@ -181,20 +171,20 @@ export default function LandingPage() {
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/for-business"
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-300 px-8 py-4 text-base font-semibold text-[#07100e] transition-colors hover:bg-emerald-200"
+                  className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-950 px-7 py-3.5 text-base font-semibold text-white transition-colors hover:bg-slate-800"
                 >
-                  Получить аудит продаж
+                  Посмотреть панель потерь
                   <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link
                   href="/how-it-works"
-                  className="rounded-2xl border border-white/15 bg-white/[0.04] px-8 py-4 text-base font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/10"
+                  className="rounded-md border border-slate-300 bg-white px-7 py-3.5 text-center text-base font-semibold text-slate-950 transition-colors hover:bg-slate-100"
                 >
                   Как это работает
                 </Link>
               </div>
-              <p className="mt-4 text-sm text-gray-500">
-                Для индивидуальных экспертов есть отдельный сценарий: спрос, голосовой ответ, страница и запись.
+              <p className="mt-4 text-sm text-slate-500">
+                Для индивидуальных экспертов: спрос, голосовой ответ, страница и запись.
               </p>
             </FadeIn>
           </div>
@@ -207,25 +197,19 @@ export default function LandingPage() {
 
       <PlatformStatsSection />
 
-      <section className="py-16">
+      <section className="bg-white py-16">
         <div className="mx-auto max-w-7xl px-6">
           <div className="grid gap-5 md:grid-cols-2">
             {routeCards.map((route, index) => (
               <FadeIn key={route.title} delay={index * 100}>
                 <Link
                   href={route.href}
-                  className={`group block h-full rounded-3xl border bg-[#101715]/75 p-7 backdrop-blur-xl transition ${
-                    route.accent === "emerald"
-                      ? "border-emerald-300/20 hover:border-emerald-300/45"
-                      : "border-cyan-300/20 hover:border-cyan-300/45"
-                  }`}
+                  className="group block h-full rounded-lg border border-slate-200 bg-white p-7 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
                 >
-                  <p className={route.accent === "emerald" ? "text-sm font-semibold text-emerald-300" : "text-sm font-semibold text-cyan-300"}>
-                    {route.label}
-                  </p>
-                  <h2 className="mt-3 text-2xl font-bold text-white">{route.title}</h2>
-                  <p className="mt-3 leading-relaxed text-gray-400">{route.desc}</p>
-                  <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-white">
+                  <p className="text-sm font-semibold text-blue-700">{route.label}</p>
+                  <h2 className="mt-3 text-2xl font-bold text-slate-950">{route.title}</h2>
+                  <p className="mt-3 leading-relaxed text-slate-600">{route.desc}</p>
+                  <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-950">
                     {route.action}
                     <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
                   </span>
@@ -236,17 +220,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="py-20">
+      <section className="border-y border-slate-200 bg-slate-50 py-20">
         <div className="mx-auto max-w-7xl px-6">
           <FadeIn className="mx-auto mb-12 max-w-3xl text-center">
-            <p className="text-sm font-semibold text-emerald-300">Главная мысль</p>
-            <h2 className="mt-3 text-3xl font-bold text-white sm:text-4xl">
-              Мы понимаем, где теряются деньги
+            <p className="text-sm font-semibold text-blue-700">Главная мысль</p>
+            <h2 className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl">
+              Дизайн показывает не магию AI, а контроль денег
             </h2>
-            <p className="mt-4 text-gray-400">
-              Дизайн и продуктовая логика теперь строятся вокруг карты потерь:
-              где клиент не увидел бизнес, где поверил конкуренту, где не получил ответ
-              и какие действия возвращают поток обращений.
+            <p className="mt-4 text-slate-600">
+              В центре интерфейса: карта потерь, задачи на сегодня,
+              потерянная выручка, конкуренты, отзывы и каналы, где клиент уходит.
             </p>
           </FadeIn>
 
@@ -255,12 +238,12 @@ export default function LandingPage() {
               const Icon = card.icon;
               return (
                 <FadeIn key={card.title} delay={index * 70}>
-                  <div className="h-full rounded-2xl border border-white/10 bg-[#101715]/75 p-5 backdrop-blur-xl">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-300/10 text-emerald-200 ring-1 ring-emerald-300/20">
+                  <div className="h-full rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 text-slate-700">
                       <Icon className="h-5 w-5" />
                     </div>
-                    <h3 className="mt-4 text-base font-semibold text-white">{card.title}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-gray-400">{card.desc}</p>
+                    <h3 className="mt-4 text-base font-semibold text-slate-950">{card.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600">{card.desc}</p>
                   </div>
                 </FadeIn>
               );
@@ -269,7 +252,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="py-20">
+      <section className="bg-white py-20">
         <div className="mx-auto grid max-w-7xl gap-6 px-6 lg:grid-cols-[1.2fr_0.8fr]">
           <FadeIn>
             <SevenDayResultPanel />
@@ -280,12 +263,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="py-20">
+      <section className="border-y border-slate-200 bg-slate-50 py-20">
         <div className="mx-auto max-w-7xl px-6">
           <FadeIn className="mx-auto mb-12 max-w-3xl text-center">
-            <p className="text-sm font-semibold text-emerald-300">Практический процесс</p>
-            <h2 className="mt-3 text-3xl font-bold text-white sm:text-4xl">
-              Не отчёт ради отчёта, а путь к продажам
+            <p className="text-sm font-semibold text-blue-700">Практический процесс</p>
+            <h2 className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl">
+              Не презентация, а операционный контур продаж
             </h2>
           </FadeIn>
 
@@ -294,15 +277,15 @@ export default function LandingPage() {
               const Icon = step.icon;
               return (
                 <FadeIn key={step.title} delay={index * 120}>
-                  <div className="h-full rounded-3xl border border-white/10 bg-[#101715]/75 p-7 backdrop-blur-xl">
+                  <div className="h-full rounded-lg border border-slate-200 bg-white p-7 shadow-sm">
                     <div className="flex items-center gap-3">
-                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-300 text-sm font-bold text-[#07100e]">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-950 text-sm font-bold text-white">
                         {index + 1}
                       </span>
-                      <Icon className="h-5 w-5 text-emerald-300" />
+                      <Icon className="h-5 w-5 text-slate-700" />
                     </div>
-                    <h3 className="mt-5 text-xl font-semibold text-white">{step.title}</h3>
-                    <p className="mt-3 leading-relaxed text-gray-400">{step.desc}</p>
+                    <h3 className="mt-5 text-xl font-semibold text-slate-950">{step.title}</h3>
+                    <p className="mt-3 leading-relaxed text-slate-600">{step.desc}</p>
                   </div>
                 </FadeIn>
               );
@@ -310,7 +293,7 @@ export default function LandingPage() {
           </div>
 
           <FadeIn delay={460} className="mt-10 text-center">
-            <Link href="/how-it-works" className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-300 transition-colors hover:text-emerald-200">
+            <Link href="/how-it-works" className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 transition-colors hover:text-blue-900">
               Разобрать оба сценария
               <ArrowRight className="h-4 w-4" />
             </Link>
@@ -318,11 +301,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="py-20">
+      <section className="bg-white py-20">
         <div className="mx-auto max-w-7xl px-6">
           <FadeIn className="mx-auto mb-10 max-w-3xl text-center">
-            <p className="text-sm font-semibold text-emerald-300">Для кого особенно полезно</p>
-            <h2 className="mt-3 text-3xl font-bold text-white sm:text-4xl">
+            <p className="text-sm font-semibold text-blue-700">Для кого особенно полезно</p>
+            <h2 className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl">
               Там, где клиент выбирает быстро и сравнивает рядом
             </h2>
           </FadeIn>
@@ -330,9 +313,9 @@ export default function LandingPage() {
           <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-5">
             {niches.map((niche, index) => (
               <FadeIn key={niche} delay={Math.min(index * 40, 320)}>
-                <div className="rounded-2xl border border-white/10 bg-[#101715]/70 p-4 text-center backdrop-blur-xl transition hover:border-emerald-300/30">
-                  <Building2 className="mx-auto h-5 w-5 text-emerald-300" />
-                  <p className="mt-2 text-sm font-medium text-gray-300">{niche}</p>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center">
+                  <Building2 className="mx-auto h-5 w-5 text-slate-600" />
+                  <p className="mt-2 text-sm font-medium text-slate-700">{niche}</p>
                 </div>
               </FadeIn>
             ))}
@@ -340,32 +323,28 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="py-24">
-        <div className="mx-auto max-w-4xl px-6">
+      <section className="bg-slate-950 py-20 text-white">
+        <div className="mx-auto max-w-4xl px-6 text-center">
           <FadeIn>
-            <div className="rounded-3xl border border-emerald-300/20 bg-emerald-300/[0.08] p-10 text-center backdrop-blur-xl">
-              <h2 className="text-3xl font-bold text-white">
-                Узнайте, где ваш бизнес теряет клиентов
-              </h2>
-              <p className="mx-auto mt-4 max-w-2xl text-gray-300">
-                Первый шаг — аудит продаж: карта потерь, сравнение с конкурентами,
-                задачи на неделю и оценка обращений, которые ещё можно вернуть.
-              </p>
-              <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-                <Link
-                  href="/for-business"
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-300 px-8 py-4 text-base font-semibold text-[#07100e] transition-colors hover:bg-emerald-200"
-                >
-                  Получить аудит продаж
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-                <Link
-                  href="/launch"
-                  className="rounded-2xl border border-white/15 bg-white/[0.04] px-8 py-4 text-base font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/10"
-                >
-                  Запуск под ключ
-                </Link>
-              </div>
+            <h2 className="text-3xl font-bold">Узнайте, где ваш бизнес теряет клиентов</h2>
+            <p className="mx-auto mt-4 max-w-2xl text-slate-300">
+              Первый шаг — аудит продаж: карта потерь, сравнение с конкурентами,
+              задачи на неделю и оценка обращений, которые ещё можно вернуть.
+            </p>
+            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+              <Link
+                href="/for-business"
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-7 py-3.5 text-base font-semibold text-slate-950 transition-colors hover:bg-slate-100"
+              >
+                Получить аудит продаж
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/launch"
+                className="rounded-md border border-white/25 px-7 py-3.5 text-base font-semibold text-white transition-colors hover:bg-white/10"
+              >
+                Запуск под ключ
+              </Link>
             </div>
           </FadeIn>
         </div>
