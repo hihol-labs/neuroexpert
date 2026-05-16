@@ -239,6 +239,7 @@ export default function ForExpertsPage() {
                 <li className="flex gap-2"><span className="flex-shrink-0 text-green-700">&#10003;</span>Публикуем страницу со структурой для поиска, нейросетей и вашим профилем</li>
                 <li className="flex gap-2"><span className="flex-shrink-0 text-green-700">&#10003;</span>На каждой странице — кнопка записи, консультации или разбора</li>
                 <li className="flex gap-2"><span className="flex-shrink-0 text-green-700">&#10003;</span>Отслеживаем индексацию, трафик, клики и обращения</li>
+                <li className="flex gap-2"><span className="flex-shrink-0 text-green-700">&#10003;</span>Через 2-4 недели решаем: усилить страницу, объединить, обновить или оставить как рабочую</li>
                 <li className="flex gap-2"><span className="flex-shrink-0 text-green-700">&#10003;</span>Корректируем следующие темы по фактическому результату</li>
               </ul>
             </div>

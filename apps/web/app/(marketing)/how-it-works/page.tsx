@@ -241,6 +241,20 @@ const resultRows = [
   ["30-90 дней", "динамика видимости, клики, обращения, сильные темы", "видно, что усиливать дальше"],
 ];
 
+const antiSeoLoop = [
+  ["1", "Подтверждённый спрос", "Есть источник, intent, услуга, регион или ниша, конкурентный контекст и будущий CTA."],
+  ["2", "Quality Gate", "Страница не публикуется без пользы, фактов, авторской экспертизы, FAQ, CTA и метрик."],
+  ["3", "Измерение", "Считаем индексацию, показы, клики, CTA views, CTA clicks, заявки, звонки и исход заявки."],
+  ["4", "Решение 2-4 недели", "Страница получает статус: работает, доработать, объединить, обновить или архивировать."],
+];
+
+const diagnosticRows = [
+  ["Показы есть, кликов нет", "переписать title, description, H1 и оффер"],
+  ["Клики есть, заявок нет", "усилить CTA, цену, FAQ, отзывы и доверие"],
+  ["CTA кликают, продаж нет", "проверить форму, телефон, скорость ответа и follow-up"],
+  ["Показов нет", "проверить спрос, индексацию, перелинковку или объединить страницу"],
+];
+
 function AudienceSwitch({ audience, onChange }: { audience: Audience; onChange: (value: Audience) => void }) {
   return (
     <div className="mx-auto mt-8 grid max-w-xl gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-sm sm:grid-cols-2">
@@ -371,6 +385,58 @@ function ResultsTable() {
         ))}
       </div>
     </div>
+  );
+}
+
+function AntiSeoFrameworkSection() {
+  return (
+    <section className="border-y border-slate-200 bg-white py-14">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="mb-8 max-w-3xl">
+          <p className="text-sm font-semibold text-blue-700">Anti-SEO-Failure Framework</p>
+          <h2 className="mt-3 text-3xl font-bold text-slate-950">
+            Система не считает страницу результатом, пока нет пути к заявке
+          </h2>
+          <p className="mt-3 text-slate-600">
+            Главный предохранитель — измерять не объём контента, а цепочку:
+            спрос → страница → действие клиента → заявка или потеря → задача роста.
+          </p>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-4">
+          {antiSeoLoop.map(([number, title, desc]) => (
+            <div key={title} className="rounded-lg border border-slate-200 bg-slate-50 p-5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-md bg-blue-700 text-sm font-bold text-white">
+                {number}
+              </span>
+              <h3 className="mt-4 text-lg font-semibold text-slate-950">{title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">{desc}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-8 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-6">
+            <h3 className="text-xl font-bold text-slate-950">Правило продукта</h3>
+            <p className="mt-3 leading-relaxed text-amber-900">
+              Если страница не ведёт к действию клиента, это не актив. Это просто контент.
+              Поэтому слабая страница дорабатывается, объединяется или убирается.
+            </p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-6">
+            <h3 className="text-xl font-bold text-slate-950">Диагностика вместо отчёта</h3>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {diagnosticRows.map(([signal, task]) => (
+                <div key={signal} className="rounded-md border border-slate-200 bg-white p-4">
+                  <p className="text-sm font-semibold text-slate-950">{signal}</p>
+                  <p className="mt-1 text-sm text-slate-600">{task}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -571,6 +637,8 @@ export default function HowItWorksPage() {
           </section>
         </>
       )}
+
+      <AntiSeoFrameworkSection />
 
       <MarketingFooter />
     </div>

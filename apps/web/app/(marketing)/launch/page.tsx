@@ -26,6 +26,21 @@ const STEPS = [
   "Смотрим трафик, клики, заявки, пропущенные обращения и недельный отчёт",
 ];
 
+const RESULT_GATES = [
+  {
+    title: "Перед публикацией",
+    desc: "Проверяем спрос, услугу, оффер, CTA, факты, FAQ, доказательства и способ измерения.",
+  },
+  {
+    title: "После запуска",
+    desc: "Смотрим индексацию, показы, клики, CTA, заявки, звонки и скорость ответа.",
+  },
+  {
+    title: "Через 2-4 недели",
+    desc: "Решаем: оставить страницу, усилить, объединить, обновить или убрать из контура.",
+  },
+];
+
 function resolvePackageType(packageName?: string): "audit" | "launch_30d" | "managed_monthly" | "b2b" {
   if (!packageName) return "launch_30d";
   if (packageName.includes("audit")) return "audit";
@@ -73,7 +88,8 @@ export default function LaunchPage({ searchParams }: Props) {
                   Мы не обещаем фиксированное число клиентов без данных. Цель первого месяца —
                   запустить рабочий канал и получить первые измеримые сигналы: исправленные
                   площадки, страницы, индексацию, трафик, клики, обращения и понятный список
-                  ежедневных действий.
+                  ежедневных действий. Если страница не ведёт к действию клиента, она становится
+                  задачей на улучшение, объединение или удаление.
                 </p>
               </div>
             </div>
@@ -179,6 +195,30 @@ export default function LaunchPage({ searchParams }: Props) {
                   .
                 </p>
               </form>
+            </div>
+          </div>
+        </section>
+
+        <section className="border-y border-slate-200 bg-slate-50 py-14">
+          <div className="mx-auto max-w-6xl px-6">
+            <div className="max-w-3xl">
+              <p className="text-sm font-semibold text-blue-700">Контроль результата</p>
+              <h2 className="mt-3 text-3xl font-bold text-slate-950">
+                Запуск не заканчивается публикацией страниц
+              </h2>
+              <p className="mt-4 text-slate-600">
+                Мы заранее фиксируем, какие сигналы должны показать движение:
+                индексация, показы, клики, заявки, исходы лидов и задачи роста.
+              </p>
+            </div>
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
+              {RESULT_GATES.map((gate, index) => (
+                <div key={gate.title} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="text-sm font-bold text-blue-700">0{index + 1}</div>
+                  <h3 className="mt-3 text-lg font-semibold text-slate-950">{gate.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{gate.desc}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>

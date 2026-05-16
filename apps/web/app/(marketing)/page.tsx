@@ -115,6 +115,29 @@ const steps: Card[] = [
   },
 ];
 
+const antiSeoCards: Card[] = [
+  {
+    title: "Сначала спрос",
+    desc: "Страница создаётся только когда есть запрос, понятное намерение клиента, услуга и следующий шаг.",
+    icon: Search,
+  },
+  {
+    title: "Не текст, а точка входа",
+    desc: "На странице должны быть ответ, доказательства, FAQ, цена или диапазон и кнопка звонка, записи или заявки.",
+    icon: FileText,
+  },
+  {
+    title: "Меряем путь до действия",
+    desc: "Смотрим не количество страниц, а индексацию, показы, клики, CTA, заявки и обработку обращения.",
+    icon: BarChart3,
+  },
+  {
+    title: "Через 2-4 недели решаем",
+    desc: "Страницу оставляем, усиливаем, объединяем или убираем. Слабые страницы не копятся ради отчёта.",
+    icon: ClipboardCheck,
+  },
+];
+
 const niches = [
   { name: "Стоматологии", icon: Stethoscope, point: "запись на консультацию" },
   { name: "Косметологии", icon: Sparkles, point: "пакеты процедур" },
@@ -290,6 +313,38 @@ export default function LandingPage() {
               <ArrowRight className="h-4 w-4" />
             </Link>
           </FadeIn>
+        </div>
+      </section>
+
+      <section className="border-y border-slate-200 bg-slate-50 py-20">
+        <div className="mx-auto max-w-7xl px-6">
+          <FadeIn className="mx-auto mb-10 max-w-3xl text-center">
+            <p className="text-sm font-semibold text-blue-700">Не SEO ради SEO</p>
+            <h2 className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl">
+              Страница считается полезной только если ведёт к действию клиента
+            </h2>
+            <p className="mt-4 text-slate-600">
+              НейроЭксперт не продаёт пачку текстов или обещание топа. Мы строим контур:
+              спрос, страница, CTA, измерение, заявка или задача на улучшение.
+            </p>
+          </FadeIn>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {antiSeoCards.map((card, index) => {
+              const Icon = card.icon;
+              return (
+                <FadeIn key={card.title} delay={index * 80}>
+                  <div className="h-full rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-blue-50 text-blue-700 ring-1 ring-blue-100">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <h3 className="mt-4 text-lg font-semibold text-slate-950">{card.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600">{card.desc}</p>
+                  </div>
+                </FadeIn>
+              );
+            })}
+          </div>
         </div>
       </section>
 

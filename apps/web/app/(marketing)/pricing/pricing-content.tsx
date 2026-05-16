@@ -90,6 +90,13 @@ const BUSINESS_SYSTEMS = [
   "Повторные касания: пропущенные звонки, поздние ответы, клиенты без возврата",
 ];
 
+const RESULT_GUARDS = [
+  "страницы запускаются только под подтверждённый спрос, услугу, регион/нишу и CTA",
+  "перед публикацией проверяем факты, пользу, доказательства, FAQ, Schema.org и способ измерения",
+  "через 14/28 дней страница получает решение: работает, доработать, объединить или архивировать",
+  "в отчёте показываем не количество страниц, а показы, клики, заявки, исходы лидов и задачи роста",
+];
+
 const PRICE_FACTORS = [
   "Количество филиалов, точек и городов",
   "Количество площадок: карты, Авито, сайт, соцсети, мессенджеры",
@@ -423,6 +430,8 @@ function BusinessPricing() {
 
       <BusinessModuleMatrix />
 
+      <BusinessResultGuards />
+
       <BusinessPackageSection
         eyebrow="Шаг 1"
         title="Аудит видимости"
@@ -486,6 +495,37 @@ function BusinessPricing() {
         </div>
       </section>
     </>
+  );
+}
+
+function BusinessResultGuards() {
+  return (
+    <section className="py-12">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-6">
+          <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+            <div>
+              <p className="text-sm font-semibold text-amber-800">Предохранитель от плохого SEO</p>
+              <h2 className="mt-2 text-2xl font-bold text-slate-950">
+                Платите за управляемый путь к заявке, а не за пачку страниц
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-amber-900">
+                Мы не продаём гарантию топа или фиксированное число клиентов.
+                Стоимость пакета зависит от объёма проверяемых каналов, ручной работы,
+                задач внедрения и глубины измерения результата.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {RESULT_GUARDS.map((guard) => (
+                <div key={guard} className="rounded-md border border-amber-200 bg-white p-4 text-sm text-slate-700">
+                  {guard}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 

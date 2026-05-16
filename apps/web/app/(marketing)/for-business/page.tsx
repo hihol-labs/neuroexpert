@@ -143,6 +143,32 @@ const PAGE_GENERATOR_BLOCKS = [
   },
 ];
 
+const ANTI_SEO_GATES = [
+  {
+    title: "Не запускаем без спроса",
+    desc: "У страницы должен быть источник: запрос, район, услуга, тренд, вопрос клиента или конкурентный оффер.",
+  },
+  {
+    title: "Не публикуем без оффера",
+    desc: "На странице нужны услуга, цена или диапазон, доказательства, FAQ, отзывы и понятное действие.",
+  },
+  {
+    title: "Не считаем без метрик",
+    desc: "Каждая страница связана с индексацией, показами, кликами, звонками, заявками и статусом обработки.",
+  },
+  {
+    title: "Не копим слабые страницы",
+    desc: "Через 2-4 недели страница получает решение: работает, усилить, объединить, обновить или архивировать.",
+  },
+];
+
+const RESULT_LOOP_ROWS = [
+  ["Нет показов", "проверяем спрос, индексацию, sitemap, внутренние ссылки и уникальность"],
+  ["Показы есть, кликов нет", "переписываем title, description, первый экран и оффер"],
+  ["Клики есть, заявки нет", "усиливаем CTA, цену, FAQ, отзывы, форму и доверие"],
+  ["Заявки есть, продаж нет", "проверяем скорость ответа, скрипт, follow-up и причину потери"],
+];
+
 const BEHAVIOR_SIGNAL_BLOCKS = [
   {
     signal: "Страницу смотрят, но не оставляют заявку",
@@ -640,6 +666,45 @@ export default function ForBusinessPage() {
                     <p className="mt-2 text-sm leading-relaxed text-slate-600">{block.desc}</p>
                   </div>
                 </FadeIn>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-y border-amber-100 bg-amber-50 py-20">
+        <div className="mx-auto max-w-7xl px-6">
+          <FadeIn className="mb-10 max-w-3xl">
+            <p className="text-sm font-semibold text-amber-800">Anti-SEO-Failure</p>
+            <h2 className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl">
+              Страницы не создаются ради отчёта или “массы контента”
+            </h2>
+            <p className="mt-4 text-slate-700">
+              Local Sales OS защищает бизнес от типовой ошибки SEO: много опубликованных материалов,
+              но нет заявок и непонятно, что делать дальше. Каждая страница проходит gate и review.
+            </p>
+          </FadeIn>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {ANTI_SEO_GATES.map((gate, index) => (
+              <FadeIn key={gate.title} delay={index * 80}>
+                <div className="h-full rounded-lg border border-amber-200 bg-white p-5 shadow-sm">
+                  <div className="text-sm font-bold text-amber-700">{index + 1}</div>
+                  <h3 className="mt-3 text-lg font-semibold text-slate-950">{gate.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{gate.desc}</p>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+
+          <div className="mt-8 rounded-lg border border-amber-200 bg-white p-6 shadow-sm">
+            <h3 className="text-xl font-bold text-slate-950">Диагностическая матрица результата</h3>
+            <div className="mt-5 grid gap-3 md:grid-cols-2">
+              {RESULT_LOOP_ROWS.map(([signal, action]) => (
+                <div key={signal} className="rounded-md border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-semibold text-slate-950">{signal}</p>
+                  <p className="mt-1 text-sm text-slate-600">{action}</p>
+                </div>
               ))}
             </div>
           </div>
