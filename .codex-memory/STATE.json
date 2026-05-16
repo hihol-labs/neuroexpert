@@ -258,6 +258,22 @@
     {
       "event": "anti seo failure framework added",
       "note": "2026-05-16: Added Anti-SEO-Failure Framework to CURRENT_PLAN.md and updated marketing pages so NeuroExpert is positioned around demand -> CTA -> measurement -> lead/task loop, not pages or rankings as standalone output."
+    },
+    {
+      "event": "technical completeness plan update",
+      "note": "2026-05-16: Expanded CURRENT_PLAN.md with required technical platform contour, B2B service order lifecycle, synced B2B pricing, Demand API soft-launch gate, provider freshness/cost guardrails, B2B payments, channel status and compliance requirements. Active stage remains Stage 1 login/SMTP restoration."
+    },
+    {
+      "event": "market entry pricing restored",
+      "note": "2026-05-16: Rechecked public market references and restored B2B website/CURRENT_PLAN prices to the lower entry ladder: audit 7 900/14 900/24 900, setup 39 000/69 000/119 000, managed 29 000/49 000/79 000. This is intentional launch dumping versus combined cards/Avito/SERM/analytics stacks."
+    },
+    {
+      "event": "b2b audit deduction pricing clarified",
+      "note": "2026-05-16: Clarified B2B tariff logic on site and in CURRENT_PLAN: audit is mandatory, after audit the setup price is reduced by the audit amount, setup is displayed as 31 100/54 100/94 100 after audit deduction with total audit+setup 39 000/69 000/119 000, managed remains separate 29 000/49 000/79 000 monthly."
+    },
+    {
+      "event": "b2b public pricing copy restored",
+      "note": "2026-05-16: Restored old public descriptions for B2B step 2 on /pricing and /for-business. Public cards now change prices only; explanatory audit-deduction logic remains in CURRENT_PLAN for implementation and sales consistency."
     }
   ],
   "artifactHashes": {},
@@ -277,5 +293,5 @@
   "blockers": [
     "No root test/typecheck script was detected."
   ],
-  "nextAction": "Continue current P0 sequence: restore Yandex 360/SMTP login gate before heavy Anti-SEO-Failure implementation; current change is planning and marketing-copy alignment only."
+  "nextAction": "Continue current P0 sequence: restore Yandex 360/SMTP login gate before heavy Local Sales OS/Demand API implementation; current change is planning, technical completeness, and lower market-entry pricing alignment only."
 }

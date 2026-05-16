@@ -39,6 +39,8 @@
 
 **Правка от 2026-05-16 по Anti-SEO-Failure Framework:** риск провала “как у SEO-агентств” признан продуктовым P0-риском. НейроЭксперт не должен продавать страницы, позиции или отчёты как самостоятельный результат. Обязательный контур: подтверждённый спрос → страница/карточка с CTA → индексация/показы/клики → заявка или потеря → задача роста → решение через 2-4 недели: оставить, усилить, объединить или удалить.
 
+**Правка от 2026-05-16 по technical completeness:** план должен закрывать не только продуктовую логику, но и весь технический контур, который нужен для выполнения публичных обещаний сайта: Solo-флоу, Local Sales OS, Demand API, платежи, B2B-заявки, operator workflow, data freshness, compliance, provider costs, API permissions, smoke-тесты и production gates. Если сайт заявляет функцию, в плане должен быть явный владелец реализации: данные, API, worker/job, UX, аналитика, безопасность, проверка на production и fallback.
+
 ## Текущий статус
 
 **Активная фаза:** Этап 1 — восстановить login и базовую доступность.
@@ -66,6 +68,51 @@
 - **Feedback**: после запуска есть способ собрать обратную связь и решение, что делать с ней дальше: backlog, fix, price/package update или отказ от фичи.
 
 Фича не переносится в “готово”, если реализован только UI без данных/API, API без UX, worker без мониторинга или маркетинговое обещание без фактической проверки.
+
+## Обязательный технический контур платформы
+
+Этот блок нужен как чеклист полноты. Любая реализация этапов ниже должна опираться на эти инструменты, иначе платформа будет выглядеть готовой на сайте, но не будет устойчиво работать в продукте.
+
+### Core runtime
+
+- **Monorepo:** Turborepo + pnpm workspaces; web/bot/worker/shared/supabase остаются отдельными зонами ответственности.
+- **Frontend:** Next.js App Router, server/client components, SSR/metadata, route handlers, middleware, `@supabase/ssr` для browser/server auth.
+- **UI:** Tailwind, существующие UI-компоненты, loading/empty/error states, mobile-first dashboard, доступность и понятные CTA.
+- **Backend/API:** Next.js route handlers, server-side helpers, ownership checks, rate limits, idempotency, structured errors, no service-role на клиенте.
+- **БД:** Supabase self-hosted/PostgreSQL, миграции в `packages/supabase/migrations`, RLS, SECURITY DEFINER только там, где нужно, generated TS types после новых миграций.
+- **Storage:** Supabase Storage для voice/audio/assets, signed/public policies по назначению, запрет утечки приватных записей.
+- **Auth:** Supabase Auth + SMTP Яндекс 360, magic link/OTP, auth callback, cookies, dashboard middleware, понятные ошибки входа.
+- **Worker:** `jobs` table + `claim_job(text[])`, retry/backoff, idempotency key, статус pending/processing/completed/failed/archived, failure reason, queue visibility.
+- **Bot:** grammY, webhook/polling, Telegram linking, voice intake, order actions, lead notifications, admin/operator notifications.
+
+### Provider layer
+
+- **LLM:** общий слой `packages/shared/src/llm/` с fallback policy, логом provider/model, cost estimate, latency, provider error и raw answer там, где это безопасно.
+- **STT:** `packages/shared/src/transcription/`, Whisper/Yandex SpeechKit fallback, качество транскрипта, retry и ручной fallback.
+- **Demand data:** XMLRiver/Wordstat, SerpAPI, Яндекс Кью, поисковые подсказки, `source`, `source_url`, `collected_at`, `confidence`, `is_manual`.
+- **AI probing:** ChatGPT/OpenAI через proxy, Perplexity, YandexGPT, GigaChat; не показывать платформу как проверенную, если provider реально не ответил.
+- **Search/index:** sitemap, robots, Google Search Console, Яндекс Вебмастер, Bing Webmaster, PageSpeed/CWV.
+- **Email:** Resend для digest/уведомлений, SMTP отдельно для auth; разные healthchecks.
+- **Payments:** ЮKassa для Solo-подписок, консультаций и B2B-счетов/разовых оплат; webhook secret, idempotency, refund/cancel, чек/статус оплаты.
+- **Analytics:** Plausible/Yandex Metrika, `page_events`, `page_metrics`, CTA events, leads, bookings, lead outcomes, weekly reports.
+
+### Product data contracts
+
+- **Solo:** `profiles`, `expert_niches`, `questions`, `orders`, `voice_recordings`, `content_packages`, `leads`, `bookings`, `citation_checks`, `serp_positions`, `page_metrics`.
+- **Service orders:** `service_orders` должен иметь lifecycle: `new`, `qualified`, `invoice_sent`, `paid`, `onboarding`, `audit_in_progress`, `audit_ready`, `setup`, `managed`, `closed_lost`, `closed_won`.
+- **Local Sales OS:** `business_accounts`, `business_members`, `business_locations`, `local_profiles`, `local_competitors`, `local_queries`, `local_visibility_checks`, `local_reviews`, `lost_leads`, `lead_outcomes`, `growth_tasks`, `local_weekly_reports`, `behavior_events`, `behavior_signals`.
+- **Pages/result loop:** `page_opportunities`, `page_quality_checks`, `page_result_reviews`, `local_generated_pages`, `local_page_sections`, `local_page_quality_checks`, `local_page_result_reviews`.
+- **Demand API:** `api_keys`, `permissions`, `rate_limit_per_hour`, `last_used_at`, plan/owner, endpoint-level permission checks, OpenAPI docs, API terms, quota and billing status.
+- **Evidence:** каждый вывод в аудите, API или кабинете должен иметь источник, дату, confidence и признак manual/automatic.
+
+### Ops, security, compliance
+
+- **Deploy:** Docker Compose, Coolify Traefik, Kong, `scripts/render-kong.sh`, production healthcheck, rollback path.
+- **Secrets:** `.env.local`/prod `.env`, no secret in git, service role только server-side, provider keys проверяются healthcheck-скриптом.
+- **Monitoring:** health endpoints для web/auth/SMTP/worker/providers, queue counts, provider quota/cost, webhook delivery, error logs.
+- **Testing:** unit/API/worker/E2E/production smoke; обязательные smoke: login mailer, audit, scan, worker queue, publish, lead, payment webhook, API key auth.
+- **Compliance:** согласие на обработку персональных данных, хранение/удаление PII, доступ к лидам и звонкам по ролям, audit log operator-действий, export/delete по запросу клиента.
+- **Fallback:** если канал не подключён, UI показывает `manual/imported/connected/failed`, а не имитирует автоматизацию.
 
 ## Обновлённое позиционирование продукта (2026-05-04)
 
@@ -710,37 +757,83 @@ Solo и B2B остаются в одном проекте, но с разным�
 - **Local Sales Audit Start**: 7 900 ₽ разово. Одна точка, 5 конкурентов, карты/2ГИС/сайт/отзывы, кабинет с первичным отчётом.
 - **Local Sales Audit Growth**: 14 900 ₽ разово. Основной входной аудит: карты, 2ГИС, Авито, сайт, отзывы, AI-выдача, до 10 конкурентов, задачи на 14 дней.
 - **Local Sales Audit Full**: 24 900 ₽ разово. Конкурентная ниша или несколько точек: до 20 конкурентов, оценка обращений для возврата, план на 30 дней, первичный индекс видимости.
-- **Setup Start**: 39 000 ₽ за 30 дней. Упаковка одной точки: карточки, услуги, FAQ, первые страницы, сценарий отзывов, кабинет задач.
-- **Setup Growth**: 69 000 ₽ за 30 дней. Основной пакет запуска: 1-2 точки, карты, 2ГИС, Авито, отзывы, 10-15 страниц, обращения для возврата, недельный отчёт.
-- **Setup Intensive**: 119 000 ₽ за 30 дней. Несколько направлений или высокая конкуренция: 20-30 страниц, конкуренты, отзывы, Авито, обращения для возврата, плотный ритм внедрения.
+- **Setup Start**: 31 100 ₽ после вычета Audit Start. Полная стоимость аудит + запуск: 39 000 ₽ за 30 дней. Упаковка одной точки: карточки, услуги, FAQ, 5-7 первых страниц, сценарий отзывов, кабинет задач.
+- **Setup Growth**: 54 100 ₽ после вычета Audit Growth. Полная стоимость аудит + запуск: 69 000 ₽ за 30 дней. Основной пакет запуска: 1-2 точки, карты, 2ГИС, Авито, отзывы, 10-15 страниц, обращения для возврата, недельный отчёт.
+- **Setup Intensive**: 94 100 ₽ после вычета Audit Full. Полная стоимость аудит + запуск: 119 000 ₽ за 30 дней. Несколько направлений или высокая конкуренция: 20-30 страниц, конкуренты, отзывы, Авито, обращения для возврата, плотный ритм внедрения.
 - **Managed Lite**: 29 000 ₽/мес. Бизнес сам выполняет задачи, НейроЭксперт ведёт мониторинг, задачи и отчётность.
 - **Managed Growth**: 49 000 ₽/мес. Базовое сопровождение с частичным выполнением задач командой НейроЭксперт.
 - **Managed Pro**: 79 000 ₽/мес. Расширенное сопровождение: несколько каналов, повторные касания, отзывы, экспертные страницы, weekly review.
 - **Enterprise / сеть филиалов**: от 120 000 ₽/мес. Мультифилиальность, CRM/телефония, SLA, white-label отчёты.
 - **Agency / white-label**: агентства продают локальную видимость своим клиентам, НейроЭксперт даёт данные, отчёты, workflow и API.
 
-Правило монетизации на первый B2B-запуск: публично не дробить Local Sales OS на self-service и AI-assisted тарифы до платных пилотов. Внешний оффер остаётся простым: **Audit → Setup → Managed → Enterprise**, но во всех пакетах клиент видит личный кабинет. Self-service/AI-assisted можно держать как будущую внутреннюю лестницу продукта после 5-10 платных B2B-клиентов, когда будет понятно, что клиент действительно готов делать сам.
+Правило монетизации на первый B2B-запуск: публично не дробить Local Sales OS на self-service и AI-assisted тарифы до платных пилотов. Внешний оффер остаётся простым: **Audit → Setup → Managed → Enterprise**, но во всех пакетах клиент видит личный кабинет. Audit — обязательный первый шаг, без него setup не продаётся. Если клиент переходит в setup по тому же проекту, стоимость запуска уменьшается на сумму оплаченного аудита. Managed — отдельная ежемесячная услуга после запуска, из неё аудит не вычитается. Self-service/AI-assisted можно держать как будущую внутреннюю лестницу продукта после 5-10 платных B2B-клиентов, когда будет понятно, что клиент действительно готов делать сам.
 
-### Ценовая калибровка рынка на 2026-05-10
+### Ценовая калибровка рынка на 2026-05-16
 
 Ориентиры из открытых источников:
 
 - геомаркетинг на Яндекс Картах/2ГИС у профильных агентств часто стоит от 15 000 до 50 000 ₽/мес за поддержку/продвижение, а setup-пакеты могут начинаться от 45 000-80 000 ₽ и доходить до 100 000 ₽+;
-- отдельное комплексное ведение Яндекс/2ГИС встречается в районе 25 000-35 000 ₽/мес;
-- Авито-ведение на рынке обычно: аудит 3 000-8 000 ₽, запуск 15 000-35 000 ₽, ежемесячное ведение 30 000-100 000 ₽ без рекламного бюджета;
+- отдельное комплексное ведение Яндекс/2ГИС встречается в районе 25 000-50 000 ₽/мес;
+- Авито-ведение на рынке обычно: аудит от 10 000-15 000 ₽, запуск/упаковка 15 000-60 000 ₽, ежемесячное ведение 30 000-60 000+ ₽ без рекламного бюджета;
 - CRM/сквозная аналитика/коллтрекинг обычно оплачиваются отдельно: лицензии, минуты, номера, интеграции и настройка могут быстро добавлять десятки тысяч рублей к ежемесячной стоимости;
 - часть конкурентов продаёт бесплатный аудит, но без живого кабинета и без объединения карт, Авито, отзывов, AI-выдачи, задач и lost leads в одной системе.
 
 Проверенные ориентиры для пересмотра цен лендинга:
 
-- Pixel Geo: geo setup-пакеты от 45 000 / 80 000 / 100 000 ₽ — https://pixelgeo.ru/
-- PRAVDA ADS: продвижение в Яндекс.Картах и 2ГИС от 30 000 ₽/мес — https://pravda-ads.ru/uslugi/yandex-karty
-- Askarta: мини/стандарт/максимум 15 000 / 25 000 / 45 000 ₽ — https://askarta.ru/
-- Top Map: сопровождение 19 900-39 900 ₽/мес и разовые пакеты — https://top-map.ru/
-- РА Елена: Авито-ведение 10 000 / 20 000 / 35 000 / от 60 000 ₽/мес, рекламный бюджет отдельно — https://www.kak-prodavat-na-avito.ru/tseny-na-avito.html
-- Roistat: сквозная аналитика от 6 500 ₽/мес, коллтрекинг и номера оплачиваются отдельно — https://roistat.com/ru/price
+- Askarta: геомаркетинг мини/стандарт/максимум 15 000 / 25 000 / 45 000 ₽ — https://askarta.ru/geomarketing-prices/
+- Outline: геомаркетинг поддержка/продвижение/премиум 15 000 / 30 000 / 50 000 ₽ — https://outlineagency.ru/
+- Aviboost: Авито-ведение 15 000-30 000 / 30 000-60 000 / от 60 000 ₽/мес, упаковка аккаунта 15 000-60 000+ ₽ — https://aviboost.ru/blog/skolko-stoit-prodvizhenie-na-avito
+- Raketa Digital: Авито от 25 000 ₽/мес, стандарт от 50 000 ₽/мес, бюджет платного продвижения отдельно — https://raketadigital.com/services_new/prodvizhenie-na-avito/
+- SEO Impulse: SERM от 25 000 / 40 000 / 65 000 ₽, отдельные отзывы и площадки оплачиваются отдельно — https://seo-impulse.ru/upload/seo.pdf
+- Seoland: SEO/Директ/региональное продвижение часто стартуют от 25 000-75 000 ₽/мес, настройка Директа от 30 000-70 000 ₽ — https://seoland.ru/files/price-seoland-2026.pdf
+- Roistat/Calltouch: сквозная аналитика, коллтрекинг, номера, минуты и интеграции оплачиваются отдельно — https://roistat.com/ru/price и https://www.calltouch.ru/pricing/
 
-Вывод по ценам: НейроЭксперт должен входить чуть ниже совокупного агентского стека, но не демпинговать до уровня “дешёвый аудит”. Главная скидка рынка на старте — **больше ценности за те же или меньшие деньги**: кабинет, прозрачная динамика, задачи и AI/lost-leads слой, которого обычно нет в одном пакете. Публичные цены лендинга нужно привести к этой лестнице и явно написать, что рекламные бюджеты, покупка номеров, CRM-лицензии и платные размещения площадок оплачиваются отдельно.
+Вывод по ценам: нижняя публичная лестница НейроЭксперт подходит для входа на рынок как осознанный демпинг относительно совокупного агентского стека “карты + 2ГИС + Авито + отзывы + аналитика”, но только если клиент не воспринимает аудит и запуск как две независимые оплаты. Главная скидка рынка на старте — **больше ценности за меньшие деньги**: кабинет, прозрачная динамика, задачи и AI/lost-leads слой, которого обычно нет в одном пакете. Публичные цены лендинга на 2026-05-16 фиксируются как 7 900 / 14 900 / 24 900 ₽ за обязательный аудит; после аудита стоимость запуска уменьшается на сумму аудита и составляет 31 100 / 54 100 / 94 100 ₽; полная стоимость аудит + запуск остаётся 39 000 / 69 000 / 119 000 ₽; сопровождение — 29 000 / 49 000 / 79 000 ₽/мес отдельно после запуска. Рекламные бюджеты, покупка номеров, CRM-лицензии и платные размещения площадок оплачиваются отдельно. Формулировки продаж не обещают гарантированное количество клиентов без исходных данных; обещание — запуск измеримой системы привлечения, задач и недельной динамики.
+
+### B2B delivery и lifecycle заявки
+
+Маркетинговые страницы `/for-business`, `/pricing` и `/launch` обещают не “оставьте заявку”, а понятный путь к аудиту, запуску и сопровождению. Поэтому `service_orders` должен быть полноценным рабочим объектом, а не просто формой.
+
+Статусы `service_orders`:
+
+- `new` — заявка получена;
+- `qualified` — понятны ниша, город, площадки, контакт и пакет;
+- `invoice_sent` — отправлена ссылка оплаты/счёт/ручная инструкция;
+- `paid` — оплата подтверждена;
+- `onboarding` — клиент прислал ссылки, конкурентов, услуги, средний чек, текущие заявки;
+- `audit_in_progress` — оператор собирает данные и evidence;
+- `audit_ready` — клиент видит кабинет/отчёт и задачи;
+- `setup` — идёт 30-дневный запуск;
+- `managed` — клиент перешёл в сопровождение;
+- `closed_lost` — отказ с причиной;
+- `closed_won` — проект успешно переведён в платный пакет.
+
+Операторский workflow:
+
+- `/api/service-orders` создаёт заявку и сохраняет package, source, UTM, referrer;
+- operator/admin screen или временный runbook показывает список заявок, статусы, ответственного, следующий шаг и дедлайн;
+- каждый аудит имеет checklist: площадки, конкуренты, спрос, отзывы, AI-ответы, lost leads, страницы, задачи, evidence links/screenshots;
+- клиентский результат за 3-7 дней — не PDF вместо продукта, а кабинет или dashboard-demo с источниками, confidence, задачами и следующим коммерческим шагом;
+- без оплаты или явного pilot-решения заявка не переходит в `audit_in_progress`.
+
+### Channel status и compliance
+
+Каждый внешний канал в Local Sales OS должен иметь статус подключения:
+
+- `manual` — данные внесены оператором по ссылкам/скриншотам/публичной проверке;
+- `imported` — данные загружены из CSV/таблицы/экспорта клиента;
+- `connected` — есть стабильная интеграция/API/официальный доступ;
+- `failed` — канал не подключился, причина видна клиенту и оператору;
+- `not_applicable` — канал не нужен для этой ниши/клиента.
+
+Обязательные compliance-правила:
+
+- клиент подтверждает право передавать данные по звонкам, формам, CRM, мессенджерам и отзывам;
+- персональные данные лидов видны только владельцу business account, участникам с ролью и оператору НейроЭксперт;
+- для звонков/CRM/мессенджеров сначала использовать CSV, ручные выгрузки или официальные интеграции;
+- хранить `source`, `collected_at`, `is_manual`, `confidence`, `owner_id`, `business_account_id`;
+- предусмотреть удаление/экспорт данных клиента и lead retention policy;
+- не строить рискованный scraping карт, Авито или 2ГИС как основу продукта.
 
 ### B2B-модули продукта
 
@@ -1029,7 +1122,8 @@ B2B-кабинет — обязательный ранний слой проду
 - блоки про Яндекс Карты, 2ГИС, Авито, отзывы, потерянные лиды, повторные касания;
 - CTA: “Получить аудит локального спроса”;
 - отдельные кейс-страницы по вертикалям: стоматология, косметология, клиника, юрфирма, детский центр;
-- в `/pricing` привести B2B цены к лестнице Audit 7 900/14 900/24 900 → Setup 39 000/69 000/119 000 → Managed 29 000/49 000/79 000;
+- в `/pricing` держать B2B цены в синхронизации с публичной демпинговой лестницей: Audit 7 900/14 900/24 900 → Setup после вычета аудита 31 100/54 100/94 100 при полной стоимости 39 000/69 000/119 000 → Managed 29 000/49 000/79 000;
+- на публичных карточках `/pricing` и `/for-business` не добавлять поясняющие фразы про “полную стоимость с аудитом”, “после вычета аудита” или “запуск невозможен без аудита”: структура шагов уже объясняет порядок, поэтому на сайте меняются только цены и сохраняются короткие старые описания;
 - в `/launch` добавить пакеты `local_sales_audit`, `local_sales_setup`, `local_sales_managed`;
 - на лендинге показать не только услугу, а скрин/макет личного кабинета собственника: индекс, каналы привлечения, задачи, конкуренты, повторные касания, динамика.
 
@@ -1053,19 +1147,19 @@ B2B-кабинет — обязательный ранний слой проду
 | 2. Worker | LLM fallback, queue visibility, retry/backoff, cleanup failed jobs | `collect_demand -> find_gaps -> generate_orders` проходит без quota-loop |
 | 3. Core E2E | регистрация, Telegram linking, ниша, order, voice, STT, content, publish, lead | 5 повторов полного flow подряд на реальных или controlled accounts |
 | 4. Dashboard | backend routes для действий, ownership, save/publish/delete, billing cancellation | UI-действия не висят, не пишут чужие данные и не показывают нерабочие кнопки |
-| 5. Payments | ЮKassa keys, webhook, idempotency, tier update, limits, cancellation | тестовый payment lifecycle проходит от оплаты до изменения тарифа |
+| 5. Payments | ЮKassa keys, webhook, idempotency, Solo subscriptions, B2B invoices/payments, tier update, limits, cancellation | тестовый payment lifecycle проходит для Solo-подписки и B2B-разовой оплаты |
 | 6. Data quality | реальные источники спроса, provider answers, Trend/Paid signals с confidence | нет fake answers, каждый вывод объясним сохранённым источником |
 | 7. Security | moderation, rate limits, RLS, service role audit, private API hardening | public forms защищены, приватные данные недоступны чужому пользователю |
 | 8. Tests | unit/API/worker/E2E/smoke tests для core value chain | CI или ручной smoke ловит регрессии login, worker, publish, leads |
 | 9. Community | канал, посевы, feedback log, интервью, первые заявки на пилоты | есть 200-500 релевантных подписчиков и 20-30 содержательных feedback-сигналов |
-| 10. Promotion readiness | кейсы, SEO/GEO/AIO-аудит сайта, дизайн-апгрейд лендингов, outreach materials | сайт индексируется, корректно объясняется AI-системами и конвертит в пилотов |
-| 11. B2B data foundation | B2B-таблицы, RLS, API, operator helpers, source/confidence в данных | один B2B-аудит сохраняется в системе без внешних интеграций |
+| 10. Promotion readiness | кейсы, SEO/GEO/AIO-аудит сайта, дизайн-апгрейд лендингов, Demand API soft-launch gate, outreach materials | сайт индексируется, API/docs не обещают больше, чем реально работает, лендинги конвертят в пилотов |
+| 11. B2B data foundation | B2B-таблицы, service order lifecycle, RLS, API, operator helpers, source/confidence в данных | один B2B-аудит сохраняется в системе без внешних интеграций и проходит путь заявки до отчёта |
 | 12. B2B dashboard | Local Sales OS кабинет: аудит, задачи, конкуренты, paid visibility, отчёт | собственник за 5 минут понимает каналы, задачи и недельную динамику |
-| 13. Paid pilots | SaaS-first audit, pricing, dashboard-demo, 5 платных B2B-аудитов | минимум 5 оплат и 2 перехода в setup/managed или чёткий вывод почему нет |
+| 13. Paid pilots | SaaS-first audit, pricing synced with site, dashboard-demo, delivery workflow, 5 платных B2B-аудитов | минимум 5 оплат и 2 перехода в setup/managed или чёткий вывод почему нет |
 | 14. Channel automation | карты, 2ГИС, Авито, отзывы, мессенджеры/формы, телефония через safe sources | 2 канала работают полуавтоматически, ручной ввод остаётся fallback |
 | 15. Lost Leads | импорт обращений, статусы, SLA, follow-up, оценка денег, AI-подсказки | у 2 пилотов возвращены реальные обращения или подтверждён денежный эффект |
 | 16. GTM/MRR | пакеты, продажи, vertical focus, кейсы, CAC/payback, price review | 10 B2B-клиентов или 500 000+ ₽ MRR и понятный канал привлечения |
-| 17. White-label | партнёрский отчёт, exports/API, кабинет агентства, billing model | 3 партнёра привели клиентов без ручной сборки отчётов с нуля |
+| 17. White-label | партнёрский отчёт, Demand API/export, кабинет агентства, billing/quota model | 3 партнёра привели клиентов без ручной сборки отчётов с нуля |
 
 Правило: если этап дал только документ, но не дал рабочего кода, данных, проверки, клиента или learning loop, он не считается закрытым.
 
@@ -1151,10 +1245,13 @@ B2B-кабинет — обязательный ранний слой проду
 6. Проверить обновление `subscription_tier`.
 7. Проверить tier limits: niches, orders, content formats, API keys.
 8. Добавить cancellation и subscription expiration behavior.
-9. Пройти один полный тестовый payment lifecycle.
+9. Добавить B2B payment lifecycle для `/launch`/`service_orders`: `invoice_sent`, `paid`, `refunded`, `cancelled`, сумма, пакет, payment_id, чек/receipt status.
+10. Поддержать ручную оплату/счёт для B2B-пилотов, чтобы аудит можно было продать до полной автоматизации self-service checkout.
+11. Пройти один полный тестовый payment lifecycle для Solo-подписки и один B2B-разовый payment lifecycle.
 
 **Gate:**
 - Платная подписка покупается и отражается в продукте.
+- B2B-аудит/запуск можно связать с оплатой и статусом `service_orders`.
 - Webhook secure и idempotent.
 
 ### Этап 6 — Data authenticity и demand quality
@@ -1185,6 +1282,9 @@ B2B-кабинет — обязательный ранний слой проду
 8. Использовать trend_score и paid signals только для приоритизации возможностей спроса и задач, не как отдельный публичный продукт.
 9. Сохранять source AI answer и timestamp проверки.
 10. Не показывать platform result, если реальный provider answer не получен.
+11. Для каждого provider хранить/логировать `provider`, `status`, `latency_ms`, `cost_estimate`, `quota_state`, `raw_answer_ref`, `collected_at`.
+12. Добавить data freshness rules: когда вопрос, AI-ответ, trend signal, paid signal, SERP или карта считаются устаревшими.
+13. Добавить cost guardrails: лимит стоимости одного audit/scan/API-запроса, fallback при quota exhaustion, запрет бесконечного retry.
 
 **Gate:**
 - Audit output объясним из сохранённых реальных источников.
@@ -1192,6 +1292,7 @@ B2B-кабинет — обязательный ранний слой проду
 - Scanner и audit не обещают 4 платформы, если какие-то платформы фактически не ответили.
 - Trend Signals имеют источник, confidence и объяснение.
 - Paid Visibility Signals имеют источник, дату, confidence и не требуют доступа к рекламным кабинетам клиента.
+- Provider freshness/cost видны в логах или админ-отчёте.
 - Тренды не размывают core flow: если trend job не сработал, эксперт всё равно может принять тему, записать голос и опубликовать страницу.
 - Рекламная разведка не превращает НейроЭксперт в PPC-платформу.
 
@@ -1204,11 +1305,14 @@ B2B-кабинет — обязательный ранний слой проду
 3. Проаудировать API routes с service role.
 4. Закрыть или защитить public APIs, которые не должны быть public.
 5. Проверить RLS для teams, bookings, api_keys, referrals, reviews.
-6. Добавить security smoke tests.
+6. Добавить B2B privacy/compliance layer: роли business account, доступ операторов, PII retention, export/delete, audit log действий с лидами и звонками.
+7. Проверить, что Demand API не отдаёт premium content без `answers/all` permission и не раскрывает приватные данные экспертов/клиентов.
+8. Добавить security smoke tests.
 
 **Gate:**
 - Public unauthenticated actions rate-limited и abuse-resistant.
 - Private data закрыты auth/RLS или server-side ownership checks.
+- B2B-лиды, звонки, CRM-выгрузки и operator actions имеют понятные права доступа и audit trail.
 
 ### Этап 8 — Test coverage
 
@@ -1326,6 +1430,15 @@ B2B-кабинет — обязательный ранний слой проду
 8. Запустить экспертный outreach после повторяемого E2E и чистого SEO/AIO gate.
 9. Подготовить первые B2B-материалы Local Sales OS: аудит, чеклист, шаблон отчёта, коммерческое предложение.
 10. B2B/agency promotion и Demand API soft launch запускать после стабильности B2C pipeline.
+11. Закрыть Demand API soft-launch gate для того, что уже заявлено на `/for-agencies`:
+   - `/api/v1/docs` соответствует фактическим endpoint, permissions и лимитам;
+   - Read endpoints реально работают с `read` key;
+   - Pro endpoints `/api/v1/blind-spots` и `/api/v1/answers` требуют `answers` или `all`;
+   - API keys имеют plan/owner/rate limit/last_used/status;
+   - есть ручной процесс выдачи Pro/Enterprise ключа после заявки;
+   - `api@neuroexpertise.ru`, API terms и contact path не ведут в пустоту;
+   - пример cURL с сайта проходит на controlled key или помечен как beta;
+   - в API response есть `updated_at`, source/freshness/confidence там, где вывод используется для коммерческого решения.
 
 **Статус подготовки B2B-материалов:** первый комплект документов создан 2026-05-04:
 
@@ -1339,6 +1452,7 @@ B2B-кабинет — обязательный ранний слой проду
 - Ключевые страницы сайта indexable, answerable для AI search, schema-valid, без P0 SEO/GEO/AIO findings.
 - Sitemap отправлен в Google Search Console, Яндекс Вебмастер и Bing Webmaster после релевантных изменений.
 - 10 контрольных AI-вопросов не выявляют критичных gaps в объяснении продукта.
+- Demand API beta не обещает недоступные лимиты, SLA, freshness или premium data.
 
 ### Этап 11 — Local Sales OS data foundation
 
@@ -1378,14 +1492,22 @@ B2B-кабинет — обязательный ранний слой проду
    - `client_commitments`;
    - `behavior_events`;
    - `behavior_signals`;
-   - `behavior_task_suggestions`.
-2. Добавить RLS/ownership для business accounts, филиалов и участников.
-3. Развести роли owner/admin/marketer/neuroexpert_operator.
-4. Добавить типы в `packages/shared`.
-5. Добавить server-side helpers для ручного/операторского заполнения аудита.
-6. Добавить API:
+   - `behavior_task_suggestions`;
+   - `service_order_events`;
+   - `service_order_payments`;
+   - `operator_audit_checklists`;
+   - `operator_audit_evidence`.
+2. Расширить существующую `service_orders`: lifecycle status, package_type/package_label, amount, payment_status, owner/operator, next_step, next_step_due_at, closed_reason.
+3. Добавить RLS/ownership для business accounts, филиалов и участников.
+4. Развести роли owner/admin/marketer/neuroexpert_operator.
+5. Добавить типы в `packages/shared`.
+6. Добавить server-side helpers для ручного/операторского заполнения аудита.
+7. Добавить API:
    - `/api/business-accounts`;
    - `/api/business-onboarding`;
+   - `/api/service-orders`;
+   - `/api/service-orders/status`;
+   - `/api/service-orders/payments`;
    - `/api/local-audit`;
    - `/api/local-profiles`;
    - `/api/local-competitors`;
@@ -1403,24 +1525,24 @@ B2B-кабинет — обязательный ранний слой проду
    - `/api/client-commitments`;
    - `/api/behavior-events`;
    - `/api/behavior-signals`.
-7. Во все снимки данных добавить `source`, `collected_at`, `confidence`, `is_manual`.
-8. Для Paid Visibility Signals зафиксировать запрет на рекламные кабинеты: только публичная выдача, ручной аудит, ссылки, скриншоты и наблюдения по посадочным страницам.
-9. Для `growth_tasks` явно поддержать ежедневный cadence: `task_date`, `priority`, `owner_id`, `deadline_at`, `expected_effect`, `proof_url`, `metric_key`, `status`, `paid_signal_id`.
-10. Для B2B Page Generator описать минимальный жизненный цикл страницы:
+8. Во все снимки данных добавить `source`, `collected_at`, `confidence`, `is_manual`.
+9. Для Paid Visibility Signals зафиксировать запрет на рекламные кабинеты: только публичная выдача, ручной аудит, ссылки, скриншоты и наблюдения по посадочным страницам.
+10. Для `growth_tasks` явно поддержать ежедневный cadence: `task_date`, `priority`, `owner_id`, `deadline_at`, `expected_effect`, `proof_url`, `metric_key`, `status`, `paid_signal_id`.
+11. Для B2B Page Generator описать минимальный жизненный цикл страницы:
    - возможность страницы из локального запроса, услуги, района, тренда или конкурентного оффера;
    - черновик с блоками: услуга, цена/диапазон, район, FAQ, отзывы, доказательства, призыв к действию;
    - ручная проверка перед публикацией через `local_page_quality_checks`;
    - опубликованная страница с метриками просмотров, кликов, звонков, заявок и обновлений;
    - review через 14/28 дней с решением `working`, `improve`, `merge`, `refresh_needed`, `archive`;
    - задача на обновление, если спрос, оффер, цена, отзывы или конкурентная выдача изменились.
-11. Для Behavior Signals описать правила превращения поведения в задачи:
+12. Для Behavior Signals описать правила превращения поведения в задачи:
    - views > N и cta_click_rate низкий → задача усилить оффер, FAQ, цену, отзывы и кнопку действия;
    - cta_clicks есть, leads_count низкий → задача проверить форму, телефон, скорость ответа и обработку обращения;
    - route_click/call_click высокий, sales низкие → задача проверить администраторский скрипт, пропущенные звонки и запись;
    - повторяющиеся вопросы → задача создать FAQ/страницу/блок на карточке;
    - лид без статуса дольше SLA → задача на повторное касание;
    - page opportunity есть, но нет опубликованной страницы → задача на создание страницы.
-12. Сформировать формулы:
+13. Сформировать формулы:
    - Local Sales Index;
    - Map Visibility Score;
    - Review Health Score;
@@ -1430,7 +1552,7 @@ B2B-кабинет — обязательный ранний слой проду
    - AI Visibility Score;
    - Local Page Opportunity Score;
    - Behavior Opportunity Score.
-13. Добавить worker jobs:
+14. Добавить worker jobs:
    - `score_page_opportunities`;
    - `validate_page_quality`;
    - `review_page_results`;
@@ -1447,6 +1569,7 @@ B2B-кабинет — обязательный ранний слой проду
 - Из первых событий поведения можно сформировать 3-7 задач роста без ручной интерпретации с нуля.
 - Все данные имеют источник, дату и confidence.
 - Paid Visibility Signals сохраняются без доступа к рекламным кабинетам и не запускают PPC-автоматизацию.
+- `service_orders` проходит путь от заявки до оплаты, onboarding, аудита и отчёта.
 - Operator может обновить аудит без прямого доступа к данным другой компании.
 - Ownership/RLS не дают одной компании увидеть данные другой.
 
@@ -1564,9 +1687,9 @@ UX-правило:
    - Growth: 14 900 ₽;
    - Full: 24 900 ₽.
 7. Из 5 аудитов перевести минимум 2 в setup/managed package:
-   - Setup Start: 39 000 ₽;
-   - Setup Growth: 69 000 ₽;
-   - Managed Control: 29 000 ₽/мес;
+   - Setup Start: 31 100 ₽ после вычета Audit Start, полная стоимость 39 000 ₽;
+   - Setup Growth: 54 100 ₽ после вычета Audit Growth, полная стоимость 69 000 ₽;
+   - Managed Lite: 29 000 ₽/мес;
    - Managed Growth: 49 000 ₽/мес.
 8. На каждом пилоте собрать исходные данные:
    - город;
@@ -1578,6 +1701,14 @@ UX-правило:
    - текущие заявки;
    - пропущенные звонки/сообщения;
    - доступные выгрузки.
+9. Для каждого пилота вести delivery board:
+   - статус `service_orders`;
+   - ответственный оператор;
+   - дата оплаты;
+   - список недостающих данных;
+   - аудитные evidence-ссылки;
+   - 7-дневный отчёт;
+   - решение клиента: setup, managed, pause, lost.
 
 **Gate:**
 - Минимум 5 компаний оплатили аудит или setup.
@@ -1586,6 +1717,7 @@ UX-правило:
 - Понятно, какие 20% действий дают 80% эффекта.
 - Клиент видит минимум 3-5 трендовых сигналов и понимает, какие действия из них следуют.
 - Клиент видит 3-5 paid visibility signals по конкурентам без подключения рекламных кабинетов.
+- Для каждого пилота есть статус оплаты, delivery checklist, источники данных и причина win/loss.
 - Нет обещаний фиксированного количества клиентов без данных.
 
 ### Этап 14 — Channel automation: карты, 2ГИС, Авито, отзывы
@@ -1726,8 +1858,8 @@ Worker jobs:
 Пакеты:
 
 - **Audit Start / Growth / Full**: 7 900 / 14 900 / 24 900 ₽ разово;
-- **Setup Start / Growth / Intensive**: 39 000 / 69 000 / 119 000 ₽ за 30 дней;
-- **Managed Control / Growth / Pro**: 29 000 / 49 000 / 79 000 ₽/мес;
+- **Setup Start / Growth / Intensive**: 31 100 / 54 100 / 94 100 ₽ после вычета аудита; полная стоимость аудит + запуск 39 000 / 69 000 / 119 000 ₽ за 30 дней;
+- **Managed Lite / Growth / Pro**: 29 000 / 49 000 / 79 000 ₽/мес;
 - **Network / Enterprise**: от 120 000 ₽/мес;
 - **Agency / white-label**: revenue share или fixed fee.
 
@@ -1736,6 +1868,7 @@ Worker jobs:
 - быть на 10-25% ниже совокупной цены агентского стека “карты + Авито + отзывы + отчётность”;
 - не опускать цену ниже уровня, где невозможно руками поддерживать quality bar;
 - демпинговать не “дешевизной”, а связкой: кабинет + задачи + lost leads + AI/search-видимость + недельная динамика;
+- не создавать у клиента ощущения двойной оплаты: аудит является обязательным первым шагом, после него стоимость запуска уменьшается на сумму аудита, сопровождение оплачивается отдельно после запуска;
 - отдельно указывать, что рекламные бюджеты, CRM-лицензии, коллтрекинг-номера, SMS/WhatsApp-провайдеры и платные размещения площадок оплачиваются отдельно.
 
 План продаж:
@@ -1783,23 +1916,34 @@ Worker jobs:
    - отзывы;
    - Авито;
    - задачи;
-   - lost leads summary.
+   - lost leads summary;
+   - Demand API endpoints `/experts`, `/articles`, `/questions`, `/blind-spots`, `/answers`;
+   - OpenAPI docs, API terms, permissions, quotas, billing status, freshness metadata.
 3. Партнёрский кабинет:
    - клиенты агентства;
    - отчёты;
    - задачи;
    - статусы;
-   - billing.
+   - billing;
+   - API keys;
+   - usage and quota.
 4. Коммерческая модель:
    - fixed monthly;
    - revenue share;
    - per-report fee;
    - managed fulfillment от НейроЭксперта.
+5. Технический gate API:
+   - Read/Pro/Enterprise права реально различаются;
+   - Pro $99 или рублёвый эквивалент связан с billing/manual invoice;
+   - Enterprise limits/SLA не обещаются без отдельного договора;
+   - данные в API имеют `updated_at`, source/freshness/confidence;
+   - API usage не может уронить worker/provider quotas.
 
 **Gate:**
 - 3 партнёра привели клиентов.
 - Отчёт можно выпускать без ручной сборки “с нуля”.
 - Support load не съедает маржу.
+- Demand API usage, billing и quota понятны партнёру и оператору.
 
 ## Что переносится из LAUNCH_PLAN.md
 
