@@ -296,6 +296,10 @@
     {
       "event": "homepage lighthouse performance fix",
       "note": "2026-05-18: Lighthouse CI mobile failed only on homepage performance: 78 against budget 80. Removed unnecessary client hydration from the homepage and made FadeIn server-rendered/no-JS. Local build reduced / from 5.79 kB route JS and 111 kB First Load JS to 142 B route JS and 99 kB First Load JS; mobile 390px smoke passed without horizontal overflow."
+    },
+    {
+      "event": "lighthouse report comment cleanup",
+      "note": "2026-05-18: The undefined row in the PR Lighthouse table came from non-report JSON files in lhci-reports. Updated the PR comment script to include only JSON files with finalUrl and categories."
     }
   ],
   "artifactHashes": {},
