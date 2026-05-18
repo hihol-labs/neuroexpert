@@ -292,6 +292,10 @@
     {
       "event": "mobile adaptation deployed",
       "note": "2026-05-18: Committed and pushed mobile responsiveness changes to codex/update-local-sales-os-roadmap, deployed committed HEAD to production via git archive over SSH, rebuilt and restarted web container. Production healthcheck /api/health returned 200 and homepage returned 200."
+    },
+    {
+      "event": "homepage lighthouse performance fix",
+      "note": "2026-05-18: Lighthouse CI mobile failed only on homepage performance: 78 against budget 80. Removed unnecessary client hydration from the homepage and made FadeIn server-rendered/no-JS. Local build reduced / from 5.79 kB route JS and 111 kB First Load JS to 142 B route JS and 99 kB First Load JS; mobile 390px smoke passed without horizontal overflow."
     }
   ],
   "artifactHashes": {},
@@ -311,5 +315,5 @@
   "blockers": [
     "No root test/typecheck script was detected."
   ],
-  "nextAction": "Return to Stage 1 login/SMTP restoration gate after deployed mobile responsiveness fix."
+  "nextAction": "Wait for Lighthouse CI rerun on pushed homepage performance fix, then return to Stage 1 login/SMTP restoration gate."
 }
