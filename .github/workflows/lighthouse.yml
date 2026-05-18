@@ -56,12 +56,14 @@ jobs:
             if (!fs.existsSync(dir)) return;
             const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
             if (!files.length) return;
-            const rows = files.map(f => {
+            const rows = files.flatMap(f => {
               const data = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+              if (!data.finalUrl || !data.categories) return [];
               const cats = data.categories || {};
               const score = (k) => cats[k] ? Math.round(cats[k].score * 100) : '—';
-              return `| ${data.finalUrl} | ${score('performance')} | ${score('accessibility')} | ${score('best-practices')} | ${score('seo')} |`;
+              return [`| ${data.finalUrl} | ${score('performance')} | ${score('accessibility')} | ${score('best-practices')} | ${score('seo')} |`];
             });
+            if (!rows.length) return;
             const body = [
               '## Lighthouse CI results (mobile)',
               '',

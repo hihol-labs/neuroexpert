@@ -60,15 +60,15 @@ export default function ScanPage() {
     <div className="min-h-screen bg-white">
       <MarketingHeader />
 
-      <section className="py-20">
-        <div className="mx-auto max-w-2xl px-6">
+      <section className="py-12 sm:py-20">
+        <div className="mx-auto max-w-2xl px-4 sm:px-6">
           {step === "form" && (
             <>
               <div className="text-center">
-                <h1 className="text-4xl font-bold text-gray-900">
-                  Scanner спроса в нейросетях
+                <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">
+                  Проверка спроса в нейросетях
                 </h1>
-                <p className="mt-4 text-lg text-gray-600">
+                <p className="mt-4 text-base leading-relaxed text-gray-600 sm:text-lg">
                   Проверьте, находят ли нейросети вас, когда человек ищет
                   эксперта, бренд или компанию. Сравните себя с конкурентом
                   и поймите, где теряете потенциальные заявки.
@@ -87,7 +87,7 @@ export default function ScanPage() {
                     placeholder="Иван Петров, психолог"
                     maxLength={200}
                     required
-                    className="w-full rounded-xl border border-gray-300 px-5 py-4 text-lg text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 sm:px-5 sm:py-4 sm:text-lg"
                   />
                 </div>
 
@@ -101,18 +101,18 @@ export default function ScanPage() {
                     onChange={(e) => setCompetitor(e.target.value)}
                     placeholder="Мария Сидорова, психолог"
                     maxLength={200}
-                    className="w-full rounded-xl border border-gray-300 px-5 py-4 text-lg text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 sm:px-5 sm:py-4 sm:text-lg"
                   />
-                  <p className="mt-1 text-xs text-gray-400">
+                  <p className="mt-1 text-xs text-slate-500">
                     Добавьте конкурента — увидите, кому нейросети отдают спрос сейчас
                   </p>
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full rounded-xl bg-blue-600 px-8 py-4 text-lg font-semibold text-white hover:bg-blue-700 transition-colors"
+                  className="w-full rounded-xl bg-blue-600 px-6 py-3.5 text-base font-semibold text-white hover:bg-blue-700 transition-colors sm:px-8 sm:py-4 sm:text-lg"
                 >
-                  Проверить спрос в AI
+                  Проверить спрос в нейросетях
                 </button>
 
                 {error && (
@@ -120,7 +120,7 @@ export default function ScanPage() {
                 )}
               </form>
 
-              <div className="mt-16 grid gap-6 sm:grid-cols-3">
+              <div className="mt-12 grid gap-4 sm:mt-16 sm:grid-cols-3">
                 <div className="rounded-xl border border-gray-200 p-6 text-center">
                   <div className="text-3xl">🔍</div>
                   <h3 className="mt-3 font-semibold text-gray-900">
@@ -139,7 +139,7 @@ export default function ScanPage() {
                     Сравнение спроса
                   </h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    Вы vs конкурент — кто попадает в ответы
+                    Вы и конкурент — кого нейросети находят чаще
                   </p>
                 </div>
                 <div className="rounded-xl border border-gray-200 p-6 text-center">
@@ -162,7 +162,7 @@ export default function ScanPage() {
                 Спрашиваем нейросети о &laquo;{query}&raquo;
                 {competitor && <> и &laquo;{competitor}&raquo;</>}...
               </p>
-              <p className="mt-2 text-sm text-gray-400">
+              <p className="mt-2 text-sm text-slate-500">
                 Проверяем ChatGPT, Perplexity и YandexGPT. Это займёт{" "}
                 {competitor ? "20-40" : "10-20"} секунд.
               </p>

@@ -1,119 +1,80 @@
 "use client";
 
 import Link from "next/link";
+import { Menu, X } from "lucide-react";
 import { useState } from "react";
 
 const NAV_LINKS = [
-  { href: "/for-business", label: "Local Sales OS" },
+  { href: "/for-business", label: "Бизнесу" },
   { href: "/for-experts", label: "Экспертам" },
-  { href: "/launch", label: "Запуск под ключ" },
+  { href: "/launch", label: "Запуск" },
   { href: "/for-agencies", label: "Агентствам" },
   { href: "/how-it-works", label: "Как работает" },
   { href: "/pricing", label: "Тарифы" },
   { href: "/audit", label: "Аудит" },
 ];
 
+function LogoMark({ className = "h-9 w-9" }: { className?: string }) {
+  return (
+    <div className={`${className} flex shrink-0 items-center justify-center rounded-lg bg-blue-700 text-sm font-bold tracking-tight text-white shadow-sm shadow-blue-700/20`}>
+      НЭ
+    </div>
+  );
+}
+
 export function MarketingHeader() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="relative z-50 border-b border-white/5">
-      <div className="absolute inset-0 bg-[#0a0e1a]/80 backdrop-blur-xl" />
-      <nav className="relative mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <Link href="/" className="flex items-center gap-2.5 text-xl font-bold text-white">
-          <svg viewBox="0 0 36 36" fill="none" className="h-9 w-9 shrink-0" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="navLogo" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#22D3EE"/>
-                <stop offset="50%" stopColor="#3B82F6"/>
-                <stop offset="100%" stopColor="#A855F7"/>
-              </linearGradient>
-            </defs>
-            <g transform="translate(0, -4)">
-              {/* Связи */}
-              <line x1="10" y1="7" x2="18" y2="16" stroke="#22D3EE" strokeWidth="0.8" opacity="0.5"/>
-              <line x1="26" y1="9" x2="18" y2="16" stroke="#3B82F6" strokeWidth="0.8" opacity="0.45"/>
-              <line x1="18" y1="16" x2="12" y2="25" stroke="#8B5CF6" strokeWidth="0.8" opacity="0.5"/>
-              <line x1="18" y1="16" x2="26" y2="24" stroke="#A855F7" strokeWidth="0.8" opacity="0.45"/>
-              <line x1="12" y1="25" x2="26" y2="24" stroke="#8B5CF6" strokeWidth="0.7" opacity="0.35"/>
-              <line x1="7" y1="16" x2="12" y2="25" stroke="#22D3EE" strokeWidth="0.7" opacity="0.35"/>
-              <line x1="30" y1="18" x2="26" y2="24" stroke="#3B82F6" strokeWidth="0.7" opacity="0.35"/>
-              <line x1="10" y1="7" x2="7" y2="16" stroke="#22D3EE" strokeWidth="0.7" opacity="0.35"/>
-              <line x1="26" y1="9" x2="30" y2="18" stroke="#3B82F6" strokeWidth="0.7" opacity="0.35"/>
-              <line x1="12" y1="25" x2="16" y2="32" stroke="#8B5CF6" strokeWidth="0.7" opacity="0.35"/>
-              <line x1="26" y1="24" x2="28" y2="31" stroke="#A855F7" strokeWidth="0.7" opacity="0.35"/>
-              <path d="M10 7 Q15 3, 26 9" stroke="#22D3EE" strokeWidth="0.5" opacity="0.2" fill="none"/>
-              <path d="M7 16 Q5 22, 12 25" stroke="#22D3EE" strokeWidth="0.5" opacity="0.2" fill="none"/>
-              <path d="M16 32 Q22 34, 28 31" stroke="#A855F7" strokeWidth="0.5" opacity="0.2" fill="none"/>
-              {/* Центральный узел */}
-              <circle cx="18" cy="16" r="3.2" fill="url(#navLogo)"/>
-              <circle cx="18" cy="16" r="1.8" fill="#FFFFFF" opacity="0.9"/>
-              {/* Крупные узлы */}
-              <circle cx="10" cy="7" r="2" fill="#22D3EE"/>
-              <circle cx="26" cy="9" r="2" fill="#3B82F6"/>
-              <circle cx="12" cy="25" r="2.2" fill="#8B5CF6"/>
-              <circle cx="26" cy="24" r="2" fill="#A855F7"/>
-              <circle cx="7" cy="16" r="1.8" fill="#22D3EE"/>
-              <circle cx="30" cy="18" r="1.8" fill="#3B82F6"/>
-              {/* Мелкие узлы */}
-              <circle cx="16" cy="32" r="1.5" fill="#8B5CF6"/>
-              <circle cx="28" cy="31" r="1.5" fill="#A855F7"/>
-              <circle cx="5" cy="8" r="1" fill="#22D3EE" opacity="0.6"/>
-              <circle cx="32" cy="28" r="1" fill="#A855F7" opacity="0.6"/>
-              <circle cx="18" cy="5" r="0.8" fill="#22D3EE" opacity="0.5"/>
-            </g>
-          </svg>
-          <div className="flex flex-col">
-            <span>НейроЭксперт</span>
-            <span className="text-[10px] font-normal text-gray-500 tracking-wide -mt-0.5">Клиенты из поиска, карт и нейросетей</span>
+    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:py-4">
+        <Link href="/" className="flex min-w-0 items-center gap-3 text-lg font-bold text-slate-950 sm:text-xl">
+          <LogoMark />
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate">НейроЭксперт</span>
+            <span className="-mt-0.5 hidden text-[10px] font-medium tracking-wide text-slate-500 sm:block">
+              Клиенты из карт, поиска и AI
+            </span>
           </div>
         </Link>
 
-        {/* Desktop — nav links centered */}
-        <div className="hidden md:flex flex-1 justify-center items-center gap-1">
+        <div className="hidden flex-1 items-center justify-center gap-1 lg:flex">
           {NAV_LINKS.map((l) => (
             <Link
               key={l.href}
               href={l.href}
-              className="rounded-lg px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+              className="rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950"
             >
               {l.label}
             </Link>
           ))}
         </div>
+
         <Link
           href="/login"
-          className="hidden md:inline-flex rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-medium text-white hover:from-cyan-400 hover:to-blue-500 transition-all"
+          className="hidden rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-800 lg:inline-flex"
         >
           Войти
         </Link>
 
-        {/* Mobile toggle */}
         <button
-          className="md:hidden text-gray-400 hover:text-white transition-colors"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-slate-200 text-slate-700 transition-colors hover:bg-slate-100 lg:hidden"
           onClick={() => setOpen(!open)}
+          aria-expanded={open}
           aria-label="Меню"
         >
-          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            {open ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            )}
-          </svg>
+          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </nav>
 
-      {/* Mobile menu */}
       {open && (
-        <div className="relative md:hidden border-t border-white/5">
-          <div className="absolute inset-0 bg-[#0a0e1a]/95 backdrop-blur-xl" />
-          <div className="relative px-6 py-4 space-y-1">
+        <div className="border-t border-slate-200 bg-white shadow-lg lg:hidden">
+          <div className="max-h-[calc(100dvh-69px)] space-y-1 overflow-y-auto px-4 py-4 sm:px-6">
             {NAV_LINKS.map((l) => (
               <Link
                 key={l.href}
                 href={l.href}
-                className="block rounded-lg px-3 py-2.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+                className="block rounded-md px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950"
                 onClick={() => setOpen(false)}
               >
                 {l.label}
@@ -121,7 +82,7 @@ export function MarketingHeader() {
             ))}
             <Link
               href="/login"
-              className="mt-2 block rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2.5 text-center text-sm font-medium text-white"
+              className="mt-2 block rounded-md bg-blue-700 px-4 py-2.5 text-center text-sm font-semibold text-white"
               onClick={() => setOpen(false)}
             >
               Войти
@@ -135,108 +96,83 @@ export function MarketingHeader() {
 
 export function MarketingFooter() {
   return (
-    <footer className="border-t border-white/5 bg-[#040714]/60 backdrop-blur-xl pt-10 pb-6">
-      <div className="mx-auto max-w-7xl px-6">
-        {/* 4-column grid */}
+    <footer className="border-t border-slate-200 bg-white pb-6 pt-10">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Column 1 — Brand */}
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2">
-              <svg viewBox="0 0 36 36" fill="none" className="h-7 w-7 shrink-0" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="footLogo" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#22D3EE"/>
-                    <stop offset="50%" stopColor="#3B82F6"/>
-                    <stop offset="100%" stopColor="#A855F7"/>
-                  </linearGradient>
-                </defs>
-                <line x1="10" y1="7" x2="18" y2="16" stroke="#22D3EE" strokeWidth="0.8" opacity="0.5"/>
-                <line x1="26" y1="9" x2="18" y2="16" stroke="#3B82F6" strokeWidth="0.8" opacity="0.45"/>
-                <line x1="18" y1="16" x2="12" y2="25" stroke="#8B5CF6" strokeWidth="0.8" opacity="0.5"/>
-                <line x1="18" y1="16" x2="26" y2="24" stroke="#A855F7" strokeWidth="0.8" opacity="0.45"/>
-                <line x1="12" y1="25" x2="26" y2="24" stroke="#8B5CF6" strokeWidth="0.7" opacity="0.35"/>
-                <circle cx="18" cy="16" r="3.2" fill="url(#footLogo)"/>
-                <circle cx="18" cy="16" r="1.8" fill="#FFFFFF" opacity="0.9"/>
-                <circle cx="10" cy="7" r="2" fill="#22D3EE"/>
-                <circle cx="26" cy="9" r="2" fill="#3B82F6"/>
-                <circle cx="12" cy="25" r="2.2" fill="#8B5CF6"/>
-                <circle cx="26" cy="24" r="2" fill="#A855F7"/>
-              </svg>
-              <span className="text-base font-semibold text-white">НейроЭксперт</span>
+              <LogoMark className="h-7 w-7" />
+              <span className="text-base font-semibold text-slate-950">НейроЭксперт</span>
             </div>
-            <p className="text-sm text-gray-400 leading-relaxed">
-              Система привлечения клиентов из поиска, карт, Авито, отзывов и нейросетей
-              для локального бизнеса и индивидуальных экспертов.
+            <p className="text-sm leading-relaxed text-slate-600">
+              Платформа привлечения клиентов: спрос, видимость, страницы,
+              отзывы, конкуренты, задачи и повторные касания.
             </p>
             <Link
               href="/for-business"
-              className="mt-2 inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+              className="mt-2 inline-flex w-fit items-center rounded-md bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-800"
             >
-              Получить аудит видимости
+              Получить аудит
             </Link>
           </div>
 
-          {/* Column 2 — Platform */}
           <div className="flex flex-col gap-3">
-            <span className="text-sm font-semibold text-white">Возможности</span>
-            <Link href="/how-it-works" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+            <span className="text-sm font-semibold text-slate-950">Возможности</span>
+            <Link href="/how-it-works" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
               Как это работает
             </Link>
-            <Link href="/launch" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
-              Запуск под ключ
+            <Link href="/launch" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
+              Запуск
             </Link>
-            <Link href="/for-business" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
-              Local Sales OS
+            <Link href="/for-business" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
+              Бизнесу
             </Link>
-            <Link href="/scan" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
-              Scanner спроса в AI
+            <Link href="/scan" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
+              Проверка спроса
             </Link>
-            <Link href="/for-experts" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+            <Link href="/for-experts" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
               Экспертам
             </Link>
-            <Link href="/for-agencies" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
-              SEO-агентствам
+            <Link href="/for-agencies" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
+              Агентствам
             </Link>
           </div>
 
-          {/* Column 3 — Info */}
           <div className="flex flex-col gap-3">
-            <span className="text-sm font-semibold text-white">Информация</span>
-            <Link href="/pricing" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+            <span className="text-sm font-semibold text-slate-950">Информация</span>
+            <Link href="/pricing" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
               Тарифы
             </Link>
-            <Link href="/for-agencies" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
-              Demand API
+            <Link href="/for-agencies" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
+              API спроса
             </Link>
-            <Link href="/privacy" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+            <Link href="/privacy" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
               Политика конфиденциальности
             </Link>
-            <Link href="/terms" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+            <Link href="/terms" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
               Публичная оферта
             </Link>
-            <Link href="/requisites" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+            <Link href="/requisites" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
               Реквизиты
             </Link>
           </div>
 
-          {/* Column 4 — Contacts */}
           <div className="flex flex-col gap-3">
-            <span className="text-sm font-semibold text-white">Контакты</span>
-            <a href="mailto:info@neuroexpertise.ru" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+            <span className="text-sm font-semibold text-slate-950">Контакты</span>
+            <a href="mailto:info@neuroexpertise.ru" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
               info@neuroexpertise.ru
             </a>
-            <a href="https://t.me/neuroexpertise" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+            <a href="https://t.me/neuroexpertise" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
               Telegram-канал
             </a>
-            <a href="https://t.me/neuroexpertise_bot" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+            <a href="https://t.me/neuroexpertise_bot" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
               Telegram-бот
             </a>
           </div>
         </div>
 
-        {/* Bottom bar */}
-        <div className="mt-8 border-t border-white/5 pt-5 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span className="text-xs text-gray-600">
+        <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-slate-200 pt-5 sm:flex-row">
+          <span className="text-xs text-slate-500">
             &copy; {new Date().getFullYear()} НейроЭксперт. Все права защищены.
           </span>
         </div>

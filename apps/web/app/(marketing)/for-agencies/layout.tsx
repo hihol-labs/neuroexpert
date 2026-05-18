@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
-const TITLE = "Карта спроса и Demand API для SEO/GEO-агентств | НейроЭксперт";
+const TITLE = "Карта спроса и API спроса для агентств | НейроЭксперт";
 const DESCRIPTION =
-  "JSON-эндпоинты с реальными вопросами людей: monthly_volume, intent, gap_score, слабость AI-ответа, opportunity_score и CTA для страниц под заявки.";
+  "API с реальными вопросами людей: спрос в месяц, клиентское намерение, балл слабости ответа нейросети, оценка возможности и целевое действие для страниц под заявки.";
 
 export const metadata: Metadata = {
   title: TITLE,

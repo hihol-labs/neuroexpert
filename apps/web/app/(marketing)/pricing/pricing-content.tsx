@@ -71,7 +71,7 @@ const SOLO_PLANS = [
       "5 ниш",
       "Всё из Pro",
       "Аналитика страниц и заявок",
-      "AI-упоминания как дополнительный канал",
+      "Упоминания в нейросетях как дополнительный канал",
       "Сравнение с конкурентами",
     ],
     cta: "Подписаться",
@@ -82,10 +82,19 @@ const SOLO_PLANS = [
 
 const BUSINESS_SYSTEMS = [
   "Аудит видимости: Яндекс Карты, 2ГИС, Авито, сайт, VK, Telegram, отзывы",
-  "Гео-рейтинг, AI-выдача и конкуренты по запросам «рядом», «цена», «срочно», «на районе»",
-  "Ежедневные задачи для роста заявок, записей и продаж плюс недельный отчёт собственнику",
+  "Гео-рейтинг, ответы нейросетей и конкуренты по запросам «рядом», «цена», «срочно», «на районе»",
+  "Генератор страниц под услуги, районы, FAQ и вопросы клиентов из поиска и нейросетей",
+  "Сигналы поведения клиентов: просмотры, клики, заявки, звонки и задачи из этих действий",
+  "Ежедневные задачи для роста обращений, записей и продаж плюс недельный отчёт собственнику",
   "Сбор положительных отзывов и перехват негатива до публичной публикации",
-  "Потерянные лиды: пропущенные звонки, поздние ответы, клиенты без follow-up",
+  "Повторные касания: пропущенные звонки, поздние ответы, клиенты без возврата",
+];
+
+const RESULT_GUARDS = [
+  "страницы запускаются только под подтверждённый спрос, услугу, регион/нишу и CTA",
+  "перед публикацией проверяем факты, пользу, доказательства, FAQ, Schema.org и способ измерения",
+  "через 14/28 дней страница получает решение: работает, доработать, объединить или архивировать",
+  "в отчёте показываем не количество страниц, а показы, клики, заявки, исходы лидов и задачи роста",
 ];
 
 const PRICE_FACTORS = [
@@ -100,15 +109,27 @@ const PRICE_FACTORS = [
 const BUSINESS_MODULE_MATRIX = [
   {
     module: "Аудит видимости",
-    audit: "Находим пустые карточки, слабые фото, услуги, отзывы и точки потери заявок.",
+    audit: "Находим пустые карточки, слабые фото, услуги, отзывы и точки, где клиент не доходит до обращения.",
     launch: "Исправляем карточки, описания, услуги, фото-рекомендации, FAQ и точки входа.",
     support: "Следим за заполненностью, позициями, изменениями площадок и новыми проблемами.",
   },
   {
-    module: "Гео-рейтинг, AI и конкуренты",
+    module: "Гео-рейтинг, нейросети и конкуренты",
     audit: "Смотрим позиции по запросам «рядом», «цена», «срочно», «на районе» и кого называют нейросети.",
     launch: "Выбираем запросы и площадки, где быстрее всего можно стать заметнее конкурентов.",
-    support: "Обновляем рейтинг, AI-упоминания, сравнение с топ-3 и задачи для роста.",
+    support: "Обновляем рейтинг, упоминания в нейросетях, сравнение с топ-3 и задачи для роста.",
+  },
+  {
+    module: "Страницы под локальный спрос",
+    audit: "Определяем, какие услуги, районы, цены и вопросы клиентов стоит закрыть первыми.",
+    launch: "Собираем страницы с FAQ, отзывами, доказательствами, локальной кнопкой действия и разметкой для поиска.",
+    support: "Обновляем страницы по спросу, отзывам, конкурентам и смотрим вклад в звонки, записи и заявки.",
+  },
+  {
+    module: "Сигналы поведения клиентов",
+    audit: "Смотрим, где уже есть интерес: просмотры страниц, клики, формы, звонки и заявки без результата.",
+    launch: "Настраиваем события и правила: что делать, если страницу читают, но не звонят, или кликают без продажи.",
+    support: "Каждую неделю превращаем поведение клиентов в задачи по страницам, карточкам, звонкам и повторным касаниям.",
   },
   {
     module: "Ежедневные задачи",
@@ -123,24 +144,26 @@ const BUSINESS_MODULE_MATRIX = [
     support: "Поддерживаем поток отзывов, ответы, перехват негатива и рост доверия.",
   },
   {
-    module: "Потерянные лиды",
-    audit: "Ищем пропущенные звонки, поздние ответы, формы без реакции и клиентов без follow-up.",
-    launch: "Вводим учёт обращений, возврат непроданных лидов и базовые сценарии дожима.",
-    support: "Показываем потери в рублях, контролируем реакции и возвращаем старых клиентов.",
+    module: "Повторные касания",
+    audit: "Ищем пропущенные звонки, поздние ответы, формы без реакции и клиентов без повторного касания.",
+    launch: "Вводим учёт обращений, повторные касания и базовые сценарии доведения до продажи.",
+    support: "Показываем коммерческий потенциал возврата и возвращаем старых клиентов в работу.",
   },
 ];
 
 const AUDIT_PACKAGES = [
   {
     name: "Аудит Старт",
-    price: "9 900",
+    price: "7 900",
     period: "разово",
-    fit: "Одна точка, один город, нужно быстро понять, где теряются клиенты.",
+    fit: "Одна точка, один город, нужно быстро понять, откуда привлечь больше клиентов.",
     scope: [
       "1 филиал или кабинет",
       "Яндекс Карты, 2ГИС, сайт/соцсети",
       "До 5 конкурентов и 10 запросов",
       "Карточки, услуги, фото, отзывы",
+      "Карта первых страниц под услуги и вопросы",
+      "Первые поведенческие сигналы по страницам и кнопкам",
       "План действий на 7 дней",
     ],
     cta: "Получить аудит",
@@ -149,7 +172,7 @@ const AUDIT_PACKAGES = [
   },
   {
     name: "Аудит Рост",
-    price: "19 900",
+    price: "14 900",
     period: "разово",
     fit: "Основной аудит для бизнеса, которому нужны видимость, конкуренты и план роста.",
     scope: [
@@ -157,6 +180,8 @@ const AUDIT_PACKAGES = [
       "Яндекс Карты, 2ГИС, Авито, сайт, VK/Telegram",
       "До 10 конкурентов и 20 запросов",
       "Отзывы, гео-позиции, услуги, точки входа",
+      "Приоритеты страниц под услуги, районы и FAQ",
+      "Сигналы: где смотрят, кликают и не оставляют заявку",
       "План действий на 14 дней",
     ],
     cta: "Выбрать аудит",
@@ -165,7 +190,7 @@ const AUDIT_PACKAGES = [
   },
   {
     name: "Аудит Полный",
-    price: "29 900",
+    price: "24 900",
     period: "разово",
     fit: "Для конкурентной ниши, нескольких точек или сложной локальной выдачи.",
     scope: [
@@ -173,7 +198,9 @@ const AUDIT_PACKAGES = [
       "Все релевантные площадки",
       "До 20 конкурентов и 40 запросов",
       "Авито, отзывы, формы и звонки при наличии данных",
-      "Оценка потерь в рублях и план на 30 дней",
+      "Карта страниц под услуги, районы, цены и вопросы клиентов",
+      "Поведенческая воронка: просмотры, клики, заявки, звонки",
+      "Оценка коммерческого потенциала и план на 30 дней",
     ],
     cta: "Заказать полный аудит",
     href: "/launch?package=audit_full",
@@ -184,13 +211,14 @@ const AUDIT_PACKAGES = [
 const LAUNCH_PACKAGES = [
   {
     name: "Запуск Старт",
-    price: "49 000",
+    price: "31 100",
     period: "30 дней",
     fit: "Одна точка и одно направление услуг: быстро запустить первые точки входа.",
     scope: [
-      "Аудит и упаковка карточек",
-      "Описание, услуги, FAQ и CTA",
-      "5-7 страниц под реальный спрос",
+      "Упаковка карточек",
+      "Описание, услуги, FAQ и кнопки заявки",
+      "5-7 страниц под услуги, районы и вопросы клиентов",
+      "Базовые события: просмотры, клики, заявки",
       "Базовая настройка сбора отзывов",
       "Недельный отчёт по первым данным",
     ],
@@ -200,15 +228,16 @@ const LAUNCH_PACKAGES = [
   },
   {
     name: "Запуск Рост",
-    price: "89 000",
+    price: "54 100",
     period: "30 дней",
     fit: "Главный пакет для клиник, салонов, юрфирм и локальных сервисов.",
     scope: [
       "1-2 точки или 2-3 направления",
       "Карты, Авито, сайт/страницы, соцсети",
-      "10-15 страниц под спрос",
+      "10-15 страниц под локальный спрос и нейросети",
+      "Задачи из поведения клиентов",
       "Ежедневные задачи и сценарии отзывов",
-      "Учёт потерянных лидов и корректировки",
+      "Учёт обращений для повторного касания",
     ],
     cta: "Выбрать запуск",
     href: "/launch?package=launch_growth",
@@ -216,15 +245,16 @@ const LAUNCH_PACKAGES = [
   },
   {
     name: "Запуск Интенсив",
-    price: "150 000",
+    price: "94 100",
     period: "30 дней",
     fit: "Для высокой конкуренции, нескольких точек и быстрого ручного запуска.",
     scope: [
       "До 3-5 точек",
       "Несколько направлений услуг",
-      "20-30 страниц под спрос",
-      "Отзывы, Авито, конкуренты, потерянные лиды",
-      "Контроль выполнения и отчёт по заявкам",
+      "20-30 страниц под спрос при подтверждённой семантике",
+      "Поведенческие сигналы по страницам, карточкам и обращениям",
+      "Отзывы, Авито, конкуренты, повторные касания",
+      "Ритм внедрения и отчёт по обращениям",
     ],
     cta: "Обсудить интенсив",
     href: "/launch?package=launch_intensive",
@@ -234,8 +264,8 @@ const LAUNCH_PACKAGES = [
 
 const SUPPORT_PACKAGES = [
   {
-    name: "Контроль",
-    price: "39 000",
+    name: "Сопровождение Лайт",
+    price: "29 000",
     period: "/мес",
     fit: "Одна точка, бизнес готов выполнять задачи самостоятельно.",
     scope: [
@@ -245,20 +275,22 @@ const SUPPORT_PACKAGES = [
       "Недельный отчёт",
       "Базовая аналитика заявок",
     ],
-    cta: "Подключить контроль",
+    cta: "Начать сопровождение",
     href: "/launch?package=support_control",
     highlight: false,
   },
   {
     name: "Сопровождение",
-    price: "69 000",
+    price: "49 000",
     period: "/мес",
     fit: "Основной managed-пакет: часть задач помогает выполнять команда НейроЭксперт.",
     scope: [
       "1-2 точки",
       "Карточки, услуги, FAQ, отзывы, Авито",
-      "Контроль конкурентов",
-      "Работа с потерянными лидами",
+      "Динамика конкурентов",
+      "Обновление страниц под спрос",
+      "Сигналы поведения клиентов",
+      "Работа с обращениями для возврата",
       "Отчёт по заявкам и точкам роста",
     ],
     cta: "Выбрать сопровождение",
@@ -267,14 +299,14 @@ const SUPPORT_PACKAGES = [
   },
   {
     name: "Рост",
-    price: "99 000",
+    price: "79 000",
     period: "/мес",
     fit: "Несколько точек, высокая конкуренция, нужен полный контур управления.",
     scope: [
       "До 3-5 точек",
       "Все 5 систем",
       "Ежедневное управление задачами",
-      "Отзывы, Авито, лиды, страницы под спрос",
+      "Отзывы, Авито, обращения, страницы под спрос",
       "Регулярные созвоны и отчёт собственнику",
     ],
     cta: "Обсудить рост",
@@ -300,28 +332,29 @@ export function PricingContent() {
 
   return (
     <main>
-      <section className="bg-[#040714]/40 py-16 backdrop-blur-sm">
-        <div className="mx-auto max-w-5xl px-6 text-center">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">
+      <section className="bg-gradient-to-br from-blue-50 via-white to-emerald-50 py-12 sm:py-16">
+        <div className="mx-auto max-w-5xl px-4 text-center sm:px-6">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">
             Тарифы НейроЭксперт
           </p>
-          <h1 className="mt-3 text-4xl font-bold text-white md:text-5xl">
-            Выберите свой путь к новым заявкам
+          <h1 className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl md:text-5xl">
+            Выберите свой путь к новым клиентам
           </h1>
-          <p className="mx-auto mt-5 max-w-3xl text-lg text-gray-400">
+          <p className="mx-auto mt-5 max-w-3xl text-lg text-slate-600">
             Для экспертов это карта спроса и страницы под вопросы людей. Для бизнеса —
-            управляемая система локальной видимости, отзывов, Авито, ежедневных задач и потерянных лидов.
+            система локальной видимости, страниц под услуги и районы, отзывов, Авито,
+            поведения клиентов, ежедневных задач и повторных касаний.
           </p>
 
-          <div className="mx-auto mt-8 grid max-w-2xl grid-cols-2 gap-2 rounded-lg border border-white/10 bg-white/5 p-1">
+          <div className="mx-auto mt-8 grid max-w-2xl grid-cols-1 gap-2 rounded-lg border border-slate-200 bg-white p-1 sm:grid-cols-2">
             <button
               type="button"
               aria-pressed={audience === "business"}
               onClick={() => setAudience("business")}
               className={`rounded-md px-4 py-3 text-sm font-semibold transition-colors ${
                 audience === "business"
-                  ? "bg-white text-gray-950"
-                  : "text-gray-300 hover:bg-white/10 hover:text-white"
+                  ? "bg-blue-700 text-white"
+                  : "text-slate-700 hover:bg-blue-50 hover:text-blue-800"
               }`}
             >
               Бизнес / организация
@@ -332,8 +365,8 @@ export function PricingContent() {
               onClick={() => setAudience("expert")}
               className={`rounded-md px-4 py-3 text-sm font-semibold transition-colors ${
                 audience === "expert"
-                  ? "bg-white text-gray-950"
-                  : "text-gray-300 hover:bg-white/10 hover:text-white"
+                  ? "bg-blue-700 text-white"
+                  : "text-slate-700 hover:bg-blue-50 hover:text-blue-800"
               }`}
             >
               Я эксперт
@@ -351,42 +384,42 @@ function BusinessPricing() {
   return (
     <>
       <section className="py-12">
-        <div className="mx-auto max-w-6xl px-6">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
             <div>
-              <p className="text-sm font-semibold text-cyan-300">НейроЭксперт Business / Local Sales OS</p>
-              <h2 className="mt-3 text-3xl font-bold text-white">
-                Для бизнеса мы продаём не доступ к платформе, а рост управляемого канала заявок
+              <p className="text-sm font-semibold text-blue-700">НейроЭксперт для бизнеса</p>
+              <h2 className="mt-3 text-3xl font-bold text-slate-950">
+                Для бизнеса мы продаём не доступ к платформе, а канал привлечения клиентов
               </h2>
-              <p className="mt-4 text-gray-400">
-                Сначала показываем, где бизнес невидим и теряет обращения. Затем запускаем точки входа
-                из карт, Авито, поиска, отзывов, AI-ответов и входящих обращений. После запуска ведём
-                ежедневные задачи, недельный отчёт и работу с потерянными лидами.
+              <p className="mt-4 text-slate-600">
+                Сначала показываем, где бизнесу не хватает видимости и доверия. Затем запускаем точки входа
+                из карт, Авито, поиска, страниц под локальный спрос, поведения клиентов, отзывов, ответов нейросетей и входящих обращений. После запуска ведём
+                ежедневные задачи, недельный отчёт и повторные касания клиентов.
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/launch?package=b2b"
-                  className="rounded-lg bg-cyan-400 px-5 py-3 text-center text-sm font-semibold text-gray-950 hover:bg-cyan-300"
+                  className="rounded-lg bg-blue-700 px-5 py-3 text-center text-sm font-semibold text-white hover:bg-blue-800"
                 >
                   Получить аудит видимости
                 </Link>
                 <Link
                   href="/for-business"
-                  className="rounded-lg border border-white/15 px-5 py-3 text-center text-sm font-semibold text-white hover:bg-white/10"
+                  className="rounded-lg border border-slate-300 px-5 py-3 text-center text-sm font-semibold text-slate-950 hover:bg-slate-100"
                 >
-                  Посмотреть B2B-страницу
+                  Посмотреть страницу для бизнеса
                 </Link>
               </div>
             </div>
 
             <div className="grid gap-3">
               {BUSINESS_SYSTEMS.map((item, index) => (
-                <div key={item} className="rounded-lg border border-white/10 bg-white/5 p-4">
+                <div key={item} className="rounded-lg border border-slate-200 bg-white p-4">
                   <div className="flex gap-3">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-cyan-400 text-sm font-bold text-gray-950">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-700 text-sm font-bold text-white">
                       {index + 1}
                     </span>
-                    <p className="text-sm text-gray-300">{item}</p>
+                    <p className="text-sm text-slate-700">{item}</p>
                   </div>
                 </div>
               ))}
@@ -397,6 +430,8 @@ function BusinessPricing() {
 
       <BusinessModuleMatrix />
 
+      <BusinessResultGuards />
+
       <BusinessPackageSection
         eyebrow="Шаг 1"
         title="Аудит видимости"
@@ -406,54 +441,54 @@ function BusinessPricing() {
 
       <BusinessPackageSection
         eyebrow="Шаг 2"
-        title="Запуск канала заявок за 30 дней"
-        description="После аудита упаковываем карточки, страницы, отзывы, FAQ и первые задачи так, чтобы появились измеримые точки входа."
+        title="Запуск канала привлечения за 30 дней"
+        description="После аудита упаковываем карточки, страницы, отзывы, FAQ, события поведения и первые задачи так, чтобы появились измеримые точки входа."
         packages={LAUNCH_PACKAGES}
       />
 
       <BusinessPackageSection
         eyebrow="Шаг 3"
-        title="Local Sales OS: сопровождение"
-        description="Ежедневная система роста: видимость, конкуренты, отзывы, Авито, потерянные лиды и недельный отчёт."
+        title="Сопровождение продаж"
+        description="Ежемесячный ритм роста: видимость, конкуренты, отзывы, Авито, повторные касания и недельный отчёт."
         packages={SUPPORT_PACKAGES}
       />
 
       <section className="py-12">
-        <div className="mx-auto max-w-6xl px-6">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
             <div>
-              <p className="text-sm font-semibold text-cyan-300">Почему цена отличается</p>
-              <h2 className="mt-3 text-3xl font-bold text-white">
-                Клиент сразу видит, за что платит 9 900, 49 000 или 99 000 ₽
+              <p className="text-sm font-semibold text-blue-700">Почему цена отличается</p>
+              <h2 className="mt-3 text-3xl font-bold text-slate-950">
+                Клиент сразу видит, за что платит 7 900, 31 100 или 79 000 ₽
               </h2>
-              <p className="mt-4 text-gray-400">
+              <p className="mt-4 text-slate-600">
                 Разброс цены завязан на объём точек, площадок, конкуренции и ручной работы.
                 Это не «цена с потолка», а понятная лестница сложности.
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               {PRICE_FACTORS.map((factor) => (
-                <div key={factor} className="rounded-lg border border-white/10 bg-white/5 p-4">
-                  <p className="text-sm text-gray-300">{factor}</p>
+                <div key={factor} className="rounded-lg border border-slate-200 bg-white p-4">
+                  <p className="text-sm text-slate-700">{factor}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="mt-8 rounded-lg border border-amber-300/30 bg-amber-300/10 p-6">
+          <div className="mt-8 rounded-lg border border-amber-200 bg-amber-50 p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <h3 className="text-xl font-bold text-white">Сети, франшизы и 5+ филиалов</h3>
-                <p className="mt-2 text-sm text-amber-100/80">
+                <h3 className="text-xl font-bold text-slate-950">Сети, франшизы и 5+ филиалов</h3>
+                <p className="mt-2 text-sm text-amber-800">
                   Для нескольких городов, SLA, расширенных интеграций, телефонии, CRM и команды исполнителей
                   стоимость фиксируется индивидуально после аудита.
                 </p>
               </div>
               <Link
                 href="/launch?package=enterprise"
-                className="rounded-lg bg-amber-300 px-5 py-3 text-center text-sm font-semibold text-gray-950 hover:bg-amber-200"
+                className="rounded-lg bg-amber-300 px-5 py-3 text-center text-sm font-semibold text-amber-950 hover:bg-amber-200"
               >
-                Обсудить Enterprise
+                Обсудить крупный проект
               </Link>
             </div>
           </div>
@@ -463,45 +498,76 @@ function BusinessPricing() {
   );
 }
 
+function BusinessResultGuards() {
+  return (
+    <section className="py-12">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-6">
+          <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+            <div>
+              <p className="text-sm font-semibold text-amber-800">Предохранитель от плохого SEO</p>
+              <h2 className="mt-2 text-2xl font-bold text-slate-950">
+                Платите за управляемый путь к заявке, а не за пачку страниц
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-amber-900">
+                Мы не продаём гарантию топа или фиксированное число клиентов.
+                Стоимость пакета зависит от объёма проверяемых каналов, ручной работы,
+                задач внедрения и глубины измерения результата.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {RESULT_GUARDS.map((guard) => (
+                <div key={guard} className="rounded-md border border-amber-200 bg-white p-4 text-sm text-slate-700">
+                  {guard}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function BusinessModuleMatrix() {
   return (
-    <section className="bg-[#040714]/40 py-12 backdrop-blur-sm">
-      <div className="mx-auto max-w-6xl px-6">
+    <section className="bg-blue-50 py-12">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="max-w-3xl">
-          <p className="text-sm font-semibold text-cyan-300">Операционная система заявок</p>
-          <h2 className="mt-2 text-3xl font-bold text-white">
+          <p className="text-sm font-semibold text-blue-700">Система привлечения клиентов</p>
+          <h2 className="mt-2 text-3xl font-bold text-slate-950">
             5 модулей системы × аудит, запуск и сопровождение
           </h2>
-          <p className="mt-3 text-gray-400">
+          <p className="mt-3 text-slate-600">
             Это не разовый маркетинговый отчёт. Каждый модуль проходит путь от диагностики
-            к внедрению и постоянному управлению ростом заявок.
+            к внедрению и регулярному развитию канала привлечения.
           </p>
         </div>
 
-        <div className="mt-8 overflow-x-auto rounded-lg border border-white/10 bg-white/5">
+        <div className="mt-8 overflow-x-auto rounded-lg border border-slate-200 bg-white">
           <table className="w-full min-w-[920px] text-sm">
             <thead>
-              <tr className="border-b border-white/10">
-                <th className="w-[18%] px-4 py-4 text-left font-semibold text-white">Модуль</th>
-                <th className="w-[27%] px-4 py-4 text-left font-semibold text-cyan-300">Аудит</th>
-                <th className="w-[27%] px-4 py-4 text-left font-semibold text-cyan-300">Запуск 30 дней</th>
-                <th className="w-[28%] px-4 py-4 text-left font-semibold text-cyan-300">Сопровождение</th>
+              <tr className="border-b border-slate-200">
+                <th className="w-[18%] px-4 py-4 text-left font-semibold text-slate-950">Модуль</th>
+                <th className="w-[27%] px-4 py-4 text-left font-semibold text-blue-700">Аудит</th>
+                <th className="w-[27%] px-4 py-4 text-left font-semibold text-blue-700">Запуск 30 дней</th>
+                <th className="w-[28%] px-4 py-4 text-left font-semibold text-blue-700">Сопровождение</th>
               </tr>
             </thead>
             <tbody>
               {BUSINESS_MODULE_MATRIX.map((row, index) => (
-                <tr key={row.module} className={index % 2 === 0 ? "bg-white/5" : ""}>
-                  <td className="px-4 py-4 align-top font-semibold text-white">{row.module}</td>
-                  <td className="px-4 py-4 align-top text-gray-300">{row.audit}</td>
-                  <td className="px-4 py-4 align-top text-gray-300">{row.launch}</td>
-                  <td className="px-4 py-4 align-top text-gray-300">{row.support}</td>
+                <tr key={row.module} className={index % 2 === 0 ? "bg-white" : ""}>
+                  <td className="px-4 py-4 align-top font-semibold text-slate-950">{row.module}</td>
+                  <td className="px-4 py-4 align-top text-slate-700">{row.audit}</td>
+                  <td className="px-4 py-4 align-top text-slate-700">{row.launch}</td>
+                  <td className="px-4 py-4 align-top text-slate-700">{row.support}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
 
-        <p className="mt-4 text-sm text-gray-500">
+        <p className="mt-4 text-sm text-slate-500">
           Поэтому цена растёт не абстрактно: чем больше площадок, филиалов, конкурентов,
           ручной работы и контроля лидов, тем выше объём системы.
         </p>
@@ -514,14 +580,14 @@ function ExpertPricing() {
   return (
     <>
       <section className="py-12">
-        <div className="mx-auto max-w-6xl px-6">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl text-center">
-            <p className="text-sm font-semibold text-cyan-300">НейроЭксперт Solo</p>
-            <h2 className="mt-3 text-3xl font-bold text-white">
+            <p className="text-sm font-semibold text-blue-700">НейроЭксперт для экспертов</p>
+            <h2 className="mt-3 text-3xl font-bold text-slate-950">
               Для экспертов: спрос, голосовые ответы, страницы и заявки
             </h2>
-            <p className="mt-4 text-gray-400">
-              Solo-тарифы нужны для частных экспертов: психологов, юристов, нутрициологов,
+            <p className="mt-4 text-slate-600">
+              Тарифы для экспертов нужны частным специалистам: психологам, юристам, нутрициологам,
               логопедов, консультантов. Это дешёвый вход, проверка спроса и рост личной экспертной видимости.
             </p>
           </div>
@@ -534,51 +600,51 @@ function ExpertPricing() {
         </div>
       </section>
 
-      <section className="bg-[#040714]/40 py-12 backdrop-blur-sm">
-        <div className="mx-auto max-w-5xl px-6">
-          <h2 className="text-center text-2xl font-bold text-white">Сравнение Solo-тарифов</h2>
-          <div className="mt-8 overflow-x-auto rounded-lg border border-white/10 bg-white/5">
+      <section className="bg-slate-50 py-12 ">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          <h2 className="text-center text-2xl font-bold text-slate-950">Сравнение тарифов для экспертов</h2>
+          <div className="mt-8 overflow-x-auto rounded-lg border border-slate-200 bg-white">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/10">
-                  <th className="w-1/3 px-4 py-3 text-left font-medium text-gray-400"></th>
-                  <th className="px-4 py-3 text-center font-semibold text-white">Free</th>
-                  <th className="px-4 py-3 text-center font-semibold text-white">Starter</th>
-                  <th className="px-4 py-3 text-center font-semibold text-cyan-300">Pro</th>
-                  <th className="px-4 py-3 text-center font-semibold text-white">Expert</th>
+                <tr className="border-b border-slate-200">
+                  <th className="w-1/3 px-4 py-3 text-left font-medium text-slate-600"></th>
+                  <th className="px-4 py-3 text-center font-semibold text-slate-950">Free</th>
+                  <th className="px-4 py-3 text-center font-semibold text-slate-950">Starter</th>
+                  <th className="px-4 py-3 text-center font-semibold text-blue-700">Pro</th>
+                  <th className="px-4 py-3 text-center font-semibold text-slate-950">Expert</th>
                 </tr>
               </thead>
               <tbody>
                 {SOLO_COMPARISON.map((row, index) => (
-                  <tr key={row.label} className={index % 2 === 0 ? "bg-white/5" : ""}>
-                    <td className="px-4 py-3 font-medium text-gray-300">{row.label}</td>
-                    <td className="px-4 py-3 text-center text-gray-300">{formatCell(row.free)}</td>
-                    <td className="px-4 py-3 text-center text-gray-300">{formatCell(row.starter)}</td>
-                    <td className="px-4 py-3 text-center font-medium text-cyan-300">{formatCell(row.pro)}</td>
-                    <td className="px-4 py-3 text-center text-gray-300">{formatCell(row.expert)}</td>
+                  <tr key={row.label} className={index % 2 === 0 ? "bg-white" : ""}>
+                    <td className="px-4 py-3 font-medium text-slate-700">{row.label}</td>
+                    <td className="px-4 py-3 text-center text-slate-700">{formatCell(row.free)}</td>
+                    <td className="px-4 py-3 text-center text-slate-700">{formatCell(row.starter)}</td>
+                    <td className="px-4 py-3 text-center font-medium text-blue-700">{formatCell(row.pro)}</td>
+                    <td className="px-4 py-3 text-center text-slate-700">{formatCell(row.expert)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <p className="mt-4 text-center text-xs text-gray-500">
-            Главный результат Solo — не само AI-упоминание, а страница под реальный спрос, трафик, клики по записи и заявки.
+          <p className="mt-4 text-center text-xs text-slate-500">
+            Главный результат — не само упоминание в нейросети, а страница под реальный спрос, трафик, клики по записи и заявки.
           </p>
         </div>
       </section>
 
       <section className="py-14">
-        <div className="mx-auto max-w-4xl px-6 text-center">
-          <h2 className="text-2xl font-bold text-white">Одна консультация может окупить тариф</h2>
-          <p className="mt-4 text-gray-400">
+        <div className="mx-auto max-w-4xl px-4 text-center sm:px-6">
+          <h2 className="text-2xl font-bold text-slate-950">Одна консультация может окупить тариф</h2>
+          <p className="mt-4 text-slate-600">
             Начните бесплатно, проверьте карту спроса и опубликуйте первые страницы.
             Переходить на платные тарифы имеет смысл, когда появляются регулярные публикации и заявки.
           </p>
           <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
-            <Link href="/register" className="rounded-lg bg-white px-8 py-3 font-semibold text-gray-950 hover:bg-gray-100">
+            <Link href="/register" className="rounded-lg bg-blue-700 px-8 py-3 font-semibold text-white hover:bg-blue-800">
               Начать бесплатно
             </Link>
-            <Link href="/audit" className="rounded-lg border border-white/20 px-8 py-3 font-semibold text-white hover:bg-white/10">
+            <Link href="/audit" className="rounded-lg border border-slate-300 px-8 py-3 font-semibold text-slate-950 hover:bg-slate-100">
               Посмотреть карту спроса
             </Link>
           </div>
@@ -601,11 +667,11 @@ function BusinessPackageSection({
 }) {
   return (
     <section className="py-12">
-      <div className="mx-auto max-w-6xl px-6">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="max-w-3xl">
-          <p className="text-sm font-semibold text-cyan-300">{eyebrow}</p>
-          <h2 className="mt-2 text-3xl font-bold text-white">{title}</h2>
-          <p className="mt-3 text-gray-400">{description}</p>
+          <p className="text-sm font-semibold text-blue-700">{eyebrow}</p>
+          <h2 className="mt-2 text-3xl font-bold text-slate-950">{title}</h2>
+          <p className="mt-3 text-slate-600">{description}</p>
         </div>
         <div className="mt-8 grid gap-5 lg:grid-cols-3">
           {packages.map((pack) => (
@@ -621,24 +687,24 @@ function PackageCard({ pack }: { pack: (typeof AUDIT_PACKAGES)[number] }) {
   return (
     <div
       className={`relative flex flex-col rounded-lg border p-6 ${
-        pack.highlight ? "border-cyan-400 bg-cyan-400/10" : "border-white/10 bg-white/5"
+        pack.highlight ? "border-blue-200 bg-blue-50 shadow-sm shadow-blue-900/10" : "border-slate-200 bg-white"
       }`}
     >
       {pack.highlight && (
-        <span className="absolute right-4 top-4 rounded-md bg-cyan-400 px-2 py-1 text-xs font-semibold text-gray-950">
+        <span className="absolute right-4 top-4 rounded-md bg-blue-700 px-2 py-1 text-xs font-semibold text-white">
           Рекомендуемый
         </span>
       )}
-      <h3 className="pr-28 text-xl font-bold text-white">{pack.name}</h3>
+      <h3 className="pr-28 text-xl font-bold text-slate-950">{pack.name}</h3>
       <div className="mt-3">
-        <span className="text-3xl font-bold text-white">{pack.price} ₽</span>
-        <span className="ml-2 text-sm text-gray-400">{pack.period}</span>
+        <span className="text-3xl font-bold text-slate-950">{pack.price} ₽</span>
+        <span className="ml-2 text-sm text-slate-600">{pack.period}</span>
       </div>
-      <p className="mt-4 text-sm text-gray-400">{pack.fit}</p>
+      <p className="mt-4 text-sm text-slate-600">{pack.fit}</p>
       <ul className="mt-5 flex-1 space-y-2">
         {pack.scope.map((item) => (
-          <li key={item} className="flex gap-2 text-sm text-gray-300">
-            <span className="mt-0.5 text-cyan-300">&#10003;</span>
+          <li key={item} className="flex gap-2 text-sm text-slate-700">
+            <span className="mt-0.5 text-blue-700">&#10003;</span>
             <span>{item}</span>
           </li>
         ))}
@@ -647,8 +713,8 @@ function PackageCard({ pack }: { pack: (typeof AUDIT_PACKAGES)[number] }) {
         href={pack.href}
         className={`mt-6 rounded-lg px-4 py-3 text-center text-sm font-semibold transition-colors ${
           pack.highlight
-            ? "bg-cyan-400 text-gray-950 hover:bg-cyan-300"
-            : "bg-white/10 text-white hover:bg-white/15"
+            ? "bg-blue-700 text-white hover:bg-blue-800"
+            : "bg-blue-50 text-blue-800 hover:bg-blue-100"
         }`}
       >
         {pack.cta}
@@ -661,27 +727,27 @@ function PlanCard({ plan }: { plan: (typeof SOLO_PLANS)[number] }) {
   return (
     <div
       className={`relative flex flex-col rounded-lg border p-6 ${
-        plan.highlight ? "border-cyan-400 bg-cyan-400/10" : "border-white/10 bg-white/5"
+        plan.highlight ? "border-blue-200 bg-blue-50 shadow-sm shadow-blue-900/10" : "border-slate-200 bg-white"
       }`}
     >
       {plan.highlight && (
-        <span className="absolute right-4 top-4 rounded-md bg-cyan-400 px-2 py-1 text-xs font-semibold text-gray-950">
+        <span className="absolute right-4 top-4 rounded-md bg-blue-700 px-2 py-1 text-xs font-semibold text-white">
           Популярный
         </span>
       )}
-      <h3 className="text-xl font-bold text-white">{plan.name}</h3>
+      <h3 className="text-xl font-bold text-slate-950">{plan.name}</h3>
       <div className="mt-3">
-        <span className="text-3xl font-bold text-white">{plan.price} ₽</span>
-        <span className="ml-2 text-sm text-gray-400">{plan.period}</span>
+        <span className="text-3xl font-bold text-slate-950">{plan.price} ₽</span>
+        <span className="ml-2 text-sm text-slate-600">{plan.period}</span>
       </div>
-      <span className="mt-3 inline-flex w-fit rounded-md bg-white/10 px-2 py-1 text-xs font-medium text-gray-300">
+      <span className="mt-3 inline-flex w-fit rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
         {plan.badge}
       </span>
-      <p className="mt-4 text-sm text-gray-400">{plan.headline}</p>
+      <p className="mt-4 text-sm text-slate-600">{plan.headline}</p>
       <ul className="mt-5 flex-1 space-y-2">
         {plan.features.map((item) => (
-          <li key={item} className="flex gap-2 text-sm text-gray-300">
-            <span className="mt-0.5 text-cyan-300">&#10003;</span>
+          <li key={item} className="flex gap-2 text-sm text-slate-700">
+            <span className="mt-0.5 text-blue-700">&#10003;</span>
             <span>{item}</span>
           </li>
         ))}
@@ -690,10 +756,10 @@ function PlanCard({ plan }: { plan: (typeof SOLO_PLANS)[number] }) {
         href={plan.href}
         className={`mt-6 rounded-lg px-4 py-3 text-center text-sm font-semibold transition-colors ${
           plan.highlight
-            ? "bg-cyan-400 text-gray-950 hover:bg-cyan-300"
+            ? "bg-blue-700 text-white hover:bg-blue-800"
             : plan.id === "free"
-              ? "bg-white text-gray-950 hover:bg-gray-100"
-              : "bg-white/10 text-white hover:bg-white/15"
+              ? "bg-blue-50 text-blue-800 hover:bg-blue-100"
+              : "bg-slate-100 text-slate-950 hover:bg-slate-100"
         }`}
       >
         {plan.cta}
@@ -703,7 +769,7 @@ function PlanCard({ plan }: { plan: (typeof SOLO_PLANS)[number] }) {
 }
 
 function formatCell(value: string) {
-  if (value === "да") return <span className="font-semibold text-green-400">&#10003;</span>;
-  if (value === "—") return <span className="text-gray-600">&mdash;</span>;
+  if (value === "да") return <span className="font-semibold text-green-600">&#10003;</span>;
+  if (value === "—") return <span className="text-slate-400">&mdash;</span>;
   return value;
 }

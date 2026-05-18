@@ -17,11 +17,11 @@ interface Node {
 }
 
 const COLORS: [number, number, number][] = [
-  [34, 211, 238],   // cyan
-  [139, 92, 246],   // purple
-  [59, 130, 246],   // blue
-  [6, 182, 212],    // teal
-  [168, 85, 247],   // violet
+  [37, 99, 235],
+  [71, 85, 105],
+  [14, 165, 233],
+  [15, 23, 42],
+  [100, 116, 139],
 ];
 
 const CONNECTION_DIST = 160;
@@ -53,7 +53,7 @@ export function NeuralBackground({ className = "", nodeCount = 90, hubCount = 6 
         vy: (Math.random() - 0.5) * 0.15,
         radius: 4,
         baseRadius: 4,
-        opacity: 0.8,
+        opacity: 0.45,
         pulseSpeed: Math.random() * 0.015 + 0.008,
         pulsePhase: Math.random() * Math.PI * 2,
         color: COLORS[i % COLORS.length],
@@ -68,7 +68,7 @@ export function NeuralBackground({ className = "", nodeCount = 90, hubCount = 6 
         vy: (Math.random() - 0.5) * 0.5,
         radius: Math.random() * 1.5 + 0.8,
         baseRadius: Math.random() * 1.5 + 0.8,
-        opacity: Math.random() * 0.4 + 0.2,
+        opacity: Math.random() * 0.12 + 0.12,
         pulseSpeed: Math.random() * 0.025 + 0.01,
         pulsePhase: Math.random() * Math.PI * 2,
         color: COLORS[Math.floor(Math.random() * COLORS.length)],
@@ -167,7 +167,7 @@ export function NeuralBackground({ className = "", nodeCount = 90, hubCount = 6 
           if (distSq < maxDistSq) {
             const maxDist = isHubPair ? HUB_DIST : CONNECTION_DIST;
             const dist = Math.sqrt(distSq);
-            const opacity = (1 - dist / maxDist) * 0.35;
+            const opacity = (1 - dist / maxDist) * 0.16;
             const pulse = Math.sin(nodes[i].pulsePhase + nodes[j].pulsePhase) * 0.3 + 0.7;
             const [r, g, b] = nodes[i].isHub ? nodes[i].color : nodes[j].color;
 
@@ -187,10 +187,10 @@ export function NeuralBackground({ className = "", nodeCount = 90, hubCount = 6 
         const [r, g, b] = node.color;
 
         if (node.isHub) {
-          const glowSize = node.radius * (4 + pulse * 4);
+          const glowSize = node.radius * (2.5 + pulse * 2);
           const grad = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, glowSize);
-          grad.addColorStop(0, `rgba(${r},${g},${b},${0.4 + pulse * 0.2})`);
-          grad.addColorStop(0.4, `rgba(${r},${g},${b},${0.1 + pulse * 0.1})`);
+          grad.addColorStop(0, `rgba(${r},${g},${b},${0.12 + pulse * 0.08})`);
+          grad.addColorStop(0.4, `rgba(${r},${g},${b},${0.04 + pulse * 0.03})`);
           grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
           ctx.beginPath();
           ctx.arc(node.x, node.y, glowSize, 0, Math.PI * 2);
@@ -199,18 +199,18 @@ export function NeuralBackground({ className = "", nodeCount = 90, hubCount = 6 
 
           ctx.beginPath();
           ctx.arc(node.x, node.y, node.radius * (1 + pulse * 0.3), 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${r},${g},${b},0.9)`;
+          ctx.fillStyle = `rgba(${r},${g},${b},0.55)`;
           ctx.fill();
 
           ctx.beginPath();
           ctx.arc(node.x, node.y, node.radius * (2.5 + pulse * 1.5), 0, Math.PI * 2);
-          ctx.strokeStyle = `rgba(${r},${g},${b},${0.15 + pulse * 0.1})`;
+          ctx.strokeStyle = `rgba(${r},${g},${b},${0.04 + pulse * 0.04})`;
           ctx.lineWidth = 0.5;
           ctx.stroke();
         } else {
           const glowSize = node.radius * (2 + pulse * 1.5);
           const grad = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, glowSize);
-          grad.addColorStop(0, `rgba(${r},${g},${b},${node.opacity * (0.7 + pulse * 0.3)})`);
+          grad.addColorStop(0, `rgba(${r},${g},${b},${node.opacity * (0.35 + pulse * 0.2)})`);
           grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
           ctx.beginPath();
           ctx.arc(node.x, node.y, glowSize, 0, Math.PI * 2);
@@ -219,7 +219,7 @@ export function NeuralBackground({ className = "", nodeCount = 90, hubCount = 6 
 
           ctx.beginPath();
           ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${Math.min(r + 80, 255)},${Math.min(g + 80, 255)},${Math.min(b + 80, 255)},${node.opacity * (0.8 + pulse * 0.2)})`;
+          ctx.fillStyle = `rgba(${Math.min(r + 40, 255)},${Math.min(g + 40, 255)},${Math.min(b + 40, 255)},${node.opacity * (0.55 + pulse * 0.15)})`;
           ctx.fill();
         }
       }

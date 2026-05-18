@@ -225,7 +225,7 @@ export default async function ArticlePage({ params }: Props) {
 
       {/* Header */}
       <header className="border-b bg-white sticky top-0 z-10">
-        <nav className="mx-auto flex max-w-4xl items-center justify-between px-6 py-3">
+        <nav className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3 sm:px-6">
           <Link href="/" className="text-lg font-bold text-gray-900">НейроЭксперт</Link>
           <div className="flex gap-4 text-sm">
             <Link href="/experts" className="text-gray-600 hover:text-gray-900">Эксперты</Link>
@@ -235,7 +235,7 @@ export default async function ArticlePage({ params }: Props) {
       </header>
 
       <ArticleAnalytics expertSlug={expert.slug} articleSlug={article.slug} contentId={article.id} />
-      <main className="mx-auto max-w-4xl px-6 py-8">
+      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
         {/* Breadcrumbs */}
         <nav className="text-sm text-gray-500 mb-6">
           <Link href="/" className="hover:text-gray-700">Главная</Link>
@@ -520,7 +520,7 @@ export default async function ArticlePage({ params }: Props) {
       </main>
 
       <footer className="bg-gray-900 py-8">
-        <div className="mx-auto max-w-4xl px-6 text-center text-sm text-gray-400">
+        <div className="mx-auto max-w-4xl px-4 text-center text-sm text-gray-400 sm:px-6">
           &copy; {new Date().getFullYear()} НейроЭксперт
         </div>
       </footer>

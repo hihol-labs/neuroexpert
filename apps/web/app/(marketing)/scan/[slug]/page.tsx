@@ -66,8 +66,8 @@ export async function generateMetadata({
   const result = await getScanResult(slug);
   if (!result) return { title: "Результат не найден" };
 
-  const title = `${result.query} — AI-спрос: ${result.visibility_percent}%`;
-  const description = `${result.query} упоминается в ${result.mentioned_count} из ${result.total_platforms} AI-платформ.`;
+  const title = `${result.query} — спрос в нейросетях: ${result.visibility_percent}%`;
+  const description = `${result.query} упоминается в ${result.mentioned_count} из ${result.total_platforms} нейросетевых платформ.`;
 
   return {
     title,
@@ -111,9 +111,9 @@ function VisibilityBadge({
   }
 
   return (
-    <div className={`inline-flex items-center gap-3 rounded-2xl ${bg} px-8 py-5`}>
-      <span className={`text-5xl font-bold ${color}`}>{percent}%</span>
-      <span className="text-left text-sm text-gray-600">AI-спрос</span>
+    <div className={`inline-flex items-center gap-3 rounded-2xl ${bg} px-5 py-4 sm:px-8 sm:py-5`}>
+      <span className={`text-4xl font-bold sm:text-5xl ${color}`}>{percent}%</span>
+      <span className="text-left text-sm text-gray-600">спрос в нейросетях</span>
     </div>
   );
 }
@@ -150,12 +150,12 @@ export default async function ScanResultPage({
     <div className="min-h-screen bg-white">
       <MarketingHeader />
 
-      <section className="py-16">
-        <div className="mx-auto max-w-3xl px-6">
+      <section className="py-12 sm:py-16">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6">
           {/* Hero */}
           <div className="text-center">
             <p className="text-sm font-medium text-blue-600">
-              Scanner спроса в нейросетях
+              Проверка спроса в нейросетях
             </p>
             <h1 className="mt-3 text-3xl font-bold text-gray-900">
               {result.query}
@@ -170,11 +170,11 @@ export default async function ScanResultPage({
 
           {/* Comparison block */}
           {hasComparison && (
-            <div className="mt-10 rounded-2xl border-2 border-blue-100 bg-blue-50/30 p-6">
+            <div className="mt-10 rounded-2xl border-2 border-blue-100 bg-blue-50/30 p-4 sm:p-6">
               <h2 className="text-lg font-bold text-gray-900 text-center mb-6">
-                Сравнение AI-ответов
+                Сравнение ответов нейросетей
               </h2>
-              <div className="grid grid-cols-3 gap-4 items-center">
+              <div className="grid gap-4 sm:grid-cols-3 sm:items-center">
                 {/* You */}
                 <div className="text-center">
                   <p className="text-sm font-medium text-gray-600 mb-2 truncate">
@@ -188,7 +188,7 @@ export default async function ScanResultPage({
 
                 {/* VS */}
                 <div className="text-center">
-                  <span className="text-2xl font-bold text-gray-300">vs</span>
+                  <span className="text-lg font-bold text-slate-400">против</span>
                 </div>
 
                 {/* Competitor */}
@@ -212,9 +212,9 @@ export default async function ScanResultPage({
                   return (
                     <div
                       key={p.platform}
-                      className="flex items-center justify-between bg-white rounded-lg px-4 py-3 border"
+                      className="grid gap-2 rounded-lg border bg-white px-4 py-3 sm:grid-cols-[96px_1fr_auto_1fr] sm:items-center"
                     >
-                      <span className="text-sm font-medium text-gray-700 w-24">
+                      <span className="text-sm font-medium text-gray-700">
                         {p.platform}
                       </span>
                       <span
@@ -222,7 +222,7 @@ export default async function ScanResultPage({
                       >
                         {p.mentioned ? "✓ Вы" : "✗ Вы"}
                       </span>
-                      <span className="text-gray-300">|</span>
+                      <span className="hidden text-slate-300 sm:inline">|</span>
                       <span
                         className={`text-sm font-medium ${compPlatform?.mentioned ? "text-green-600" : "text-red-500"}`}
                       >
@@ -254,9 +254,9 @@ export default async function ScanResultPage({
             {mainPlatforms.map((p) => (
               <div
                 key={p.platform}
-                className="rounded-xl border border-gray-200 p-5"
+                  className="rounded-xl border border-gray-200 p-4 sm:p-5"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <h3 className="font-semibold text-gray-900">{p.platform}</h3>
                   <span
                     className={`rounded-full px-3 py-1 text-xs font-medium ${
@@ -275,13 +275,13 @@ export default async function ScanResultPage({
             ))}
           </div>
 
-          {/* CTA 1 — Primary B2C */}
-          <div className="mt-12 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 p-8 text-center">
-            <h2 className="text-2xl font-bold text-white">
+          {/* Основной призыв к действию */}
+          <div className="mt-12 rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-sm sm:p-8">
+            <h2 className="text-2xl font-bold text-slate-950">
               {result.visibility_percent === 0
                 ? "Нейросети не находят вас по этому спросу. Это можно превратить в план страниц."
                 : result.visibility_percent < 50
-                  ? `Вы не попадаете в ${result.total_platforms - result.mentioned_count} из ${result.total_platforms} AI-ответов.${
+                  ? `Вы не попадаете в ${result.total_platforms - result.mentioned_count} из ${result.total_platforms} ответов нейросетей.${
                       competitor && competitor.visibility_percent > result.visibility_percent
                         ? ` Конкурент опережает на ${competitor.visibility_percent - result.visibility_percent}%.`
                         : " Этот спрос можно закрывать экспертными страницами."
@@ -290,33 +290,33 @@ export default async function ScanResultPage({
                     ? `Хороший старт! Но ${result.total_platforms - result.mentioned_count} платформ ещё не связывают этот спрос с вами.`
                     : "Отличный старт! Теперь важно вести людей со страниц к записи и заявке."}
             </h2>
-            <p className="mt-3 text-blue-100">
+            <p className="mt-3 text-slate-700">
               Наговорите ответ за 10 минут — мы превратим его в страницу под вопрос,
-              добавим CTA и начнём измерять трафик, клики и заявки.
+              добавим кнопку заявки и начнём измерять трафик, клики и заявки.
             </p>
             <div className="mt-6 flex flex-col sm:flex-row justify-center gap-4">
               <Link
                 href={`/launch?from=scan&niche=${encodeURIComponent(result.query)}`}
-                className="rounded-lg bg-white px-8 py-3 text-base font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
+                className="rounded-lg bg-blue-700 px-8 py-3 text-base font-semibold text-white transition-colors hover:bg-blue-800"
               >
                 Получить план запуска
               </Link>
               <Link
                 href="/scan"
-                className="rounded-lg border border-white/40 px-8 py-3 text-base font-semibold text-white hover:bg-white/10 transition-colors"
+                className="rounded-lg border border-slate-300 px-8 py-3 text-base font-semibold text-slate-950 transition-colors hover:bg-slate-100"
               >
                 Проверить ещё
               </Link>
             </div>
           </div>
 
-          {/* CTA 2 — Secondary B2B */}
+          {/* Дополнительный призыв для агентств */}
           <div className="mt-6 rounded-2xl border border-gray-200 bg-gray-50 p-6 text-center">
             <h3 className="text-lg font-semibold text-gray-900">
               Агентство или бизнес?
             </h3>
             <p className="mt-2 text-sm text-gray-600">
-              Demand API показывает вопросы, спрос, слабость AI-ответов и CTA для страниц под заявки. От $99/мес.
+              API спроса показывает вопросы, спрос, слабость ответов нейросетей и кнопки для страниц под заявки. От $99/мес.
             </p>
             <Link
               href="/for-agencies"
@@ -333,7 +333,7 @@ export default async function ScanResultPage({
             </p>
             <div className="mt-3 flex justify-center gap-3">
               <a
-                href={`https://t.me/share/url?url=${encodeURIComponent(`https://neuroexpertise.ru/scan/${result.slug}`)}&text=${encodeURIComponent(`${result.query} — AI-спрос: ${result.visibility_percent}%`)}`}
+                href={`https://t.me/share/url?url=${encodeURIComponent(`https://neuroexpertise.ru/scan/${result.slug}`)}&text=${encodeURIComponent(`${result.query} — спрос в нейросетях: ${result.visibility_percent}%`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
@@ -341,7 +341,7 @@ export default async function ScanResultPage({
                 Telegram
               </a>
               <a
-                href={`https://vk.com/share.php?url=${encodeURIComponent(`https://neuroexpertise.ru/scan/${result.slug}`)}&title=${encodeURIComponent(`${result.query} — AI-спрос: ${result.visibility_percent}%`)}`}
+                href={`https://vk.com/share.php?url=${encodeURIComponent(`https://neuroexpertise.ru/scan/${result.slug}`)}&title=${encodeURIComponent(`${result.query} — спрос в нейросетях: ${result.visibility_percent}%`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
