@@ -180,6 +180,12 @@
       "stage": "EXISTING_PROJECT_ANALYZED",
       "status": "BLOCKED",
       "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 0 gate command(s)."
+    },
+    {
+      "mode": "existing-project-analyze",
+      "stage": "EXISTING_PROJECT_ANALYZED",
+      "status": "BLOCKED",
+      "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 0 gate command(s)."
     }
   ],
   "decisionLog": [
@@ -274,6 +280,14 @@
     {
       "event": "b2b public pricing copy restored",
       "note": "2026-05-16: Restored old public descriptions for B2B step 2 on /pricing and /for-business. Public cards now change prices only; explanatory audit-deduction logic remains in CURRENT_PLAN for implementation and sales consistency."
+    },
+    {
+      "event": "mobile adaptation started",
+      "note": "2026-05-18: User explicitly reprioritized work to Android/iOS responsiveness. Scope: public marketing pages, experts/questions/niches pages, shared marketing mockups, header/footer, viewport and overflow safeguards. Existing Stage 1 login/SMTP gate remains active after this UI fix."
+    },
+    {
+      "event": "mobile adaptation verified",
+      "note": "2026-05-18: Public marketing and marketplace pages adapted for mobile. Verified pnpm --filter web build and browser checks at 390px/360px on /, /for-business, /pricing, /audit, /scan, /for-agencies, /for-experts, /how-it-works, /experts, /questions with no document-level horizontal overflow."
     }
   ],
   "artifactHashes": {},
@@ -293,5 +307,5 @@
   "blockers": [
     "No root test/typecheck script was detected."
   ],
-  "nextAction": "Continue current P0 sequence: restore Yandex 360/SMTP login gate before heavy Local Sales OS/Demand API implementation; current change is planning, technical completeness, and lower market-entry pricing alignment only."
+  "nextAction": "Return to Stage 1 login/SMTP restoration gate after the completed mobile responsiveness fix."
 }

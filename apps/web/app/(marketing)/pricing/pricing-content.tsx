@@ -332,12 +332,12 @@ export function PricingContent() {
 
   return (
     <main>
-      <section className="bg-gradient-to-br from-blue-50 via-white to-emerald-50 py-16">
-        <div className="mx-auto max-w-5xl px-6 text-center">
+      <section className="bg-gradient-to-br from-blue-50 via-white to-emerald-50 py-12 sm:py-16">
+        <div className="mx-auto max-w-5xl px-4 text-center sm:px-6">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">
             Тарифы НейроЭксперт
           </p>
-          <h1 className="mt-3 text-4xl font-bold text-slate-950 md:text-5xl">
+          <h1 className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl md:text-5xl">
             Выберите свой путь к новым клиентам
           </h1>
           <p className="mx-auto mt-5 max-w-3xl text-lg text-slate-600">
@@ -346,7 +346,7 @@ export function PricingContent() {
             поведения клиентов, ежедневных задач и повторных касаний.
           </p>
 
-          <div className="mx-auto mt-8 grid max-w-2xl grid-cols-2 gap-2 rounded-lg border border-slate-200 bg-white p-1">
+          <div className="mx-auto mt-8 grid max-w-2xl grid-cols-1 gap-2 rounded-lg border border-slate-200 bg-white p-1 sm:grid-cols-2">
             <button
               type="button"
               aria-pressed={audience === "business"}
@@ -384,7 +384,7 @@ function BusinessPricing() {
   return (
     <>
       <section className="py-12">
-        <div className="mx-auto max-w-6xl px-6">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
             <div>
               <p className="text-sm font-semibold text-blue-700">НейроЭксперт для бизнеса</p>
@@ -454,7 +454,7 @@ function BusinessPricing() {
       />
 
       <section className="py-12">
-        <div className="mx-auto max-w-6xl px-6">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
             <div>
               <p className="text-sm font-semibold text-blue-700">Почему цена отличается</p>
@@ -501,7 +501,7 @@ function BusinessPricing() {
 function BusinessResultGuards() {
   return (
     <section className="py-12">
-      <div className="mx-auto max-w-6xl px-6">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-6">
           <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
             <div>
@@ -532,7 +532,7 @@ function BusinessResultGuards() {
 function BusinessModuleMatrix() {
   return (
     <section className="bg-blue-50 py-12">
-      <div className="mx-auto max-w-6xl px-6">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="max-w-3xl">
           <p className="text-sm font-semibold text-blue-700">Система привлечения клиентов</p>
           <h2 className="mt-2 text-3xl font-bold text-slate-950">
@@ -580,7 +580,7 @@ function ExpertPricing() {
   return (
     <>
       <section className="py-12">
-        <div className="mx-auto max-w-6xl px-6">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl text-center">
             <p className="text-sm font-semibold text-blue-700">НейроЭксперт для экспертов</p>
             <h2 className="mt-3 text-3xl font-bold text-slate-950">
@@ -601,7 +601,7 @@ function ExpertPricing() {
       </section>
 
       <section className="bg-slate-50 py-12 ">
-        <div className="mx-auto max-w-5xl px-6">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <h2 className="text-center text-2xl font-bold text-slate-950">Сравнение тарифов для экспертов</h2>
           <div className="mt-8 overflow-x-auto rounded-lg border border-slate-200 bg-white">
             <table className="w-full text-sm">
@@ -634,7 +634,7 @@ function ExpertPricing() {
       </section>
 
       <section className="py-14">
-        <div className="mx-auto max-w-4xl px-6 text-center">
+        <div className="mx-auto max-w-4xl px-4 text-center sm:px-6">
           <h2 className="text-2xl font-bold text-slate-950">Одна консультация может окупить тариф</h2>
           <p className="mt-4 text-slate-600">
             Начните бесплатно, проверьте карту спроса и опубликуйте первые страницы.
@@ -667,7 +667,7 @@ function BusinessPackageSection({
 }) {
   return (
     <section className="py-12">
-      <div className="mx-auto max-w-6xl px-6">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="max-w-3xl">
           <p className="text-sm font-semibold text-blue-700">{eyebrow}</p>
           <h2 className="mt-2 text-3xl font-bold text-slate-950">{title}</h2>

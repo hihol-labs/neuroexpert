@@ -52,30 +52,30 @@ export function ExpertFilters({ niches }: Props) {
   return (
     <div className="space-y-4 mb-8">
       {/* Search bar */}
-      <form onSubmit={handleSearch} className="flex gap-2">
+      <form onSubmit={handleSearch} className="flex flex-col gap-2 sm:flex-row">
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Поиск по имени, квалификации..."
-          className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="min-w-0 flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:py-2"
         />
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 sm:py-2"
         >
           Найти
         </button>
       </form>
 
       {/* Filters row */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
         {/* Sort */}
         <select
           value={currentSort}
           onChange={(e) => updateParams({ sort: e.target.value })}
-          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none sm:w-auto sm:py-1.5"
         >
           <option value="trust_score">По Trust Score</option>
           <option value="rating">По рейтингу</option>
@@ -88,7 +88,7 @@ export function ExpertFilters({ niches }: Props) {
         <select
           value={currentMinExp}
           onChange={(e) => updateParams({ min_exp: e.target.value })}
-          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none sm:w-auto sm:py-1.5"
         >
           <option value="">Опыт: любой</option>
           <option value="1">от 1 года</option>
@@ -101,7 +101,7 @@ export function ExpertFilters({ niches }: Props) {
         <select
           value={currentMinScore}
           onChange={(e) => updateParams({ min_score: e.target.value })}
-          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none sm:w-auto sm:py-1.5"
         >
           <option value="">Trust Score: любой</option>
           <option value="10">от 10</option>
@@ -114,7 +114,7 @@ export function ExpertFilters({ niches }: Props) {
         <select
           value={currentMaxPrice}
           onChange={(e) => updateParams({ max_price: e.target.value })}
-          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none sm:w-auto sm:py-1.5"
         >
           <option value="">Цена: любая</option>
           <option value="2000">до 2 000 ₽</option>
@@ -127,7 +127,7 @@ export function ExpertFilters({ niches }: Props) {
         <select
           value={currentMinRating}
           onChange={(e) => updateParams({ min_rating: e.target.value })}
-          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none sm:w-auto sm:py-1.5"
         >
           <option value="">Рейтинг: любой</option>
           <option value="3">от 3 ★</option>

@@ -121,9 +121,9 @@ function ProductFrame({
   right?: ReactNode;
 }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-blue-800 bg-blue-700 px-5 py-4 text-white">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-100">{subtitle}</p>
             <h3 className="mt-1 text-base font-semibold">{title}</h3>
@@ -169,7 +169,21 @@ export function LocalSalesAuditMockup({ compact = false }: { compact?: boolean }
       </div>
 
       <div className="px-4 pb-4">
-        <div className="overflow-x-auto rounded-lg border border-slate-200">
+        <div className="space-y-3 sm:hidden">
+          {lossRows.slice(0, compact ? 4 : lossRows.length).map((row) => (
+            <div key={row.channel} className="rounded-lg border border-slate-200 bg-white p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-slate-950">{row.channel}</p>
+                  <p className="mt-1 text-sm text-slate-600">{row.issue}</p>
+                </div>
+                <SeverityBadge value={row.loss} />
+              </div>
+              <p className="mt-3 text-xs text-slate-500">Ответственный: {row.owner}</p>
+            </div>
+          ))}
+        </div>
+        <div className="hidden overflow-x-auto rounded-lg border border-slate-200 sm:block">
           <div className="min-w-[620px]">
             <div className="grid grid-cols-[1fr_1.35fr_0.8fr_auto] gap-3 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase text-slate-500">
               <span>Канал</span>
@@ -200,10 +214,10 @@ export function LocalSalesAuditMockup({ compact = false }: { compact?: boolean }
           </div>
           <div className="mt-3 space-y-2">
             {todayTasks.slice(0, compact ? 3 : todayTasks.length).map(([priority, task, term]) => (
-              <div key={task} className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-sm">
+              <div key={task} className="grid grid-cols-1 gap-1 rounded-md bg-slate-50 p-2 text-sm sm:grid-cols-[auto_1fr_auto] sm:items-center sm:bg-transparent sm:p-0">
                 <PriorityBadge value={priority} />
                 <span className="text-slate-700">{task}</span>
-                <span className="text-xs text-slate-500">{term}</span>
+                <span className="w-fit text-xs text-slate-500">{term}</span>
               </div>
             ))}
           </div>
@@ -245,7 +259,18 @@ export function SevenDayResultPanel() {
           Потенциал возврата: до 480 000 ₽
         </div>
       </div>
-      <div className="mt-6 overflow-x-auto rounded-lg border border-slate-200">
+      <div className="mt-6 space-y-3 sm:hidden">
+        {rows.map(([channel, loss, action]) => (
+          <div key={channel} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <p className="font-semibold text-slate-950">{channel}</p>
+            <p className="mt-2 text-sm text-slate-600">{loss}</p>
+            <p className="mt-3 rounded-md border border-blue-200 bg-white px-3 py-2 text-sm text-blue-900">
+              {action}
+            </p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-6 hidden overflow-x-auto rounded-lg border border-slate-200 sm:block">
         <div className="min-w-[560px]">
           <div className="grid grid-cols-[0.8fr_1fr_1.25fr] gap-3 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase text-slate-500">
             <span>Канал</span>
@@ -327,7 +352,23 @@ export function SoloDemandSignalMockup() {
       </div>
 
       <div className="px-4 pb-4">
-        <div className="overflow-x-auto rounded-lg border border-slate-200">
+        <div className="space-y-3 sm:hidden">
+          {soloSignals.map((row) => (
+            <div key={row.topic} className="rounded-lg border border-slate-200 bg-white p-4">
+              <div className="flex items-start justify-between gap-3">
+                <p className="font-semibold text-slate-950">{row.topic}</p>
+                <span className="rounded-md bg-blue-50 px-2 py-1 text-sm font-semibold text-blue-700">
+                  {row.score}
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-slate-600">{row.signal}</p>
+              <p className="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                {row.action}
+              </p>
+            </div>
+          ))}
+        </div>
+        <div className="hidden overflow-x-auto rounded-lg border border-slate-200 sm:block">
           <div className="min-w-[620px]">
             <div className="grid grid-cols-[1.5fr_0.5fr_0.85fr_0.85fr] gap-3 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase text-slate-500">
               <span>Тема</span>
@@ -501,30 +542,49 @@ export function BeforeAfterPanel() {
   ];
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="grid min-w-[760px] grid-cols-[1fr_1.1fr_1fr] gap-3 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+    <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="space-y-3 p-4 sm:hidden">
+        {rows.map((row) => (
+          <div key={row.issue} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div className="flex gap-2 text-rose-800">
+              <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+              <span className="text-sm">{row.issue}</span>
+            </div>
+            <div className="mt-3 flex gap-2 text-slate-700">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-700" />
+              <span className="text-sm">{row.action}</span>
+            </div>
+            <div className="mt-3 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900">
+              {row.metric}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="hidden overflow-x-auto sm:block">
+        <div className="grid min-w-[760px] grid-cols-[1fr_1.1fr_1fr] gap-3 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
         <span>Что мешает обращению</span>
         <span>Что делаем</span>
         <span>Что измеряем</span>
-      </div>
-      {rows.map((row) => (
-        <div
-          key={row.issue}
-          className="grid min-w-[760px] grid-cols-[1fr_1.1fr_1fr] gap-3 border-t border-slate-200 px-4 py-4 text-sm"
-        >
-          <div className="flex gap-2 text-rose-800">
-            <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-            <span>{row.issue}</span>
-          </div>
-          <div className="flex gap-2 text-slate-700">
-            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-700" />
-            <span>{row.action}</span>
-          </div>
-          <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-blue-900">
-            {row.metric}
-          </div>
         </div>
-      ))}
+        {rows.map((row) => (
+          <div
+            key={row.issue}
+            className="grid min-w-[760px] grid-cols-[1fr_1.1fr_1fr] gap-3 border-t border-slate-200 px-4 py-4 text-sm"
+          >
+            <div className="flex gap-2 text-rose-800">
+              <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+              <span>{row.issue}</span>
+            </div>
+            <div className="flex gap-2 text-slate-700">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-700" />
+              <span>{row.action}</span>
+            </div>
+            <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-blue-900">
+              {row.metric}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -465,7 +465,7 @@ export default function ForBusinessPage() {
       <MarketingHeader />
 
       <section className="border-b border-blue-100 bg-gradient-to-br from-blue-50 via-white to-emerald-50">
-        <div className="mx-auto grid max-w-7xl gap-12 px-6 py-16 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
           <div>
             <FadeIn>
               <div className="inline-flex items-center gap-2 rounded-md border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-800 shadow-sm">
@@ -474,7 +474,7 @@ export default function ForBusinessPage() {
             </FadeIn>
 
             <FadeIn delay={150}>
-              <h1 className="mt-7 max-w-3xl text-4xl font-bold leading-[1.06] tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
+              <h1 className="mt-6 max-w-3xl text-3xl font-bold leading-[1.08] tracking-tight text-slate-950 sm:mt-7 sm:text-5xl lg:text-6xl">
                 Запустим привлечение клиентов из карт, поиска, отзывов и AI
               </h1>
             </FadeIn>
@@ -515,8 +515,8 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="bg-emerald-50 py-16">
-        <div className="mx-auto grid max-w-7xl gap-6 px-6 lg:grid-cols-[1.2fr_0.8fr]">
+      <section className="bg-emerald-50 py-12 sm:py-16">
+        <div className="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-[1.2fr_0.8fr]">
           <FadeIn>
             <SevenDayResultPanel />
           </FadeIn>
@@ -526,8 +526,8 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="border-y border-blue-100 bg-white py-20">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="border-y border-blue-100 bg-white py-14 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <FadeIn className="mb-10 text-center">
             <p className="text-sm font-semibold text-blue-700">Рабочая панель</p>
             <h2 className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl">
@@ -544,8 +544,8 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="bg-gradient-to-b from-blue-50 to-white py-20">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="bg-gradient-to-b from-blue-50 to-white py-14 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <FadeIn className="mb-12 text-center">
             <h2 className="text-3xl font-bold text-slate-950 sm:text-4xl">
               Откуда бизнес может получать больше клиентов
@@ -570,8 +570,8 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="bg-white py-20">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="bg-white py-14 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <FadeIn className="mb-12 text-center">
             <h2 className="text-3xl font-bold text-slate-950 sm:text-4xl">
               5 модулей системы локальных продаж
@@ -606,8 +606,8 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="border-y border-blue-100 bg-blue-50 py-20">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="border-y border-blue-100 bg-blue-50 py-14 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <FadeIn className="mb-10 max-w-3xl">
             <p className="text-sm font-semibold text-blue-700">Как реализуем на практике</p>
             <h2 className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl">
@@ -641,8 +641,8 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="bg-white py-20">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="bg-white py-14 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
             <FadeIn>
               <p className="text-sm font-semibold text-blue-700">Генератор страниц привлечения</p>
@@ -672,8 +672,8 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="border-y border-amber-100 bg-amber-50 py-20">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="border-y border-amber-100 bg-amber-50 py-14 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <FadeIn className="mb-10 max-w-3xl">
             <p className="text-sm font-semibold text-amber-800">Anti-SEO-Failure</p>
             <h2 className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl">
@@ -711,8 +711,8 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="border-y border-slate-200 bg-slate-50 py-20">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="border-y border-slate-200 bg-slate-50 py-14 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <FadeIn className="mb-10 max-w-3xl">
             <p className="text-sm font-semibold text-blue-700">Сигналы поведения клиентов</p>
             <h2 className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl">
@@ -741,8 +741,8 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="bg-white py-20">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="bg-white py-14 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <FadeIn className="mb-10 text-center">
             <p className="text-sm font-semibold text-blue-700">Сценарии по отраслям</p>
             <h2 className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl">
@@ -760,8 +760,8 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="border-y border-emerald-100 bg-emerald-50 py-20">
-        <div className="mx-auto max-w-6xl px-6">
+      <section className="border-y border-emerald-100 bg-emerald-50 py-14 sm:py-20">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <FadeIn className="mb-10 text-center">
             <h2 className="text-3xl font-bold text-slate-950 sm:text-4xl">
               Пример: как аудит превращается в план привлечения
@@ -777,8 +777,8 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="bg-white py-20">
-        <div className="mx-auto max-w-6xl px-6">
+      <section className="bg-white py-14 sm:py-20">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
             <FadeIn>
               <p className="text-sm font-semibold text-blue-700">Ответы нейросетей уже влияют на выбор</p>
@@ -808,8 +808,8 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="border-y border-slate-200 bg-slate-50 py-20">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="border-y border-slate-200 bg-slate-50 py-14 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <FadeIn className="mb-12 text-center">
             <h2 className="text-3xl font-bold text-slate-950 sm:text-4xl">
               Что вы получите через 7 дней
@@ -832,8 +832,8 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="bg-white py-20">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="bg-white py-14 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr]">
             <FadeIn>
               <p className="text-sm font-semibold text-blue-700">Как внедряем</p>
@@ -866,8 +866,8 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="border-y border-slate-200 bg-slate-50 py-20">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="border-y border-slate-200 bg-slate-50 py-14 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <FadeIn className="mb-12 text-center">
             <h2 className="text-3xl font-bold text-slate-950 sm:text-4xl">
               Эффективность измеряем по коммерческим сигналам
@@ -890,8 +890,8 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="bg-white py-20">
-        <div className="mx-auto max-w-5xl px-6">
+      <section className="bg-white py-14 sm:py-20">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <FadeIn className="mb-12 text-center">
             <h2 className="text-3xl font-bold text-slate-950 sm:text-4xl">
               Пакеты внедрения
@@ -943,8 +943,8 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="border-y border-slate-200 bg-slate-50 py-20">
-        <div className="mx-auto max-w-5xl px-6">
+      <section className="border-y border-slate-200 bg-slate-50 py-14 sm:py-20">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <FadeIn className="mb-12 text-center">
             <h2 className="text-3xl font-bold text-slate-950 sm:text-4xl">
               Для каких компаний
@@ -967,8 +967,8 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="bg-white py-20">
-        <div className="mx-auto max-w-5xl px-6">
+      <section className="bg-white py-14 sm:py-20">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <div className="grid gap-6 md:grid-cols-2">
             <FadeIn>
               <div className="h-full rounded-lg border border-green-200 bg-green-50 p-8">
@@ -996,8 +996,8 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section id="form" className="border-t border-slate-200 bg-slate-50 py-20">
-        <div className="mx-auto max-w-3xl px-6">
+      <section id="form" className="border-t border-slate-200 bg-slate-50 py-14 sm:py-20">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6">
           <FadeIn>
             <div className="rounded-lg border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
               <h2 className="mb-2 text-center text-2xl font-bold text-slate-950">

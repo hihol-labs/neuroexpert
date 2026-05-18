@@ -59,16 +59,16 @@ export default function LaunchPage({ searchParams }: Props) {
       <MarketingHeader />
 
       <main>
-        <section className="py-16">
-          <div className="mx-auto grid max-w-6xl gap-10 px-6 lg:grid-cols-[1fr_420px] lg:items-start">
+        <section className="py-12 sm:py-16">
+          <div className="mx-auto grid max-w-6xl gap-8 px-4 sm:px-6 lg:grid-cols-[1fr_420px] lg:items-start">
             <div>
               <p className="text-sm font-medium uppercase tracking-wider text-blue-700">
                 Запуск под ключ
               </p>
-              <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl">
+              <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-5xl">
                 Запускаем канал привлечения клиентов из поиска, карт, Авито, отзывов, нейросетей и входящих обращений
               </h1>
-              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-700">
+              <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-700 sm:mt-6 sm:text-lg">
                 Мы продаём не абстрактную платформу, а запуск результата:
                 аудит каналов, упаковку точек входа, усиление карточек, сбор
                 отзывов, экспертные страницы и первые измеримые сигналы —
@@ -94,7 +94,7 @@ export default function LaunchPage({ searchParams }: Props) {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6">
               {success ? (
                 <div className="rounded-2xl border border-green-200 bg-green-50 p-4 text-green-800">
                   Заявка отправлена. Мы свяжемся с вами и предложим план запуска.
@@ -200,7 +200,7 @@ export default function LaunchPage({ searchParams }: Props) {
         </section>
 
         <section className="border-y border-slate-200 bg-slate-50 py-14">
-          <div className="mx-auto max-w-6xl px-6">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <div className="max-w-3xl">
               <p className="text-sm font-semibold text-blue-700">Контроль результата</p>
               <h2 className="mt-3 text-3xl font-bold text-slate-950">

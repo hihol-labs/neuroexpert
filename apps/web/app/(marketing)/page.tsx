@@ -157,22 +157,22 @@ export default function LandingPage() {
       <MarketingHeader />
 
       <section className="border-b border-blue-100 bg-blue-50">
-        <div className="mx-auto grid max-w-7xl gap-12 px-6 py-16 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
           <div>
             <FadeIn>
-              <div className="inline-flex items-center gap-2 rounded-md border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-800 shadow-sm">
+              <div className="inline-flex items-center gap-2 rounded-md border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-800 shadow-sm sm:px-4">
                 SaaS-платформа привлечения клиентов
               </div>
             </FadeIn>
 
             <FadeIn delay={120}>
-              <h1 className="mt-7 max-w-3xl text-4xl font-bold leading-[1.06] tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
+              <h1 className="mt-6 max-w-3xl text-3xl font-bold leading-[1.08] tracking-tight text-slate-950 sm:mt-7 sm:text-5xl lg:text-6xl">
                 Поможем получать больше клиентов из карт, поиска, отзывов и AI
               </h1>
             </FadeIn>
 
             <FadeIn delay={240}>
-              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-700">
+              <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-700 sm:mt-6 sm:text-lg">
                 НейроЭксперт показывает, какие каналы уже могут приводить клиентов,
                 что мешает клиенту выбрать вас, какие страницы под спрос стоит
                 запустить, что показывает поведение клиентов и какие действия
@@ -208,8 +208,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="bg-white py-16">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="bg-white py-12 sm:py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="grid gap-5 md:grid-cols-2">
             {routeCards.map((route, index) => (
               <FadeIn key={route.title} delay={index * 100}>
@@ -231,8 +231,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="border-y border-blue-100 bg-blue-50 py-20">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="border-y border-blue-100 bg-blue-50 py-14 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <FadeIn className="mx-auto mb-12 max-w-3xl text-center">
             <p className="text-sm font-semibold text-blue-700">Что получает клиент</p>
             <h2 className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl">
@@ -263,8 +263,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="bg-white py-20">
-        <div className="mx-auto grid max-w-7xl gap-6 px-6 lg:grid-cols-[1.2fr_0.8fr]">
+      <section className="bg-white py-14 sm:py-20">
+        <div className="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-[1.2fr_0.8fr]">
           <FadeIn>
             <SevenDayResultPanel />
           </FadeIn>
@@ -274,8 +274,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="border-y border-emerald-100 bg-emerald-50 py-20">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="border-y border-emerald-100 bg-emerald-50 py-14 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <FadeIn className="mx-auto mb-12 max-w-3xl text-center">
             <p className="text-sm font-semibold text-emerald-700">Практический процесс</p>
             <h2 className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl">
@@ -316,8 +316,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="border-y border-slate-200 bg-slate-50 py-20">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="border-y border-slate-200 bg-slate-50 py-14 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <FadeIn className="mx-auto mb-10 max-w-3xl text-center">
             <p className="text-sm font-semibold text-blue-700">Не SEO ради SEO</p>
             <h2 className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl">
@@ -348,8 +348,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="bg-white py-20">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="bg-white py-14 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <FadeIn className="mx-auto mb-10 max-w-3xl text-center">
             <p className="text-sm font-semibold text-blue-700">Для кого особенно полезно</p>
             <h2 className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl">
@@ -377,10 +377,10 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="bg-blue-700 py-20 text-white">
-        <div className="mx-auto max-w-4xl px-6 text-center">
+      <section className="bg-blue-700 py-14 text-white sm:py-20">
+        <div className="mx-auto max-w-4xl px-4 text-center sm:px-6">
           <FadeIn>
-            <h2 className="text-3xl font-bold">Получите план привлечения клиентов на 30 дней</h2>
+            <h2 className="text-2xl font-bold sm:text-3xl">Получите план привлечения клиентов на 30 дней</h2>
             <p className="mx-auto mt-4 max-w-2xl text-blue-50">
               Покажем, какие каналы стоит усилить первыми, какие конкуренты
               забирают спрос и какие действия могут быстрее привести новые обращения.

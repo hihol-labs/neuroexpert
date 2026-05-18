@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
@@ -40,6 +40,13 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#2563eb",
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -48,7 +55,6 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <head>
-        <meta name="theme-color" content="#2563eb" />
         <link rel="apple-touch-icon" href="/apple-icon" />
         {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && (
           <script

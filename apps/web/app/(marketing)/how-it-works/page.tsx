@@ -369,8 +369,20 @@ function MechanismGrid({ modules, accent = "neutral" }: { modules: Mechanism[]; 
 
 function ResultsTable() {
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="min-w-[680px]">
+    <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="space-y-3 p-4 sm:hidden">
+        {resultRows.map(([period, work, result]) => (
+          <div key={period} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm font-semibold text-slate-950">{period}</p>
+            <p className="mt-2 text-sm text-slate-600">{work}</p>
+            <p className="mt-3 rounded-md border border-blue-200 bg-white px-3 py-2 text-sm text-blue-900">
+              {result}
+            </p>
+          </div>
+        ))}
+      </div>
+      <div className="hidden overflow-x-auto sm:block">
+        <div className="min-w-[680px]">
         <div className="grid grid-cols-[0.7fr_1.2fr_1fr] gap-4 bg-slate-50 px-5 py-4 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
           <span>Период</span>
           <span>Что делаем</span>
@@ -383,6 +395,7 @@ function ResultsTable() {
             <span className="text-slate-800">{result}</span>
           </div>
         ))}
+        </div>
       </div>
     </div>
   );
@@ -391,7 +404,7 @@ function ResultsTable() {
 function AntiSeoFrameworkSection() {
   return (
     <section className="border-y border-slate-200 bg-white py-14">
-      <div className="mx-auto max-w-7xl px-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="mb-8 max-w-3xl">
           <p className="text-sm font-semibold text-blue-700">Anti-SEO-Failure Framework</p>
           <h2 className="mt-3 text-3xl font-bold text-slate-950">
@@ -448,12 +461,12 @@ export default function HowItWorksPage() {
     <div className="min-h-screen bg-slate-50 text-slate-950">
       <MarketingHeader />
 
-      <section className="border-b border-blue-100 bg-gradient-to-br from-blue-50 via-white to-emerald-50 pb-12 pt-16">
-        <div className="mx-auto max-w-4xl px-6 text-center">
+      <section className="border-b border-blue-100 bg-gradient-to-br from-blue-50 via-white to-emerald-50 py-12 sm:pb-12 sm:pt-16">
+        <div className="mx-auto max-w-4xl px-4 text-center sm:px-6">
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-blue-700">
             Два сценария в одном проекте
           </p>
-          <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl">
+          <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-5xl">
             Как НейроЭксперт приводит клиентов бизнесу и экспертам
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-700">
@@ -468,7 +481,7 @@ export default function HowItWorksPage() {
       {isBusiness ? (
         <>
           <section className="py-14">
-            <div className="mx-auto grid max-w-7xl gap-8 px-6 lg:grid-cols-[0.88fr_1.12fr] lg:items-start">
+            <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[0.88fr_1.12fr] lg:items-start">
               <div>
                 <p className="text-sm font-semibold text-blue-700">Для бизнеса</p>
                 <h2 className="mt-3 text-3xl font-bold text-slate-950">Система локальных продаж</h2>
@@ -486,7 +499,7 @@ export default function HowItWorksPage() {
           </section>
 
           <section className="py-14">
-            <div className="mx-auto max-w-7xl px-6">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6">
               <div className="mb-8 max-w-3xl">
                 <p className="text-sm font-semibold text-blue-700">5 рабочих модулей</p>
                 <h2 className="mt-3 text-3xl font-bold text-slate-950">
@@ -502,7 +515,7 @@ export default function HowItWorksPage() {
           </section>
 
           <section className="py-14">
-            <div className="mx-auto grid max-w-7xl gap-6 px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+            <div className="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
               <SevenDayResultPanel />
               <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="flex items-center gap-2 text-sm font-semibold text-blue-700">
@@ -531,13 +544,13 @@ export default function HowItWorksPage() {
           </section>
 
           <section className="py-14">
-            <div className="mx-auto max-w-5xl px-6">
+            <div className="mx-auto max-w-5xl px-4 sm:px-6">
               <ResultsTable />
             </div>
           </section>
 
           <section className="py-16">
-            <div className="mx-auto max-w-4xl rounded-lg border border-slate-200 bg-white px-6 py-10 text-center shadow-sm">
+            <div className="mx-4 rounded-lg border border-slate-200 bg-white px-4 py-8 text-center shadow-sm sm:mx-auto sm:max-w-4xl sm:px-6 sm:py-10">
               <h2 className="text-3xl font-bold text-slate-950">Начните с аудита продаж</h2>
               <p className="mx-auto mt-4 max-w-2xl text-slate-600">
                 За первые 7 дней станет видно, откуда бизнесу быстрее привлекать клиентов,
@@ -558,7 +571,7 @@ export default function HowItWorksPage() {
       ) : (
         <>
           <section className="py-14">
-            <div className="mx-auto grid max-w-7xl gap-8 px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+            <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
               <div>
                 <p className="text-sm font-semibold text-blue-700">Для эксперта</p>
                 <h2 className="mt-3 text-3xl font-bold text-slate-950">
@@ -578,7 +591,7 @@ export default function HowItWorksPage() {
           </section>
 
           <section className="py-14">
-            <div className="mx-auto max-w-7xl px-6">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6">
               <div className="mb-8 max-w-3xl">
                 <p className="text-sm font-semibold text-blue-700">5 рабочих блоков</p>
                 <h2 className="mt-3 text-3xl font-bold text-slate-950">
@@ -594,7 +607,7 @@ export default function HowItWorksPage() {
           </section>
 
           <section className="py-14">
-            <div className="mx-auto grid max-w-7xl gap-6 px-6 lg:grid-cols-3">
+            <div className="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-3">
               {[
                 ["Что ищут", "вопросы, цены, сравнения, симптомы, ситуации выбора"],
                 ["Что публикуем", "страницы с ответом, FAQ, таблицами, источниками и кнопкой записи"],
@@ -612,13 +625,13 @@ export default function HowItWorksPage() {
           </section>
 
           <section className="py-14">
-            <div className="mx-auto max-w-5xl px-6">
+            <div className="mx-auto max-w-5xl px-4 sm:px-6">
               <ResultsTable />
             </div>
           </section>
 
           <section className="py-16">
-            <div className="mx-auto max-w-4xl rounded-lg border border-slate-200 bg-white px-6 py-10 text-center shadow-sm">
+            <div className="mx-4 rounded-lg border border-slate-200 bg-white px-4 py-8 text-center shadow-sm sm:mx-auto sm:max-w-4xl sm:px-6 sm:py-10">
               <h2 className="text-3xl font-bold text-slate-950">Начните с карты спроса</h2>
               <p className="mx-auto mt-4 max-w-2xl text-slate-600">
                 Вы увидите вопросы, по которым люди уже ищут помощь,

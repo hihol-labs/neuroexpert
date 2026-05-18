@@ -44,20 +44,20 @@ export function CompareBar() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-lg">
-      <div className="mx-auto max-w-7xl px-6 py-3 flex items-center justify-between">
+      <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <span className="text-sm text-gray-700">
           Выбрано для сравнения: <strong>{ids.length}</strong> (макс. 5)
         </span>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex">
           <button
             onClick={clear}
-            className="px-3 py-1.5 text-sm text-gray-600 border rounded-lg hover:bg-gray-50"
+            className="px-3 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50 sm:py-1.5"
           >
             Очистить
           </button>
           <Link
             href={`/compare?ids=${ids.join(",")}`}
-            className="px-4 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+            className="px-4 py-2 text-center text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 sm:py-1.5"
           >
             Сравнить
           </Link>

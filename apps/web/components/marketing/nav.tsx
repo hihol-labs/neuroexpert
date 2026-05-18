@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Menu, X } from "lucide-react";
 import { useState } from "react";
 
 const NAV_LINKS = [
@@ -25,19 +26,19 @@ export function MarketingHeader() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <Link href="/" className="flex items-center gap-3 text-xl font-bold text-slate-950">
+    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:py-4">
+        <Link href="/" className="flex min-w-0 items-center gap-3 text-lg font-bold text-slate-950 sm:text-xl">
           <LogoMark />
-          <div className="flex flex-col">
-            <span>НейроЭксперт</span>
-            <span className="-mt-0.5 text-[10px] font-medium tracking-wide text-slate-500">
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate">НейроЭксперт</span>
+            <span className="-mt-0.5 hidden text-[10px] font-medium tracking-wide text-slate-500 sm:block">
               Клиенты из карт, поиска и AI
             </span>
           </div>
         </Link>
 
-        <div className="hidden flex-1 items-center justify-center gap-1 md:flex">
+        <div className="hidden flex-1 items-center justify-center gap-1 lg:flex">
           {NAV_LINKS.map((l) => (
             <Link
               key={l.href}
@@ -51,30 +52,24 @@ export function MarketingHeader() {
 
         <Link
           href="/login"
-          className="hidden rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-800 md:inline-flex"
+          className="hidden rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-800 lg:inline-flex"
         >
           Войти
         </Link>
 
         <button
-          className="rounded-md border border-slate-200 p-2 text-slate-700 transition-colors hover:bg-slate-100 md:hidden"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-slate-200 text-slate-700 transition-colors hover:bg-slate-100 lg:hidden"
           onClick={() => setOpen(!open)}
           aria-expanded={open}
           aria-label="Меню"
         >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            {open ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            )}
-          </svg>
+          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </nav>
 
       {open && (
-        <div className="border-t border-slate-200 bg-white md:hidden">
-          <div className="space-y-1 px-6 py-4">
+        <div className="border-t border-slate-200 bg-white shadow-lg lg:hidden">
+          <div className="max-h-[calc(100dvh-69px)] space-y-1 overflow-y-auto px-4 py-4 sm:px-6">
             {NAV_LINKS.map((l) => (
               <Link
                 key={l.href}
@@ -102,7 +97,7 @@ export function MarketingHeader() {
 export function MarketingFooter() {
   return (
     <footer className="border-t border-slate-200 bg-white pb-6 pt-10">
-      <div className="mx-auto max-w-7xl px-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2">

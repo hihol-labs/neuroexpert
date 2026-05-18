@@ -111,8 +111,8 @@ function VisibilityBadge({
   }
 
   return (
-    <div className={`inline-flex items-center gap-3 rounded-2xl ${bg} px-8 py-5`}>
-      <span className={`text-5xl font-bold ${color}`}>{percent}%</span>
+    <div className={`inline-flex items-center gap-3 rounded-2xl ${bg} px-5 py-4 sm:px-8 sm:py-5`}>
+      <span className={`text-4xl font-bold sm:text-5xl ${color}`}>{percent}%</span>
       <span className="text-left text-sm text-gray-600">спрос в нейросетях</span>
     </div>
   );
@@ -150,8 +150,8 @@ export default async function ScanResultPage({
     <div className="min-h-screen bg-white">
       <MarketingHeader />
 
-      <section className="py-16">
-        <div className="mx-auto max-w-3xl px-6">
+      <section className="py-12 sm:py-16">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6">
           {/* Hero */}
           <div className="text-center">
             <p className="text-sm font-medium text-blue-600">
@@ -170,11 +170,11 @@ export default async function ScanResultPage({
 
           {/* Comparison block */}
           {hasComparison && (
-            <div className="mt-10 rounded-2xl border-2 border-blue-100 bg-blue-50/30 p-6">
+            <div className="mt-10 rounded-2xl border-2 border-blue-100 bg-blue-50/30 p-4 sm:p-6">
               <h2 className="text-lg font-bold text-gray-900 text-center mb-6">
                 Сравнение ответов нейросетей
               </h2>
-              <div className="grid grid-cols-3 gap-4 items-center">
+              <div className="grid gap-4 sm:grid-cols-3 sm:items-center">
                 {/* You */}
                 <div className="text-center">
                   <p className="text-sm font-medium text-gray-600 mb-2 truncate">
@@ -212,9 +212,9 @@ export default async function ScanResultPage({
                   return (
                     <div
                       key={p.platform}
-                      className="flex items-center justify-between bg-white rounded-lg px-4 py-3 border"
+                      className="grid gap-2 rounded-lg border bg-white px-4 py-3 sm:grid-cols-[96px_1fr_auto_1fr] sm:items-center"
                     >
-                      <span className="text-sm font-medium text-gray-700 w-24">
+                      <span className="text-sm font-medium text-gray-700">
                         {p.platform}
                       </span>
                       <span
@@ -222,7 +222,7 @@ export default async function ScanResultPage({
                       >
                         {p.mentioned ? "✓ Вы" : "✗ Вы"}
                       </span>
-                      <span className="text-slate-300">|</span>
+                      <span className="hidden text-slate-300 sm:inline">|</span>
                       <span
                         className={`text-sm font-medium ${compPlatform?.mentioned ? "text-green-600" : "text-red-500"}`}
                       >
@@ -254,9 +254,9 @@ export default async function ScanResultPage({
             {mainPlatforms.map((p) => (
               <div
                 key={p.platform}
-                className="rounded-xl border border-gray-200 p-5"
+                  className="rounded-xl border border-gray-200 p-4 sm:p-5"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <h3 className="font-semibold text-gray-900">{p.platform}</h3>
                   <span
                     className={`rounded-full px-3 py-1 text-xs font-medium ${
@@ -276,7 +276,7 @@ export default async function ScanResultPage({
           </div>
 
           {/* Основной призыв к действию */}
-          <div className="mt-12 rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <div className="mt-12 rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-sm sm:p-8">
             <h2 className="text-2xl font-bold text-slate-950">
               {result.visibility_percent === 0
                 ? "Нейросети не находят вас по этому спросу. Это можно превратить в план страниц."

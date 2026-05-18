@@ -106,13 +106,13 @@ export default function AuditPage() {
     <div className="min-h-screen">
       <MarketingHeader />
 
-      <section className="py-16">
-        <div className="mx-auto max-w-5xl px-6">
+      <section className="py-12 sm:py-16">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
           {/* Step 1: Niche Selection */}
           {step === "select" && (
             <>
               <div className="text-center">
-                <h1 className="text-3xl font-bold text-slate-950">
+                <h1 className="text-3xl font-bold text-slate-950 sm:text-4xl">
                   Бесплатная карта спроса
                 </h1>
                 <p className="mt-4 text-lg text-slate-700">
@@ -120,12 +120,12 @@ export default function AuditPage() {
                   ищут решение, и покажем, какие из них стоит превратить в страницы для заявок.
                 </p>
               </div>
-              <div className="mt-12 grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
+              <div className="mt-10 grid gap-3 sm:mt-12 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
                 {NICHES.map((niche) => (
                   <button
                     key={niche.id}
                     onClick={() => handleNicheSelect(niche.id, niche.name)}
-                    className={`rounded-xl border p-5 text-center transition-all hover:shadow-sm cursor-pointer ${
+                    className={`min-h-28 rounded-xl border p-4 text-center transition-all hover:shadow-sm sm:p-5 cursor-pointer ${
                       niche.focus
                         ? "border-blue-200 bg-blue-50 hover:border-blue-300"
                         : "border-slate-200 bg-white hover:border-blue-200 hover:bg-slate-50"
@@ -176,10 +176,10 @@ export default function AuditPage() {
                 {gaps.map((gap, i) => (
                   <div
                     key={gap.id}
-                    className="rounded-2xl border border-slate-200 bg-white  p-6"
+                    className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6"
                   >
                     {/* Question header */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-start gap-3">
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-500/20 text-sm font-bold text-red-400">
                         {i + 1}
                       </span>
@@ -189,8 +189,8 @@ export default function AuditPage() {
                     </div>
 
                     {/* Metrics */}
-                    <div className="mt-4 flex items-center gap-6">
-                      <div className="text-center">
+                    <div className="mt-4 flex flex-wrap items-stretch gap-3 sm:items-center sm:gap-6">
+                      <div className="min-w-28 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-center">
                         <p className={`text-2xl font-bold ${
                           gap.avg_gap_score >= 8 ? "text-red-400" :
                           gap.avg_gap_score >= 5 ? "text-yellow-400" :
@@ -203,7 +203,7 @@ export default function AuditPage() {
                         </p>
                       </div>
                       {gap.estimated_monthly_volume && (
-                        <div className="text-center">
+                        <div className="min-w-28 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-center">
                           <p className="text-2xl font-bold text-blue-700">
                             {gap.estimated_monthly_volume.toLocaleString("ru-RU")}
                           </p>
@@ -226,7 +226,66 @@ export default function AuditPage() {
                     </div>
 
                     {/* Platform comparison table */}
-                    <div className="mt-5 overflow-hidden rounded-lg border border-slate-200">
+                    <div className="mt-5 space-y-3 md:hidden">
+                      {gap.platforms.map((p) => {
+                        const key = `${gap.id}-${p.platform}`;
+                        const isExpanded = expandedPlatform === key;
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => togglePlatform(key)}
+                            className="w-full rounded-lg border border-slate-200 bg-slate-50 p-4 text-left"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="font-semibold text-slate-950">{p.platform}</p>
+                                {p.weakness && (
+                                  <p className="mt-1 text-sm font-medium text-orange-700">{p.weakness}</p>
+                                )}
+                              </div>
+                              <span
+                                className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                                  p.gap_score >= 8
+                                    ? "bg-red-100 text-red-700"
+                                    : p.gap_score >= 5
+                                      ? "bg-yellow-100 text-yellow-700"
+                                      : "bg-green-100 text-green-700"
+                                }`}
+                              >
+                                {p.gap_score}
+                              </span>
+                            </div>
+                            <div className="mt-3 grid grid-cols-2 gap-2">
+                              {MARKER_LABELS.map((m) => (
+                                <div key={m.key} className="rounded-md bg-white px-3 py-2 text-xs text-slate-600">
+                                  <span
+                                    className={
+                                      p.markers[m.key] ? "font-semibold text-green-700" : "font-semibold text-red-600"
+                                    }
+                                  >
+                                    {p.markers[m.key] ? "✓" : "✗"}
+                                  </span>{" "}
+                                  {m.label}
+                                </div>
+                              ))}
+                            </div>
+                            {isExpanded && (
+                              <div className="mt-3 rounded-md border border-slate-200 bg-white p-3">
+                                <p className="text-xs font-medium text-slate-600">
+                                  Ответ {p.platform}:
+                                </p>
+                                <p className="mt-1 whitespace-pre-line text-sm text-slate-700">
+                                  {p.ai_response}
+                                </p>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="mt-5 hidden overflow-x-auto rounded-lg border border-slate-200 md:block">
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="bg-white text-left text-xs font-medium text-slate-600 uppercase">

@@ -90,7 +90,7 @@ export default async function QuestionPage({ params }: Props) {
   return (
     <div className="min-h-screen bg-white">
       <header className="border-b bg-white">
-        <nav className="mx-auto flex max-w-4xl items-center justify-between px-6 py-3">
+        <nav className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3 sm:px-6">
           <Link href="/" className="text-lg font-bold text-gray-900">
             НейроЭксперт
           </Link>
@@ -105,7 +105,7 @@ export default async function QuestionPage({ params }: Props) {
         </nav>
       </header>
 
-      <main className="mx-auto max-w-4xl px-6 py-8">
+      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
         {/* Breadcrumbs */}
         <nav className="text-sm text-gray-500 mb-6">
           <Link href="/" className="hover:text-gray-700">Главная</Link>
@@ -282,7 +282,7 @@ export default async function QuestionPage({ params }: Props) {
       </main>
 
       <footer className="bg-gray-900 py-8 mt-12">
-        <div className="mx-auto max-w-4xl px-6 text-center text-sm text-gray-400">
+        <div className="mx-auto max-w-4xl px-4 text-center text-sm text-gray-400 sm:px-6">
           &copy; {new Date().getFullYear()} НейроЭксперт
         </div>
       </footer>

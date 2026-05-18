@@ -122,7 +122,7 @@ export default async function NichePage({ params }: Props) {
   return (
     <div className="min-h-screen bg-white">
       <header className="border-b bg-white">
-        <nav className="mx-auto flex max-w-4xl items-center justify-between px-6 py-3">
+        <nav className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3 sm:px-6">
           <Link href="/" className="text-lg font-bold text-gray-900">НейроЭксперт</Link>
           <div className="flex gap-4 text-sm">
             <Link href="/experts" className="text-gray-600 hover:text-gray-900">Эксперты</Link>
@@ -131,7 +131,7 @@ export default async function NichePage({ params }: Props) {
         </nav>
       </header>
 
-      <main className="mx-auto max-w-4xl px-6 py-8">
+      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
         {/* Header */}
         <div className="mb-8">
           <span className="text-4xl">{niche.icon}</span>
@@ -139,7 +139,7 @@ export default async function NichePage({ params }: Props) {
           {niche.description && (
             <p className="text-gray-600 mt-2">{niche.description}</p>
           )}
-          <div className="flex gap-6 mt-4 text-sm text-gray-500">
+          <div className="mt-4 flex flex-wrap gap-3 text-sm text-gray-500 sm:gap-6">
             <span>{expertCount} экспертов</span>
             <span>{questionCount} вопросов</span>
             <span>{articleCount} статей</span>
@@ -192,10 +192,10 @@ export default async function NichePage({ params }: Props) {
                 <Link
                   key={q.slug}
                   href={`/questions/${q.slug}`}
-                  className="flex items-center justify-between border rounded-lg px-4 py-3 hover:border-blue-300 transition-colors"
+                  className="flex flex-col gap-2 border rounded-lg px-4 py-3 hover:border-blue-300 transition-colors sm:flex-row sm:items-center sm:justify-between"
                 >
                   <span className="text-sm text-gray-900">{q.question_text}</span>
-                  <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
+                  <span className="text-xs text-gray-400 flex-shrink-0 sm:ml-2">
                     {q.monthly_volume > 0 ? `${q.monthly_volume.toLocaleString("ru-RU")}/мес` : ""}
                   </span>
                 </Link>
@@ -223,7 +223,7 @@ export default async function NichePage({ params }: Props) {
                     className="block border rounded-lg p-4 hover:border-blue-300 transition-colors"
                   >
                     <h3 className="font-medium text-gray-900">{a.title}</h3>
-                    <div className="flex gap-3 mt-1 text-xs text-gray-500">
+                    <div className="mt-1 flex flex-wrap gap-2 text-xs text-gray-500 sm:gap-3">
                       <span>{p.full_name}</span>
                       {a.published_at && <span>{new Date(a.published_at).toLocaleDateString("ru-RU")}</span>}
                       {a.word_count && <span>{a.word_count} слов</span>}
@@ -266,7 +266,7 @@ export default async function NichePage({ params }: Props) {
       </main>
 
       <footer className="bg-gray-900 py-8 mt-12">
-        <div className="mx-auto max-w-4xl px-6 text-center text-sm text-gray-400">
+        <div className="mx-auto max-w-4xl px-4 text-center text-sm text-gray-400 sm:px-6">
           &copy; {new Date().getFullYear()} НейроЭксперт
         </div>
       </footer>

@@ -272,7 +272,7 @@ export default async function ExpertsPage({
   return (
     <div className="min-h-screen bg-white">
       <header className="border-b bg-white">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
+        <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
           <Link href="/" className="text-lg font-bold text-gray-900">
             НейроЭксперт
           </Link>
@@ -290,7 +290,7 @@ export default async function ExpertsPage({
         </nav>
       </header>
 
-      <main className="mx-auto max-w-7xl px-6 py-8">
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
           Каталог экспертов
         </h1>
@@ -349,7 +349,7 @@ export default async function ExpertsPage({
       <CompareBar />
 
       <footer className="bg-gray-900 py-8 mt-12">
-        <div className="mx-auto max-w-7xl px-6 text-center text-sm text-gray-400">
+        <div className="mx-auto max-w-7xl px-4 text-center text-sm text-gray-400 sm:px-6">
           &copy; {new Date().getFullYear()} НейроЭксперт
         </div>
       </footer>

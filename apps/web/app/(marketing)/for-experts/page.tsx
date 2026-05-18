@@ -123,13 +123,13 @@ export default function ForExpertsPage() {
     <div className="min-h-screen bg-slate-50 text-slate-950">
       <MarketingHeader />
 
-      <section className="border-b border-blue-100 bg-gradient-to-br from-blue-50 via-white to-emerald-50 pb-16 pt-16">
-        <div className="mx-auto grid max-w-7xl gap-10 px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+      <section className="border-b border-blue-100 bg-gradient-to-br from-blue-50 via-white to-emerald-50 py-12 sm:py-16">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">
               НейроЭксперт для экспертов
             </p>
-            <h1 className="mt-4 text-4xl font-bold leading-[1.08] tracking-tight text-slate-950 sm:text-5xl">
+            <h1 className="mt-4 text-3xl font-bold leading-[1.08] tracking-tight text-slate-950 sm:text-5xl">
               Ваши знания превращаются в страницы, которые приводят клиентов
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-700">
@@ -162,8 +162,8 @@ export default function ForExpertsPage() {
         </div>
       </section>
 
-      <section className="bg-slate-50 py-16">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="bg-slate-50 py-12 sm:py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl text-center">
             <p className="text-sm font-semibold text-blue-700">Механика платформы</p>
             <h2 className="mt-3 text-3xl font-bold text-slate-950">
@@ -201,8 +201,8 @@ export default function ForExpertsPage() {
         </div>
       </section>
 
-      <section className="border-y border-slate-200 bg-white py-16">
-        <div className="mx-auto max-w-6xl px-6">
+      <section className="border-y border-slate-200 bg-white py-12 sm:py-16">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <h2 className="text-center text-3xl font-bold text-slate-950">
             Как экспертный ответ превращается в запись
           </h2>
@@ -225,8 +225,8 @@ export default function ForExpertsPage() {
         </div>
       </section>
 
-      <section className="bg-slate-50 py-16">
-        <div className="mx-auto max-w-4xl px-6">
+      <section className="bg-slate-50 py-12 sm:py-16">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6">
           <h2 className="text-center text-3xl font-bold text-slate-950">
             Что мы делаем — и чего не обещаем
           </h2>
@@ -259,8 +259,8 @@ export default function ForExpertsPage() {
         </div>
       </section>
 
-      <section className="border-y border-slate-200 bg-white py-16">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="border-y border-slate-200 bg-white py-12 sm:py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <h2 className="text-center text-3xl font-bold text-slate-950">
             Знакомо?
           </h2>
@@ -287,8 +287,8 @@ export default function ForExpertsPage() {
         </div>
       </section>
 
-      <section className="bg-slate-50 py-16">
-        <div className="mx-auto max-w-4xl px-6">
+      <section className="bg-slate-50 py-12 sm:py-16">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6">
           <h2 className="text-center text-3xl font-bold text-slate-950">
             Почему мы — не контент-фабрика
           </h2>
@@ -347,8 +347,8 @@ export default function ForExpertsPage() {
         </div>
       </section>
 
-      <section className="border-y border-slate-200 bg-white py-16">
-        <div className="mx-auto max-w-5xl px-6">
+      <section className="border-y border-slate-200 bg-white py-12 sm:py-16">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <h2 className="text-center text-3xl font-bold text-slate-950">
             Почему это работает лучше обычного контента
           </h2>
@@ -370,13 +370,13 @@ export default function ForExpertsPage() {
         </div>
       </section>
 
-      <section className="bg-slate-50 py-16">
-        <div className="mx-auto max-w-4xl px-6">
+      <section className="bg-slate-50 py-12 sm:py-16">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6">
           <h2 className="text-center text-3xl font-bold text-slate-950">
             Как это выглядит на практике
           </h2>
-          <div className="mt-10 rounded-lg border border-slate-200 bg-white p-8 shadow-sm">
-            <div className="flex items-start gap-4">
+          <div className="mt-10 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
               <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-lg bg-blue-700 text-2xl font-bold text-white">
                 А
               </div>
@@ -411,8 +411,8 @@ export default function ForExpertsPage() {
         </div>
       </section>
 
-      <section className="border-y border-slate-200 bg-white py-16">
-        <div className="mx-auto max-w-4xl px-6 text-center">
+      <section className="border-y border-slate-200 bg-white py-12 sm:py-16">
+        <div className="mx-auto max-w-4xl px-4 text-center sm:px-6">
           <h2 className="text-3xl font-bold text-slate-950">Растите — добавляйте ниши</h2>
           <p className="mx-auto mt-4 max-w-2xl text-slate-600">
             Начните с одной ниши бесплатно. Увидите результат — добавьте смежные направления.
@@ -438,8 +438,8 @@ export default function ForExpertsPage() {
         </div>
       </section>
 
-      <section className="bg-blue-700 py-16 text-white">
-        <div className="mx-auto max-w-3xl px-6 text-center">
+      <section className="bg-blue-700 py-12 text-white sm:py-16">
+        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
           <h2 className="text-3xl font-bold text-white">
             Узнайте, где в вашей нише уже есть спрос
           </h2>
