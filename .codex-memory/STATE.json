@@ -288,6 +288,10 @@
     {
       "event": "mobile adaptation verified",
       "note": "2026-05-18: Public marketing and marketplace pages adapted for mobile. Verified pnpm --filter web build and browser checks at 390px/360px on /, /for-business, /pricing, /audit, /scan, /for-agencies, /for-experts, /how-it-works, /experts, /questions with no document-level horizontal overflow."
+    },
+    {
+      "event": "mobile adaptation deployed",
+      "note": "2026-05-18: Committed and pushed mobile responsiveness changes to codex/update-local-sales-os-roadmap, deployed committed HEAD to production via git archive over SSH, rebuilt and restarted web container. Production healthcheck /api/health returned 200 and homepage returned 200."
     }
   ],
   "artifactHashes": {},
@@ -307,5 +311,5 @@
   "blockers": [
     "No root test/typecheck script was detected."
   ],
-  "nextAction": "Return to Stage 1 login/SMTP restoration gate after the completed mobile responsiveness fix."
+  "nextAction": "Return to Stage 1 login/SMTP restoration gate after deployed mobile responsiveness fix."
 }
