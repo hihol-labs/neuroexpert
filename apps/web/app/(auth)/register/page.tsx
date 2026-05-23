@@ -7,6 +7,19 @@ import { createClient } from "@/lib/supabase/client";
 import { NICHES } from "shared/constants";
 import { slugifyLatin } from "shared/utils/slug";
 
+function getFriendlyAuthError(message: string): string {
+  if (/email/i.test(message) && /rate|frequency|limit/i.test(message)) {
+    return "Слишком много попыток. Попробуйте ещё раз через минуту.";
+  }
+  if (/smtp|mail|email/i.test(message)) {
+    return "Не удалось отправить письмо. Проверьте email и попробуйте ещё раз через минуту.";
+  }
+  if (/already|registered|exists/i.test(message)) {
+    return "Аккаунт с таким email уже есть. Попробуйте войти.";
+  }
+  return "Не удалось создать аккаунт. Проверьте данные и попробуйте ещё раз.";
+}
+
 function RegisterForm() {
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
@@ -60,7 +73,7 @@ function RegisterForm() {
     setLoading(false);
 
     if (authError) {
-      setError(authError.message);
+      setError(getFriendlyAuthError(authError.message));
     } else {
       setSent(true);
     }

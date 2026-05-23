@@ -41,6 +41,8 @@
 
 **Правка от 2026-05-16 по technical completeness:** план должен закрывать не только продуктовую логику, но и весь технический контур, который нужен для выполнения публичных обещаний сайта: Solo-флоу, Local Sales OS, Demand API, платежи, B2B-заявки, operator workflow, data freshness, compliance, provider costs, API permissions, smoke-тесты и production gates. Если сайт заявляет функцию, в плане должен быть явный владелец реализации: данные, API, worker/job, UX, аналитика, безопасность, проверка на production и fallback.
 
+**Правка от 2026-05-23 по Marketing OS Runtime:** методики из материала про Claude Code переносятся в НейроЭксперт как внутренний операционный слой, а не как хаотичный набор промптов. Внедрение идёт строго после P0/Pipeline gates: Stage 1 получает auth/SMTP healthcheck и понятные login-ошибки; Stage 2-3 используют voice profile и generation framework в контенте; Stage 6-8 добавляют AEO-кластеры, workflow runs и регулярные проверки; Stage 11-14 получают competitor profiling, CRO, MCP/read-only connectors, отчёты и unit economics. Human review обязателен для публикаций, отправок, коммерческих решений и внешних обещаний.
+
 ## Текущий статус
 
 **Активная фаза:** Этап 1 — восстановить login и базовую доступность.
@@ -1170,8 +1172,8 @@ B2B-кабинет — обязательный ранний слой проду
 1. Оплатить/пополнить Яндекс 360 и убрать viewing mode.
 2. Перезапустить `supabase-auth`.
 3. Проверить magic link: `/otp` должен возвращать `200`, письмо должно приходить на реальный email.
-4. Добавить healthcheck готовности SMTP/magic-link перед релизом.
-5. Улучшить UX ошибки login: не показывать сырой `Error sending magic link`, а давать понятное сообщение пользователю и писать техническую причину в server-side logs.
+4. Добавить healthcheck готовности SMTP/magic-link перед релизом. Код: `/api/health` возвращает `auth.status`, `auth.magic_link_ready`, `smtp_configured`, `pending_jobs`, `failed_jobs`.
+5. Улучшить UX ошибки login: не показывать сырой `Error sending magic link`, а давать понятное сообщение пользователю и писать техническую причину в server-side logs. Код: `/api/auth/magic-link` логирует техническую ошибку server-side и отдаёт безопасное сообщение клиенту.
 
 **Gate:**
 - Magic link работает на реальный email.
@@ -1187,6 +1189,7 @@ B2B-кабинет — обязательный ранний слой проду
 3. Исправить GigaChat env consistency: код должен использовать `GIGACHAT_CLIENT_ID` и `GIGACHAT_CLIENT_SECRET`, без старых проверок `GIGACHAT_API_KEY`.
 4. Добавить backoff/rate-limit для LLM jobs, чтобы 429 не заливал очередь.
 5. Добавить видимость worker state: pending/failed/completed counts по типам jobs.
+6. Включить foundation Marketing OS без автопубликаций: `generation_framework`, роли генерации, playbook version и обязательный human review.
 
 **Gate:**
 - Worker logs не показывают повторяющийся quota-loop.
@@ -1205,7 +1208,7 @@ B2B-кабинет — обязательный ранний слой проду
 5. Accept order через web и Telegram.
 6. Voice recording.
 7. Transcription.
-8. Content generation.
+8. Content generation с обновлением `profiles.voice_profile` из записи и применением voice guide к 5 форматам.
 9. Review/edit.
 10. Publish.
 11. Public article page.

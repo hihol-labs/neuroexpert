@@ -1,7 +1,7 @@
 // Query Fan-Out — разбиение вопроса на подзапросы
 
 export function buildQueryFanoutPrompt(question: string): string {
-  return `Разбей вопрос пользователя на 3–5 подзапросов, как это сделал бы ChatGPT Search при поиске ответа.
+  return `Разбей вопрос пользователя на 3–5 подзапросов, как это сделал бы AI Search при поиске ответа.
 
 Вопрос: ${question}
 
@@ -9,7 +9,20 @@ export function buildQueryFanoutPrompt(question: string): string {
 - Покрывать отдельный аспект основного вопроса
 - Быть конкретным и поисковым (как запрос в Google/Yandex)
 - Быть полезным для составления полного экспертного ответа
+- Иметь AEO-кластер:
+  - informational: объяснение, признаки, инструкция, симптомы
+  - comparative: сравнение подходов, вариантов, специалистов
+  - recommendation: кого выбрать, лучший вариант, кому подходит
+  - transactional: цена, запись, консультация, где сделать
 
-Ответь JSON-массивом строк:
-["подзапрос 1", "подзапрос 2", "подзапрос 3"]`;
+Ответь JSON-массивом объектов:
+[
+  {
+    "query": "подзапрос",
+    "cluster": "informational|comparative|recommendation|transactional",
+    "user_intent": "какое намерение стоит за запросом",
+    "desired_answer": "какой ответ должен дать эксперт",
+    "next_cta": "какое действие логично предложить"
+  }
+]`;
 }
