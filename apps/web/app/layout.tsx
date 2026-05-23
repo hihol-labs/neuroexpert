@@ -1,5 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Providers } from "@/components/providers";
+import {
+  generateOrganizationSchema,
+  generateWebSiteSchema,
+} from "@/lib/schema-org";
 import "./globals.css";
 
 /* eslint-disable @next/next/no-img-element */
@@ -52,19 +57,39 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const globalSchemas = [
+    generateOrganizationSchema(),
+    generateWebSiteSchema(),
+  ];
+
   return (
     <html lang="ru">
       <head>
         <link rel="apple-touch-icon" href="/apple-icon" />
-        {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && (
+        {globalSchemas.map((schema, i) => (
           <script
-            defer
+            key={i}
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+          />
+        ))}
+      </head>
+      <body className={fontClassName}>
+        <Providers>
+        {children}
+        </Providers>
+        {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && (
+          <Script
+            id="plausible-analytics"
+            strategy="lazyOnload"
             data-domain={process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN}
             src={`${process.env.NEXT_PUBLIC_PLAUSIBLE_HOST || "https://plausible.io"}/js/script.js`}
           />
         )}
         {process.env.NEXT_PUBLIC_YANDEX_METRIKA_ID && (
-          <script
+          <Script
+            id="yandex-metrika"
+            strategy="lazyOnload"
             dangerouslySetInnerHTML={{
               __html: `
                 (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
@@ -83,11 +108,6 @@ export default function RootLayout({
             }}
           />
         )}
-      </head>
-      <body className={fontClassName}>
-        <Providers>
-        {children}
-        </Providers>
         {process.env.NEXT_PUBLIC_YANDEX_METRIKA_ID && (
           <noscript>
             <div>

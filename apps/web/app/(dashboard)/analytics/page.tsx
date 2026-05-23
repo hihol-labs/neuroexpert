@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import { Card, CardTitle, CardValue } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 interface CitationByWeek { week: string; count: number }
@@ -11,6 +10,14 @@ interface ArticleCitation { title: string; chatgpt: boolean; yandexgpt: boolean;
 interface CWVEntry { url: string; lcp: number | null; fcp: number | null; cls: number | null; score: number | null; passing: boolean }
 interface Recommendation { type: "update" | "record"; text: string }
 interface CompetitorComparison { your_mentions: number; competitor_mentions: number; competitor_name: string }
+interface AiCrawlerRow {
+  metric_date: string;
+  bot_name: string;
+  hits: number;
+  successful_hits: number;
+  failed_hits: number;
+  unique_paths: number;
+}
 
 function CompetitorCompare({ yourMentions }: { yourMentions: number }) {
   const [competitor, setCompetitor] = useState("");
@@ -100,10 +107,21 @@ export default function AnalyticsPage() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [tier, setTier] = useState<string>("free");
   const [totalCited, setTotalCited] = useState(0);
+  const [aiCrawlerRows, setAiCrawlerRows] = useState<AiCrawlerRow[]>([]);
 
   const loadData = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+
+    try {
+      const res = await fetch("/api/ai-crawlers");
+      if (res.ok) {
+        const data = await res.json();
+        setAiCrawlerRows((data.rows ?? []) as AiCrawlerRow[]);
+      }
+    } catch {
+      setAiCrawlerRows([]);
+    }
 
     // Trust score
     const { data: profile } = await supabase.from("profiles").select("trust_score, tier").eq("id", user.id).single();
@@ -355,6 +373,34 @@ export default function AnalyticsPage() {
           <p className="text-xs text-gray-500 mt-1">статей старше 90 дней</p>
         </Card>
       </div>
+
+      {/* Citation chart */}
+      {aiCrawlerRows.length > 0 && (
+        <div className="bg-white rounded-xl border p-6 mb-8">
+          <h2 className="font-semibold text-gray-900 mb-4">AI-краулеры сайта</h2>
+          <div className="grid gap-3 md:grid-cols-3">
+            {aiCrawlerRows.slice(0, 6).map((row) => (
+              <div key={`${row.metric_date}-${row.bot_name}`} className="rounded-lg border border-gray-200 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-medium text-gray-900">{row.bot_name}</p>
+                  <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    row.failed_hits > 0 ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
+                  }`}>
+                    {row.metric_date}
+                  </span>
+                </div>
+                <p className="mt-3 text-2xl font-bold text-gray-900">{row.hits}</p>
+                <p className="mt-1 text-xs text-gray-500">
+                  {row.unique_paths} URL, ошибок: {row.failed_hits}
+                </p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 text-xs text-gray-500">
+            Данные появляются после импорта access-логов: `pnpm aeo:crawlers -- access.log --push`.
+          </p>
+        </div>
+      )}
 
       {/* Citation chart */}
       {citationsByWeek.length > 0 && (

@@ -2,6 +2,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import {
+  generateBreadcrumbSchema,
+  generateQAPageSchema,
+} from "@/lib/schema-org";
 
 function getAdmin() {
   return createSupabaseClient(
@@ -86,9 +90,37 @@ export default async function QuestionPage({ params }: Props) {
 
   const { question, answers, subQueries, relatedQuestions } = data;
   const niche = question.niches as unknown as { name: string; icon: string } | null;
+  const schemas = [
+    generateQAPageSchema(
+      question,
+      answers.map((answer) => {
+        const expert = answer.profiles as unknown as { full_name: string; slug: string };
+        return {
+          title: answer.title,
+          slug: answer.slug,
+          meta_description: answer.meta_description,
+          published_at: answer.published_at,
+          profiles: expert,
+        };
+      }),
+    ),
+    generateBreadcrumbSchema([
+      { name: "Главная", url: APP_URL },
+      { name: "Вопросы", url: `${APP_URL}/questions` },
+      { name: question.question_text, url: `${APP_URL}/questions/${question.slug}` },
+    ]),
+  ];
 
   return (
     <div className="min-h-screen bg-white">
+      {schemas.map((schema, i) => (
+        <script
+          key={i}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+        />
+      ))}
+
       <header className="border-b bg-white">
         <nav className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3 sm:px-6">
           <Link href="/" className="text-lg font-bold text-gray-900">

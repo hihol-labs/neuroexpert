@@ -43,6 +43,8 @@
 
 **Правка от 2026-05-23 по Marketing OS Runtime:** методики из материала про Claude Code переносятся в НейроЭксперт как внутренний операционный слой, а не как хаотичный набор промптов. Внедрение идёт строго после P0/Pipeline gates: Stage 1 получает auth/SMTP healthcheck и понятные login-ошибки; Stage 2-3 используют voice profile и generation framework в контенте; Stage 6-8 добавляют AEO-кластеры, workflow runs и регулярные проверки; Stage 11-14 получают competitor profiling, CRO, MCP/read-only connectors, отчёты и unit economics. Human review обязателен для публикаций, отправок, коммерческих решений и внешних обещаний.
 
+**Правка от 2026-05-23 по AEO-чеклисту:** технический AEO-контур сайта добавляется как Stage 1-safe hardening без смены активного gate: публичный `/llms.txt`, расширенный `robots.txt` для AI-краулеров, Organization/WebSite/Service/ItemList/QAPage/Review JSON-LD, обязательный FAQ перед публикацией, smoke-проверка `pnpm aeo:smoke`, импорт access-логов AI-краулеров через `pnpm aeo:crawlers -- access.log --push` и отчёт в `/analytics`. Production-применение требует деплоя web и миграции `022_ai_crawler_monitoring.sql`.
+
 ## Текущий статус
 
 **Активная фаза:** Этап 1 — восстановить login и базовую доступность.

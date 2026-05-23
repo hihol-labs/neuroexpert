@@ -8,7 +8,9 @@
     "lint": "turbo lint",
     "test": "pnpm --filter shared test",
     "typecheck": "turbo build",
-    "clean": "turbo clean"
+    "clean": "turbo clean",
+    "aeo:smoke": "node scripts/validate-aeo-site.js",
+    "aeo:crawlers": "node scripts/analyze-ai-crawlers.js"
   },
   "devDependencies": {
     "turbo": "^2.3.3",
