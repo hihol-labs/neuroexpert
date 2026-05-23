@@ -28,6 +28,7 @@ import {
   RevenueCalculatorMockup,
   SevenDayResultPanel,
 } from "@/components/marketing/product-mockups";
+import { generateServiceSchema } from "@/lib/schema-org";
 import { MARKETING_OS_TOOLS } from "shared";
 
 type Card = {
@@ -52,6 +53,8 @@ const routeCards = [
     action: "Сценарий для эксперта",
   },
 ];
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://neuroexpertise.ru";
 
 const lossCards: Card[] = [
   {
@@ -155,8 +158,31 @@ const niches = [
 ];
 
 export default function LandingPage() {
+  const schemas = [
+    generateServiceSchema({
+      name: "НейроЭксперт",
+      description:
+        "Платформа для привлечения клиентов из карт, поиска, отзывов и ответов нейросетей.",
+      url: APP_URL,
+      serviceType: "AI and search visibility SaaS",
+      offers: [
+        { name: "Для бизнеса", url: `${APP_URL}/for-business` },
+        { name: "Для эксперта", url: `${APP_URL}/for-experts` },
+        { name: "Тарифы", url: `${APP_URL}/pricing` },
+      ],
+    }),
+  ];
+
   return (
     <>
+      {schemas.map((schema, i) => (
+        <script
+          key={i}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+        />
+      ))}
+
       <MarketingHeader />
 
       <section className="border-b border-blue-100 bg-blue-50">

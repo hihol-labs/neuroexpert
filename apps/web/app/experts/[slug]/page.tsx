@@ -6,6 +6,7 @@ import { generateExpertMetadata } from "@/lib/seo";
 import {
   generatePersonSchema,
   generateBreadcrumbSchema,
+  generateReviewSchemas,
 } from "@/lib/schema-org";
 import { ReviewForm } from "@/components/experts/review-form";
 import { BookingForm } from "@/components/experts/booking-form";
@@ -98,6 +99,7 @@ export default async function ExpertProfilePage({ params }: Props) {
         url: `${APP_URL}/experts/${expert.slug}`,
       },
     ]),
+    ...generateReviewSchemas(reviews.slice(0, 10), expert),
   ];
 
   return (

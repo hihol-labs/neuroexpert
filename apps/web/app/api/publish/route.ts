@@ -14,6 +14,20 @@ function getAdmin() {
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://neuroexpertise.ru";
 
+function hasValidFaq(value: unknown): boolean {
+  if (!Array.isArray(value) || value.length < 3) return false;
+  return value.every((item) => {
+    if (!item || typeof item !== "object") return false;
+    const faq = item as { question?: unknown; answer?: unknown };
+    return (
+      typeof faq.question === "string" &&
+      faq.question.trim().length > 8 &&
+      typeof faq.answer === "string" &&
+      faq.answer.trim().length > 20
+    );
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Auth check
@@ -33,7 +47,7 @@ export async function POST(request: NextRequest) {
     // Verify ownership
     const { data: pkg, error: pkgErr } = await admin
       .from("content_packages")
-      .select("id, expert_id, order_id, title, slug, status, profiles!inner(slug, telegram_id, niche_id, niches(slug))")
+      .select("id, expert_id, order_id, title, slug, status, format_faq, profiles!inner(slug, telegram_id, niche_id, niches(slug))")
       .eq("id", content_id)
       .single();
 
@@ -49,6 +63,16 @@ export async function POST(request: NextRequest) {
 
     if (pkg.status === "published") {
       return NextResponse.json({ error: "Already published" }, { status: 400 });
+    }
+
+    if (!hasValidFaq(pkg.format_faq)) {
+      return NextResponse.json(
+        {
+          error:
+            "FAQ is required before publishing. Add at least 3 visible question-answer pairs so the page can expose FAQPage schema.",
+        },
+        { status: 422 },
+      );
     }
 
     const expertSlug = (pkg.profiles as unknown as { slug: string }).slug;

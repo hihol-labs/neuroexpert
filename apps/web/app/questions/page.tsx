@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { generateItemListSchema } from "@/lib/schema-org";
 
 function getAdmin() {
   return createSupabaseClient(
@@ -18,6 +19,8 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 export const revalidate = 600;
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://neuroexpertise.ru";
 
 interface SearchParams {
   niche?: string;
@@ -75,8 +78,29 @@ export default async function QuestionsPage({
     }
   }
 
+  const schemas = [
+    generateItemListSchema(
+      "Вопросы экспертам НейроЭксперт",
+      (questions ?? []).slice(0, 100).map((question) => ({
+        name: question.question_text,
+        url: `${APP_URL}/questions/${question.slug}`,
+        description: question.monthly_volume
+          ? `${question.monthly_volume.toLocaleString("ru-RU")} запросов в месяц`
+          : null,
+      })),
+    ),
+  ];
+
   return (
     <div className="min-h-screen bg-white">
+      {schemas.map((schema, i) => (
+        <script
+          key={i}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+        />
+      ))}
+
       <header className="border-b bg-white">
         <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
           <Link href="/" className="text-lg font-bold text-gray-900">

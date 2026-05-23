@@ -1,5 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Providers } from "@/components/providers";
+import {
+  generateOrganizationSchema,
+  generateWebSiteSchema,
+} from "@/lib/schema-org";
 import "./globals.css";
 
 /* eslint-disable @next/next/no-img-element */
@@ -52,10 +56,22 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const globalSchemas = [
+    generateOrganizationSchema(),
+    generateWebSiteSchema(),
+  ];
+
   return (
     <html lang="ru">
       <head>
         <link rel="apple-touch-icon" href="/apple-icon" />
+        {globalSchemas.map((schema, i) => (
+          <script
+            key={i}
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+          />
+        ))}
         {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && (
           <script
             defer

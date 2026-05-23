@@ -3,10 +3,12 @@ import type { Metadata } from "next";
 import { BarChart3, Bot, Clock, EyeOff, FileText, Lightbulb, Megaphone, Mic2, Radar, Users } from "lucide-react";
 import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
 import { SoloDemandSignalMockup } from "@/components/marketing/product-mockups";
+import { generateServiceSchema } from "@/lib/schema-org";
 
 const TITLE = "Новые клиенты для экспертов из поиска и нейросетей | НейроЭксперт";
 const DESCRIPTION =
   "НейроЭксперт находит реальные вопросы клиентов, превращает голосовые ответы эксперта в страницы с кнопкой записи и помогает получать заявки из поиска и нейросетей.";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://neuroexpertise.ru";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -119,8 +121,31 @@ const EXPERT_MECHANISMS = [
 ];
 
 export default function ForExpertsPage() {
+  const schemas = [
+    generateServiceSchema({
+      name: "НейроЭксперт для экспертов",
+      description: DESCRIPTION,
+      url: `${APP_URL}/for-experts`,
+      serviceType: "Expert visibility and demand generation SaaS",
+      offers: [
+        { name: "Free", price: "0", url: `${APP_URL}/pricing` },
+        { name: "Starter", price: "1490", url: `${APP_URL}/pricing` },
+        { name: "Pro", price: "2990", url: `${APP_URL}/pricing` },
+        { name: "Expert", price: "4990", url: `${APP_URL}/pricing` },
+      ],
+    }),
+  ];
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
+      {schemas.map((schema, i) => (
+        <script
+          key={i}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+        />
+      ))}
+
       <MarketingHeader />
 
       <section className="border-b border-blue-100 bg-gradient-to-br from-blue-50 via-white to-emerald-50 py-12 sm:py-16">

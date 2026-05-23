@@ -36,6 +36,7 @@ const PUBLIC_PREFIXES = [
   "/manifest",
   "/robots.txt",
   "/sitemap.xml",
+  "/llms.txt",
   "/email-templates",
 ];
 

@@ -19,6 +19,7 @@ import {
   generateFAQSchema,
   generateBreadcrumbSchema,
   generateHowToSchema,
+  generateReviewSchemas,
 } from "@/lib/schema-org";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://neuroexpertise.ru";
@@ -208,6 +209,7 @@ export default async function ArticlePage({ params }: Props) {
     generateArticleSchema(article, expert),
     generatePersonSchema(expert),
     generateBreadcrumbSchema(breadcrumbItems),
+    ...generateReviewSchemas(reviews.slice(0, 3), expert),
     ...(faqItems.length ? [generateFAQSchema(faqItems)] : []),
     ...(article.format_seo_article ? [generateHowToSchema(article.format_seo_article, article.title ?? "")] : []),
   ].filter(Boolean);

@@ -2,6 +2,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import {
+  generateBreadcrumbSchema,
+  generateItemListSchema,
+} from "@/lib/schema-org";
 
 function getAdmin() {
   return createSupabaseClient(
@@ -118,9 +122,41 @@ export default async function NichePage({ params }: Props) {
   const expertCount = experts?.length ?? 0;
   const questionCount = questions?.length ?? 0;
   const articleCount = nicheArticles.length;
+  const schemas = [
+    generateBreadcrumbSchema([
+      { name: "Главная", url: APP_URL },
+      { name: "Ниши", url: `${APP_URL}/experts` },
+      { name: niche.name, url: `${APP_URL}/niches/${niche.slug}` },
+    ]),
+    generateItemListSchema(
+      `${niche.name}: эксперты и вопросы`,
+      [
+        ...(experts ?? []).slice(0, 20).map((expert) => ({
+          name: expert.full_name,
+          url: `${APP_URL}/experts/${expert.slug}`,
+          description: expert.qualification,
+        })),
+        ...(questions ?? []).slice(0, 20).map((question) => ({
+          name: question.question_text,
+          url: `${APP_URL}/questions/${question.slug}`,
+          description: question.monthly_volume
+            ? `${question.monthly_volume.toLocaleString("ru-RU")} запросов в месяц`
+            : null,
+        })),
+      ],
+    ),
+  ];
 
   return (
     <div className="min-h-screen bg-white">
+      {schemas.map((schema, i) => (
+        <script
+          key={i}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+        />
+      ))}
+
       <header className="border-b bg-white">
         <nav className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3 sm:px-6">
           <Link href="/" className="text-lg font-bold text-gray-900">НейроЭксперт</Link>
