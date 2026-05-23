@@ -3,10 +3,11 @@ import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
-async function checkAuthHealth(baseUrl: string): Promise<"ok" | "failed"> {
+async function checkAuthHealth(baseUrl: string, apiKey?: string): Promise<"ok" | "failed"> {
   try {
     const response = await fetch(`${baseUrl.replace(/\/$/, "")}/auth/v1/health`, {
       cache: "no-store",
+      headers: apiKey ? { apikey: apiKey } : undefined,
       signal: AbortSignal.timeout(3000),
     });
     return response.ok ? "ok" : "failed";
@@ -30,7 +31,7 @@ export async function GET() {
   const [{ count: pendingJobs }, { count: failedJobs }, authHealth] = await Promise.all([
     supabase.from("jobs").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("jobs").select("id", { count: "exact", head: true }).eq("status", "failed"),
-    checkAuthHealth(process.env.NEXT_PUBLIC_SUPABASE_URL!),
+    checkAuthHealth(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
   ]);
 
   const smtpConfigured = Boolean(
