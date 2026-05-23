@@ -68,14 +68,14 @@
     "security": "PASS",
     "dependencies": "NOT_RUN",
     "hardening": "NOT_RUN",
-    "deploymentReadiness": "PASS",
-    "scopeLock": "PASS_WITH_WARNINGS",
-    "dataAuthenticity": "PASS",
+    "deploymentReadiness": "BLOCKED",
+    "scopeLock": "BLOCKED",
+    "dataAuthenticity": "BLOCKED",
     "goldenFlows": "PASS",
     "regressionContract": "PASS_WITH_WARNINGS",
-    "fallbackPolicy": "PASS",
+    "fallbackPolicy": "BLOCKED",
     "diffRisk": "PASS_WITH_WARNINGS",
-    "noSilentSubstitution": "PASS"
+    "noSilentSubstitution": "BLOCKED"
   },
   "verificationHistory": [
     {
@@ -162,6 +162,12 @@
       "stage": "REVIEWING",
       "status": "PASS",
       "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 4 gate command(s)."
+    },
+    {
+      "mode": "existing-project-analyze",
+      "stage": "EXISTING_PROJECT_ANALYZED",
+      "status": "BLOCKED",
+      "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 0 gate command(s)."
     },
     {
       "mode": "existing-project-analyze",
@@ -300,6 +306,18 @@
     {
       "event": "lighthouse report comment cleanup",
       "note": "2026-05-18: The undefined row in the PR Lighthouse table came from non-report JSON files in lhci-reports. Updated the PR comment script to include only JSON files with finalUrl and categories."
+    },
+    {
+      "event": "existing project analyzer run",
+      "note": "runGates=False"
+    },
+    {
+      "event": "marketing os runtime foundation started",
+      "note": "2026-05-23: Added Stage 1-safe auth health/login UX work plus Marketing OS foundation behind strict priority order: voice_profile, generation_framework, AEO query clusters, workflow runs, page quality checks, public site explanation, docs and announcement draft. Active gate remains Stage 1 until real magic link email is verified."
+    },
+    {
+      "event": "marketing os runtime verified locally",
+      "note": "2026-05-23: Verified pnpm build and pnpm test after Marketing OS foundation. Browser DOM check on local homepage showed Marketing OS block present and no document-level horizontal overflow; screenshot capture in the in-app browser timed out."
     }
   ],
   "artifactHashes": {},
@@ -317,7 +335,9 @@
   "completedModules": [],
   "failedValidations": [],
   "blockers": [
+    "AGENTS.md: added possible silent substitution: Then route work through `/task`, write `HANDOFF.md` before session or role transfer, update `.codex-memory/STATE.json`, and respect `.pfo/` contracts. Project-l",
+    "CODEX.md: added possible silent substitution: Then route work through `/task`, write `HANDOFF.md` before session or role transfer, update `.codex-memory/STATE.json`, and respect `.pfo/` contracts. Project-l",
     "No root test/typecheck script was detected."
   ],
-  "nextAction": "Wait for Lighthouse CI rerun on pushed homepage performance fix, then return to Stage 1 login/SMTP restoration gate."
+  "nextAction": "Resolve analyzer blockers before deploy readiness."
 }

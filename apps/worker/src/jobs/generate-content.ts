@@ -9,7 +9,10 @@ import {
   buildCardsPrompt,
   buildReelsScriptPrompt,
   buildFaqPrompt,
+  buildVoiceProfilePrompt,
+  formatVoiceProfileForPrompt,
   slugifyLatin,
+  type VoiceProfile,
 } from "shared";
 
 function extractMeta(article: string): { metaTitle: string; metaDescription: string; keywords: string[] } {
@@ -98,7 +101,7 @@ export async function handleGenerateContent(payload: Record<string, unknown>): P
 
   const { data: expert } = await supabase
     .from("profiles")
-    .select("full_name, qualification, niche_id, telegram_id")
+    .select("full_name, qualification, niche_id, telegram_id, voice_profile")
     .eq("id", expertId)
     .single();
 
@@ -122,10 +125,30 @@ export async function handleGenerateContent(payload: Record<string, unknown>): P
     }
   }
 
+  let voiceProfile = expert.voice_profile as VoiceProfile | null;
+  try {
+    const extracted = await callLLMJson<VoiceProfile>(
+      buildVoiceProfilePrompt({
+        transcript: recording.transcript,
+        existingProfile: voiceProfile,
+      }),
+    );
+    if (extracted && typeof extracted === "object") {
+      voiceProfile = extracted;
+      await supabase
+        .from("profiles")
+        .update({ voice_profile: extracted })
+        .eq("id", expertId);
+    }
+  } catch (err) {
+    console.error("[generate_content] Voice profile extraction failed:", err);
+  }
+
   const params = {
     transcript: recording.transcript,
     expertName: expert.full_name,
     questionText,
+    voiceGuide: formatVoiceProfileForPrompt(voiceProfile),
   };
 
   const isMinimal = processingMode === "minimal";
@@ -210,6 +233,12 @@ export async function handleGenerateContent(payload: Record<string, unknown>): P
       passage_count: passageCount,
       llm_provider: "auto",
       llm_model: "auto",
+      generation_framework: {
+        version: "marketing_os_v1",
+        playbooks: ["voice_extractor", "copywriting", "aeo_ai_seo"],
+        agent_roles: ["copywriter", "seo_analyst", "fact_checker"],
+        human_review_required: true,
+      },
     })
     .select("id")
     .single();

@@ -33,6 +33,7 @@ interface ContentPromptParams {
   transcript: string;
   expertName: string;
   questionText: string;
+  voiceGuide?: string;
 }
 
 const QUOTE_INSTRUCTION = (name: string) =>
@@ -40,11 +41,12 @@ const QUOTE_INSTRUCTION = (name: string) =>
 
 const NO_EXTERNAL = "Не добавляй информацию, которой нет в расшифровке.";
 
-export function buildTelegramPostPrompt({ transcript, expertName, questionText }: ContentPromptParams): string {
+export function buildTelegramPostPrompt({ transcript, expertName, questionText, voiceGuide = "" }: ContentPromptParams): string {
   return `Создай пост для Telegram-канала на основе расшифровки эксперта.
 
 Вопрос: ${questionText}
 Эксперт: ${expertName}
+${voiceGuide}
 
 Расшифровка:
 ${transcript}
@@ -60,11 +62,12 @@ ${transcript}
 Ответь только текстом поста, без обёрток.`;
 }
 
-export function buildMinimalArticlePrompt({ transcript, expertName, questionText }: ContentPromptParams): string {
+export function buildMinimalArticlePrompt({ transcript, expertName, questionText, voiceGuide = "" }: ContentPromptParams): string {
   return `Минимально обработай расшифровку эксперта для публикации.
 
 Вопрос: ${questionText}
 Эксперт: ${expertName}
+${voiceGuide}
 
 Расшифровка:
 ${transcript}
@@ -87,11 +90,12 @@ ${transcript}
 Ответь только обработанным текстом в Markdown.`;
 }
 
-export function buildSeoArticlePrompt({ transcript, expertName, questionText }: ContentPromptParams): string {
+export function buildSeoArticlePrompt({ transcript, expertName, questionText, voiceGuide = "" }: ContentPromptParams): string {
   return `Создай экспертную SEO-статью на основе расшифровки.
 
 Вопрос: ${questionText}
 Эксперт: ${expertName}
+${voiceGuide}
 
 Расшифровка:
 ${transcript}
@@ -116,11 +120,12 @@ ${transcript}
 Ответь только текстом статьи в Markdown, без обёрток.`;
 }
 
-export function buildCardsPrompt({ transcript, expertName, questionText }: ContentPromptParams): string {
+export function buildCardsPrompt({ transcript, expertName, questionText, voiceGuide = "" }: ContentPromptParams): string {
   return `Создай 5 карточек-тезисов на основе расшифровки эксперта.
 
 Вопрос: ${questionText}
 Эксперт: ${expertName}
+${voiceGuide}
 
 Расшифровка:
 ${transcript}
@@ -138,11 +143,12 @@ ${transcript}
 ]`;
 }
 
-export function buildReelsScriptPrompt({ transcript, expertName, questionText }: ContentPromptParams): string {
+export function buildReelsScriptPrompt({ transcript, expertName, questionText, voiceGuide = "" }: ContentPromptParams): string {
   return `Создай сценарий для Reels/Shorts (60 секунд) на основе расшифровки.
 
 Вопрос: ${questionText}
 Эксперт: ${expertName}
+${voiceGuide}
 
 Расшифровка:
 ${transcript}
@@ -160,11 +166,12 @@ ${transcript}
 Ответь только текстом сценария, без обёрток.`;
 }
 
-export function buildFaqPrompt({ transcript, expertName, questionText }: ContentPromptParams): string {
+export function buildFaqPrompt({ transcript, expertName, questionText, voiceGuide = "" }: ContentPromptParams): string {
   return `Создай 3–5 вопросов-ответов (FAQ) на основе расшифровки эксперта.
 
 Основной вопрос: ${questionText}
 Эксперт: ${expertName}
+${voiceGuide}
 
 Расшифровка:
 ${transcript}

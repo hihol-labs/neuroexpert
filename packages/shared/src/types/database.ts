@@ -126,6 +126,7 @@ export interface Database {
           is_verified: boolean;
           is_published: boolean;
           onboarding_completed: boolean;
+          voice_profile: Json;
           created_at: string;
           updated_at: string;
         };
@@ -155,6 +156,7 @@ export interface Database {
           is_verified?: boolean;
           is_published?: boolean;
           onboarding_completed?: boolean;
+          voice_profile?: Json;
           created_at?: string;
           updated_at?: string;
         };
@@ -184,6 +186,7 @@ export interface Database {
           is_verified?: boolean;
           is_published?: boolean;
           onboarding_completed?: boolean;
+          voice_profile?: Json;
           created_at?: string;
           updated_at?: string;
         };
@@ -391,6 +394,7 @@ export interface Database {
           llm_provider: string | null;
           llm_model: string | null;
           generation_cost: number | null;
+          generation_framework: Json;
           created_at: string;
           updated_at: string;
         };
@@ -423,6 +427,7 @@ export interface Database {
           llm_provider?: string | null;
           llm_model?: string | null;
           generation_cost?: number | null;
+          generation_framework?: Json;
           created_at?: string;
           updated_at?: string;
         };
@@ -455,6 +460,7 @@ export interface Database {
           llm_provider?: string | null;
           llm_model?: string | null;
           generation_cost?: number | null;
+          generation_framework?: Json;
           created_at?: string;
           updated_at?: string;
         };
@@ -685,6 +691,10 @@ export interface Database {
           sub_query_text: string;
           ai_response: string | null;
           gap_score: number | null;
+          aeo_cluster: string | null;
+          user_intent: string | null;
+          desired_answer: string | null;
+          next_cta: string | null;
           analyzed_at: string | null;
           created_at: string;
         };
@@ -694,6 +704,10 @@ export interface Database {
           sub_query_text: string;
           ai_response?: string | null;
           gap_score?: number | null;
+          aeo_cluster?: string | null;
+          user_intent?: string | null;
+          desired_answer?: string | null;
+          next_cta?: string | null;
           analyzed_at?: string | null;
           created_at?: string;
         };
@@ -703,8 +717,118 @@ export interface Database {
           sub_query_text?: string;
           ai_response?: string | null;
           gap_score?: number | null;
+          aeo_cluster?: string | null;
+          user_intent?: string | null;
+          desired_answer?: string | null;
+          next_cta?: string | null;
           analyzed_at?: string | null;
           created_at?: string;
+        };
+      };
+      marketing_workflow_runs: {
+        Row: {
+          id: string;
+          owner_id: string | null;
+          workflow_key: string;
+          agent_role: string | null;
+          entity_type: string | null;
+          entity_id: string | null;
+          status: string;
+          input: Json;
+          output: Json;
+          evidence: Json;
+          human_review_required: boolean;
+          source: string;
+          error: string | null;
+          created_at: string;
+          updated_at: string;
+          completed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          owner_id?: string | null;
+          workflow_key: string;
+          agent_role?: string | null;
+          entity_type?: string | null;
+          entity_id?: string | null;
+          status?: string;
+          input?: Json;
+          output?: Json;
+          evidence?: Json;
+          human_review_required?: boolean;
+          source?: string;
+          error?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          completed_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          owner_id?: string | null;
+          workflow_key?: string;
+          agent_role?: string | null;
+          entity_type?: string | null;
+          entity_id?: string | null;
+          status?: string;
+          input?: Json;
+          output?: Json;
+          evidence?: Json;
+          human_review_required?: boolean;
+          source?: string;
+          error?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          completed_at?: string | null;
+        };
+      };
+      page_quality_checks: {
+        Row: {
+          id: string;
+          content_id: string | null;
+          expert_id: string | null;
+          page_url: string | null;
+          check_type: string;
+          scores: Json;
+          critical_issues: Json;
+          hypotheses: Json;
+          ice_score: number | null;
+          status: string;
+          source: string;
+          confidence: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          content_id?: string | null;
+          expert_id?: string | null;
+          page_url?: string | null;
+          check_type?: string;
+          scores?: Json;
+          critical_issues?: Json;
+          hypotheses?: Json;
+          ice_score?: number | null;
+          status?: string;
+          source?: string;
+          confidence?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          content_id?: string | null;
+          expert_id?: string | null;
+          page_url?: string | null;
+          check_type?: string;
+          scores?: Json;
+          critical_issues?: Json;
+          hypotheses?: Json;
+          ice_score?: number | null;
+          status?: string;
+          source?: string;
+          confidence?: number;
+          created_at?: string;
+          updated_at?: string;
         };
       };
       cwv_metrics: {
@@ -797,6 +921,14 @@ export type EmailSubscriberUpdate = Database["public"]["Tables"]["email_subscrib
 export type Job = Database["public"]["Tables"]["jobs"]["Row"];
 export type JobInsert = Database["public"]["Tables"]["jobs"]["Insert"];
 export type JobUpdate = Database["public"]["Tables"]["jobs"]["Update"];
+
+export type MarketingWorkflowRun = Database["public"]["Tables"]["marketing_workflow_runs"]["Row"];
+export type MarketingWorkflowRunInsert = Database["public"]["Tables"]["marketing_workflow_runs"]["Insert"];
+export type MarketingWorkflowRunUpdate = Database["public"]["Tables"]["marketing_workflow_runs"]["Update"];
+
+export type PageQualityCheck = Database["public"]["Tables"]["page_quality_checks"]["Row"];
+export type PageQualityCheckInsert = Database["public"]["Tables"]["page_quality_checks"]["Insert"];
+export type PageQualityCheckUpdate = Database["public"]["Tables"]["page_quality_checks"]["Update"];
 
 export type SubQuery = Database["public"]["Tables"]["sub_queries"]["Row"];
 export type SubQueryInsert = Database["public"]["Tables"]["sub_queries"]["Insert"];

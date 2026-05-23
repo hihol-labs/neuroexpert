@@ -28,6 +28,7 @@ import {
   RevenueCalculatorMockup,
   SevenDayResultPanel,
 } from "@/components/marketing/product-mockups";
+import { MARKETING_OS_TOOLS } from "shared";
 
 type Card = {
   title: string;
@@ -135,6 +136,10 @@ const antiSeoCards: Card[] = [
     icon: ClipboardCheck,
   },
 ];
+
+const marketingOsTools = MARKETING_OS_TOOLS.filter((tool) =>
+  ["skills", "voice_extractor", "aeo_ai_seo", "competitor_profiling", "cro_audit", "scheduled_tasks"].includes(tool.key),
+);
 
 const niches = [
   { name: "Стоматологии", icon: Stethoscope, point: "запись на консультацию" },
@@ -311,6 +316,35 @@ export default function LandingPage() {
               <ArrowRight className="h-4 w-4" />
             </Link>
           </FadeIn>
+        </div>
+      </section>
+
+      <section className="border-y border-indigo-100 bg-indigo-50 py-14 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <FadeIn className="mx-auto mb-10 max-w-3xl text-center">
+            <p className="text-sm font-semibold text-indigo-700">Marketing OS</p>
+            <h2 className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl">
+              Внутри платформы теперь не набор промптов, а повторяемые workflow
+            </h2>
+            <p className="mt-4 text-slate-600">
+              Методики для голоса эксперта, AEO, конкурентов, CRO и регулярных отчётов
+              фиксируются как исполняемый слой с обязательной проверкой человеком.
+            </p>
+          </FadeIn>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {marketingOsTools.map((tool, index) => (
+              <FadeIn key={tool.key} delay={index * 70}>
+                <div className="h-full rounded-lg border border-indigo-100 bg-white p-5 shadow-sm">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-700">
+                    этап {tool.stage}
+                  </p>
+                  <h3 className="mt-3 text-lg font-semibold text-slate-950">{tool.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{tool.platformEffect}</p>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
         </div>
       </section>
 
