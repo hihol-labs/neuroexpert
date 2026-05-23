@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Providers } from "@/components/providers";
 import {
   generateOrganizationSchema,
@@ -72,15 +73,23 @@ export default function RootLayout({
             dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
           />
         ))}
+      </head>
+      <body className={fontClassName}>
+        <Providers>
+        {children}
+        </Providers>
         {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && (
-          <script
-            defer
+          <Script
+            id="plausible-analytics"
+            strategy="lazyOnload"
             data-domain={process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN}
             src={`${process.env.NEXT_PUBLIC_PLAUSIBLE_HOST || "https://plausible.io"}/js/script.js`}
           />
         )}
         {process.env.NEXT_PUBLIC_YANDEX_METRIKA_ID && (
-          <script
+          <Script
+            id="yandex-metrika"
+            strategy="lazyOnload"
             dangerouslySetInnerHTML={{
               __html: `
                 (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
@@ -99,11 +108,6 @@ export default function RootLayout({
             }}
           />
         )}
-      </head>
-      <body className={fontClassName}>
-        <Providers>
-        {children}
-        </Providers>
         {process.env.NEXT_PUBLIC_YANDEX_METRIKA_ID && (
           <noscript>
             <div>
