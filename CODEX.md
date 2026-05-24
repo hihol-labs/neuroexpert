@@ -21,10 +21,10 @@ This existing project is adopted into Product Factory OS.
 - Methodology: `/home/hihol/projects/product-factory-os`
 - Project: `/home/hihol/projects/neuroexpert`
 
-Before substantial implementation, Codex must use:
+Before implementation, Codex must enforce full PFO adoption automatically:
 
 ```bash
-pfo adopt /home/hihol/projects/neuroexpert --analyze
+pfo adopt /home/hihol/projects/neuroexpert
 ```
 
 Then route work through `/task`, write `HANDOFF.md` before session or role transfer, update `.codex-memory/STATE.json`, and respect `.pfo/` contracts. Project-local rules may add constraints, but they do not replace PFO gates, memory, or scope/data/fallback contracts.

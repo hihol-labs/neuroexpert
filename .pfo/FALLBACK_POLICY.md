@@ -17,4 +17,11 @@
 
 ## Project-Specific Fallbacks
 
-- Replace this line with approved fallback behavior.
+- LLM providers may fall back only through the shared provider abstraction and only with visible status/logging.
+- STT may fall back from Whisper to Yandex SpeechKit only through the transcription abstraction and only with visible status/logging.
+- Worker jobs may retry and then fail explicitly; they must not write fake successful outputs.
+- If an external source is unavailable, API/UI responses must return an explicit degraded/unavailable status or cached data with freshness metadata.
+- Audit and scan flows may show partial results only when missing platforms are clearly marked.
+- Email/Supabase Auth degradation must be visible in health checks or logs; magic-link failures must not be reported as sent.
+- Kong config rendering must fail closed if required keys or templates are missing.
+- In development/test, fixtures are allowed only outside production paths and must be clearly labeled.

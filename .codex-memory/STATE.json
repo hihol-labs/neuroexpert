@@ -71,12 +71,12 @@
     "dependencies": "NOT_RUN",
     "hardening": "NOT_RUN",
     "deploymentReadiness": "PASS",
-    "scopeLock": "PASS_WITH_WARNINGS",
+    "scopeLock": "PASS",
     "dataAuthenticity": "PASS",
     "goldenFlows": "PASS",
-    "regressionContract": "PASS_WITH_WARNINGS",
+    "regressionContract": "PASS",
     "fallbackPolicy": "PASS",
-    "diffRisk": "PASS_WITH_WARNINGS",
+    "diffRisk": "PASS",
     "noSilentSubstitution": "PASS",
     "executionPolicy": "PASS",
     "permissionMatrix": "PASS",
@@ -222,6 +222,30 @@
       "mode": "existing-project-analyze",
       "stage": "EXISTING_PROJECT_ANALYZED",
       "status": "BLOCKED",
+      "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 0 gate command(s)."
+    },
+    {
+      "mode": "existing-project-analyze",
+      "stage": "EXISTING_PROJECT_ANALYZED",
+      "status": "PASS",
+      "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 0 gate command(s)."
+    },
+    {
+      "mode": "existing-project-analyze",
+      "stage": "EXISTING_PROJECT_ANALYZED",
+      "status": "PASS",
+      "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 0 gate command(s)."
+    },
+    {
+      "mode": "existing-project-analyze",
+      "stage": "EXISTING_PROJECT_ANALYZED",
+      "status": "PASS",
+      "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 0 gate command(s)."
+    },
+    {
+      "mode": "existing-project-analyze",
+      "stage": "EXISTING_PROJECT_ANALYZED",
+      "status": "PASS",
       "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 0 gate command(s)."
     },
     {
@@ -389,22 +413,65 @@
     {
       "event": "existing project analyzer run",
       "note": "runGates=False"
+    },
+    {
+      "event": "existing project analyzer run",
+      "note": "runGates=False"
+    },
+    {
+      "event": "existing project analyzer run",
+      "note": "runGates=False"
+    },
+    {
+      "event": "existing project analyzer run",
+      "note": "runGates=False"
+    },
+    {
+      "event": "existing project analyzer run",
+      "note": "runGates=False"
     }
   ],
   "artifactHashes": {},
   "lastSuccessfulState": "EXISTING_PROJECT_ANALYZED",
   "artifacts": [
-    "CODEX.md",
-    "LAUNCH_PLAN.md",
     ".codex-memory/MEMORY.md",
+    ".codex-memory/NEUROEXPERT_EXECUTION_SEQUENCE.md",
+    ".codex-memory/STATE.json",
+    ".codex-memory/events.jsonl",
+    ".pfo/DATA_POLICY.md",
+    ".pfo/EXECUTION_POLICY.json",
+    ".pfo/FALLBACK_POLICY.md",
+    ".pfo/FORBIDDEN_CHANGES.md",
+    ".pfo/GOLDEN_FLOWS.md",
+    ".pfo/LEARNING_PROMOTION_GATE.md",
+    ".pfo/PERMISSION_MATRIX.json",
+    ".pfo/PERMISSION_MATRIX.md",
+    ".pfo/PROJECT_CONTRACT.md",
+    ".pfo/SCOPE_LOCK.md",
+    ".pfo/TOOL_CAPABILITY_REGISTRY.json",
+    ".pfo/VERIFICATION_CONTRACT.json",
+    "AGENTS.md",
+    "ARCHITECTURE.md",
+    "CODEX.md",
+    "CURRENT_PLAN.md",
+    "LAUNCH_PLAN.md",
+    "MASTER_CONTEXT.md",
+    "PFO_CONTRACT_GATE.json",
     "PFO_EXISTING_PROJECT_ANALYSIS.json",
     "PFO_REPORT.md",
-    ".codex-memory/NEUROEXPERT_EXECUTION_SEQUENCE.md",
-    "CURRENT_PLAN.md",
-    "PFO_CONTRACT_GATE.json"
+    "PROGRESS.md",
+    "TASKS.md",
+    "TESTING.md"
   ],
   "completedModules": [],
   "failedValidations": [],
   "blockers": [],
-  "nextAction": "Project gates passed; continue with task-specific PFO execution graph."
+  "nextAction": "Project gates passed; continue with task-specific PFO execution graph.",
+  "pfoRuntime": {
+    "status": "FULLY_ADOPTED",
+    "methodologyPath": "/home/hihol/projects/product-factory-os",
+    "workspace": "/home/hihol/projects",
+    "methodologyRevision": "583094b9e2d9dc169040f33bad4f78e969e4c0ee",
+    "mode": "automatic-workspace-runtime"
+  }
 }
