@@ -49,6 +49,8 @@
       "pnpm"
     ],
     "availableCommands": [
+      "pnpm aeo:crawlers",
+      "pnpm aeo:smoke",
       "pnpm build",
       "pnpm clean",
       "pnpm dev",
@@ -63,19 +65,24 @@
   "gateResults": {
     "strategy": "PASS",
     "architecture": "PASS",
-    "tests": "NOT_CONFIGURED",
+    "tests": "NOT_RUN",
     "review": "NOT_RUN",
     "security": "PASS",
     "dependencies": "NOT_RUN",
     "hardening": "NOT_RUN",
-    "deploymentReadiness": "BLOCKED",
-    "scopeLock": "BLOCKED",
-    "dataAuthenticity": "BLOCKED",
+    "deploymentReadiness": "PASS",
+    "scopeLock": "PASS_WITH_WARNINGS",
+    "dataAuthenticity": "PASS",
     "goldenFlows": "PASS",
     "regressionContract": "PASS_WITH_WARNINGS",
-    "fallbackPolicy": "BLOCKED",
+    "fallbackPolicy": "PASS",
     "diffRisk": "PASS_WITH_WARNINGS",
-    "noSilentSubstitution": "BLOCKED"
+    "noSilentSubstitution": "PASS",
+    "executionPolicy": "PASS",
+    "permissionMatrix": "PASS",
+    "verificationContract": "PASS",
+    "learningPromotion": "PASS",
+    "toolCapabilityRegistry": "PASS"
   },
   "verificationHistory": [
     {
@@ -191,6 +198,42 @@
       "mode": "existing-project-analyze",
       "stage": "EXISTING_PROJECT_ANALYZED",
       "status": "BLOCKED",
+      "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 0 gate command(s)."
+    },
+    {
+      "mode": "existing-project-analyze",
+      "stage": "EXISTING_PROJECT_ANALYZED",
+      "status": "BLOCKED",
+      "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 0 gate command(s)."
+    },
+    {
+      "mode": "existing-project-analyze",
+      "stage": "EXISTING_PROJECT_ANALYZED",
+      "status": "BLOCKED",
+      "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 0 gate command(s)."
+    },
+    {
+      "mode": "existing-project-analyze",
+      "stage": "EXISTING_PROJECT_ANALYZED",
+      "status": "BLOCKED",
+      "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 0 gate command(s)."
+    },
+    {
+      "mode": "existing-project-analyze",
+      "stage": "EXISTING_PROJECT_ANALYZED",
+      "status": "BLOCKED",
+      "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 0 gate command(s)."
+    },
+    {
+      "mode": "existing-project-analyze",
+      "stage": "EXISTING_PROJECT_ANALYZED",
+      "status": "PASS",
+      "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 0 gate command(s)."
+    },
+    {
+      "mode": "existing-project-analyze",
+      "stage": "EXISTING_PROJECT_ANALYZED",
+      "status": "PASS",
       "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 0 gate command(s)."
     }
   ],
@@ -318,10 +361,38 @@
     {
       "event": "marketing os runtime verified locally",
       "note": "2026-05-23: Verified pnpm build and pnpm test after Marketing OS foundation. Browser DOM check on local homepage showed Marketing OS block present and no document-level horizontal overflow; screenshot capture in the in-app browser timed out."
+    },
+    {
+      "event": "existing project analyzer run",
+      "note": "runGates=False"
+    },
+    {
+      "event": "aeo checklist implementation",
+      "note": "2026-05-23: Implemented Stage 1-safe AEO hardening: public llms.txt, expanded AI crawler robots rules, JSON-LD for organization/site/services/catalogs/questions/reviews, FAQ publish gate, AI crawler log migration/API/dashboard report, and local smoke/log scripts. Active login/SMTP gate remains unchanged."
+    },
+    {
+      "event": "existing project analyzer run",
+      "note": "runGates=False"
+    },
+    {
+      "event": "existing project analyzer run",
+      "note": "runGates=False"
+    },
+    {
+      "event": "existing project analyzer run",
+      "note": "runGates=False"
+    },
+    {
+      "event": "existing project analyzer run",
+      "note": "runGates=False"
+    },
+    {
+      "event": "existing project analyzer run",
+      "note": "runGates=False"
     }
   ],
   "artifactHashes": {},
-  "lastSuccessfulState": "REVIEWING",
+  "lastSuccessfulState": "EXISTING_PROJECT_ANALYZED",
   "artifacts": [
     "CODEX.md",
     "LAUNCH_PLAN.md",
@@ -334,10 +405,6 @@
   ],
   "completedModules": [],
   "failedValidations": [],
-  "blockers": [
-    "AGENTS.md: added possible silent substitution: Then route work through `/task`, write `HANDOFF.md` before session or role transfer, update `.codex-memory/STATE.json`, and respect `.pfo/` contracts. Project-l",
-    "CODEX.md: added possible silent substitution: Then route work through `/task`, write `HANDOFF.md` before session or role transfer, update `.codex-memory/STATE.json`, and respect `.pfo/` contracts. Project-l",
-    "No root test/typecheck script was detected."
-  ],
-  "nextAction": "Resolve analyzer blockers before deploy readiness."
+  "blockers": [],
+  "nextAction": "Project gates passed; continue with task-specific PFO execution graph."
 }

@@ -27,5 +27,5 @@ Before substantial implementation, Codex must use:
 pfo adopt /home/hihol/projects/neuroexpert --analyze
 ```
 
-Then route work through `/task`, update `.codex-memory/STATE.json`, and respect `.pfo/` contracts. Project-local rules may add constraints, but they do not replace PFO gates, memory, or scope/data/fallback contracts.
+Then route work through `/task`, write `HANDOFF.md` before session or role transfer, update `.codex-memory/STATE.json`, and respect `.pfo/` contracts. Project-local rules may add constraints, but they do not replace PFO gates, memory, or scope/data/fallback contracts.
 <!-- PFO_PROJECT_RUNTIME_END -->

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "purpose": "Executable verification contract for the active unit.",
+  "unitId": "",
+  "createdAt": "",
+  "commands": [],
+  "requiredArtifacts": [
+    ".codex-memory/STATE.json",
+    "PFO_REPORT.md"
+  ],
+  "passCriteria": [
+    "All required commands exit 0.",
+    "Expected output rules match.",
+    "Required artifacts exist.",
+    "Failures are recorded as recovery, not success."
+  ],
+  "failureMode": "RECOVERY_REQUIRED"
+}

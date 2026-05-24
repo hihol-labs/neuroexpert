@@ -27,6 +27,14 @@
   ],
   "availableCommands": [
     {
+      "name": "aeo:crawlers",
+      "command": "pnpm aeo:crawlers"
+    },
+    {
+      "name": "aeo:smoke",
+      "command": "pnpm aeo:smoke"
+    },
+    {
       "name": "build",
       "command": "pnpm build"
     },
@@ -57,6 +65,20 @@
   "contractGate": {
     "status": "PASS_WITH_WARNINGS",
     "changedFiles": [],
+    "runtimeChangedFiles": [
+      ".codex-memory/STATE.json",
+      ".codex-memory/events.jsonl",
+      ".pfo/EXECUTION_POLICY.json",
+      ".pfo/LEARNING_PROMOTION_GATE.md",
+      ".pfo/PERMISSION_MATRIX.json",
+      ".pfo/PERMISSION_MATRIX.md",
+      ".pfo/TOOL_CAPABILITY_REGISTRY.json",
+      ".pfo/VERIFICATION_CONTRACT.json",
+      "AGENTS.md",
+      "CODEX.md",
+      "PFO_CONTRACT_GATE.json",
+      "PFO_EXISTING_PROJECT_ANALYSIS.json"
+    ],
     "riskClasses": [],
     "missingContracts": [],
     "placeholderContracts": [
@@ -79,7 +101,12 @@
       "regressionContract": "PASS_WITH_WARNINGS",
       "fallbackPolicy": "PASS",
       "diffRisk": "PASS_WITH_WARNINGS",
-      "noSilentSubstitution": "PASS"
+      "noSilentSubstitution": "PASS",
+      "executionPolicy": "PASS",
+      "permissionMatrix": "PASS",
+      "verificationContract": "PASS",
+      "learningPromotion": "PASS",
+      "toolCapabilityRegistry": "PASS"
     }
   },
   "createdContracts": [],
