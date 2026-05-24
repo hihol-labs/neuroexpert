@@ -8,6 +8,8 @@ Marketing OS — это операционный слой НейроЭкспер
 
 Главный принцип: AI готовит анализ, текст, гипотезу или отчёт, но публикация, отправка, коммерческое решение и внешнее обещание проходят human review.
 
+Marketing OS не является слоем только для Solo-экспертов. `voice_profile` относится к экспертному контенту, но остальные workflow покрывают и B2B/Local Sales OS: конкурентное профилирование, CRO, задачи роста, недельные отчёты, unit economics, коннекторы данных и коммерческие материалы.
+
 ## Инструменты
 
 | Инструмент | Реализация в платформе |
@@ -32,6 +34,8 @@ Marketing OS — это операционный слой НейроЭкспер
 3. Затем Stage 6-8: AEO-кластеры, workflow visibility, регулярные проверки.
 4. Затем Stage 11-14: B2B competitor profiling, CRO, Local Sales OS, MCP-коннекторы.
 
+Номера Stage — это привязка к общей дорожной карте `CURRENT_PLAN.md`, а не отдельная последовательная нумерация Marketing OS. Этапы без Marketing OS-карточек закрывают инфраструктуру, платежи, безопасность, тесты и запуск.
+
 ## Ограничения
 
 - Не подменять реальные provider answers заглушками.
@@ -45,4 +49,4 @@ Marketing OS — это операционный слой НейроЭкспер
 - `/api/health` показывает `auth.status`, `auth.magic_link_ready`, worker queue counts.
 - `generate_content` создаёт `voice_profile` и сохраняет `generation_framework`.
 - `expand_query` сохраняет `aeo_cluster`, `user_intent`, `desired_answer`, `next_cta`.
-- Главная страница показывает блок Marketing OS без горизонтального overflow на mobile.
+- Главная страница показывает все Marketing OS-инструменты, отсортированные по этапам общей дорожной карты, без горизонтального overflow на mobile.

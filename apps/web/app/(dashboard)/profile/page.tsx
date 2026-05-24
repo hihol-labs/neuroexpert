@@ -31,6 +31,14 @@ export default function ProfilePage() {
   const [knowsAbout, setKnowsAbout] = useState<string[]>([]);
   const [yearsExperience, setYearsExperience] = useState("");
   const [isPublished, setIsPublished] = useState(false);
+  const [proofSummary, setProofSummary] = useState("");
+  const [proofLinks, setProofLinks] = useState("");
+  const [serviceSla, setServiceSla] = useState("");
+  const [practiceLimitations, setPracticeLimitations] = useState("");
+  const [proofAssets, setProofAssets] = useState<Array<Record<string, unknown>>>([]);
+  const [assetType, setAssetType] = useState("certificate");
+  const [assetTitle, setAssetTitle] = useState("");
+  const [assetUrl, setAssetUrl] = useState("");
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
@@ -50,13 +58,47 @@ export default function ProfilePage() {
         setKnowsAbout((data.knows_about as string[]) ?? []);
         setYearsExperience(String((data.years_experience as number) ?? ""));
         setIsPublished((data.is_published as boolean) ?? false);
+        const proof =
+          typeof data.proof_of_human === "object" && data.proof_of_human !== null
+            ? (data.proof_of_human as Record<string, unknown>)
+            : {};
+        const machineProfile =
+          typeof data.machine_profile === "object" && data.machine_profile !== null
+            ? (data.machine_profile as Record<string, unknown>)
+            : {};
+        setProofSummary((proof.summary as string) ?? "");
+        setProofLinks(Array.isArray(proof.links) ? proof.links.join("\n") : "");
+        setServiceSla((machineProfile.sla as string) ?? "");
+        setPracticeLimitations(
+          Array.isArray(data.practice_limitations)
+            ? (data.practice_limitations as string[]).join("\n")
+            : "",
+        );
       }
     });
+    fetch("/api/proof-of-human")
+      .then((res) => res.json())
+      .then((data) => setProofAssets(data.assets ?? []))
+      .catch(() => setProofAssets([]));
   }, [supabase]);
 
   const save = async () => {
     if (!profile) return;
     setSaving(true);
+    const currentMachineProfile =
+      typeof profile.machine_profile === "object" &&
+      profile.machine_profile !== null &&
+      !Array.isArray(profile.machine_profile)
+        ? (profile.machine_profile as Record<string, unknown>)
+        : {};
+    const links = proofLinks
+      .split("\n")
+      .map((item) => item.trim())
+      .filter(Boolean);
+    const limitations = practiceLimitations
+      .split("\n")
+      .map((item) => item.trim())
+      .filter(Boolean);
 
     const { error } = await supabase
       .from("profiles")
@@ -73,6 +115,20 @@ export default function ProfilePage() {
         knows_about: knowsAbout.length ? knowsAbout : null,
         years_experience: yearsExperience ? Number(yearsExperience) : null,
         is_published: isPublished,
+        proof_of_human: {
+          summary: proofSummary || null,
+          links,
+          updated_at: new Date().toISOString(),
+        },
+        practice_limitations: limitations,
+        machine_profile: {
+          ...currentMachineProfile,
+          sla: serviceSla || null,
+          services: knowsAbout,
+          booking_url: consultationUrl || null,
+          price_from: consultationPrice ? Number(consultationPrice) : null,
+          updated_at: new Date().toISOString(),
+        },
       })
       .eq("id", profile.id as string);
 
@@ -90,6 +146,28 @@ export default function ProfilePage() {
 
   const removeKnows = (tag: string) => {
     setKnowsAbout(knowsAbout.filter((t) => t !== tag));
+  };
+
+  const addProofAsset = async () => {
+    if (!assetTitle.trim()) return;
+    const res = await fetch("/api/proof-of-human", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        asset_type: assetType,
+        title: assetTitle.trim(),
+        evidence_url: assetUrl.trim() || null,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      toast(data.error || "Ошибка добавления доказательства", "error");
+      return;
+    }
+    setProofAssets([data.data, ...proofAssets]);
+    setAssetTitle("");
+    setAssetUrl("");
+    toast("Доказательство добавлено на проверку", "success");
   };
 
   if (!profile) return <div className="py-12 text-center text-gray-500">Загрузка...</div>;
@@ -151,6 +229,83 @@ export default function ProfilePage() {
                   <button onClick={() => removeKnows(tag)} className="text-blue-400 hover:text-blue-600">&times;</button>
                 </span>
               ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Proof + machine profile */}
+        <div className="bg-white rounded-xl border p-6 lg:col-span-2 space-y-4">
+          <h2 className="font-semibold text-gray-900">Proof-of-Human и machine profile</h2>
+          <Textarea
+            label="Краткие доказательства опыта"
+            id="proof-summary"
+            rows={3}
+            value={proofSummary}
+            onChange={(e) => setProofSummary(e.target.value)}
+            placeholder="Стаж, дипломы, кейсы, лицензии, публикации, подтверждённые отзывы"
+          />
+          <Textarea
+            label="Ссылки на подтверждения"
+            id="proof-links"
+            rows={3}
+            value={proofLinks}
+            onChange={(e) => setProofLinks(e.target.value)}
+            placeholder="Одна ссылка на строку"
+          />
+          <Input
+            label="SLA / формат работы"
+            id="service-sla"
+            value={serviceSla}
+            onChange={(e) => setServiceSla(e.target.value)}
+            placeholder="Например: первичный ответ в течение 24 часов"
+          />
+          <Textarea
+            label="Ограничения практики"
+            id="practice-limitations"
+            rows={3}
+            value={practiceLimitations}
+            onChange={(e) => setPracticeLimitations(e.target.value)}
+            placeholder="Одна строка = одно честное ограничение: с чем не работаете, когда направляете к врачу, какие гарантии не даёте"
+          />
+          <div className="rounded-lg border p-4">
+            <h3 className="mb-3 text-sm font-medium text-gray-900">Доказательства на проверку</h3>
+            <div className="grid gap-3 md:grid-cols-[160px_1fr_1fr_auto]">
+              <select
+                value={assetType}
+                onChange={(e) => setAssetType(e.target.value)}
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              >
+                {["identity", "diploma", "certificate", "case", "review", "voice", "video", "publication", "license"].map((type) => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+              <input
+                value={assetTitle}
+                onChange={(e) => setAssetTitle(e.target.value)}
+                placeholder="Название"
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+              <input
+                value={assetUrl}
+                onChange={(e) => setAssetUrl(e.target.value)}
+                placeholder="Ссылка"
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+              <Button variant="secondary" type="button" onClick={addProofAsset}>
+                Добавить
+              </Button>
+            </div>
+            <div className="mt-4 space-y-2">
+              {proofAssets.length === 0 ? (
+                <p className="text-sm text-gray-500">Доказательства ещё не добавлены.</p>
+              ) : (
+                proofAssets.map((asset) => (
+                  <div key={String(asset.id)} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-sm">
+                    <span className="text-gray-700">{String(asset.title)} · {String(asset.asset_type)}</span>
+                    <span className="text-xs text-gray-500">{String(asset.status)}</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

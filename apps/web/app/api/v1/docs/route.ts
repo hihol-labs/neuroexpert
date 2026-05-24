@@ -92,6 +92,67 @@ const openApiSpec = {
           },
         },
       },
+      LocalDemandSignal: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          source_type: {
+            type: "string",
+            enum: ["demand_signal", "question"],
+          },
+          segment: {
+            type: "string",
+            enum: ["solo", "b2b", "agency"],
+          },
+          entity_type: { type: "string" },
+          query: { type: "string" },
+          city: { type: "string", nullable: true },
+          intent_type: {
+            type: "string",
+            nullable: true,
+            enum: ["informational", "comparative", "recommendation", "transactional"],
+          },
+          demand_stage: {
+            type: "string",
+            nullable: true,
+            enum: ["discover", "compare", "decide", "act"],
+          },
+          monthly_volume: { type: "integer", nullable: true },
+          trend_score: { type: "number" },
+          trend_direction: {
+            type: "string",
+            nullable: true,
+            enum: ["rising", "stable", "falling", "seasonal"],
+          },
+          gap_score: { type: "number", nullable: true },
+          ai_visibility_score: { type: "number" },
+          opportunity_score: { type: "number" },
+          recommended_action: { type: "string", nullable: true },
+          source: { type: "string" },
+          collected_at: { type: "string", format: "date-time", nullable: true },
+          confidence: { type: "number" },
+          freshness: {
+            type: "string",
+            enum: ["fresh", "aging", "stale", "unknown"],
+          },
+        },
+      },
+      MachineProfile: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          type: { type: "string", enum: ["expert", "business"] },
+          url: { type: "string" },
+          machine_profile: {
+            type: "object",
+            description:
+              "Schema.org-ready machine-readable profile for search engines, AI agents, and partners.",
+          },
+          proof_of_human: { type: "object", nullable: true },
+          proof_of_business: { type: "object", nullable: true },
+          updated_at: { type: "string", format: "date-time", nullable: true },
+        },
+      },
       Pagination: {
         type: "object",
         properties: {
@@ -279,6 +340,140 @@ const openApiSpec = {
         },
       },
     },
+    "/local-demand": {
+      get: {
+        summary: "Local Demand API",
+        description:
+          "Сигналы спроса, тренды, AI blind spots и приоритетные действия для Solo, B2B и агентств.",
+        parameters: [
+          {
+            name: "source",
+            in: "query",
+            description: "Источник данных",
+            schema: { type: "string", enum: ["all", "signals", "questions"], default: "all" },
+          },
+          {
+            name: "segment",
+            in: "query",
+            description: "Сегмент спроса",
+            schema: { type: "string", enum: ["solo", "b2b", "agency"], default: "b2b" },
+          },
+          {
+            name: "niche",
+            in: "query",
+            description: "Фильтр по slug ниши",
+            schema: { type: "string" },
+          },
+          {
+            name: "city",
+            in: "query",
+            description: "Фильтр по городу для локального B2B-спроса",
+            schema: { type: "string" },
+          },
+          {
+            name: "q",
+            in: "query",
+            description: "Поиск по запросу/вопросу",
+            schema: { type: "string" },
+          },
+          {
+            name: "min_opportunity",
+            in: "query",
+            description: "Минимальный opportunity score",
+            schema: { type: "number", default: 0 },
+          },
+          {
+            name: "limit",
+            in: "query",
+            schema: { type: "integer", default: 30 },
+          },
+          {
+            name: "offset",
+            in: "query",
+            schema: { type: "integer", default: 0 },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Demand signals with freshness, source and confidence",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    data: {
+                      type: "array",
+                      items: { $ref: "#/components/schemas/LocalDemandSignal" },
+                    },
+                    pagination: { $ref: "#/components/schemas/Pagination" },
+                  },
+                },
+              },
+            },
+          },
+          "401": { description: "API key required" },
+          "403": { description: "Requires read permission" },
+        },
+      },
+    },
+    "/machine-profiles": {
+      get: {
+        summary: "Machine-readable profiles",
+        description:
+          "Schema.org-ready профили экспертов и owner-bound B2B-аккаунтов для AI/search/partner integrations.",
+        parameters: [
+          {
+            name: "type",
+            in: "query",
+            description: "Тип профиля",
+            schema: { type: "string", enum: ["expert", "business"], default: "expert" },
+          },
+          {
+            name: "id",
+            in: "query",
+            description: "UUID профиля",
+            schema: { type: "string" },
+          },
+          {
+            name: "slug",
+            in: "query",
+            description: "Slug профиля",
+            schema: { type: "string" },
+          },
+          {
+            name: "limit",
+            in: "query",
+            schema: { type: "integer", default: 20 },
+          },
+          {
+            name: "offset",
+            in: "query",
+            schema: { type: "integer", default: 0 },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Machine-readable profiles",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    data: {
+                      type: "array",
+                      items: { $ref: "#/components/schemas/MachineProfile" },
+                    },
+                    pagination: { $ref: "#/components/schemas/Pagination" },
+                  },
+                },
+              },
+            },
+          },
+          "401": { description: "API key required" },
+          "403": { description: "Requires read permission" },
+        },
+      },
+    },
     "/answers": {
       get: {
         summary: "Verified Expert Answers (Premium)",
@@ -374,22 +569,57 @@ const openApiSpec = {
         },
       },
     },
+    "/local-competitors": {
+      get: {
+        summary: "Local competitors",
+        description:
+          "Локальные конкуренты: каналы, оффер, сильные/слабые стороны, trust signals и AI-видимость.",
+        parameters: [
+          { name: "business_id", in: "query", schema: { type: "string" } },
+          { name: "city", in: "query", schema: { type: "string" } },
+          { name: "q", in: "query", schema: { type: "string" } },
+          { name: "limit", in: "query", schema: { type: "integer", default: 30 } },
+          { name: "offset", in: "query", schema: { type: "integer", default: 0 } },
+        ],
+        responses: {
+          "200": { description: "Competitor intelligence with freshness and confidence" },
+          "401": { description: "API key required" },
+        },
+      },
+    },
+    "/ai-visibility": {
+      get: {
+        summary: "AI visibility",
+        description:
+          "AI-видимость эксперта или локального бизнеса: citation checks, local visibility checks, competitor visibility.",
+        parameters: [
+          { name: "expert_id", in: "query", schema: { type: "string" } },
+          { name: "business_id", in: "query", schema: { type: "string" } },
+          { name: "platform", in: "query", schema: { type: "string" } },
+          { name: "limit", in: "query", schema: { type: "integer", default: 50 } },
+        ],
+        responses: {
+          "200": { description: "AI visibility score and evidence rows" },
+          "401": { description: "API key required" },
+        },
+      },
+    },
   },
   "x-api-plans": {
     read: {
       name: "Read",
       price: "Free",
-      endpoints: ["/experts", "/articles", "/questions"],
+      endpoints: ["/experts", "/articles", "/questions", "/local-demand", "/machine-profiles", "/local-competitors", "/ai-visibility"],
       rate_limit: "100 req/hour",
       permissions: ["read"],
     },
     answers: {
       name: "Pro",
       price: "$99/mo",
-      endpoints: ["/experts", "/articles", "/questions", "/answers", "/blind-spots"],
+      endpoints: ["/experts", "/articles", "/questions", "/local-demand", "/machine-profiles", "/local-competitors", "/ai-visibility", "/answers", "/blind-spots"],
       rate_limit: "1000 req/hour",
       permissions: ["read", "answers"],
-      features: ["Full article content", "Audio URLs", "Expert quotes", "License for commercial use"],
+      features: ["Full article content", "Audio URLs", "Expert quotes", "License for commercial use", "Agency-ready demand and visibility reports"],
     },
     enterprise: {
       name: "Enterprise",

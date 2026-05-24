@@ -10,6 +10,7 @@ export * from "./prompts/query-fanout.js";
 export * from "./prompts/marketing-os.js";
 export * from "./utils/slug.js";
 export * from "./marketing-os.js";
+export * from "./demand-to-revenue.js";
 // NOTE: ./http/telegram-fetch.js is NOT exported from the main index because it imports
 // "undici" (node-only, pulls in node:crypto) which breaks client-side webpack builds.
 // Import it via deep path from server-only code: `import { tgFetch } from "shared/dist/http/telegram-fetch.js"`.

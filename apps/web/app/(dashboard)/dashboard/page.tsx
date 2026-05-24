@@ -3,6 +3,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { Card, CardTitle, CardValue } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Circle } from "lucide-react";
+import { buildResultLoopSummary } from "shared";
 
 function getSupabase() {
   return createSupabaseClient(
@@ -24,6 +25,7 @@ async function getDashboardData(userId: string) {
     contentListResult,
     pageMetricsResult,
     demandCountResult,
+    resultLoopResult,
   ] = await Promise.all([
     supabase.from("content_packages").select("id", { count: "exact", head: true }).eq("expert_id", userId).eq("status", "published"),
     supabase.from("leads").select("id", { count: "exact", head: true }).eq("expert_id", userId),
@@ -33,6 +35,7 @@ async function getDashboardData(userId: string) {
     supabase.from("content_packages").select("id").eq("expert_id", userId),
     supabase.from("page_metrics").select("views, cta_views, cta_clicks, leads_count").eq("expert_id", userId),
     supabase.from("orders").select("id", { count: "exact", head: true }).eq("expert_id", userId).in("status", ["pending", "accepted"]),
+    supabase.from("result_loop_events").select("*").eq("owner_id", userId).order("created_at", { ascending: false }).limit(100),
   ]);
 
   const profile = profileResult.data;
@@ -48,6 +51,16 @@ async function getDashboardData(userId: string) {
   const pageViews = pageMetrics.reduce((sum, row) => sum + ((row.views as number) ?? 0), 0);
   const ctaClicks = pageMetrics.reduce((sum, row) => sum + ((row.cta_clicks as number) ?? 0), 0);
   const metricLeads = pageMetrics.reduce((sum, row) => sum + ((row.leads_count as number) ?? 0), 0);
+  const loopEvents = resultLoopResult.data ?? [];
+  const resultLoop = buildResultLoopSummary({
+    demandFound: demandCountResult.count ?? 0,
+    tasksCreated: loopEvents.filter((row) => row.event_type === "task_created").length,
+    pagesPublished: pubResult.count ?? 0,
+    views: pageViews,
+    clicks: ctaClicks,
+    leads: leadsResult.count ?? 0,
+    revenue: loopEvents.reduce((sum, row) => sum + ((row.amount as number) ?? 0), 0),
+  });
 
   return {
     demandOpportunitiesCount: demandCountResult.count ?? 0,
@@ -63,6 +76,7 @@ async function getDashboardData(userId: string) {
     recentLeads: recentLeadsResult.data ?? [],
     hasProfile,
     totalContent,
+    resultLoop,
   };
 }
 
@@ -154,6 +168,22 @@ export default async function DashboardPage() {
           <CardTitle>Тариф</CardTitle>
           <CardValue><Badge status={data.tier} /></CardValue>
         </Card>
+      </div>
+
+      <div className="bg-white rounded-xl border p-6 mb-8">
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="font-semibold text-gray-900">Result Loop</h2>
+            <p className="mt-1 text-sm text-gray-500">
+              {data.resultLoop.bottleneck}
+            </p>
+          </div>
+          <div className="text-left lg:text-right">
+            <p className="text-2xl font-bold text-gray-900">{data.resultLoop.score}</p>
+            <p className="text-xs text-gray-500">{data.resultLoop.stage}</p>
+          </div>
+        </div>
+        <p className="mt-4 text-sm text-blue-700">{data.resultLoop.next_action}</p>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">

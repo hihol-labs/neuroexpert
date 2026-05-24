@@ -140,9 +140,7 @@ const antiSeoCards: Card[] = [
   },
 ];
 
-const marketingOsTools = MARKETING_OS_TOOLS.filter((tool) =>
-  ["skills", "voice_extractor", "aeo_ai_seo", "competitor_profiling", "cro_audit", "scheduled_tasks"].includes(tool.key),
-);
+const marketingOsTools = [...MARKETING_OS_TOOLS].sort((a, b) => a.stage - b.stage);
 
 const niches = [
   { name: "Стоматологии", icon: Stethoscope, point: "запись на консультацию" },
@@ -353,8 +351,13 @@ export default function LandingPage() {
               Внутри платформы теперь не набор промптов, а повторяемые workflow
             </h2>
             <p className="mt-4 text-slate-600">
-              Методики для голоса эксперта, AEO, конкурентов, CRO и регулярных отчётов
-              фиксируются как исполняемый слой с обязательной проверкой человеком.
+              Методики для экспертного контента, AEO/AI SEO, Local Sales OS,
+              конкурентов, CRO, задач роста и регулярных отчётов фиксируются
+              как исполняемый слой с обязательной проверкой человеком.
+            </p>
+            <p className="mt-3 text-xs leading-relaxed text-slate-500">
+              Номера ниже — этапы общей дорожной карты внедрения. Этапы без карточек
+              закрывают инфраструктуру, платежи, безопасность, тесты и запуск.
             </p>
           </FadeIn>
 
@@ -363,7 +366,7 @@ export default function LandingPage() {
               <FadeIn key={tool.key} delay={index * 70}>
                 <div className="h-full rounded-lg border border-indigo-100 bg-white p-5 shadow-sm">
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-700">
-                    этап {tool.stage}
+                    дорожная карта: этап {tool.stage}
                   </p>
                   <h3 className="mt-3 text-lg font-semibold text-slate-950">{tool.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-slate-600">{tool.platformEffect}</p>

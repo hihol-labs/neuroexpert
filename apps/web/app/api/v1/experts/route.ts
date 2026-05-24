@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
   let query = admin
     .from("profiles")
     .select(
-      "id, full_name, slug, qualification, city, trust_score, avg_rating, review_count, years_experience, is_verified, knows_about, bio, consultation_price, niches(name, slug, icon)",
+      "id, full_name, slug, qualification, city, trust_score, avg_rating, review_count, years_experience, is_verified, knows_about, bio, consultation_price, proof_of_human, machine_profile, trust_components, niches(name, slug, icon)",
       { count: "exact" },
     )
     .eq("is_published", true)
@@ -93,6 +93,10 @@ export async function GET(request: NextRequest) {
     knows_about: e.knows_about,
     consultation_price: e.consultation_price,
     article_count: countMap[e.id] || 0,
+    proof_of_human: e.proof_of_human ?? {},
+    machine_profile: e.machine_profile ?? {},
+    trust_components: e.trust_components ?? {},
+    machine_profile_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://neuroexpertise.ru"}/api/v1/machine-profiles?type=expert&slug=${e.slug}`,
     niche: e.niches
       ? (e.niches as unknown as { name: string; slug: string; icon: string })
       : null,

@@ -1,4 +1,5 @@
 import { supabase } from "../supabase.js";
+import { calculateTrustComponents } from "shared";
 
 export async function handleCalculateTrustScore(payload: Record<string, unknown>): Promise<{ score: number }> {
   const expertId = payload.expert_id as string;
@@ -12,15 +13,6 @@ export async function handleCalculateTrustScore(payload: Record<string, unknown>
     .eq("expert_id", expertId)
     .eq("is_cited", true)
     .gte("checked_at", thirtyDaysAgo);
-
-  // Average SERP position (lower is better, invert for score)
-  const { data: serpData } = await supabase
-    .from("serp_positions")
-    .select("position")
-    .eq("content_id", expertId) // will use content join below
-    .not("position", "is", null)
-    .gte("checked_at", thirtyDaysAgo)
-    .limit(50);
 
   // Get positions via content_packages
   const { data: expertContent } = await supabase
@@ -56,14 +48,41 @@ export async function handleCalculateTrustScore(payload: Record<string, unknown>
     .eq("expert_id", expertId)
     .gte("created_at", thirtyDaysAgo);
 
-  // Formula: (citations×2 + position×1.5 + content×1 + leads×3) / max × 100
-  const maxPossible = 50 * 2 + 20 * 1.5 + 50 * 1 + 20 * 3; // theoretical max
-  const raw = (citationCount ?? 0) * 2 + avgPositionScore * 1.5 + contentCount * 1 + (leadCount ?? 0) * 3;
-  const score = Math.min(100, Math.round((raw / maxPossible) * 100 * 10) / 10);
+  const { data: proofAssets } = await supabase
+    .from("proof_of_human_assets")
+    .select("id, status, confidence")
+    .eq("profile_id", expertId);
+
+  const proofScore = Math.min(
+    100,
+    ((proofAssets ?? []).filter((asset) => asset.status === "verified").length * 22) +
+      ((proofAssets ?? []).filter((asset) => asset.status === "needs_review").length * 8),
+  );
+  const aiVisibilityScore = Math.min(100, ((citationCount ?? 0) / 20) * 100);
+  const demandScore = Math.min(100, contentCount * 8 + avgPositionScore * 3);
+  const conversionScore = Math.min(100, (leadCount ?? 0) * 12);
+  const { trust_score: score, components } = calculateTrustComponents({
+    proofScore,
+    aiVisibilityScore,
+    demandScore,
+    conversionScore,
+  });
 
   await supabase
     .from("profiles")
-    .update({ trust_score: score })
+    .update({
+      trust_score: score,
+      trust_components: {
+        ...components,
+        updated_at: new Date().toISOString(),
+        evidence: {
+          citations_30d: citationCount ?? 0,
+          published_content: contentCount,
+          leads_30d: leadCount ?? 0,
+          proof_assets: proofAssets?.length ?? 0,
+        },
+      },
+    })
     .eq("id", expertId);
 
   console.log(`[trust_score] Expert ${expertId}: ${score} (citations=${citationCount}, content=${contentCount}, leads=${leadCount})`);

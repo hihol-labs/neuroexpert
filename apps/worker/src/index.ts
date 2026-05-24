@@ -17,6 +17,14 @@ import { handleCrosspostSocial } from "./jobs/crosspost-social.js";
 import { handleSendEmailDigest } from "./jobs/send-email-digest.js";
 import { handleOptimizeImages } from "./jobs/optimize-images.js";
 import { handleTrackGeoServices } from "./jobs/track-geo-services.js";
+import {
+  handleAnalyzeBehaviorSignals,
+  handleCalculateUnitEconomics,
+  handleGenerateAgencyReport,
+  handleGenerateB2BPageDraft,
+  handleGenerateDailyGrowthTasks,
+  handleGenerateLocalWeeklyReport,
+} from "./jobs/demand-to-revenue-os.js";
 
 const POLL_INTERVAL = Number(process.env.WORKER_POLL_INTERVAL_MS) || 5000;
 const MAX_RETRIES = 3;
@@ -43,6 +51,12 @@ const handlers: Record<string, JobHandler> = {
   send_email_digest: handleSendEmailDigest,
   optimize_images: handleOptimizeImages,
   track_geo_services: handleTrackGeoServices,
+  generate_daily_growth_tasks: handleGenerateDailyGrowthTasks,
+  generate_local_weekly_report: handleGenerateLocalWeeklyReport,
+  generate_b2b_page_draft: handleGenerateB2BPageDraft,
+  analyze_behavior_signals: handleAnalyzeBehaviorSignals,
+  calculate_unit_economics: handleCalculateUnitEconomics,
+  generate_agency_report: handleGenerateAgencyReport,
 };
 
 async function pollAndProcess(): Promise<void> {
