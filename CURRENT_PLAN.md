@@ -45,6 +45,12 @@
 
 **Правка от 2026-05-23 по AEO-чеклисту:** технический AEO-контур сайта добавляется как Stage 1-safe hardening без смены активного gate: публичный `/llms.txt`, расширенный `robots.txt` для AI-краулеров, Organization/WebSite/Service/ItemList/QAPage/Review JSON-LD, обязательный FAQ перед публикацией, smoke-проверка `pnpm aeo:smoke`, импорт access-логов AI-краулеров через `pnpm aeo:crawlers -- access.log --push` и отчёт в `/analytics`. Production-применение требует деплоя web и миграции `022_ai_crawler_monitoring.sql`.
 
+**Правка от 2026-05-24 по последним изменениям за 3 дня:** в код уже вошли Marketing OS foundation, Kong-aware healthcheck, AEO hardening, sitemap routes, Demand-to-Revenue OS, новые dashboard-разделы `/today`, `/local-sales`, `/marketing-os`, `/agency`, публичные Demand API endpoints и миграции `021`-`024`. Это не меняет активный gate: сначала login/SMTP. Но перед любым production launch теперь обязателен stabilization gate: применить миграции `021`-`024`, обновить generated DB types, убедиться что `jobs_type_check` пропускает новые worker jobs, проверить `/api/health`, `/llms.txt`, `/robots.txt`, `/sitemap.xml`, `/sitemaps/*`, `/api/v1/docs`, dashboard routes и `pnpm aeo:smoke`.
+
+**Правка от 2026-05-24 по PFO и deploy-рискам:** рабочее дерево содержит PFO Runtime-файлы и контрактный gate сейчас `BLOCKED` из-за placeholder contracts/silent-substitution warnings; deploy-скрипты потеряли executable bit (`100755 -> 100644`). До деплоя нужно либо принять и закрыть PFO-контракты, либо явно зафиксировать исключение, а также вернуть executable bit для `scripts/deploy.sh`, `scripts/fix-prod.sh`, `scripts/generate-env.sh`, `scripts/render-kong.sh`. Эти блокеры не отменяют Stage 1, но блокируют production release.
+
+**Правка от 2026-05-24 по Wholesale Demand OS:** оптовая B2B-модель `товарная категория + город + B2B-запрос + конкурент + точка входа` добавляется как будущий эксперимент внутри Local Sales OS, а не как отдельный marketplace и не как срочная фича. Выполнять только после доказанного B2B traction: закрытого Этапа 16 или явного решения пользователя. Причина: модель может дать более высокий чек и сильный коммерческий intent, но слишком рано потянет сложность прайсов, остатков, логистики, юрлиц, КП и интеграций.
+
 ## Текущий статус
 
 **Активная фаза:** Этап 1 — восстановить login и базовую доступность.
@@ -52,6 +58,8 @@
 **Первый пункт:** оплатить/пополнить Яндекс 360 и убрать viewing mode, чтобы SMTP снова отправлял magic link.
 
 **Текущий блокер P0:** Яндекс 360 в viewing mode из-за баланса; SMTP отключён; Supabase magic links не работают.
+
+**Новый release-блокер после анализа 2026-05-24:** последние коммиты добавили миграции `021`-`024` и новые runtime routes/jobs. Нельзя деплоить их как “готово”, пока не пройдены DB migration smoke, generated types refresh, PFO contract gate и проверка executable bit у deploy scripts.
 
 **Правило:** не переходить к следующему этапу, пока gate текущего этапа не пройден.
 
@@ -239,8 +247,8 @@ UI:
 
 - `/dashboard` — funnel: opportunities → pages → indexed → impressions → clicks → leads → outcomes;
 - `/dashboard/content/[id]` — Quality Gate перед publish;
-- `/dashboard/local/pages` — статусы `opportunity/draft/review/published/refresh_needed/merge/archive`;
-- `/dashboard/local/behavior` — сигналы поведения и задачи роста;
+- `/local-sales/pages` — статусы `opportunity/draft/review/published/refresh_needed/merge/archive`;
+- `/local-sales/behavior` — сигналы поведения и задачи роста;
 - `/dashboard/leads` — статус обработки, SLA, follow-up, причина потери;
 - `/dashboard/tasks` или блок задач — owner/deadline/status/evidence.
 
@@ -1147,8 +1155,8 @@ B2B-кабинет — обязательный ранний слой проду
 
 | Этап | Что должно быть реализовано | Как проверяем |
 |------|-----------------------------|---------------|
-| 1. Login | SMTP/magic link, auth callback, понятные ошибки входа, healthcheck | реальный email входит в продукт, `/api/health` и публичные страницы отвечают 200 |
-| 2. Worker | LLM fallback, queue visibility, retry/backoff, cleanup failed jobs | `collect_demand -> find_gaps -> generate_orders` проходит без quota-loop |
+| 1. Login | SMTP/magic link, auth callback, понятные ошибки входа, healthcheck, release-stabilization для свежих миграций и AEO | реальный email входит в продукт, `/api/health`, `/llms.txt`, `/robots.txt`, `/sitemap.xml`, публичные страницы отвечают 200 |
+| 2. Worker | LLM fallback, queue visibility, retry/backoff, cleanup failed jobs, новые Demand-to-Revenue job types после миграции `024` | `collect_demand -> find_gaps -> generate_orders` проходит без quota-loop, worker не пишет `Unknown job type` |
 | 3. Core E2E | регистрация, Telegram linking, ниша, order, voice, STT, content, publish, lead | 5 повторов полного flow подряд на реальных или controlled accounts |
 | 4. Dashboard | backend routes для действий, ownership, save/publish/delete, billing cancellation | UI-действия не висят, не пишут чужие данные и не показывают нерабочие кнопки |
 | 5. Payments | ЮKassa keys, webhook, idempotency, Solo subscriptions, B2B invoices/payments, tier update, limits, cancellation | тестовый payment lifecycle проходит для Solo-подписки и B2B-разовой оплаты |
@@ -1156,9 +1164,9 @@ B2B-кабинет — обязательный ранний слой проду
 | 7. Security | moderation, rate limits, RLS, service role audit, private API hardening | public forms защищены, приватные данные недоступны чужому пользователю |
 | 8. Tests | unit/API/worker/E2E/smoke tests для core value chain | CI или ручной smoke ловит регрессии login, worker, publish, leads |
 | 9. Community | канал, посевы, feedback log, интервью, первые заявки на пилоты | есть 200-500 релевантных подписчиков и 20-30 содержательных feedback-сигналов |
-| 10. Promotion readiness | кейсы, SEO/GEO/AIO-аудит сайта, дизайн-апгрейд лендингов, Demand API soft-launch gate, outreach materials | сайт индексируется, API/docs не обещают больше, чем реально работает, лендинги конвертят в пилотов |
-| 11. B2B data foundation | B2B-таблицы, service order lifecycle, RLS, API, operator helpers, source/confidence в данных | один B2B-аудит сохраняется в системе без внешних интеграций и проходит путь заявки до отчёта |
-| 12. B2B dashboard | Local Sales OS кабинет: аудит, задачи, конкуренты, paid visibility, отчёт | собственник за 5 минут понимает каналы, задачи и недельную динамику |
+| 10. Promotion readiness | кейсы, SEO/GEO/AIO-аудит сайта, sitemap routes, AEO crawler monitoring, дизайн-апгрейд лендингов, Demand API soft-launch gate, outreach materials | сайт индексируется, `pnpm aeo:smoke` проходит, API/docs не обещают больше, чем реально работает, лендинги конвертят в пилотов |
+| 11. B2B data foundation | стабилизировать уже добавленные миграции `023`-`024`, закрыть недостающие таблицы/типы/API/RLS, source/confidence в данных | один B2B-аудит сохраняется в системе без внешних интеграций и проходит путь заявки до отчёта |
+| 12. B2B dashboard | текущие routes `/local-sales`, `/today`, `/marketing-os`, `/agency` + будущие детальные Local Sales OS экраны | собственник за 5 минут понимает каналы, задачи и недельную динамику, UI не ломает Solo |
 | 13. Paid pilots | SaaS-first audit, pricing synced with site, dashboard-demo, delivery workflow, 5 платных B2B-аудитов | минимум 5 оплат и 2 перехода в setup/managed или чёткий вывод почему нет |
 | 14. Channel automation | карты, 2ГИС, Авито, отзывы, мессенджеры/формы, телефония через safe sources | 2 канала работают полуавтоматически, ручной ввод остаётся fallback |
 | 15. Lost Leads | импорт обращений, статусы, SLA, follow-up, оценка денег, AI-подсказки | у 2 пилотов возвращены реальные обращения или подтверждён денежный эффект |
@@ -1176,11 +1184,21 @@ B2B-кабинет — обязательный ранний слой проду
 3. Проверить magic link: `/otp` должен возвращать `200`, письмо должно приходить на реальный email.
 4. Добавить healthcheck готовности SMTP/magic-link перед релизом. Код: `/api/health` возвращает `auth.status`, `auth.magic_link_ready`, `smtp_configured`, `pending_jobs`, `failed_jobs`.
 5. Улучшить UX ошибки login: не показывать сырой `Error sending magic link`, а давать понятное сообщение пользователю и писать техническую причину в server-side logs. Код: `/api/auth/magic-link` логирует техническую ошибку server-side и отдаёт безопасное сообщение клиенту.
+6. Применить свежие миграции `021_marketing_os_foundation.sql`, `022_ai_crawler_monitoring.sql`, `023_demand_to_revenue_os.sql`, `024_complete_demand_to_revenue_os.sql` на stage/prod до деплоя web-кода, который использует новые таблицы и поля.
+7. После миграций обновить generated DB types: сейчас в `packages/shared/src/types/database.ts` отражён `marketing_workflow_runs`, но новые таблицы Demand-to-Revenue OS из `023`-`024` должны быть синхронизированы до строгого typecheck.
+8. Проверить, что PostgREST увидел новые таблицы/поля и `jobs_type_check` пропускает новые worker jobs: `generate_daily_growth_tasks`, `generate_local_weekly_report`, `generate_b2b_page_draft`, `analyze_behavior_signals`, `calculate_unit_economics`, `generate_agency_report`.
+9. Проверить fresh sitemap/AEO routes после деплоя: `/llms.txt`, `/robots.txt`, `/sitemap.xml`, `/sitemaps/experts`, `/sitemaps/articles`, `/sitemaps/questions`, `/sitemaps/niches`.
+10. Запустить `pnpm aeo:smoke` и убедиться, что он проходит на актуальном `NEXT_PUBLIC_APP_URL`.
+11. Закрыть PFO release-блокеры: placeholder contracts, silent-substitution warnings или явно документированное исключение.
+12. Вернуть executable bit deploy-скриптам, если они остаются в use: `scripts/deploy.sh`, `scripts/fix-prod.sh`, `scripts/generate-env.sh`, `scripts/render-kong.sh`.
 
 **Gate:**
 - Magic link работает на реальный email.
 - В логах `supabase-auth` нет `SMTP disabled` на тестовый запрос.
-- `/`, публичные страницы и `/api/health` возвращают `200`.
+- `/`, публичные страницы и `/api/health` возвращают `200`, а healthcheck не скрывает auth degradation.
+- Новые миграции `021`-`024` применены или свежие routes/jobs отключены до применения миграций.
+- `/llms.txt`, `/robots.txt`, `/sitemap.xml` и `pnpm aeo:smoke` проходят.
+- PFO gate и deploy script permissions не блокируют production release.
 
 ### Этап 2 — AI и worker pipeline
 
@@ -1192,11 +1210,14 @@ B2B-кабинет — обязательный ранний слой проду
 4. Добавить backoff/rate-limit для LLM jobs, чтобы 429 не заливал очередь.
 5. Добавить видимость worker state: pending/failed/completed counts по типам jobs.
 6. Включить foundation Marketing OS без автопубликаций: `generation_framework`, роли генерации, playbook version и обязательный human review.
+7. Проверить Demand-to-Revenue worker handlers только после миграции `024`: enqueue и обработка `generate_daily_growth_tasks`, `generate_local_weekly_report`, `generate_b2b_page_draft`, `analyze_behavior_signals`, `calculate_unit_economics`, `generate_agency_report`.
+8. Для новых jobs зафиксировать failure mode: отсутствие business data не должно валить worker loop, а должно давать понятный failed job с причиной.
 
 **Gate:**
 - Worker logs не показывают повторяющийся quota-loop.
 - Failed queue понятна: jobs либо retry, либо archived.
 - Новый flow `collect_demand -> find_gaps -> generate_orders` проходит для тестовой ниши.
+- Новые Demand-to-Revenue job types не попадают в `Unknown job type`, а ошибки данных видны в `jobs.error`.
 
 ### Этап 3 — Core E2E для эксперта
 
@@ -1421,21 +1442,24 @@ B2B-кабинет — обязательный ранний слой проду
    - Core Web Vitals и мобильная версия;
    - AI-answerability: 10 контрольных вопросов о продукте, Solo, B2B, Local Sales OS, ценах и отличиях;
    - indexability ключевых страниц: `/`, `/for-experts`, `/for-business`, `/pricing`, `/launch`, `/audit`, `/scan`, `/experts`, `/questions`, `/niches`.
-5. Исправить все P0 SEO/GEO/AIO findings; P1 закрыть или завести в `BACKLOG.md` с owner и сроком.
-6. Добавить или усилить контентные страницы под Solo/B2B/use-case только после проверки фактической готовности продукта:
+5. Проверить новую sitemap delivery: `/sitemap.xml` как индекс, `/sitemaps/experts`, `/sitemaps/articles`, `/sitemaps/questions`, `/sitemaps/niches`, отсутствие middleware-блокировки и корректные `lastmod`.
+6. Запустить `pnpm aeo:smoke`; если есть access logs, прогнать `pnpm aeo:crawlers -- access.log --push` после миграции `022`.
+7. Проверить, что `/api/v1/docs` отражает новые endpoints: `local-demand`, `local-competitors`, `ai-visibility`, `machine-profiles`, и не обещает недоступные permissions/SLA.
+8. Исправить все P0 SEO/GEO/AIO findings; P1 закрыть или завести в `BACKLOG.md` с owner и сроком.
+9. Добавить или усилить контентные страницы под Solo/B2B/use-case только после проверки фактической готовности продукта:
    - Solo-ниши: психологи, юристы, консультанты, преподаватели, HR, нутрициологи, коучи;
    - B2B-вертикали: стоматологии, косметология, юрфирмы, детские центры, автосервисы;
    - use-case страницы: карта спроса, AI-видимость, экспертные страницы, Local Sales OS, lost leads, конкурентная видимость.
-7. Сделать дизайн-апгрейд маркетинговых страниц с evidence-first mockups:
+10. Сделать дизайн-апгрейд маркетинговых страниц с evidence-first mockups:
 - главная показывает радар спроса, растущий спрос, AI/search-видимость и точки роста обращений;
    - `/for-experts` показывает “Что растёт сейчас в вашей нише” и карточку темы с trend badge;
    - `/for-experts` показывает конкурентные офферы как подсказку для экспертного ответа, без PPC-интерфейса;
 - `/for-business` показывает кабинет Local Sales OS: каналы привлечения, задачи, конкуренты, повторные касания, Trend Signals и Paid Visibility Signals;
    - `/pricing` объясняет экономику Solo/B2B и ценность приоритизации спроса, трендов и конкурентных офферов.
-8. Запустить экспертный outreach после повторяемого E2E и чистого SEO/AIO gate.
-9. Подготовить первые B2B-материалы Local Sales OS: аудит, чеклист, шаблон отчёта, коммерческое предложение.
-10. B2B/agency promotion и Demand API soft launch запускать после стабильности B2C pipeline.
-11. Закрыть Demand API soft-launch gate для того, что уже заявлено на `/for-agencies`:
+11. Запустить экспертный outreach после повторяемого E2E и чистого SEO/AIO gate.
+12. Подготовить первые B2B-материалы Local Sales OS: аудит, чеклист, шаблон отчёта, коммерческое предложение.
+13. B2B/agency promotion и Demand API soft launch запускать после стабильности B2C pipeline.
+14. Закрыть Demand API soft-launch gate для того, что уже заявлено на `/for-agencies`:
    - `/api/v1/docs` соответствует фактическим endpoint, permissions и лимитам;
    - Read endpoints реально работают с `read` key;
    - Pro endpoints `/api/v1/blind-spots` и `/api/v1/answers` требуют `answers` или `all`;
@@ -1455,6 +1479,8 @@ B2B-кабинет — обязательный ранний слой проду
 - Продукт показывает реальные outcomes.
 - Marketing claims соответствуют фактической функциональности и evidence.
 - Ключевые страницы сайта indexable, answerable для AI search, schema-valid, без P0 SEO/GEO/AIO findings.
+- `/sitemap.xml`, `/sitemaps/*`, `/llms.txt`, `/robots.txt` проверены и доступны после деплоя.
+- `pnpm aeo:smoke` проходит, crawler import либо работает, либо явно отложен из-за отсутствия access logs.
 - Sitemap отправлен в Google Search Console, Яндекс Вебмастер и Bing Webmaster после релевантных изменений.
 - 10 контрольных AI-вопросов не выявляют критичных gaps в объяснении продукта.
 - Demand API beta не обещает недоступные лимиты, SLA, freshness или premium data.
@@ -1465,89 +1491,47 @@ B2B-кабинет — обязательный ранний слой проду
 
 Принцип: клиент видит продуктовый кабинет, а команда НейроЭксперт на старте может заполнять часть данных вручную, через ссылки, CSV, выгрузки и controlled research.
 
-1. Создать миграции:
-   - `business_accounts`;
-   - `business_members`;
-   - `business_locations`;
-   - `business_onboarding`;
-   - `local_profiles`;
-   - `local_competitors`;
-   - `local_queries`;
-   - `local_visibility_checks`;
-   - `local_channel_snapshots`;
-   - `local_reviews`;
-   - `review_requests`;
-   - `lost_leads`;
-   - `lead_touchpoints`;
-   - `repeat_touch_sequences`;
-   - `growth_tasks`;
-   - `local_audit_reports`;
-   - `local_integrations`;
-   - `local_weekly_reports`;
-   - `local_metric_snapshots`;
-   - `paid_visibility_snapshots`;
-   - `paid_competitor_offers`;
-   - `paid_landing_observations`;
-   - `local_page_opportunities`;
-   - `local_generated_pages`;
-   - `local_page_sections`;
-   - `local_page_quality_checks`;
-   - `local_page_result_reviews`;
-   - `lead_outcomes`;
-   - `client_commitments`;
-   - `behavior_events`;
-   - `behavior_signals`;
-   - `behavior_task_suggestions`;
-   - `service_order_events`;
-   - `service_order_payments`;
-   - `operator_audit_checklists`;
-   - `operator_audit_evidence`.
-2. Расширить существующую `service_orders`: lifecycle status, package_type/package_label, amount, payment_status, owner/operator, next_step, next_step_due_at, closed_reason.
-3. Добавить RLS/ownership для business accounts, филиалов и участников.
-4. Развести роли owner/admin/marketer/neuroexpert_operator.
-5. Добавить типы в `packages/shared`.
-6. Добавить server-side helpers для ручного/операторского заполнения аудита.
-7. Добавить API:
-   - `/api/business-accounts`;
-   - `/api/business-onboarding`;
-   - `/api/service-orders`;
-   - `/api/service-orders/status`;
-   - `/api/service-orders/payments`;
-   - `/api/local-audit`;
-   - `/api/local-profiles`;
-   - `/api/local-competitors`;
-   - `/api/local-visibility`;
-   - `/api/local-tasks`;
-   - `/api/review-requests`;
-   - `/api/lost-leads`;
-   - `/api/repeat-touchpoints`;
-   - `/api/local-weekly-report`;
-   - `/api/paid-visibility`;
-   - `/api/local-pages`;
-   - `/api/local-page-quality-checks`;
-   - `/api/local-page-result-reviews`;
-   - `/api/lead-outcomes`;
-   - `/api/client-commitments`;
-   - `/api/behavior-events`;
-   - `/api/behavior-signals`.
-8. Во все снимки данных добавить `source`, `collected_at`, `confidence`, `is_manual`.
-9. Для Paid Visibility Signals зафиксировать запрет на рекламные кабинеты: только публичная выдача, ручной аудит, ссылки, скриншоты и наблюдения по посадочным страницам.
-10. Для `growth_tasks` явно поддержать ежедневный cadence: `task_date`, `priority`, `owner_id`, `deadline_at`, `expected_effect`, `proof_url`, `metric_key`, `status`, `paid_signal_id`.
-11. Для B2B Page Generator описать минимальный жизненный цикл страницы:
+1. Сверить уже добавленные миграции `023_demand_to_revenue_os.sql` и `024_complete_demand_to_revenue_os.sql` с целевой моделью, не создавая дублирующие таблицы.
+   - Уже добавлено: `business_accounts`, `business_members`, `business_locations`, `local_profiles`, `local_competitors`, `local_queries`, `local_visibility_checks`, `local_reviews`, `lost_leads`, `lead_outcomes`, `growth_tasks`, `local_weekly_reports`, `behavior_events`, `behavior_signals`, `agency_reports`, `result_loop_events`, `revenue_attribution`, `local_generated_pages`, `local_page_sections`, `local_page_result_reviews`, `channel_unit_economics`, `marketing_playbooks`, `marketing_review_queue`, `agency_clients`, `agency_report_exports`, `api_usage_events`.
+   - Нужно добить или явно отложить: `business_onboarding`, `local_channel_snapshots`, `review_requests`, `lead_touchpoints`, `repeat_touch_sequences`, `local_integrations`, `local_metric_snapshots`, `paid_visibility_snapshots`, `paid_competitor_offers`, `paid_landing_observations`, `local_page_opportunities`, `local_page_quality_checks`, `behavior_task_suggestions`, `service_order_events`, `service_order_payments`, `client_commitments`, `operator_audit_checklists`, `operator_audit_evidence`.
+2. Проверить фактическое расширение `service_orders` из миграции `023`: lifecycle status, package_label, amount, payment_status, owner/operator, business_account_id, next_step, next_step_due_at, closed_reason, evidence. Если нужен `package_type`, добавить явно или убрать из UI/API.
+3. Добавить и проверить RLS/ownership для business accounts, филиалов и участников; особое внимание `SECURITY DEFINER public.is_business_member`.
+4. Развести роли owner/admin/marketer/neuroexpert_operator. Сейчас база знает `owner/operator/viewer`; если нужны admin/marketer, добавить без ломки текущих policies.
+5. Обновить generated DB types в `packages/shared/src/types/database.ts` после миграций `021`-`024`; не оставлять новые таблицы только на untyped admin clients перед релизом.
+6. Стабилизировать server-side helpers для ручного/операторского заполнения аудита: сейчас есть `apps/web/lib/demand-to-revenue-server.ts`, нужно довести его до единого входа для ownership, enqueue и JSON parsing.
+7. Стабилизировать уже добавленные API:
+   - `/api/local-sales`;
+   - `/api/local-sales/pages`;
+   - `/api/local-sales/economics`;
+   - `/api/result-loop`;
+   - `/api/proof-of-human`;
+   - `/api/agency/reports`;
+   - `/api/marketing-os/workflows`;
+   - `/api/marketing-os/playbooks`;
+   - `/api/marketing-os/review-queue`;
+   - `/api/v1/local-demand`;
+   - `/api/v1/local-competitors`;
+   - `/api/v1/ai-visibility`;
+   - `/api/v1/machine-profiles`.
+8. Отдельно решить, какие старые planned API ещё нужны, а какие заменены `/api/local-sales`: `/api/business-onboarding`, `/api/service-orders/*`, `/api/review-requests`, `/api/lost-leads`, `/api/repeat-touchpoints`, `/api/paid-visibility`, `/api/behavior-events`, `/api/behavior-signals`.
+9. Во все снимки данных добавить `source`, `collected_at`, `confidence`, `is_manual`.
+10. Для Paid Visibility Signals зафиксировать запрет на рекламные кабинеты: только публичная выдача, ручной аудит, ссылки, скриншоты и наблюдения по посадочным страницам.
+11. Для `growth_tasks` явно поддержать ежедневный cadence: `task_date`, `priority`, `owner_id`, `deadline_at`, `expected_effect`, `proof_url`, `metric_key`, `status`, `paid_signal_id`.
+12. Для B2B Page Generator описать минимальный жизненный цикл страницы:
    - возможность страницы из локального запроса, услуги, района, тренда или конкурентного оффера;
    - черновик с блоками: услуга, цена/диапазон, район, FAQ, отзывы, доказательства, призыв к действию;
    - ручная проверка перед публикацией через `local_page_quality_checks`;
    - опубликованная страница с метриками просмотров, кликов, звонков, заявок и обновлений;
-   - review через 14/28 дней с решением `working`, `improve`, `merge`, `refresh_needed`, `archive`;
+   - review через 14/28 дней с решением `keep`, `improve`, `merge`, `delete` или явно расширенной схемой статусов;
    - задача на обновление, если спрос, оффер, цена, отзывы или конкурентная выдача изменились.
-12. Для Behavior Signals описать правила превращения поведения в задачи:
+13. Для Behavior Signals описать правила превращения поведения в задачи:
    - views > N и cta_click_rate низкий → задача усилить оффер, FAQ, цену, отзывы и кнопку действия;
    - cta_clicks есть, leads_count низкий → задача проверить форму, телефон, скорость ответа и обработку обращения;
    - route_click/call_click высокий, sales низкие → задача проверить администраторский скрипт, пропущенные звонки и запись;
    - повторяющиеся вопросы → задача создать FAQ/страницу/блок на карточке;
    - лид без статуса дольше SLA → задача на повторное касание;
    - page opportunity есть, но нет опубликованной страницы → задача на создание страницы.
-13. Сформировать формулы:
+14. Сформировать формулы:
    - Local Sales Index;
    - Map Visibility Score;
    - Review Health Score;
@@ -1557,11 +1541,17 @@ B2B-кабинет — обязательный ранний слой проду
    - AI Visibility Score;
    - Local Page Opportunity Score;
    - Behavior Opportunity Score.
-14. Добавить worker jobs:
+15. Стабилизировать уже добавленные worker jobs:
+   - `generate_daily_growth_tasks`;
+   - `generate_local_weekly_report`;
+   - `generate_b2b_page_draft`;
+   - `analyze_behavior_signals`;
+   - `calculate_unit_economics`;
+   - `generate_agency_report`.
+16. Добить или отложить planned worker jobs, которых ещё нет в `apps/worker/src/index.ts`:
    - `score_page_opportunities`;
    - `validate_page_quality`;
    - `review_page_results`;
-   - `generate_growth_tasks`;
    - `detect_underperforming_pages`;
    - `detect_lost_leads`;
    - `send_client_action_digest`.
@@ -1577,28 +1567,35 @@ B2B-кабинет — обязательный ранний слой проду
 - `service_orders` проходит путь от заявки до оплаты, onboarding, аудита и отчёта.
 - Operator может обновить аудит без прямого доступа к данным другой компании.
 - Ownership/RLS не дают одной компании увидеть данные другой.
+- Новые worker jobs из `024` проходят хотя бы controlled smoke без падения общего worker loop.
 
 ### Этап 12 — Local Sales OS dashboard MVP
 
 **Цель:** дать B2B-клиенту личный кабинет собственника, где видны каналы привлечения, задачи и динамика. Это главный отличитель от агентского PDF.
 
-Новые страницы:
+Фактически добавленные routes на 2026-05-24:
 
-1. `/dashboard/local` — общий B2B overview.
-2. `/dashboard/local/onboarding` — анкета бизнеса, ссылки, конкуренты, город, средний чек, текущие заявки.
-3. `/dashboard/local/audit` — отчёт аудита с источниками данных и confidence.
-4. `/dashboard/local/maps` — Яндекс Карты, 2ГИС, Google Maps.
-5. `/dashboard/local/avito` — Авито-профиль, объявления, конкуренты, офферы.
-6. `/dashboard/local/reviews` — отзывы, рейтинг, свежесть, ответы, запросы отзывов.
-7. `/dashboard/local/return-leads` — пропущенные звонки, сообщения, follow-up, коммерческий потенциал возврата.
-8. `/dashboard/local/repeat` — повторные касания и реактивация клиентов.
-9. `/dashboard/local/pages` — страницы под локальный спрос: услуги, районы, FAQ, статусы, метрики.
-10. `/dashboard/local/behavior` — сигналы поведения: просмотры, клики, формы, звонки, уходы без заявки и задачи.
-11. `/dashboard/local/result-loop` — диагностика страниц: индексация, показы, клики, CTA, заявки, продажи, решение 14/28 дней.
-12. `/dashboard/local/tasks` — ежедневные задачи роста.
-13. `/dashboard/local/competitors` — конкуренты.
-14. `/dashboard/local/paid-visibility` — рекламные офферы конкурентов и gap-задачи.
-15. `/dashboard/local/report` — недельный и месячный отчёт.
+1. `/today` — ежедневные Solo-задачи и Proof-of-Human summary.
+2. `/local-sales` — первый Local Sales OS кабинет.
+3. `/marketing-os` — workflow runs, playbooks и review queue.
+4. `/agency` — agency/white-label report surface.
+
+Дальше детализировать внутри текущей routing-модели, без ложного `/dashboard/local` prefix:
+
+1. `/local-sales/onboarding` — анкета бизнеса, ссылки, конкуренты, город, средний чек, текущие заявки.
+2. `/local-sales/audit` — отчёт аудита с источниками данных и confidence.
+3. `/local-sales/maps` — Яндекс Карты, 2ГИС, Google Maps.
+4. `/local-sales/avito` — Авито-профиль, объявления, конкуренты, офферы.
+5. `/local-sales/reviews` — отзывы, рейтинг, свежесть, ответы, запросы отзывов.
+6. `/local-sales/return-leads` — пропущенные звонки, сообщения, follow-up, коммерческий потенциал возврата.
+7. `/local-sales/repeat` — повторные касания и реактивация клиентов.
+8. `/local-sales/pages` — страницы под локальный спрос: услуги, районы, FAQ, статусы, метрики.
+9. `/local-sales/behavior` — сигналы поведения: просмотры, клики, формы, звонки, уходы без заявки и задачи.
+10. `/local-sales/result-loop` — диагностика страниц: индексация, показы, клики, CTA, заявки, продажи, решение 14/28 дней.
+11. `/local-sales/tasks` — ежедневные задачи роста.
+12. `/local-sales/competitors` — конкуренты.
+13. `/local-sales/paid-visibility` — рекламные офферы конкурентов и gap-задачи.
+14. `/local-sales/report` — недельный и месячный отчёт.
 
 Карточки dashboard:
 
@@ -1645,8 +1642,9 @@ UX-правило:
 - Клиент видит, какие действия пользователей показывают слабые места страницы, карточки или обработки заявки.
 - Paid visibility показан как компактный evidence-блок, без интерфейса управления рекламой.
 - Можно показать отчёт “что сделали за неделю и что изменилось”.
-- UI не ломает Solo dashboard.
+- UI не ломает Solo dashboard, sidebar и новые routes `/today`, `/local-sales`, `/marketing-os`, `/agency`.
 - Один пилотный клиент может пройти путь от заявки до кабинета и первичного отчёта.
+- Все B2B-экраны имеют guided empty states, если миграции применены, но данных ещё нет.
 
 ### Этап 13 — Local Sales OS SaaS-first paid pilots
 
@@ -1909,6 +1907,80 @@ Worker jobs:
 - Понятен CAC/payback по выбранной вертикали.
 - Есть список фич, которые реально нужно автоматизировать по итогам пилотов.
 
+### Этап 16.5 — Wholesale Demand OS experiment
+
+**Цель:** проверить, можно ли расширить Local Sales OS на оптовых поставщиков и дистрибьюторов без превращения НейроЭксперта в тяжёлый B2B marketplace.
+
+**Зачем выполнять:**
+
+- оптовые запросы часто ближе к сделке: “купить оптом”, “поставщик”, “дистрибьютор”, “цена”, “с доставкой в город”;
+- чек и LTV у поставщиков выше, чем у малого локального бизнеса;
+- данные `категория + город + конкурент + точка входа` можно продавать как аудит, кабинет, Demand API или white-label отчёт;
+- это усиливает будущий Agency/API слой, если модель подтвердится на платящих клиентах.
+
+**За каким пунктом выполнять:**
+
+- строго после Этапа 16, когда есть минимум 10 платящих B2B-клиентов или B2B MRR 500 000+ ₽/мес;
+- раньше разрешены только research, тексты оффера и ручные таблицы без разработки ядра;
+- не запускать до P0/Pipeline gates, B2B data foundation, кабинета, lead outcomes и первых кейсов.
+
+Почему не раньше:
+
+- опт требует прайсов, остатков, условий доставки, минимальной партии, реквизитов, КП, менеджеров и SLA;
+- без доказанного Local Sales OS это распылит продукт и усложнит onboarding;
+- нельзя обещать лиды поставщикам без проверенного спроса и измерения заявок.
+
+Работы:
+
+1. Выбрать одну оптовую вертикаль:
+   - стройматериалы;
+   - упаковка;
+   - мебель/фурнитура;
+   - HoReCa-поставки;
+   - медтовары.
+2. Для выбранной вертикали собрать 30-50 связок:
+   - товарная категория;
+   - город/регион;
+   - B2B-интент;
+   - 3-5 конкурентов;
+   - точка входа: сайт, каталог, карточка, прайс, форма КП, звонок, мессенджер.
+3. Для каждой связки сохранить:
+   - `source`;
+   - `source_url`;
+   - `collected_at`;
+   - `confidence`;
+   - estimated demand;
+   - expected lead value;
+   - owner/status.
+4. Использовать существующие сущности `page_opportunities`, `growth_tasks`, `lead_outcomes`, где возможно; новые таблицы добавлять только после подтверждённых пилотов.
+5. Сделать 5-10 прототипов точек входа:
+   - страница категории по городу;
+   - FAQ под закупщика;
+   - сравнение с конкурентом;
+   - форма запроса КП;
+   - CTA звонка/мессенджера.
+6. Провести 3-5 paid discovery с поставщиками:
+   - аудит спроса;
+   - карта конкурентов;
+   - список точек входа;
+   - 7-дневные задачи;
+   - 30-дневный план.
+7. Измерить:
+   - показы/клики по страницам;
+   - заявки на КП;
+   - звонки;
+   - стоимость лида;
+   - конверсию в оплату;
+   - трудоёмкость ручной поддержки.
+
+**Gate:**
+
+- минимум 3 поставщика оплатили аудит или setup;
+- есть минимум 10 подтверждённых B2B-demand opportunities с источниками и confidence;
+- минимум 2 прототипа дали реальные обращения или запросы КП;
+- понятно, какие данные нужны для автоматизации, а какие пока остаются concierge;
+- продукт не превращён в склад, тендерную площадку или полноценный marketplace.
+
 ### Этап 17 — Agency / white-label Local Sales OS
 
 **Цель:** масштабировать продажи через партнёров после доказанного B2B-пакета.
@@ -1983,10 +2055,15 @@ Worker jobs:
 - Не строить рискованный scraping карт/Авито/2ГИС, если это нарушает правила площадок.
 - Не обещать фиксированное число клиентов, позиций или заявок без данных.
 - Не распылять Local Sales OS на все ниши сразу: сначала одна вертикаль, затем масштабирование.
+- Не деплоить свежие routes/jobs из коммитов 2026-05-23..2026-05-24 без миграций `021`-`024`, PFO release-gate и smoke-проверок.
+- Не считать `/local-sales`, `/marketing-os`, `/agency` готовыми к продажам, пока они не прошли B2B data foundation и dashboard gates.
 
 ## Следующий шаг
 
 1. Пользователь оплачивает/пополняет Яндекс 360 и убирает viewing mode.
 2. После этого перезапускаем `supabase-auth`.
 3. Проверяем magic link и `/otp`.
-4. Если gate Этапа 1 проходит — переходим к AI/worker pipeline.
+4. Применяем/проверяем миграции `021`-`024`, PostgREST schema reload, generated DB types и `jobs_type_check`.
+5. Проверяем `/api/health`, `/llms.txt`, `/robots.txt`, `/sitemap.xml`, `/sitemaps/*`, `pnpm aeo:smoke`.
+6. Закрываем PFO release-блокеры и executable bit deploy-скриптов.
+7. Если gate Этапа 1 проходит — переходим к AI/worker pipeline.
