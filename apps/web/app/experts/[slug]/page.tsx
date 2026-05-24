@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { cache } from "react";
 import { generateExpertMetadata } from "@/lib/seo";
 import {
   generatePersonSchema,
@@ -25,7 +26,7 @@ interface Props {
   params: { slug: string };
 }
 
-async function getExpertData(slug: string) {
+const getExpertData = cache(async (slug: string) => {
   const supabase = getAdmin();
 
   const { data: expert } = await supabase
@@ -61,7 +62,7 @@ async function getExpertData(slug: string) {
     .limit(20);
 
   return { expert, articles: articles ?? [], niche, reviews: reviews ?? [] };
-}
+});
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await getExpertData(params.slug);

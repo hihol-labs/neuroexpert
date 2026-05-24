@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { cache } from "react";
 
 function getAdmin() {
   return createSupabaseClient(
@@ -28,7 +29,7 @@ interface Props {
   params: { slug: string; articleSlug: string };
 }
 
-async function getArticleData(expertSlug: string, articleSlug: string) {
+const getArticleData = cache(async (expertSlug: string, articleSlug: string) => {
   const supabase = getAdmin();
 
   const { data: expert } = await supabase
@@ -119,7 +120,7 @@ async function getArticleData(expertSlug: string, articleSlug: string) {
     expert, article, related: related ?? [], relatedQuestions, otherExperts,
     niche, pubCount: pubCount ?? 0, reviews: reviews ?? [], citationCount: citationCount ?? 0,
   };
-}
+});
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await getArticleData(params.slug, params.articleSlug);

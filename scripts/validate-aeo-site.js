@@ -42,6 +42,11 @@ async function timedFetch(path, init = {}) {
   };
 }
 
+async function warmTimedFetch(path, init = {}) {
+  await timedFetch(path, init);
+  return timedFetch(path, init);
+}
+
 function countJsonLd(html) {
   return (html.match(/application\/ld\+json/g) || []).length;
 }
@@ -67,21 +72,38 @@ function result(name, ok, detail, severity = "error") {
 async function main() {
   const checks = [];
 
-  const robots = await timedFetch("/robots.txt");
+  const robots = await warmTimedFetch("/robots.txt");
   checks.push(result("robots.txt status", robots.status === 200, `status=${robots.status}`));
   for (const token of requiredRobotsTokens) {
     checks.push(result(`robots contains ${token}`, robots.text.includes(token), token));
   }
 
-  const llms = await timedFetch("/llms.txt");
+  const llms = await warmTimedFetch("/llms.txt");
   checks.push(result("llms.txt public", llms.status === 200, `status=${llms.status} location=${llms.location || "-"}`));
   checks.push(result("llms.txt has API links", /api\/v1\/docs/.test(llms.text), "api/v1/docs"));
 
-  const sitemap = await timedFetch("/sitemap.xml");
-  const locs = sitemap.status === 200 ? extractLocs(sitemap.text) : [];
+  const sitemap = await warmTimedFetch("/sitemap.xml");
+  const sitemapIndexLocs = sitemap.status === 200 ? extractLocs(sitemap.text) : [];
+  const segmentPaths = sitemapIndexLocs
+    .map(locToPath)
+    .filter((path) => path && path.startsWith("/sitemaps/"));
+  const locs = [];
+
   checks.push(result("sitemap status", sitemap.status === 200, `status=${sitemap.status}`));
-  checks.push(result("sitemap has urls", locs.length > 0, `${locs.length} urls`));
+  checks.push(result("sitemap is index", /<sitemapindex\b/.test(sitemap.text), `${sitemapIndexLocs.length} segment links`));
+  checks.push(result("sitemap has segments", segmentPaths.length >= 5, `${segmentPaths.length} segments`));
   checks.push(result("sitemap TTFB", sitemap.ttfbMs <= ttfbWarnMs, `${sitemap.ttfbMs}ms`, "warn"));
+
+  for (const segmentPath of segmentPaths) {
+    const segment = await warmTimedFetch(segmentPath);
+    const segmentLocs = segment.status === 200 ? extractLocs(segment.text) : [];
+    locs.push(...segmentLocs);
+    checks.push(result(`${segmentPath} status`, segment.status === 200, `status=${segment.status}`));
+    checks.push(result(`${segmentPath} urlset`, /<urlset\b/.test(segment.text), `${segmentLocs.length} urls`));
+    checks.push(result(`${segmentPath} TTFB`, segment.ttfbMs <= ttfbWarnMs, `${segment.ttfbMs}ms`, "warn"));
+  }
+
+  checks.push(result("sitemap has urls", locs.length > 0, `${locs.length} urls`));
 
   const corePaths = ["/", "/experts", "/questions", "/pricing", "/for-experts", "/for-business"];
   const sampleArticle = locToPath(locs.find((url) => /\/experts\/[^/]+\/[^/]+$/.test(url)) || "");
@@ -90,7 +112,7 @@ async function main() {
   if (sampleQuestion) corePaths.push(sampleQuestion);
 
   for (const path of corePaths) {
-    const page = await timedFetch(path);
+    const page = await warmTimedFetch(path);
     const jsonLdCount = countJsonLd(page.text);
     checks.push(result(`${path} status`, page.status === 200, `status=${page.status}`));
     checks.push(result(`${path} SSR text`, /НейроЭксперт|эксперт|клиент|вопрос/i.test(page.text), "SSR content"));
