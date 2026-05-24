@@ -3,13 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { LayoutDashboard, ClipboardList, FileText, Inbox, Users, Key, UserCircle } from "lucide-react";
+import { LayoutDashboard, ClipboardList, FileText, Inbox, Users, Key, UserCircle, BriefcaseBusiness, Mic, Workflow, Layers3 } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Дашборд", icon: LayoutDashboard },
+  { href: "/today", label: "Сегодня", icon: Mic },
   { href: "/orders", label: "Возможности спроса", icon: ClipboardList },
   { href: "/content", label: "Контент", icon: FileText },
   { href: "/leads", label: "Заявки", icon: Inbox },
+  { href: "/local-sales", label: "Local Sales", icon: BriefcaseBusiness },
+  { href: "/marketing-os", label: "Marketing OS", icon: Workflow },
+  { href: "/agency", label: "Agencies", icon: Layers3 },
   { href: "/team", label: "Команда", icon: Users },
   { href: "/api-keys", label: "API", icon: Key },
   { href: "/profile", label: "Профиль", icon: UserCircle },

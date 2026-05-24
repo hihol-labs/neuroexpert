@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { tgFetch } from "shared/http/telegram-fetch";
 
 function getAdmin() {
@@ -108,6 +108,7 @@ export async function POST(request: NextRequest) {
     revalidatePath(`/experts/${expertSlug}`);
     revalidatePath("/experts");
     revalidatePath("/sitemap.xml");
+    revalidateTag("sitemap");
 
     // Telegram sharing notification with niche-specific channels
     const profile = pkg.profiles as unknown as { telegram_id: number | null; niches: { slug: string } | null };

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { cache } from "react";
 import {
   generateBreadcrumbSchema,
   generateQAPageSchema,
@@ -21,13 +22,14 @@ interface Props {
   params: { slug: string };
 }
 
-async function getQuestionData(slug: string) {
+const getQuestionData = cache(async (slug: string) => {
   const supabase = getAdmin();
+  const decodedSlug = decodeURIComponent(slug);
 
   const { data: question } = await supabase
     .from("questions")
     .select("id, question_text, slug, monthly_volume, gap_score, niche_id, niches(name, icon)")
-    .eq("slug", slug)
+    .eq("slug", decodedSlug)
     .single();
 
   if (!question) return null;
@@ -64,7 +66,7 @@ async function getQuestionData(slug: string) {
     subQueries: subQueries ?? [],
     relatedQuestions: relatedQuestions ?? [],
   };
-}
+});
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await getQuestionData(params.slug);

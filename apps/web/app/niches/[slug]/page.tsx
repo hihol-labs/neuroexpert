@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { cache } from "react";
 import {
   generateBreadcrumbSchema,
   generateItemListSchema,
@@ -45,13 +46,19 @@ interface Props {
   params: { slug: string };
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+const getNicheName = cache(async (slug: string) => {
   const supabase = getAdmin();
   const { data: niche } = await supabase
     .from("niches")
     .select("name")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .single();
+
+  return niche;
+});
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const niche = await getNicheName(params.slug);
 
   if (!niche) return { title: "Ниша не найдена" };
 
