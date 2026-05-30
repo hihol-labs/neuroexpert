@@ -43,6 +43,8 @@
 
 **Правка от 2026-05-23 по Marketing OS Runtime:** методики из материала про Claude Code переносятся в НейроЭксперт как внутренний операционный слой, а не как хаотичный набор промптов. Внедрение идёт строго после P0/Pipeline gates: Stage 1 получает auth/SMTP healthcheck и понятные login-ошибки; Stage 2-3 используют voice profile и generation framework в контенте; Stage 6-8 добавляют AEO-кластеры, workflow runs и регулярные проверки; Stage 11-14 получают competitor profiling, CRO, MCP/read-only connectors, отчёты и unit economics. Human review обязателен для публикаций, отправок, коммерческих решений и внешних обещаний.
 
+**Правка от 2026-05-31 по North Star и Marketing OS contract:** главный KPI продукта фиксируется как реальное коммерческое действие клиента: `qualified_lead`, `booking`, `call`, `consultation_request` или `returned_lost_lead`, а не количество страниц, постов, публикаций или отчётов. Любой Marketing OS workflow должен явно связывать `demand source → page/answer/task → report → lead metric`; workflow без этой связи считается контентной активностью и не проходит gate.
+
 **Правка от 2026-05-23 по AEO-чеклисту:** технический AEO-контур сайта добавляется как Stage 1-safe hardening без смены активного gate: публичный `/llms.txt`, расширенный `robots.txt` для AI-краулеров, Organization/WebSite/Service/ItemList/QAPage/Review JSON-LD, обязательный FAQ перед публикацией, smoke-проверка `pnpm aeo:smoke`, импорт access-логов AI-краулеров через `pnpm aeo:crawlers -- access.log --push` и отчёт в `/analytics`. Production-применение требует деплоя web и миграции `022_ai_crawler_monitoring.sql`.
 
 **Правка от 2026-05-24 по последним изменениям за 3 дня:** в код уже вошли Marketing OS foundation, Kong-aware healthcheck, AEO hardening, sitemap routes, Demand-to-Revenue OS, новые dashboard-разделы `/today`, `/local-sales`, `/marketing-os`, `/agency`, публичные Demand API endpoints и миграции `021`-`024`. Это не меняет активный gate: сначала login/SMTP. Но перед любым production launch теперь обязателен stabilization gate: применить миграции `021`-`024`, обновить generated DB types, убедиться что `jobs_type_check` пропускает новые worker jobs, проверить `/api/health`, `/llms.txt`, `/robots.txt`, `/sitemap.xml`, `/sitemaps/*`, `/api/v1/docs`, dashboard routes и `pnpm aeo:smoke`.
@@ -141,6 +143,14 @@
 ```text
 спрос → страница/карточка → поведение клиента → заявка или потеря → задача роста → обновление страницы/канала
 ```
+
+North Star KPI:
+
+```text
+подтверждённый спрос → qualified lead / booking / call / consultation request / returned lost lead
+```
+
+Главная метрика продукта — не выпуск контента и не количество страниц, а измеримое коммерческое действие: квалифицированная заявка, запись, звонок, запрос консультации или возвращённое потерянное обращение.
 
 Что это меняет:
 
@@ -279,6 +289,7 @@ UI:
 - доля страниц с индексацией и показами;
 - CTR страниц с коммерческим intent;
 - CTA click rate;
+- North Star KPI: `qualified_lead`, `booking`, `call`, `consultation_request` или `returned_lost_lead`;
 - заявки/звонки/записи на страницу;
 - скорость ответа на лид;
 - доля страниц со статусом `working`;
@@ -302,6 +313,7 @@ Gate:
 - ни одна новая страница не публикуется без demand source, CTA и measurement;
 - каждая опубликованная страница через 14/28 дней имеет решение `working/improve/merge/archive`;
 - B2B-клиент видит не “создано N страниц”, а какие страницы дали показы, клики, заявки, где потеря и какая задача назначена;
+- dashboard и отчёты показывают North Star KPI или честно объясняют, почему коммерческого действия ещё нет;
 - в маркетинге нет обещаний гарантированного топа, фиксированных заявок или “быстрого SEO-чуда”.
 
 ## Solo-направление: цены и упаковка для экспертов
@@ -1210,13 +1222,15 @@ B2B-кабинет — обязательный ранний слой проду
 4. Добавить backoff/rate-limit для LLM jobs, чтобы 429 не заливал очередь.
 5. Добавить видимость worker state: pending/failed/completed counts по типам jobs.
 6. Включить foundation Marketing OS без автопубликаций: `generation_framework`, роли генерации, playbook version и обязательный human review.
-7. Проверить Demand-to-Revenue worker handlers только после миграции `024`: enqueue и обработка `generate_daily_growth_tasks`, `generate_local_weekly_report`, `generate_b2b_page_draft`, `analyze_behavior_signals`, `calculate_unit_economics`, `generate_agency_report`.
-8. Для новых jobs зафиксировать failure mode: отсутствие business data не должно валить worker loop, а должно давать понятный failed job с причиной.
+7. Зафиксировать Marketing OS contract в workflow schema и playbooks: каждый workflow обязан иметь `demand_source_id`, `output_type`, `target_page_or_task`, `report_id`, `lead_metric_key` и `review_required`; если нет связи `demand source → page/answer/task → report → lead metric`, workflow не запускается как production-процесс и остаётся draft/research.
+8. Проверить Demand-to-Revenue worker handlers только после миграции `024`: enqueue и обработка `generate_daily_growth_tasks`, `generate_local_weekly_report`, `generate_b2b_page_draft`, `analyze_behavior_signals`, `calculate_unit_economics`, `generate_agency_report`.
+9. Для новых jobs зафиксировать failure mode: отсутствие business data не должно валить worker loop, а должно давать понятный failed job с причиной.
 
 **Gate:**
 - Worker logs не показывают повторяющийся quota-loop.
 - Failed queue понятна: jobs либо retry, либо archived.
 - Новый flow `collect_demand -> find_gaps -> generate_orders` проходит для тестовой ниши.
+- Marketing OS workflow без связи со спросом, задачей/страницей, отчётом и lead metric не может пройти human review в production.
 - Новые Demand-to-Revenue job types не попадают в `Unknown job type`, а ошибки данных видны в `jobs.error`.
 
 ### Этап 3 — Core E2E для эксперта
