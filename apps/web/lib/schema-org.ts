@@ -76,7 +76,7 @@ export function generateOrganizationSchema() {
     url: APP_URL,
     logo: `${APP_URL}/icon`,
     description:
-      "SaaS-платформа для привлечения клиентов из поиска, карт, отзывов и ответов нейросетей.",
+      "Local Sales OS для локального бизнеса: спрос, точка входа, действие клиента, заявка, запись или продажа.",
     sameAs: [
       "https://neuroexpertise.ru/for-experts",
       "https://neuroexpertise.ru/for-business",

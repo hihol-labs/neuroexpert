@@ -7,7 +7,7 @@ import { generateServiceSchema } from "@/lib/schema-org";
 
 const TITLE = "Новые клиенты для экспертов из поиска и нейросетей | НейроЭксперт";
 const DESCRIPTION =
-  "НейроЭксперт находит реальные вопросы клиентов, превращает голосовые ответы эксперта в страницы с кнопкой записи и помогает получать заявки из поиска и нейросетей.";
+  "НейроЭксперт находит реальные вопросы клиентов и помогает эксперту пройти путь: спрос → точка входа → действие клиента → заявка или запись.";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://neuroexpertise.ru";
 
 export const metadata: Metadata = {
@@ -164,7 +164,8 @@ export default function ForExpertsPage() {
               получить разбор.
             </p>
             <p className="mt-4 max-w-xl text-base text-slate-600">
-              Логика простая: спрос → экспертный ответ → страница → трафик → клик по записи → обращение.
+              Логика та же, что в Local Sales OS: спрос → точка входа →
+              действие клиента → заявка или запись.
             </p>
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">
               <Link
