@@ -24,7 +24,6 @@ import {
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/nav";
 import { FadeIn } from "@/components/marketing/fade-in";
 import {
-  LocalSalesAuditMockup,
   RevenueCalculatorMockup,
   SevenDayResultPanel,
 } from "@/components/marketing/product-mockups";
@@ -135,6 +134,41 @@ const niches = [
   { name: "Окна и кондиционеры", icon: Wind, point: "замер и выезд" },
 ];
 
+function HeroOutcomePanel() {
+  return (
+    <div className="rounded-lg border border-blue-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="flex items-center justify-between gap-4 border-b border-slate-200 pb-4">
+        <div>
+          <p className="text-xs font-semibold uppercase text-blue-700">Local Sales OS</p>
+          <h2 className="mt-1 text-lg font-bold text-slate-950">План роста на сегодня</h2>
+        </div>
+        <div className="rounded-md bg-blue-50 px-3 py-2 text-right">
+          <p className="text-xs font-medium text-blue-700">цель</p>
+          <p className="text-sm font-bold text-slate-950">заявки</p>
+        </div>
+      </div>
+
+      <div className="mt-5 space-y-3">
+        {[
+          ["Спрос", "люди ищут услугу рядом и сравнивают цену"],
+          ["Точка входа", "карточка, страница услуги, FAQ и отзывы"],
+          ["Действие", "звонок, запись, заявка или повторный контакт"],
+        ].map(([label, value]) => (
+          <div key={label} className="grid gap-2 rounded-md bg-slate-50 p-3 sm:grid-cols-[110px_1fr]">
+            <span className="text-xs font-semibold uppercase text-slate-500">{label}</span>
+            <span className="text-sm font-medium text-slate-800">{value}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-5 rounded-md border border-emerald-200 bg-emerald-50 p-4">
+        <p className="text-sm font-semibold text-emerald-800">Следующее действие клиента</p>
+        <p className="mt-1 text-2xl font-bold text-slate-950">заявка / запись / продажа</p>
+      </div>
+    </div>
+  );
+}
+
 export default function LandingPage() {
   const schemas = [
     generateServiceSchema({
@@ -210,7 +244,7 @@ export default function LandingPage() {
           </div>
 
           <FadeIn delay={240}>
-            <LocalSalesAuditMockup />
+            <HeroOutcomePanel />
           </FadeIn>
         </div>
       </section>
@@ -261,7 +295,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="border-y border-blue-100 bg-blue-50 py-14 sm:py-20">
+      <section className="border-y border-blue-100 bg-blue-50 py-14 [contain-intrinsic-size:0_720px] [content-visibility:auto] sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <FadeIn className="mx-auto mb-12 max-w-3xl text-center">
             <p className="text-sm font-semibold text-blue-700">Что получает клиент</p>
@@ -293,7 +327,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="bg-white py-14 sm:py-20">
+      <section className="bg-white py-14 [contain-intrinsic-size:0_700px] [content-visibility:auto] sm:py-20">
         <div className="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-[1.2fr_0.8fr]">
           <FadeIn>
             <SevenDayResultPanel />
@@ -304,7 +338,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="border-y border-emerald-100 bg-emerald-50 py-14 sm:py-20">
+      <section className="border-y border-emerald-100 bg-emerald-50 py-14 [contain-intrinsic-size:0_760px] [content-visibility:auto] sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <FadeIn className="mx-auto mb-12 max-w-3xl text-center">
             <p className="text-sm font-semibold text-emerald-700">Практический процесс</p>
@@ -346,7 +380,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="border-y border-slate-200 bg-slate-50 py-14 sm:py-20">
+      <section className="border-y border-slate-200 bg-slate-50 py-14 [contain-intrinsic-size:0_680px] [content-visibility:auto] sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <FadeIn className="mx-auto mb-10 max-w-3xl text-center">
             <p className="text-sm font-semibold text-blue-700">Не SEO ради SEO</p>
@@ -378,7 +412,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="bg-white py-14 sm:py-20">
+      <section className="bg-white py-14 [contain-intrinsic-size:0_640px] [content-visibility:auto] sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <FadeIn className="mx-auto mb-10 max-w-3xl text-center">
             <p className="text-sm font-semibold text-blue-700">Для кого особенно полезно</p>
