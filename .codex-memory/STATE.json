@@ -429,6 +429,10 @@
     {
       "event": "existing project analyzer run",
       "note": "runGates=False"
+    },
+    {
+      "event": "public positioning refocused",
+      "note": "2026-05-31: Repositioned marketing site around B2B Local Sales OS as the primary commercial path. Homepage now leads with demand -> entry point -> client action -> lead/booking/sale, expert path is secondary, agencies/API moved out of top navigation into footer partner block, Marketing OS removed from homepage. Verified pnpm --filter web build and browser smoke on localhost:3001."
     }
   ],
   "artifactHashes": {},

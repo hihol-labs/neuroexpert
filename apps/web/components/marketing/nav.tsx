@@ -6,9 +6,8 @@ import { useState } from "react";
 
 const NAV_LINKS = [
   { href: "/for-business", label: "Бизнесу" },
-  { href: "/for-experts", label: "Экспертам" },
   { href: "/launch", label: "Запуск" },
-  { href: "/for-agencies", label: "Агентствам" },
+  { href: "/for-experts", label: "Экспертам" },
   { href: "/how-it-works", label: "Как работает" },
   { href: "/pricing", label: "Тарифы" },
   { href: "/audit", label: "Аудит" },
@@ -33,7 +32,7 @@ export function MarketingHeader() {
           <div className="flex min-w-0 flex-col">
             <span className="truncate">НейроЭксперт</span>
             <span className="-mt-0.5 hidden text-[10px] font-medium tracking-wide text-slate-500 sm:block">
-              Клиенты из карт, поиска и AI
+              Спрос → заявка → продажа
             </span>
           </div>
         </Link>
@@ -98,15 +97,15 @@ export function MarketingFooter() {
   return (
     <footer className="border-t border-slate-200 bg-white pb-6 pt-10">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-5">
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2">
               <LogoMark className="h-7 w-7" />
               <span className="text-base font-semibold text-slate-950">НейроЭксперт</span>
             </div>
             <p className="text-sm leading-relaxed text-slate-600">
-              Платформа привлечения клиентов: спрос, видимость, страницы,
-              отзывы, конкуренты, задачи и повторные касания.
+              Local Sales OS: спрос → точка входа → действие клиента →
+              заявка, запись или продажа.
             </p>
             <Link
               href="/for-business"
@@ -133,8 +132,18 @@ export function MarketingFooter() {
             <Link href="/for-experts" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
               Экспертам
             </Link>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <span className="text-sm font-semibold text-slate-950">Партнёрам</span>
             <Link href="/for-agencies" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
               Агентствам
+            </Link>
+            <Link href="/for-agencies" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
+              API спроса
+            </Link>
+            <Link href="/api/v1/docs" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
+              OpenAPI docs
             </Link>
           </div>
 
@@ -142,9 +151,6 @@ export function MarketingFooter() {
             <span className="text-sm font-semibold text-slate-950">Информация</span>
             <Link href="/pricing" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
               Тарифы
-            </Link>
-            <Link href="/for-agencies" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
-              API спроса
             </Link>
             <Link href="/privacy" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
               Политика конфиденциальности

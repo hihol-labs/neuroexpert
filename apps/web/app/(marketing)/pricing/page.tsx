@@ -3,9 +3,9 @@ import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
 import { PricingContent } from "./pricing-content";
 import { generateServiceSchema } from "@/lib/schema-org";
 
-const TITLE = "Тарифы НейроЭксперт — заявки для экспертов и локального бизнеса";
+const TITLE = "Тарифы НейроЭксперт — Local Sales OS, заявки и продажи";
 const DESCRIPTION =
-  "Выберите тариф для эксперта или бизнеса: аудит видимости, запуск канала привлечения клиентов за 30 дней, система локальных продаж, карта спроса, страницы, отзывы и повторные касания.";
+  "Выберите тариф для бизнеса или эксперта: спрос → точка входа → действие клиента → заявка, запись или продажа.";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://neuroexpertise.ru";
 
 export const metadata: Metadata = {
@@ -22,7 +22,7 @@ export default function PricingPage() {
       name: "Тарифы НейроЭксперт",
       description: DESCRIPTION,
       url: `${APP_URL}/pricing`,
-      serviceType: "AI visibility, expert content and local sales SaaS",
+      serviceType: "Local sales and demand generation SaaS",
       offers: [
         { name: "Free", price: "0", url: `${APP_URL}/pricing` },
         { name: "Starter", price: "1490", url: `${APP_URL}/pricing` },

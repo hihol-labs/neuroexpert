@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "НейроЭксперт — AI-система для экспертов";
+export const alt = "НейроЭксперт — Local Sales OS для заявок и продаж";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -30,8 +30,7 @@ export default function OGImage() {
             textAlign: "center",
           }}
         >
-          AI-система, которая превращает экспертизу в клиентов из поиска и
-          нейросетей
+          Local Sales OS: спрос → точка входа → действие клиента → заявка
         </div>
       </div>
     ),
