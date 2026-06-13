@@ -1,10 +1,14 @@
 #!/usr/bin/env node
 
+const { execFileSync } = require("child_process");
 const { performance } = require("perf_hooks");
 
 const baseUrl = (process.env.AEO_SITE_URL || "https://neuroexpertise.ru").replace(/\/$/, "");
 const strict = process.argv.includes("--strict");
 const ttfbWarnMs = Number(process.env.AEO_TTFB_WARN_MS || 500);
+const fetchTimeoutMs = Number(process.env.AEO_FETCH_TIMEOUT_MS || 2500);
+const curlUserAgent = process.env.AEO_CURL_USER_AGENT || "Mozilla/5.0 (AEO smoke explicit documented fallback)";
+const curlAttempts = Number(process.env.AEO_CURL_ATTEMPTS || 3);
 
 const requiredRobotsTokens = [
   "GPTBot",
@@ -21,14 +25,26 @@ const requiredRobotsTokens = [
 
 async function timedFetch(path, init = {}) {
   const started = performance.now();
-  const response = await fetch(`${baseUrl}${path}`, {
-    ...init,
-    headers: {
-      "user-agent": "GPTBot",
-      ...(init.headers || {}),
-    },
-    redirect: "manual",
-  });
+  const url = `${baseUrl}${path}`;
+  const headers = {
+    "user-agent": "GPTBot",
+    ...(init.headers || {}),
+  };
+  let response;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), fetchTimeoutMs);
+  try {
+    response = await fetch(url, {
+      ...init,
+      headers,
+      redirect: "manual",
+      signal: controller.signal,
+    });
+  } catch (error) {
+    return curlTimedFetch(path, url, headers, started, error);
+  } finally {
+    clearTimeout(timeout);
+  }
   const headersAt = performance.now();
   const text = await response.text();
   const finished = performance.now();
@@ -40,6 +56,50 @@ async function timedFetch(path, init = {}) {
     totalMs: Math.round(finished - started),
     text,
   };
+}
+
+function curlTimedFetch(path, url, headers, started, fetchError) {
+  const args = [
+    "-sk",
+    "-L",
+    "--max-time",
+    "30",
+    "-w",
+    "\\n%{http_code}",
+    "-A",
+    curlUserAgent,
+    url,
+  ];
+
+  let lastCurlError;
+  for (let attempt = 1; attempt <= curlAttempts; attempt += 1) {
+    try {
+    const curlBin = process.platform === "win32" ? "curl.exe" : "curl";
+    const output = execFileSync(curlBin, args, {
+      encoding: "utf8",
+      maxBuffer: 20 * 1024 * 1024,
+    });
+    const finished = performance.now();
+    const splitAt = output.lastIndexOf("\n");
+    const text = splitAt >= 0 ? output.slice(0, splitAt) : output;
+    const status = splitAt >= 0 ? Number(output.slice(splitAt + 1)) : 0;
+    return {
+      path,
+      status,
+      location: null,
+      ttfbMs: Math.round(finished - started),
+      totalMs: Math.round(finished - started),
+      text,
+    };
+    } catch (curlError) {
+      lastCurlError = curlError;
+      if (attempt < curlAttempts) {
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 500);
+      }
+    }
+  }
+  lastCurlError.message = `explicit documented curl fallback failed for ${path}: ${lastCurlError.message}; original fetch error: ${fetchError.message}`;
+  throw lastCurlError;
 }
 
 async function warmTimedFetch(path, init = {}) {

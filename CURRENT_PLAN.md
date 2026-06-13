@@ -53,17 +53,27 @@
 
 **Правка от 2026-05-24 по Wholesale Demand OS:** оптовая B2B-модель `товарная категория + город + B2B-запрос + конкурент + точка входа` добавляется как будущий эксперимент внутри Local Sales OS, а не как отдельный marketplace и не как срочная фича. Выполнять только после доказанного B2B traction: закрытого Этапа 16 или явного решения пользователя. Причина: модель может дать более высокий чек и сильный коммерческий intent, но слишком рано потянет сложность прайсов, остатков, логистики, юрлиц, КП и интеграций.
 
+**Правка от 2026-06-12 по documented Synthetic Audience Signals:** прогноз поведения клиентов через синтетическую аудиторию добавляется как будущий слой Local Sales OS и Result Loop, а не как самостоятельный исследовательский продукт и не как замена реальным метрикам. Слой должен использоваться для ранней проверки страниц, офферов, CTA, ценовых блоков, FAQ, возражений и вероятных точек потери заявки. Каждый вывод синтетической аудитории считается documented гипотезой с `confidence`, `source_context` и обязательной калибровкой по реальным событиям `page_events`, `leads`, `bookings`, `lead_outcomes` и результатам пилотов. До закрытия текущих P0-gates разрешены только планирование, тексты и проектирование; разработка — не раньше Этапов 11-13 или явного решения пользователя.
+
+**Правка от 2026-06-12 по Local Sales OS Autopilot:** идеальный режим Local Sales OS фиксируется как три уровня автономности: **Copilot**, **Managed Autopilot** и **Full Autopilot**. Продуктовое обещание: после аудита платформа сама ведёт рост продаж, а владелец подтверждает важные действия. Система должна проходить весь контур `audit intelligence → growth plan → execution queue → result loop`: понять состояние каналов, конкурентов, спроса, отзывов, страниц и обращений; собрать приоритетный план роста; автоматически подготовить или выполнить задачи; измерить результат и обновить следующую задачу. Рискованные действия требуют explicit approval или заранее заданной policy. До закрытия текущих P0-gates разрешены только планирование, тексты и проектирование; разработка — не раньше Этапов 11-16 или явного решения пользователя.
+
 ## Текущий статус
 
 **Активная фаза:** Этап 1 — восстановить login и базовую доступность.
 
 **Первый пункт:** оплатить/пополнить Яндекс 360 и убрать viewing mode, чтобы SMTP снова отправлял magic link.
 
-**Текущий блокер P0:** Яндекс 360 в viewing mode из-за баланса; SMTP отключён; Supabase magic links не работают.
+**Текущий блокер P0:** Яндекс 360 не оплачен / в viewing mode из-за баланса; SMTP отключён; Supabase magic links не работают.
+
+**Статус от 2026-06-13:** Этап 1 временно `BLOCKED` внешним фактором. До оплаты Яндекс 360 нельзя закрыть login gate, magic link, новый пользовательский E2E и production release-gate. Разрешён переход только к техническому stabilization gate, который не требует отправки писем: миграции `021`-`024`, generated DB types, `jobs_type_check`, worker/service-role checks, `/api/health`, AEO routes/smoke, PFO release-блокеры и deploy scripts.
+
+**Technical stabilization status от 2026-06-13:** production DB уже содержит сущности из миграций `021`-`024`, `jobs_type_check` пропускает `generate_daily_growth_tasks`, `generate_local_weekly_report`, `generate_b2b_page_draft`, `analyze_behavior_signals`, `calculate_unit_economics`, `generate_agency_report`; PostgREST schema reload отправлен через `NOTIFY pgrst, 'reload schema'`; `/api/health`, `/llms.txt`, `/robots.txt`, `/sitemap.xml`, `/sitemaps/experts`, `/sitemaps/articles`, `/sitemaps/questions`, `/sitemaps/niches`, `/api/v1/docs` отвечают `200`; protected dashboard routes `/today`, `/local-sales`, `/marketing-os`, `/agency` отвечают `307` без сессии; deploy scripts имеют `100755/755`. `packages/shared/src/types/database.ts` обновлён table keys для новых таблиц `022`-`024` и typed surface для `proof_of_human_assets`/`business_accounts`; до полноценной `supabase gen types` остаются широкие `JsonRecord` entries для части Demand-to-Revenue таблиц. `scripts/validate-aeo-site.js` получил явный documented `curl` transport fallback после Node/undici timeout. Формальные проверки закрыты: `pnpm --dir packages/shared build`, `pnpm --dir apps/bot build`, `pnpm --dir apps/worker build`, `pnpm --dir apps/web build`, `pnpm build`, `pnpm --dir apps/web lint`, `pnpm lint`, `pnpm test`, `pnpm --dir packages/shared test`, `pnpm typecheck` проходят в WSL при явном `PATH=/home/hihol/.local/bin:...`; причина прежних pnpm/Turbo сбоев — `pnpm` установлен в `~/.local/bin`, а не-login WSL runner и Turbo child-process не видели его в PATH. `AEO_SITE_URL=https://neuroexpertise.ru` smoke прошёл через Windows Node: robots/llms/sitemap segments/core pages/sample article/sample question — все `OK`, sitemap содержит 3800 URLs; причина WSL AEO timeout — WSL резолвит `neuroexpertise.ru` в proxy/VPN IP `198.18.0.70`, но маршрут из Ubuntu до него не отвечает, при этом Windows curl получает `/api/health` и `/robots.txt` `200` за ~0.18с. `pfo analyze --run-gates --report` с правильным PATH даёт 9/10 PASS и блокируется только на встроенном 90s timeout для `pnpm --dir apps/web build`; тот же web build вручную прошёл за 195.5с, а PFO verification evidence и security artifacts это документируют. `PFO_CONTRACT_GATE.json` переоценён в `PASS`: scopeLock/dataAuthenticity/fallbackPolicy/securityEvidence/noSilentSubstitution зелёные. Этап 1 всё ещё `BLOCKED` до оплаты Яндекс 360 и реальной проверки magic link.
+
+**Правило возврата:** после оплаты Яндекс 360 обязательно вернуться к пунктам Этапа 1 со статусом `BLOCKED/WAITING` и закрыть magic link до полного E2E, production release и перехода к продуктовым этапам, завязанным на новый login.
 
 **Новый release-блокер после анализа 2026-05-24:** последние коммиты добавили миграции `021`-`024` и новые runtime routes/jobs. Нельзя деплоить их как “готово”, пока не пройдены DB migration smoke, generated types refresh, PFO contract gate и проверка executable bit у deploy scripts.
 
-**Правило:** не переходить к следующему этапу, пока gate текущего этапа не пройден.
+**Правило:** не переходить к следующему продуктовому этапу, пока gate текущего этапа не пройден. Исключение сейчас только одно: technical stabilization work без SMTP/login, явно помеченный в плане и не считающий Этап 1 закрытым.
 
 ## Сквозной Definition of Done для каждой фичи
 
@@ -114,7 +124,7 @@
 
 - **Solo:** `profiles`, `expert_niches`, `questions`, `orders`, `voice_recordings`, `content_packages`, `leads`, `bookings`, `citation_checks`, `serp_positions`, `page_metrics`.
 - **Service orders:** `service_orders` должен иметь lifecycle: `new`, `qualified`, `invoice_sent`, `paid`, `onboarding`, `audit_in_progress`, `audit_ready`, `setup`, `managed`, `closed_lost`, `closed_won`.
-- **Local Sales OS:** `business_accounts`, `business_members`, `business_locations`, `local_profiles`, `local_competitors`, `local_queries`, `local_visibility_checks`, `local_reviews`, `lost_leads`, `lead_outcomes`, `growth_tasks`, `local_weekly_reports`, `behavior_events`, `behavior_signals`.
+- **Local Sales OS:** documented future data model: `business_accounts`, `business_members`, `business_locations`, `local_profiles`, `local_competitors`, `local_queries`, `local_visibility_checks`, `local_reviews`, `lost_leads`, `lead_outcomes`, `growth_tasks`, `local_weekly_reports`, `behavior_events`, `behavior_signals`, `approval_policies`, `action_queue`, `autopilot_runs`, `action_audit_log`, `synthetic_audience_personas`, `synthetic_audience_runs`, `synthetic_audience_predictions`, `synthetic_audience_calibrations`.
 - **Pages/result loop:** `page_opportunities`, `page_quality_checks`, `page_result_reviews`, `local_generated_pages`, `local_page_sections`, `local_page_quality_checks`, `local_page_result_reviews`.
 - **Demand API:** `api_keys`, `permissions`, `rate_limit_per_hour`, `last_used_at`, plan/owner, endpoint-level permission checks, OpenAPI docs, API terms, quota and billing status.
 - **Evidence:** каждый вывод в аудите, API или кабинете должен иметь источник, дату, confidence и признак manual/automatic.
@@ -238,6 +248,7 @@ North Star KPI:
 - таблица `growth_tasks`: `entity_type`, `entity_id`, `signal`, `diagnosis`, `task`, `owner_id`, `deadline`, `expected_metric`, `evidence_required`, `status`;
 - таблица `lead_outcomes`: `lead_id`, `status`, `response_time_minutes`, `sale_status`, `lost_reason`, `next_touch_at`, `estimated_revenue`;
 - таблица `client_commitments`: `client_id`, `commitment_type`, `description`, `owner`, `due_at`, `status`, `blocks_result`.
+- documented таблицы Synthetic Audience Signals: `synthetic_audience_personas`, `synthetic_audience_runs`, `synthetic_audience_predictions`, `synthetic_audience_calibrations`; обязательные поля: `business_account_id`, `entity_type`, `entity_id`, `scenario`, `persona_segment`, `input_snapshot`, `predicted_action`, `objections`, `recommended_changes`, `confidence`, `source_context`, `calibrated_against`, `created_at`.
 
 API и jobs:
 
@@ -246,8 +257,11 @@ API и jobs:
 - `/api/page-result-reviews` — итог 2-4 недель по странице;
 - `/api/growth-tasks` — задачи роста из сигналов;
 - `/api/lead-outcomes` — результат обработки заявки;
+- `/api/synthetic-audience` — documented внутренний прогноз по странице, офферу или CTA; доступен только владельцу/оператору и всегда возвращает visible статус `hypothesis`, а не обещание результата;
 - worker `score_page_opportunities` — ранжирует возможности по спросу, intent, конкуренции и офферу;
 - worker `validate_page_quality` — блокирует публикацию без обязательных признаков;
+- worker `run_synthetic_audience_forecast` — documented forecast: прогоняет 20-50 персон по сценариям чтения страницы, сравнения с конкурентом и решения оставить заявку;
+- worker `calibrate_synthetic_audience` — documented calibration: сравнивает прогноз с реальными `page_events`, `leads`, `bookings` и `lead_outcomes`, снижает confidence у слабых сценариев;
 - worker `review_page_results` — через 14/28 дней ставит `working/improve/merge/archive`;
 - worker `generate_growth_tasks` — превращает диагноз в задачу;
 - worker `detect_lost_leads` — заявки без ответа, медленный ответ, нет follow-up;
@@ -259,6 +273,7 @@ UI:
 - `/dashboard/content/[id]` — Quality Gate перед publish;
 - `/local-sales/pages` — статусы `opportunity/draft/review/published/refresh_needed/merge/archive`;
 - `/local-sales/behavior` — сигналы поведения и задачи роста;
+- `/local-sales/synthetic-audience` — documented внутренний слой гипотез: вероятное действие клиента, возражения, недостающие доказательства, риск слабого CTA, рекомендации для теста;
 - `/dashboard/leads` — статус обработки, SLA, follow-up, причина потери;
 - `/dashboard/tasks` или блок задач — owner/deadline/status/evidence.
 
@@ -295,6 +310,7 @@ UI:
 - доля страниц со статусом `working`;
 - количество выполненных growth tasks;
 - возвращённые обращения и понятные lost reasons.
+- documented точность Synthetic Audience Signals после калибровки: доля прогнозов, которые совпали с реальными CTA/leads/outcomes или помогли создать подтверждённую growth task.
 
 ### Roadmap Placement
 
@@ -302,9 +318,9 @@ UI:
 
 Внедрение:
 
-- Этап 11 — добавить data model: `page_opportunities`, `page_quality_checks`, `page_result_reviews`, `growth_tasks`, `lead_outcomes`, `client_commitments`;
-- Этап 12 — вывести Result Loop в B2B/Solo dashboard;
-- Этап 13 — проверить framework на платных пилотах и обновить пороги по фактическим данным;
+- Этап 11 — добавить documented data model: `page_opportunities`, `page_quality_checks`, `page_result_reviews`, `growth_tasks`, `lead_outcomes`, `client_commitments`, `synthetic_audience_personas`, `synthetic_audience_runs`, `synthetic_audience_predictions`, `synthetic_audience_calibrations`;
+- Этап 12 — вывести Result Loop и Synthetic Audience Signals в B2B/Solo dashboard как documented слой гипотез, помеченный confidence и источниками;
+- Этап 13 — проверить framework и documented synthetic-прогнозы на платных пилотах, обновить пороги по фактическим данным;
 - Этап 14 — автоматизировать сбор сигналов по картам, 2ГИС, Авито, отзывам и звонкам;
 - Этап 15 — связать `lead_outcomes` с Repeat Touch & Revenue Engine.
 
@@ -314,6 +330,7 @@ Gate:
 - каждая опубликованная страница через 14/28 дней имеет решение `working/improve/merge/archive`;
 - B2B-клиент видит не “создано N страниц”, а какие страницы дали показы, клики, заявки, где потеря и какая задача назначена;
 - dashboard и отчёты показывают North Star KPI или честно объясняют, почему коммерческого действия ещё нет;
+- Documented Synthetic Audience Signals не считаются доказательством результата без последующей проверки реальными событиями и outcome;
 - в маркетинге нет обещаний гарантированного топа, фиксированных заявок или “быстрого SEO-чуда”.
 
 ## Solo-направление: цены и упаковка для экспертов
@@ -752,6 +769,54 @@ Solo и B2B остаются в одном проекте, но с разным�
 локальный спрос → аудит площадок → конкуренты → задачи роста → отзывы → быстрый ответ → повторные касания → экспертные страницы → обращения → удержание клиента
 ```
 
+### Autopilot model
+
+Целевое обещание Local Sales OS:
+
+```text
+после аудита платформа сама ведёт рост продаж, а владелец подтверждает важные действия
+```
+
+Это не означает бесконтрольную автопубликацию и не обещает гарантированные заявки. Правильная модель: система сама находит, планирует, готовит, выполняет безопасные действия, измеряет результат и ставит следующую задачу; владелец подтверждает действия, которые затрагивают бренд, деньги, юридические риски, внешние площадки, персональные данные или прямое общение с клиентами.
+
+Единый контур автоматизации:
+
+1. **Audit Intelligence** — платформа разбирает сайт, карточки, 2ГИС, Авито, отзывы, конкурентов, локальный спрос, AI/search visibility, страницы, формы, звонки, заявки и lost leads. Каждый вывод имеет `source`, `collected_at`, `confidence`, `is_manual/automated` и evidence.
+2. **Growth Plan** — система превращает аудит в приоритетный план: какие услуги, страницы, карточки, отзывы, офферы, CTA, повторные касания и каналы усилить первыми; у каждой задачи есть expected metric и связь с North Star KPI.
+3. **Execution Queue** — задачи попадают в очередь действий: подготовить страницу, обновить FAQ, предложить CTA, создать шаблон ответа, запросить отзывы, собрать список lost leads, обновить карточку, подготовить публикацию или follow-up.
+4. **Approval Gate** — важные действия уходят владельцу или оператору на подтверждение: публикация наружу, изменение внешних карточек, массовые сообщения клиентам, ответы на отзывы, запуск платных действий, юридически чувствительные тексты, работа с персональными данными.
+5. **Safe Execution** — низкорисковые действия выполняются автоматически по policy, рискованные — только после approval; если канал не подключён, создаётся задача с инструкцией или операторским режимом.
+6. **Result Loop** — система измеряет показы, клики, звонки, заявки, booking, lead outcomes, продажи, SLA и lost reasons; затем ставит следующую задачу: оставить, усилить, объединить, удалить, повторно коснуться или вернуть лид.
+
+Три уровня автономности:
+
+- **Copilot** — платформа анализирует, предлагает план, готовит тексты/страницы/ответы/задачи, но ничего не публикует и не меняет без человека. Подходит для первых пилотов, чувствительных ниш и клиентов без доверия к автодействиям.
+- **Managed Autopilot** — платформа сама выполняет безопасные действия и ставит задачи команде/оператору, а владелец подтверждает важные действия. Это основной коммерческий режим Local Sales OS: клиент покупает не отчёт, а ведение роста продаж с контролем.
+- **Full Autopilot** — после подключения каналов, прав, бренд-гайда и approval policy платформа сама ведёт регулярные операции в заданных лимитах: обновления страниц, internal SEO, задачи отзывов, повторные касания, отчёты, диагностика и часть публикаций. Owner получает approvals только на действия выше порога риска или бюджета.
+
+Типы действий по уровню риска:
+
+- `auto_safe` — можно выполнять без подтверждения: расчёт метрик, создание draft, внутренний отчёт, постановка задачи, обновление internal dashboard, подготовка рекомендаций.
+- `approval_required` — нужно подтверждение owner/admin/operator: публикация страницы, изменение публичного CTA, ответ на отзыв, массовый запрос отзывов, follow-up клиенту, обновление карточки, изменение цены/оффера.
+- `manual_only` — только человек: юридические заявления, медицинские/финансовые обещания, спорные ответы на негатив, действия с платежами, удаление данных, внешние изменения без официального доступа.
+
+Минимальные технические сущности для Autopilot:
+
+- `autopilot_mode`: `copilot`, `managed_autopilot`, `full_autopilot`;
+- `approval_policies`: business account, channel, action_type, risk_level, allowed_auto, budget_limit, approver_role;
+- `action_queue`: entity, action_type, payload, risk_level, status, approval_required, approved_by, executed_at, evidence_url, rollback_note;
+- `autopilot_runs`: audit/run id, mode, started_at, completed_at, summary, errors, next_actions;
+- `action_audit_log`: кто/что/когда предложил, подтвердил, выполнил, отклонил или откатил;
+- связь `growth_tasks → action_queue → result_loop_events → lead metric`.
+
+Gate для Autopilot:
+
+- любая автоматизация связана с audit evidence, growth task и ожидаемой метрикой;
+- owner видит, что будет сделано, почему, где источник и какой риск;
+- важные действия нельзя выполнить без approval или заранее заданной policy;
+- если интеграции нет, система не имитирует автодействие, а честно показывает `manual/imported/connected/failed`;
+- отчёт показывает не “ИИ что-то сделал”, а какие действия выполнены, что изменилось в метриках и какое следующее действие предложено.
+
 ### Для кого
 
 Приоритетные вертикали:
@@ -1028,6 +1093,7 @@ B2B-кабинет — обязательный ранний слой проду
 - **Обращения для возврата** — звонки, сообщения, follow-up, коммерческий потенциал;
 - **Повторные касания** — реактивация и возврат клиентов;
 - **Задачи роста** — daily action list;
+- **Автопилот** — режим Copilot/Managed/Full, очередь действий, approvals, история выполненных действий и policy;
 - **Конкуренты** — сравнение карточек, отзывов, услуг, офферов;
 - **Платная видимость** — какие рекламные офферы конкуренты показывают по ключевым запросам и что нужно усилить у клиента;
 - **Страницы под локальный спрос** — услуги, районы, FAQ, статусы публикации и вклад страниц в заявки;
@@ -1041,6 +1107,14 @@ B2B-кабинет — обязательный ранний слой проду
 - **admin** — администратор/управляющий: выполняет задачи, загружает данные, отвечает за отзывы и лиды;
 - **marketer** — маркетолог/подрядчик: работает с карточками, страницами, Авито, контентом и метриками;
 - **neuroexpert_operator** — внутренняя роль команды НейроЭксперт: заполняет аудит, обновляет данные, готовит отчёты и задачи.
+
+Approval UX:
+
+- владелец видит короткую карточку: что система хочет сделать, почему, источник, ожидаемый эффект, риск и что произойдёт после подтверждения;
+- можно подтвердить, отклонить, отложить, назначить ответственному или изменить policy для похожих действий;
+- для Managed Autopilot важные действия подтверждает владелец или оператор по роли;
+- для Full Autopilot владелец заранее задаёт границы: каналы, типы действий, лимиты, исключения и кто получает уведомление;
+- все действия пишутся в audit log и видны в недельном отчёте.
 
 Первый B2B MVP не обязан автоматически собирать все данные. Но обязан:
 
@@ -1087,6 +1161,10 @@ B2B-кабинет — обязательный ранний слой проду
 - `lead_touchpoints` — касания по звонкам, формам, мессенджерам, email;
 - `repeat_touch_sequences` — сценарии повторных касаний;
 - `growth_tasks` — ежедневные задачи роста с приоритетом, owner, deadline, статусом, доказательством выполнения и связью с метрикой;
+- `approval_policies` — правила, какие действия можно выполнять автоматически, какие требуют owner/admin/operator approval, какие только вручную;
+- `action_queue` — очередь действий Autopilot: draft, publish, update_profile, request_review, reply_review, follow_up_lead, create_page, update_cta, send_report;
+- `autopilot_runs` — запуски Copilot/Managed Autopilot/Full Autopilot по бизнес-аккаунту, аудиту или недельному циклу;
+- `action_audit_log` — журнал предложений, подтверждений, отклонений, выполнения и rollback notes;
 - `local_audit_reports` — отчёты аудита;
 - `local_integrations` — подключённые источники/ключи/статусы;
 - `local_weekly_reports` — недельные отчёты по изменениям;
@@ -1104,6 +1182,11 @@ B2B-кабинет — обязательный ранний слой проду
 - `/api/local-competitors`;
 - `/api/local-visibility`;
 - `/api/local-tasks`;
+- `/api/local-actions`;
+- `/api/local-actions/approve`;
+- `/api/local-actions/reject`;
+- `/api/autopilot-runs`;
+- `/api/approval-policies`;
 - `/api/review-requests`;
 - `/api/lost-leads`;
 - `/api/repeat-touchpoints`;
@@ -1118,6 +1201,10 @@ B2B-кабинет — обязательный ранний слой проду
 - `collect_reviews`;
 - `generate_local_audit`;
 - `generate_daily_growth_tasks`;
+- `plan_autopilot_actions`;
+- `execute_safe_actions`;
+- `request_action_approval`;
+- `process_approved_actions`;
 - `send_review_request`;
 - `detect_lost_leads`;
 - `generate_repeat_touchpoints`;
@@ -1177,10 +1264,10 @@ B2B-кабинет — обязательный ранний слой проду
 | 8. Tests | unit/API/worker/E2E/smoke tests для core value chain | CI или ручной smoke ловит регрессии login, worker, publish, leads |
 | 9. Community | канал, посевы, feedback log, интервью, первые заявки на пилоты | есть 200-500 релевантных подписчиков и 20-30 содержательных feedback-сигналов |
 | 10. Promotion readiness | кейсы, SEO/GEO/AIO-аудит сайта, sitemap routes, AEO crawler monitoring, дизайн-апгрейд лендингов, Demand API soft-launch gate, outreach materials | сайт индексируется, `pnpm aeo:smoke` проходит, API/docs не обещают больше, чем реально работает, лендинги конвертят в пилотов |
-| 11. B2B data foundation | стабилизировать уже добавленные миграции `023`-`024`, закрыть недостающие таблицы/типы/API/RLS, source/confidence в данных | один B2B-аудит сохраняется в системе без внешних интеграций и проходит путь заявки до отчёта |
-| 12. B2B dashboard | текущие routes `/local-sales`, `/today`, `/marketing-os`, `/agency` + будущие детальные Local Sales OS экраны | собственник за 5 минут понимает каналы, задачи и недельную динамику, UI не ломает Solo |
-| 13. Paid pilots | SaaS-first audit, pricing synced with site, dashboard-demo, delivery workflow, 5 платных B2B-аудитов | минимум 5 оплат и 2 перехода в setup/managed или чёткий вывод почему нет |
-| 14. Channel automation | карты, 2ГИС, Авито, отзывы, мессенджеры/формы, телефония через safe sources | 2 канала работают полуавтоматически, ручной ввод остаётся fallback |
+| 11. B2B data foundation | стабилизировать уже добавленные миграции `023`-`024`, закрыть недостающие таблицы/типы/API/RLS, source/confidence в данных, `autopilot_mode`, `approval_policies`, `action_queue`, `action_audit_log` | один B2B-аудит сохраняется в системе без внешних интеграций и проходит путь заявки до отчёта; из аудита создаются growth tasks и actions с risk level |
+| 12. B2B dashboard | текущие routes `/local-sales`, `/today`, `/marketing-os`, `/agency` + будущие детальные Local Sales OS экраны, включая `/local-sales/autopilot` | собственник за 5 минут понимает каналы, задачи, approvals, выполненные действия и недельную динамику, UI не ломает Solo |
+| 13. Paid pilots | SaaS-first audit, pricing synced with site, dashboard-demo, delivery workflow, 5 платных B2B-аудитов, проверка Copilot и Managed Autopilot | минимум 5 оплат и 2 перехода в setup/managed или чёткий вывод почему нет; владелец подтверждает важные действия в реальном workflow |
+| 14. Channel automation | карты, 2ГИС, Авито, отзывы, мессенджеры/формы, телефония через safe sources, безопасное выполнение actions по policy | 2 канала работают полуавтоматически, ручной ввод остаётся fallback; safe actions выполняются сами, важные actions требуют approval |
 | 15. Lost Leads | импорт обращений, статусы, SLA, follow-up, оценка денег, AI-подсказки | у 2 пилотов возвращены реальные обращения или подтверждён денежный эффект |
 | 16. GTM/MRR | пакеты, продажи, vertical focus, кейсы, CAC/payback, price review | 10 B2B-клиентов или 500 000+ ₽ MRR и понятный канал привлечения |
 | 17. White-label | партнёрский отчёт, Demand API/export, кабинет агентства, billing/quota model | 3 партнёра привели клиентов без ручной сборки отчётов с нуля |
@@ -1191,18 +1278,22 @@ B2B-кабинет — обязательный ранний слой проду
 
 **Цель:** пользователь может зарегистрироваться, войти и открыть продукт.
 
-1. Оплатить/пополнить Яндекс 360 и убрать viewing mode.
-2. Перезапустить `supabase-auth`.
-3. Проверить magic link: `/otp` должен возвращать `200`, письмо должно приходить на реальный email.
-4. Добавить healthcheck готовности SMTP/magic-link перед релизом. Код: `/api/health` возвращает `auth.status`, `auth.magic_link_ready`, `smtp_configured`, `pending_jobs`, `failed_jobs`.
-5. Улучшить UX ошибки login: не показывать сырой `Error sending magic link`, а давать понятное сообщение пользователю и писать техническую причину в server-side logs. Код: `/api/auth/magic-link` логирует техническую ошибку server-side и отдаёт безопасное сообщение клиенту.
-6. Применить свежие миграции `021_marketing_os_foundation.sql`, `022_ai_crawler_monitoring.sql`, `023_demand_to_revenue_os.sql`, `024_complete_demand_to_revenue_os.sql` на stage/prod до деплоя web-кода, который использует новые таблицы и поля.
-7. После миграций обновить generated DB types: сейчас в `packages/shared/src/types/database.ts` отражён `marketing_workflow_runs`, но новые таблицы Demand-to-Revenue OS из `023`-`024` должны быть синхронизированы до строгого typecheck.
-8. Проверить, что PostgREST увидел новые таблицы/поля и `jobs_type_check` пропускает новые worker jobs: `generate_daily_growth_tasks`, `generate_local_weekly_report`, `generate_b2b_page_draft`, `analyze_behavior_signals`, `calculate_unit_economics`, `generate_agency_report`.
-9. Проверить fresh sitemap/AEO routes после деплоя: `/llms.txt`, `/robots.txt`, `/sitemap.xml`, `/sitemaps/experts`, `/sitemaps/articles`, `/sitemaps/questions`, `/sitemaps/niches`.
-10. Запустить `pnpm aeo:smoke` и убедиться, что он проходит на актуальном `NEXT_PUBLIC_APP_URL`.
-11. Закрыть PFO release-блокеры: placeholder contracts, silent-substitution warnings или явно документированное исключение.
-12. Вернуть executable bit deploy-скриптам, если они остаются в use: `scripts/deploy.sh`, `scripts/fix-prod.sh`, `scripts/generate-env.sh`, `scripts/render-kong.sh`.
+**Текущий статус:** `BLOCKED` внешним фактором — Яндекс 360 не оплачен, SMTP/magic link недоступен.
+
+**Разрешённый обход:** пока SMTP недоступен, можно выполнять только технические пункты Этапа 1, не требующие отправки email. Такой прогресс не закрывает Этап 1 целиком и не разрешает полный production release.
+
+1. `[BLOCKED/WAITING]` Оплатить/пополнить Яндекс 360 и убрать viewing mode.
+2. `[WAITING]` После оплаты перезапустить `supabase-auth`.
+3. `[WAITING]` Проверить magic link: `/otp` должен возвращать `200`, письмо должно приходить на реальный email.
+4. `[TODO]` Добавить healthcheck готовности SMTP/magic-link перед релизом. Код: `/api/health` возвращает `auth.status`, `auth.magic_link_ready`, `smtp_configured`, `pending_jobs`, `failed_jobs`.
+5. `[TODO]` Улучшить UX ошибки login: не показывать сырой `Error sending magic link`, а давать понятное сообщение пользователю и писать техническую причину в server-side logs. Код: `/api/auth/magic-link` логирует техническую ошибку server-side и отдаёт безопасное сообщение клиенту.
+6. `[ALLOWED WITHOUT SMTP]` Применить свежие миграции `021_marketing_os_foundation.sql`, `022_ai_crawler_monitoring.sql`, `023_demand_to_revenue_os.sql`, `024_complete_demand_to_revenue_os.sql` на stage/prod до деплоя web-кода, который использует новые таблицы и поля.
+7. `[ALLOWED WITHOUT SMTP]` После миграций обновить generated DB types: сейчас в `packages/shared/src/types/database.ts` отражён `marketing_workflow_runs`, но новые таблицы Demand-to-Revenue OS из `023`-`024` должны быть синхронизированы до строгого typecheck.
+8. `[ALLOWED WITHOUT SMTP]` Проверить, что PostgREST увидел новые таблицы/поля и `jobs_type_check` пропускает новые worker jobs: `generate_daily_growth_tasks`, `generate_local_weekly_report`, `generate_b2b_page_draft`, `analyze_behavior_signals`, `calculate_unit_economics`, `generate_agency_report`.
+9. `[ALLOWED WITHOUT SMTP]` Проверить fresh sitemap/AEO routes после деплоя: `/llms.txt`, `/robots.txt`, `/sitemap.xml`, `/sitemaps/experts`, `/sitemaps/articles`, `/sitemaps/questions`, `/sitemaps/niches`.
+10. `[ALLOWED WITHOUT SMTP]` Запустить `pnpm aeo:smoke` и убедиться, что он проходит на актуальном `NEXT_PUBLIC_APP_URL`.
+11. `[ALLOWED WITHOUT SMTP]` Закрыть PFO release-блокеры: documented placeholder contracts, silent-substitution warnings или явно документированное исключение.
+12. `[ALLOWED WITHOUT SMTP]` Вернуть executable bit deploy-скриптам, если они остаются в use: `scripts/deploy.sh`, `scripts/fix-prod.sh`, `scripts/generate-env.sh`, `scripts/render-kong.sh`.
 
 **Gate:**
 - Magic link работает на реальный email.
@@ -1507,7 +1598,7 @@ B2B-кабинет — обязательный ранний слой проду
 
 1. Сверить уже добавленные миграции `023_demand_to_revenue_os.sql` и `024_complete_demand_to_revenue_os.sql` с целевой моделью, не создавая дублирующие таблицы.
    - Уже добавлено: `business_accounts`, `business_members`, `business_locations`, `local_profiles`, `local_competitors`, `local_queries`, `local_visibility_checks`, `local_reviews`, `lost_leads`, `lead_outcomes`, `growth_tasks`, `local_weekly_reports`, `behavior_events`, `behavior_signals`, `agency_reports`, `result_loop_events`, `revenue_attribution`, `local_generated_pages`, `local_page_sections`, `local_page_result_reviews`, `channel_unit_economics`, `marketing_playbooks`, `marketing_review_queue`, `agency_clients`, `agency_report_exports`, `api_usage_events`.
-   - Нужно добить или явно отложить: `business_onboarding`, `local_channel_snapshots`, `review_requests`, `lead_touchpoints`, `repeat_touch_sequences`, `local_integrations`, `local_metric_snapshots`, `paid_visibility_snapshots`, `paid_competitor_offers`, `paid_landing_observations`, `local_page_opportunities`, `local_page_quality_checks`, `behavior_task_suggestions`, `service_order_events`, `service_order_payments`, `client_commitments`, `operator_audit_checklists`, `operator_audit_evidence`.
+   - Нужно добить или явно отложить: `business_onboarding`, `local_channel_snapshots`, `review_requests`, `lead_touchpoints`, `repeat_touch_sequences`, `local_integrations`, `local_metric_snapshots`, `paid_visibility_snapshots`, `paid_competitor_offers`, `paid_landing_observations`, `local_page_opportunities`, `local_page_quality_checks`, `behavior_task_suggestions`, `approval_policies`, `action_queue`, `autopilot_runs`, `action_audit_log`, `service_order_events`, `service_order_payments`, `client_commitments`, `operator_audit_checklists`, `operator_audit_evidence`.
 2. Проверить фактическое расширение `service_orders` из миграции `023`: lifecycle status, package_label, amount, payment_status, owner/operator, business_account_id, next_step, next_step_due_at, closed_reason, evidence. Если нужен `package_type`, добавить явно или убрать из UI/API.
 3. Добавить и проверить RLS/ownership для business accounts, филиалов и участников; особое внимание `SECURITY DEFINER public.is_business_member`.
 4. Развести роли owner/admin/marketer/neuroexpert_operator. Сейчас база знает `owner/operator/viewer`; если нужны admin/marketer, добавить без ломки текущих policies.
@@ -1545,7 +1636,24 @@ B2B-кабинет — обязательный ранний слой проду
    - повторяющиеся вопросы → задача создать FAQ/страницу/блок на карточке;
    - лид без статуса дольше SLA → задача на повторное касание;
    - page opportunity есть, но нет опубликованной страницы → задача на создание страницы.
-14. Сформировать формулы:
+14. Для documented Synthetic Audience Signals описать правила прогноза поведения:
+   - запускать прогноз только когда есть `demand source`, черновик страницы/оффера, CTA и исходный контекст ниши/города/услуги;
+   - моделировать сегменты клиентов, а не “среднего пользователя”: срочный клиент, осторожный сравнивающий, чувствительный к цене, доверяющий отзывам, B2B-покупатель, повторный клиент;
+   - сценарии: прочитал первый экран, сравнил с конкурентом, ищет цену, сомневается в доверии, выбирает способ связи, оставляет заявку или уходит;
+   - выход: `predicted_action`, `lead_intent_score`, `objections`, `missing_proof`, `cta_risk`, `recommended_test`, `confidence`;
+   - запрещено считать documented synthetic-прогноз фактом спроса, гарантией конверсии или заменой интервью, аналитики, звонков и заявок;
+   - после 14/28 дней обязательно сравнивать прогноз с `page_events`, `leads`, `bookings`, `lead_outcomes` и обновлять calibration.
+15. Для Autopilot описать data contract:
+   - `business_accounts.autopilot_mode`: `copilot`, `managed_autopilot`, `full_autopilot`;
+   - `approval_policies`: `business_account_id`, `channel`, `action_type`, `risk_level`, `allowed_auto`, `budget_limit`, `approver_role`, `created_by`, `updated_at`;
+   - `action_queue`: `business_account_id`, `growth_task_id`, `entity_type`, `entity_id`, `action_type`, `payload`, `risk_level`, `status`, `approval_required`, `approved_by`, `executed_at`, `evidence_url`, `rollback_note`, `error`;
+   - `autopilot_runs`: `business_account_id`, `mode`, `trigger`, `audit_report_id`, `started_at`, `completed_at`, `summary`, `next_actions`, `error`;
+   - `action_audit_log`: `action_id`, `actor_id`, `actor_role`, `event`, `before_snapshot`, `after_snapshot`, `created_at`.
+16. Сформировать правила риска для действий:
+   - `auto_safe`: внутренние drafts, отчёты, задачи, диагностика, quality checks, documented synthetic forecast, расчёт метрик;
+   - `approval_required`: публикации, изменение CTA/цен/офферов, ответы на отзывы, запросы отзывов, follow-up лидам, обновление внешних карточек;
+   - `manual_only`: юридически чувствительные тексты, медицинские/финансовые обещания, платежи, удаление данных, действия без официального доступа к площадке.
+17. Сформировать формулы:
    - Local Sales Index;
    - Map Visibility Score;
    - Review Health Score;
@@ -1554,19 +1662,28 @@ B2B-кабинет — обязательный ранний слой проду
    - Response SLA Score;
    - AI Visibility Score;
    - Local Page Opportunity Score;
-   - Behavior Opportunity Score.
-15. Стабилизировать уже добавленные worker jobs:
+   - Behavior Opportunity Score;
+   - documented Synthetic Lead Intent Score;
+   - documented Synthetic Objection Risk Score;
+   - documented Synthetic Calibration Score.
+18. Стабилизировать уже добавленные worker jobs:
    - `generate_daily_growth_tasks`;
    - `generate_local_weekly_report`;
    - `generate_b2b_page_draft`;
    - `analyze_behavior_signals`;
    - `calculate_unit_economics`;
    - `generate_agency_report`.
-16. Добить или отложить planned worker jobs, которых ещё нет в `apps/worker/src/index.ts`:
+19. Добить или отложить planned worker jobs, которых ещё нет в `apps/worker/src/index.ts`:
    - `score_page_opportunities`;
    - `validate_page_quality`;
    - `review_page_results`;
    - `detect_underperforming_pages`;
+   - `run_synthetic_audience_forecast`;
+   - `calibrate_synthetic_audience`;
+   - `plan_autopilot_actions`;
+   - `execute_safe_actions`;
+   - `request_action_approval`;
+   - `process_approved_actions`;
    - `detect_lost_leads`;
    - `send_client_action_digest`.
 
@@ -1576,6 +1693,9 @@ B2B-кабинет — обязательный ранний слой проду
 - Возможность страницы нельзя опубликовать без demand source, CTA, quality check и measurement.
 - По опубликованной странице можно сохранить review 14/28 дней и решение: оставить, усилить, объединить или архивировать.
 - Из первых событий поведения можно сформировать 3-7 задач роста без ручной интерпретации с нуля.
+- Documented Synthetic Audience Signals можно сохранить как гипотезу по странице/офферу/CTA и связать с последующей calibration по реальным событиям.
+- У business account можно выбрать `copilot`, `managed_autopilot` или `full_autopilot`, а важные действия попадают в approval flow.
+- `action_queue` связывает audit evidence, growth task, action, approval и subsequent result metric.
 - Все данные имеют источник, дату и confidence.
 - Paid Visibility Signals сохраняются без доступа к рекламным кабинетам и не запускают PPC-автоматизацию.
 - `service_orders` проходит путь от заявки до оплаты, onboarding, аудита и отчёта.
@@ -1606,10 +1726,12 @@ B2B-кабинет — обязательный ранний слой проду
 8. `/local-sales/pages` — страницы под локальный спрос: услуги, районы, FAQ, статусы, метрики.
 9. `/local-sales/behavior` — сигналы поведения: просмотры, клики, формы, звонки, уходы без заявки и задачи.
 10. `/local-sales/result-loop` — диагностика страниц: индексация, показы, клики, CTA, заявки, продажи, решение 14/28 дней.
-11. `/local-sales/tasks` — ежедневные задачи роста.
-12. `/local-sales/competitors` — конкуренты.
-13. `/local-sales/paid-visibility` — рекламные офферы конкурентов и gap-задачи.
-14. `/local-sales/report` — недельный и месячный отчёт.
+11. `/local-sales/synthetic-audience` — documented прогноз возражений, намерения и вероятного действия клиентов по странице, офферу или CTA; пометка `hypothesis`, confidence и связь с реальными событиями.
+12. `/local-sales/autopilot` — режим Copilot/Managed/Full, action queue, approvals, policies, выполненные действия и ошибки.
+13. `/local-sales/tasks` — ежедневные задачи роста.
+14. `/local-sales/competitors` — конкуренты.
+15. `/local-sales/paid-visibility` — рекламные офферы конкурентов и gap-задачи.
+16. `/local-sales/report` — недельный и месячный отчёт.
 
 Карточки dashboard:
 
@@ -1636,6 +1758,8 @@ B2B-кабинет — обязательный ранний слой проду
 - кнопки, которые видят, но не нажимают;
 - клики по телефону/маршруту/форме без продажи;
 - повторяющиеся вопросы клиентов;
+- documented synthetic-прогнозы по возражениям, доверию, цене, CTA и вероятному действию клиента;
+- visible расхождение synthetic-прогнозов с реальными кликами, заявками и продажами;
 - клики по звонку, маршруту, записи;
 - заявки;
 - AI-упоминания как дополнительный канал;
@@ -1652,8 +1776,11 @@ UX-правило:
 **Gate:**
 - B2B-клиент за 5 минут понимает, где теряет заявки.
 - Есть список задач с owner/deadline/status.
+- Есть очередь действий Autopilot: prepared, waiting_approval, approved, executed, failed, rejected.
+- Владелец может подтвердить важное действие из dashboard и увидеть evidence, expected effect и risk level.
 - Клиент видит, какие страницы стоит запускать первыми и какой спрос за ними стоит.
 - Клиент видит, какие действия пользователей показывают слабые места страницы, карточки или обработки заявки.
+- Documented Synthetic Audience Signals показаны как прогноз-гипотеза, а не как доказанный факт; есть связь с последующей калибровкой.
 - Paid visibility показан как компактный evidence-блок, без интерфейса управления рекламой.
 - Можно показать отчёт “что сделали за неделю и что изменилось”.
 - UI не ломает Solo dashboard, sidebar и новые routes `/today`, `/local-sales`, `/marketing-os`, `/agency`.
@@ -1673,7 +1800,7 @@ UX-правило:
 1. Выбрать одну стартовую вертикаль: стоматологии, косметологии/клиники эстетики или юридические фирмы.
 2. Обновить `/for-business`, `/pricing`, `/launch` под SaaS-first кабинет и новую ценовую лестницу.
 3. Добавить в `/launch` пакеты `local_sales_audit`, `local_sales_setup`, `local_sales_managed`.
-4. Подготовить dashboard-demo и шаблон аудита с блоками Trend Signals и Paid Visibility Signals:
+4. Подготовить dashboard-demo и шаблон аудита с блоками Trend Signals, Paid Visibility Signals и documented Synthetic Audience Signals:
    - краткая сводка;
    - Local Sales Index;
    - что растёт сейчас в нише/городе;
@@ -1691,6 +1818,7 @@ UX-правило:
    - рекламные офферы конкурентов и связанные gap-задачи;
    - страницы под услуги, районы, FAQ и вопросы клиентов;
    - поведение клиентов: просмотры, клики, заявки, уходы без действия и задачи из этих сигналов;
+   - прогноз синтетической аудитории: вероятные возражения, риск слабого CTA, недостающие доказательства, ожидаемый способ связи и recommended test;
    - задачи на неделю;
    - план на 30 дней;
    - ожидаемые метрики.
@@ -2074,10 +2202,10 @@ Worker jobs:
 
 ## Следующий шаг
 
-1. Пользователь оплачивает/пополняет Яндекс 360 и убирает viewing mode.
-2. После этого перезапускаем `supabase-auth`.
-3. Проверяем magic link и `/otp`.
-4. Применяем/проверяем миграции `021`-`024`, PostgREST schema reload, generated DB types и `jobs_type_check`.
-5. Проверяем `/api/health`, `/llms.txt`, `/robots.txt`, `/sitemap.xml`, `/sitemaps/*`, `pnpm aeo:smoke`.
-6. Закрываем PFO release-блокеры и executable bit deploy-скриптов.
-7. Если gate Этапа 1 проходит — переходим к AI/worker pipeline.
+1. Пока Яндекс 360 не оплачен, Этап 1 остаётся `BLOCKED`: magic link и новый пользовательский E2E не закрывать.
+2. Следующая сессия: выполнить technical stabilization gate без SMTP.
+3. Проверить/применить миграции `021`-`024`, PostgREST schema reload, generated DB types и `jobs_type_check`.
+4. Проверить `/api/health`, `/llms.txt`, `/robots.txt`, `/sitemap.xml`, `/sitemaps/*`, `pnpm aeo:smoke`.
+5. Закрыть PFO release-блокеры и executable bit deploy-скриптов.
+6. После оплаты Яндекс 360 вернуться к пунктам `[BLOCKED/WAITING]`: перезапустить `supabase-auth`, проверить magic link и `/otp`.
+7. Только если полный gate Этапа 1 проходит — переходить к AI/worker pipeline как следующему продуктовому этапу.

@@ -6,6 +6,8 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
+export type JsonRecord = { [key: string]: Json | undefined };
+
 export interface Database {
   public: {
     Tables: {
@@ -830,6 +832,270 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+      };
+      ai_crawler_logs: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      proof_of_human_assets: {
+        Row: {
+          id: string;
+          profile_id: string;
+          asset_type: string;
+          title: string;
+          issuer: string | null;
+          evidence_url: string | null;
+          status: string;
+          source: string;
+          collected_at: string;
+          confidence: number;
+          created_at: string;
+          updated_at: string;
+          verified_by: string | null;
+          verified_at: string | null;
+          rejection_reason: string | null;
+          expires_at: string | null;
+          limitations: Json;
+        };
+        Insert: {
+          id?: string;
+          profile_id: string;
+          asset_type: string;
+          title: string;
+          issuer?: string | null;
+          evidence_url?: string | null;
+          status?: string;
+          source?: string;
+          collected_at?: string;
+          confidence?: number;
+          created_at?: string;
+          updated_at?: string;
+          verified_by?: string | null;
+          verified_at?: string | null;
+          rejection_reason?: string | null;
+          expires_at?: string | null;
+          limitations?: Json;
+        };
+        Update: {
+          id?: string;
+          profile_id?: string;
+          asset_type?: string;
+          title?: string;
+          issuer?: string | null;
+          evidence_url?: string | null;
+          status?: string;
+          source?: string;
+          collected_at?: string;
+          confidence?: number;
+          created_at?: string;
+          updated_at?: string;
+          verified_by?: string | null;
+          verified_at?: string | null;
+          rejection_reason?: string | null;
+          expires_at?: string | null;
+          limitations?: Json;
+        };
+      };
+      demand_signals: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      business_accounts: {
+        Row: {
+          id: string;
+          owner_id: string;
+          name: string;
+          slug: string | null;
+          legal_name: string | null;
+          niche: string | null;
+          city: string | null;
+          website: string | null;
+          avg_check: number | null;
+          current_leads_month: number | null;
+          machine_profile: Json;
+          proof_of_business: Json;
+          local_sales_index: number;
+          status: string;
+          source: string;
+          target_channels: Json;
+          unit_economics: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          owner_id: string;
+          name: string;
+          slug?: string | null;
+          legal_name?: string | null;
+          niche?: string | null;
+          city?: string | null;
+          website?: string | null;
+          avg_check?: number | null;
+          current_leads_month?: number | null;
+          machine_profile?: Json;
+          proof_of_business?: Json;
+          local_sales_index?: number;
+          status?: string;
+          source?: string;
+          target_channels?: Json;
+          unit_economics?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          owner_id?: string;
+          name?: string;
+          slug?: string | null;
+          legal_name?: string | null;
+          niche?: string | null;
+          city?: string | null;
+          website?: string | null;
+          avg_check?: number | null;
+          current_leads_month?: number | null;
+          machine_profile?: Json;
+          proof_of_business?: Json;
+          local_sales_index?: number;
+          status?: string;
+          source?: string;
+          target_channels?: Json;
+          unit_economics?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      business_members: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      business_locations: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      local_profiles: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      local_competitors: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      local_queries: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      local_visibility_checks: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      local_reviews: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      lost_leads: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      lead_outcomes: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      growth_tasks: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      local_weekly_reports: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      behavior_events: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      behavior_signals: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      agency_reports: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      result_loop_events: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      revenue_attribution: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      local_generated_pages: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      local_page_sections: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      local_page_result_reviews: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      marketing_playbooks: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      marketing_playbook_versions: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      marketing_review_queue: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      channel_unit_economics: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      agency_clients: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      agency_report_exports: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
+      };
+      api_usage_events: {
+        Row: JsonRecord;
+        Insert: JsonRecord;
+        Update: JsonRecord;
       };
       cwv_metrics: {
         Row: {

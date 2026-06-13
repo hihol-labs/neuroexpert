@@ -19,6 +19,7 @@
 
 - LLM providers may fall back only through the shared provider abstraction and only with visible status/logging.
 - STT may fall back from Whisper to Yandex SpeechKit only through the transcription abstraction and only with visible status/logging.
+- Verification scripts may retry or use an explicit `curl` transport fallback when Node/undici cannot open a network connection, but the checked URL, status, content assertions, and failure output must remain visible; this is a verifier transport fallback, not a substitute for production behavior.
 - Worker jobs may retry and then fail explicitly; they must not write fake successful outputs.
 - If an external source is unavailable, API/UI responses must return an explicit degraded/unavailable status or cached data with freshness metadata.
 - Audit and scan flows may show partial results only when missing platforms are clearly marked.

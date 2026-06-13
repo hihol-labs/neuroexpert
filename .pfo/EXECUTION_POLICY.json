@@ -7,7 +7,9 @@
       {
         "id": "pfo-validate",
         "commandPrefix": "python3",
-        "allowedArgs": ["scripts/validate_project.py"],
+        "allowedArgs": [
+          "scripts/validate_project.py"
+        ],
         "risk": "low",
         "approval": "not-required"
       }
@@ -48,5 +50,20 @@
     "externalWrite": "explicit-user-confirmation",
     "secretRead": "explicit-user-confirmation",
     "dependencyInstall": "explicit-user-confirmation"
+  },
+  "contextPolicy": {
+    "defaultWorkflow": "sandbox-summary",
+    "largeOutputRule": "Analyze large tool, read, log, web, and HTTP outputs with code or scripts, then place only a bounded summary, key evidence, and artifact path into active chat context.",
+    "rawHttpRule": "Raw HTTP response bodies are blocked unless explicitly approved or summarized before entering context.",
+    "budgetGate": "pfo context-budget",
+    "searchIndex": ".codex-memory/context-index.json",
+    "resumeSnapshot": ".codex-memory/resume-snapshot.md"
+  },
+  "linkedPolicies": {
+    "permissionMatrix": ".pfo/PERMISSION_MATRIX.json",
+    "toolCapabilityRegistry": ".pfo/TOOL_CAPABILITY_REGISTRY.json",
+    "eventLog": ".codex-memory/events.jsonl",
+    "contextIndex": ".codex-memory/context-index.json",
+    "resumeSnapshot": ".codex-memory/resume-snapshot.md"
   }
 }

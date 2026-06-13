@@ -16,6 +16,7 @@
     "Node.js",
     "OpenAI",
     "PostgreSQL",
+    "Python",
     "React",
     "Supabase",
     "TailwindCSS",
@@ -27,36 +28,252 @@
   ],
   "availableCommands": [
     {
+      "name": "apps/bot:build",
+      "script": "build",
+      "cwd": "apps/bot",
+      "command": "pnpm --dir apps/bot build",
+      "commandArgv": [
+        "pnpm",
+        "--dir",
+        "apps/bot",
+        "build"
+      ]
+    },
+    {
+      "name": "apps/bot:dev",
+      "script": "dev",
+      "cwd": "apps/bot",
+      "command": "pnpm --dir apps/bot dev",
+      "commandArgv": [
+        "pnpm",
+        "--dir",
+        "apps/bot",
+        "dev"
+      ]
+    },
+    {
+      "name": "apps/bot:start",
+      "script": "start",
+      "cwd": "apps/bot",
+      "command": "pnpm --dir apps/bot start",
+      "commandArgv": [
+        "pnpm",
+        "--dir",
+        "apps/bot",
+        "start"
+      ]
+    },
+    {
+      "name": "apps/web:build",
+      "script": "build",
+      "cwd": "apps/web",
+      "command": "pnpm --dir apps/web build",
+      "commandArgv": [
+        "pnpm",
+        "--dir",
+        "apps/web",
+        "build"
+      ]
+    },
+    {
+      "name": "apps/web:dev",
+      "script": "dev",
+      "cwd": "apps/web",
+      "command": "pnpm --dir apps/web dev",
+      "commandArgv": [
+        "pnpm",
+        "--dir",
+        "apps/web",
+        "dev"
+      ]
+    },
+    {
+      "name": "apps/web:lint",
+      "script": "lint",
+      "cwd": "apps/web",
+      "command": "pnpm --dir apps/web lint",
+      "commandArgv": [
+        "pnpm",
+        "--dir",
+        "apps/web",
+        "lint"
+      ]
+    },
+    {
+      "name": "apps/web:start",
+      "script": "start",
+      "cwd": "apps/web",
+      "command": "pnpm --dir apps/web start",
+      "commandArgv": [
+        "pnpm",
+        "--dir",
+        "apps/web",
+        "start"
+      ]
+    },
+    {
+      "name": "apps/worker:build",
+      "script": "build",
+      "cwd": "apps/worker",
+      "command": "pnpm --dir apps/worker build",
+      "commandArgv": [
+        "pnpm",
+        "--dir",
+        "apps/worker",
+        "build"
+      ]
+    },
+    {
+      "name": "apps/worker:dev",
+      "script": "dev",
+      "cwd": "apps/worker",
+      "command": "pnpm --dir apps/worker dev",
+      "commandArgv": [
+        "pnpm",
+        "--dir",
+        "apps/worker",
+        "dev"
+      ]
+    },
+    {
+      "name": "apps/worker:start",
+      "script": "start",
+      "cwd": "apps/worker",
+      "command": "pnpm --dir apps/worker start",
+      "commandArgv": [
+        "pnpm",
+        "--dir",
+        "apps/worker",
+        "start"
+      ]
+    },
+    {
       "name": "aeo:crawlers",
-      "command": "pnpm aeo:crawlers"
+      "script": "aeo:crawlers",
+      "cwd": ".",
+      "command": "pnpm aeo:crawlers",
+      "commandArgv": [
+        "pnpm",
+        "aeo:crawlers"
+      ]
     },
     {
       "name": "aeo:smoke",
-      "command": "pnpm aeo:smoke"
+      "script": "aeo:smoke",
+      "cwd": ".",
+      "command": "pnpm aeo:smoke",
+      "commandArgv": [
+        "pnpm",
+        "aeo:smoke"
+      ]
     },
     {
       "name": "build",
-      "command": "pnpm build"
+      "script": "build",
+      "cwd": ".",
+      "command": "pnpm build",
+      "commandArgv": [
+        "pnpm",
+        "build"
+      ]
     },
     {
       "name": "clean",
-      "command": "pnpm clean"
+      "script": "clean",
+      "cwd": ".",
+      "command": "pnpm clean",
+      "commandArgv": [
+        "pnpm",
+        "clean"
+      ]
     },
     {
       "name": "dev",
-      "command": "pnpm dev"
+      "script": "dev",
+      "cwd": ".",
+      "command": "pnpm dev",
+      "commandArgv": [
+        "pnpm",
+        "dev"
+      ]
     },
     {
       "name": "lint",
-      "command": "pnpm lint"
+      "script": "lint",
+      "cwd": ".",
+      "command": "pnpm lint",
+      "commandArgv": [
+        "pnpm",
+        "lint"
+      ]
     },
     {
       "name": "test",
-      "command": "pnpm test"
+      "script": "test",
+      "cwd": ".",
+      "command": "pnpm test",
+      "commandArgv": [
+        "pnpm",
+        "test"
+      ]
     },
     {
       "name": "typecheck",
-      "command": "pnpm typecheck"
+      "script": "typecheck",
+      "cwd": ".",
+      "command": "pnpm typecheck",
+      "commandArgv": [
+        "pnpm",
+        "typecheck"
+      ]
+    },
+    {
+      "name": "packages/shared:build",
+      "script": "build",
+      "cwd": "packages/shared",
+      "command": "pnpm --dir packages/shared build",
+      "commandArgv": [
+        "pnpm",
+        "--dir",
+        "packages/shared",
+        "build"
+      ]
+    },
+    {
+      "name": "packages/shared:clean",
+      "script": "clean",
+      "cwd": "packages/shared",
+      "command": "pnpm --dir packages/shared clean",
+      "commandArgv": [
+        "pnpm",
+        "--dir",
+        "packages/shared",
+        "clean"
+      ]
+    },
+    {
+      "name": "packages/shared:dev",
+      "script": "dev",
+      "cwd": "packages/shared",
+      "command": "pnpm --dir packages/shared dev",
+      "commandArgv": [
+        "pnpm",
+        "--dir",
+        "packages/shared",
+        "dev"
+      ]
+    },
+    {
+      "name": "packages/shared:test",
+      "script": "test",
+      "cwd": "packages/shared",
+      "command": "pnpm --dir packages/shared test",
+      "commandArgv": [
+        "pnpm",
+        "--dir",
+        "packages/shared",
+        "test"
+      ]
     }
   ],
   "selectedGates": [],
@@ -65,40 +282,59 @@
   "contractGate": {
     "status": "PASS",
     "changedFiles": [
-      "ARCHITECTURE.md",
-      "MASTER_CONTEXT.md",
-      "PROGRESS.md",
-      "TASKS.md",
-      "TESTING.md"
+      "CURRENT_PLAN.md",
+      "packages/shared/src/types/database.ts",
+      "reports/pfo-security-review.md",
+      "reports/security-artifacts/candidate_ledger.jsonl",
+      "reports/security-artifacts/deep_review_input.csv",
+      "reports/security-artifacts/repository_coverage_ledger.md",
+      "reports/security-artifacts/work_ledger.jsonl",
+      "reports/stage-1.1-yandex-360-balance-and-smtp-restore-implementation-report.md",
+      "scripts/validate-aeo-site.js",
+      "scripts/validate_security_report.py"
     ],
     "runtimeChangedFiles": [
       ".codex-memory/STATE.json",
-      ".pfo/DATA_POLICY.md",
+      ".codex-memory/context-index.json",
+      ".codex-memory/events.jsonl",
+      ".codex-memory/resume-snapshot.md",
+      ".pfo/EXECUTION_POLICY.json",
       ".pfo/FALLBACK_POLICY.md",
-      ".pfo/FORBIDDEN_CHANGES.md",
-      ".pfo/GOLDEN_FLOWS.md",
-      ".pfo/PROJECT_CONTRACT.md",
+      ".pfo/PERMISSION_MATRIX.json",
       ".pfo/SCOPE_LOCK.md",
+      ".pfo/TOOL_CAPABILITY_REGISTRY.json",
+      ".pfo/UNIT_CONTEXT_MANIFEST.json",
+      ".pfo/VERIFICATION_CONTRACT.json",
       "AGENTS.md",
       "CODEX.md",
+      "HANDOFF.md",
+      "NEXT_STEP.md",
       "PFO_CONTRACT_GATE.json",
       "PFO_EXISTING_PROJECT_ANALYSIS.json",
       "PFO_REPORT.md"
     ],
     "riskClasses": [
-      "documentation_change"
+      "business_logic_change",
+      "data_source_change",
+      "deployment_change",
+      "provider_integration_change",
+      "security_change",
+      "user_facing_output_change"
     ],
     "missingContracts": [],
     "placeholderContracts": [],
+    "aliasTargetErrors": [],
     "blockers": [],
     "warnings": [],
     "gates": {
+      "aliasTargets": "PASS",
       "scopeLock": "PASS",
       "dataAuthenticity": "PASS",
       "goldenFlows": "PASS",
       "regressionContract": "PASS",
       "fallbackPolicy": "PASS",
       "diffRisk": "PASS",
+      "securityEvidence": "PASS",
       "noSilentSubstitution": "PASS",
       "executionPolicy": "PASS",
       "permissionMatrix": "PASS",
@@ -136,5 +372,5 @@
     "auth": "Supabase auth or project-specific auth",
     "deployment": "Docker Compose"
   },
-  "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 0 gate command(s)."
+  "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, Python, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 0 gate command(s)."
 }
