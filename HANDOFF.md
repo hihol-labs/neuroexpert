@@ -80,3 +80,18 @@ Existing project `neuroexpert` analyzed by Product Factory OS.
 ## First Action
 
 Technical stabilization is complete: PFO_CONTRACT_GATE PASS, formal checks passed with WSL PATH workaround, AEO smoke passed via Windows Node, deploy scripts are 755. Stage 1 remains externally BLOCKED until Yandex 360 is paid/viewing mode removed; then restart supabase-auth, verify /otp, and verify a real magic-link email.
+
+## 2026-06-14 Stage-2-safe Worker Notes
+
+- User explicitly allowed Stage-2-safe technical work while keeping Stage 1 login gate BLOCKED.
+- Production failed jobs were classified without new email registration:
+  - `pending=0`, `processing=0`;
+  - only failed type is `expand_query=754`;
+  - root cause is OpenAI quota/billing `429`;
+  - all failed jobs have unique `payload.question_id`;
+  - related questions already have `gap_analyzed_at` and `gap_score`;
+  - `sub_queries_total=0`, so fan-out enrichment is missing.
+- Do not blindly retry the 754 `expand_query` jobs until provider quota/fallback is fixed and LLM 429 backoff is in place.
+- Recovered one stale order/content mismatch: order `5c24dd48-5c62-419d-9963-74f047720132` was guarded-updated from `processing` to `published` because linked content package `01a08f05-f617-4101-8829-03ce901bc676` was already `published`.
+- Final verified domain sync after update: orders `pending=20`, `published=1`, `processing=0`; linked content/order sync `published/published=1`.
+- Report: `reports/stage-2-safe-worker-failed-jobs-report.md`.

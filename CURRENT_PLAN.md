@@ -1307,6 +1307,8 @@ Approval UX:
 
 **Цель:** фоновые jobs обрабатывают реальные данные без quota-loop и зависших очередей.
 
+**Stage-2-safe status от 2026-06-14:** по явному разрешению пользователя внешний блокер Яндекс 360/SMTP отложен, но Этап 1 login gate остаётся `BLOCKED` и не закрыт. Production failed jobs разобраны без новой email-регистрации: `pending=0`, `processing=0`, historical `failed=754` только для `expand_query`; причина единая — OpenAI quota/billing `429`, при env `LLM_PRIMARY_PROVIDER=claude`, `LLM_FALLBACK_PROVIDER=openai`, provider env present: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENAI_PROXY_URL`. Все 754 jobs имеют уникальный `payload.question_id`; связанные вопросы уже имеют `gap_analyzed_at` и `gap_score`, поэтому `find_gaps -> generate_orders` прошёл, но `sub_queries_total=0` и fan-out enrichment не завершён. Без фикса provider quota эти jobs не retry, иначе будет повторный 429-loop; fake/deterministic subqueries не создавать, чтобы не нарушать no-silent-substitution. Recoverable production mismatch закрыт: один order `processing` при уже `published` content package был guarded update переведён в `published`; итог orders: `pending=20`, `published=1`, `processing=0`, sync `orders/content_packages = published/published`. Подробности: `reports/stage-2-safe-worker-failed-jobs-report.md`.
+
 1. Разобраться с OpenAI quota: пополнить billing, заменить ключ или перевести `expand_query` на Claude/YandexGPT fallback.
 2. Очистить, перезапустить или архивировать failed/pending `expand_query` jobs после фикса quota.
 3. Исправить GigaChat env consistency: код должен использовать `GIGACHAT_CLIENT_ID` и `GIGACHAT_CLIENT_SECRET`, без старых проверок `GIGACHAT_API_KEY`.

@@ -653,6 +653,10 @@
       "to": "next-session",
       "reason": "blocked-external-yandex-360",
       "note": "Technical stabilization is complete: PFO_CONTRACT_GATE PASS, formal checks passed with WSL PATH workaround, AEO smoke passed via Windows Node, deploy scripts are 755. Stage 1 remains externally BLOCKED until Yandex 360 is paid/viewing mode removed; then restart supabase-auth, verify /otp, and verify a real magic-link email."
+    },
+    {
+      "event": "stage-2-safe worker failed jobs triage",
+      "note": "2026-06-14: User explicitly allowed Stage-2-safe technical work while Stage 1 login remains BLOCKED. Production jobs: pending=0, processing=0, failed expand_query=754, completed collect_demand=60/find_gaps=16/generate_orders=16/generate_content=1/validate_content=3. Root cause for failed expand_query is OpenAI quota/billing 429 after Claude primary failed and OpenAI fallback was used. Recovered one stale order/content mismatch by guarded update from processing to published where linked content was already published. Do not retry 754 expand_query jobs until provider quota/fallback and 429 backoff are fixed."
     }
   ],
   "artifactHashes": {},
@@ -695,7 +699,7 @@
   "completedModules": [],
   "failedValidations": [],
   "blockers": [],
-  "nextAction": "Start the next session by reading HANDOFF.md, then .codex-memory/STATE.json.",
+  "nextAction": "Stage 1 login remains BLOCKED by Yandex 360/SMTP. For Stage-2-safe worker work, first fix provider quota/fallback and 429 backoff, then explicitly replay or archive 754 failed expand_query jobs.",
   "pfoRuntime": {
     "status": "FULLY_ADOPTED",
     "methodologyPath": "/home/hihol/projects/product-factory-os",
@@ -807,8 +811,8 @@
   "learningProposals": [],
   "eventLog": {
     "path": ".codex-memory/events.jsonl",
-    "lastEventId": "event-20260613T191142Z-1",
-    "lastEventAt": "2026-06-13T19:11:42+00:00"
+    "lastEventId": "event-20260614T000000Z-stage2-worker",
+    "lastEventAt": "2026-06-14T00:00:00+03:00"
   },
   "executionPolicy": {
     "path": ".pfo/EXECUTION_POLICY.json",
