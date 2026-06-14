@@ -66,6 +66,15 @@ async function insertResultLoopEvent(payload: Row): Promise<void> {
   });
 }
 
+async function insertBehaviorSignal(payload: Row): Promise<void> {
+  const { error } = await supabase.from("behavior_signals").insert({
+    source: "worker",
+    confidence: 0.7,
+    ...payload,
+  });
+  if (error) throw error;
+}
+
 async function createTask(input: {
   businessId: string;
   ownerId?: string | null;
@@ -472,28 +481,26 @@ export async function handleAnalyzeBehaviorSignals(
     const phoneClicks = rows.filter((row) => row.event_type === "phone_click").length;
 
     if (views >= 30 && leads === 0) {
-      await supabase.from("behavior_signals").insert({
+      await insertBehaviorSignal({
         business_id: businessId,
         content_id: isUuid(key) ? key : null,
         signal_type: "views_without_leads",
         severity: views >= 100 ? "high" : "medium",
         summary: `Страница получила ${views} просмотров за 7 дней без заявки.`,
         recommended_action: "Усилить CTA, цену, FAQ, отзывы и форму заявки.",
-        source: "worker",
         confidence: 0.75,
       });
       created++;
     }
 
     if (phoneClicks >= 5 && leads === 0) {
-      await supabase.from("behavior_signals").insert({
+      await insertBehaviorSignal({
         business_id: businessId,
         content_id: isUuid(key) ? key : null,
         signal_type: "phone_without_sale",
         severity: "high",
         summary: `${phoneClicks} кликов по телефону без зафиксированной заявки.`,
         recommended_action: "Проверить пропущенные звонки, скрипт администратора и повторный контакт.",
-        source: "worker",
         confidence: 0.7,
       });
       created++;
