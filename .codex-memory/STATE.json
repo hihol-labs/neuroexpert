@@ -699,7 +699,7 @@
   "completedModules": [],
   "failedValidations": [],
   "blockers": [],
-  "nextAction": "Stage 1 login remains BLOCKED by Yandex 360/SMTP. For Stage-2-safe worker work, first fix provider quota/fallback and 429 backoff, then explicitly replay or archive 754 failed expand_query jobs.",
+  "nextAction": "Stage 1 login remains BLOCKED by Yandex 360/SMTP. For Stage-2-safe worker work, provider quota/fallback remains external BLOCKED; code-side GigaChat env consistency, LLM 429/backoff hardening, /api/health worker state visibility, and Marketing OS workflow contract are DONE. Demand-to-Revenue local precondition smoke is PARTIAL DONE via pnpm dtr:smoke; next is production/DB controlled smoke on an existing business_id, then replay/archive 754 expand_query jobs only after provider fix.",
   "pfoRuntime": {
     "status": "FULLY_ADOPTED",
     "methodologyPath": "/home/hihol/projects/product-factory-os",
@@ -811,8 +811,8 @@
   "learningProposals": [],
   "eventLog": {
     "path": ".codex-memory/events.jsonl",
-    "lastEventId": "event-20260614T000000Z-stage2-worker",
-    "lastEventAt": "2026-06-14T00:00:00+03:00"
+    "lastEventId": "event-20260614T133000Z-dtr-handler-smoke",
+    "lastEventAt": "2026-06-14T13:30:00+03:00"
   },
   "executionPolicy": {
     "path": ".pfo/EXECUTION_POLICY.json",

@@ -43,6 +43,11 @@ function weekStartEnd(): { start: string; end: string } {
   };
 }
 
+function isUuid(value: unknown): value is string {
+  return typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
 async function getBusiness(businessId: string): Promise<Row> {
   const { data, error } = await supabase
     .from("business_accounts")
@@ -469,7 +474,7 @@ export async function handleAnalyzeBehaviorSignals(
     if (views >= 30 && leads === 0) {
       await supabase.from("behavior_signals").insert({
         business_id: businessId,
-        content_id: key === "unknown" ? null : key,
+        content_id: isUuid(key) ? key : null,
         signal_type: "views_without_leads",
         severity: views >= 100 ? "high" : "medium",
         summary: `Страница получила ${views} просмотров за 7 дней без заявки.`,
@@ -483,7 +488,7 @@ export async function handleAnalyzeBehaviorSignals(
     if (phoneClicks >= 5 && leads === 0) {
       await supabase.from("behavior_signals").insert({
         business_id: businessId,
-        content_id: key === "unknown" ? null : key,
+        content_id: isUuid(key) ? key : null,
         signal_type: "phone_without_sale",
         severity: "high",
         summary: `${phoneClicks} кликов по телефону без зафиксированной заявки.`,

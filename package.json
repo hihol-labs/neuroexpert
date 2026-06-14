@@ -10,7 +10,8 @@
     "typecheck": "turbo build",
     "clean": "turbo clean",
     "aeo:smoke": "node scripts/validate-aeo-site.js",
-    "aeo:crawlers": "node scripts/analyze-ai-crawlers.js"
+    "aeo:crawlers": "node scripts/analyze-ai-crawlers.js",
+    "dtr:smoke": "pnpm --dir apps/worker build && node scripts/smoke-demand-to-revenue-handlers.mjs"
   },
   "devDependencies": {
     "turbo": "^2.3.3",

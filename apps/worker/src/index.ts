@@ -28,6 +28,13 @@ import {
 
 const POLL_INTERVAL = Number(process.env.WORKER_POLL_INTERVAL_MS) || 5000;
 const MAX_RETRIES = 3;
+const LLM_JOB_TYPES = new Set([
+  "find_gaps",
+  "expand_query",
+  "generate_content",
+  "validate_content",
+  "track_citations",
+]);
 
 type JobHandler = (payload: Record<string, unknown>) => Promise<unknown>;
 
@@ -132,14 +139,60 @@ async function processJob(job: Record<string, unknown>): Promise<void> {
     const errorMessage = err instanceof Error ? err.message : String(err);
     console.error(`[worker] ${jobType} (${jobId}) failed:`, errorMessage);
     const maxAttempts = (job.max_attempts as number) ?? MAX_RETRIES;
-    const shouldRetry = attempts < maxAttempts;
+    const retryPlan = getRetryPlan(jobType, errorMessage, attempts, maxAttempts);
     await supabase.from("jobs").update({
-      status: shouldRetry ? "pending" : "failed",
+      status: retryPlan.shouldRetry ? "pending" : "failed",
       error: errorMessage,
-      ...(shouldRetry ? {} : { completed_at: new Date().toISOString() }),
+      ...(retryPlan.scheduledAt ? { scheduled_at: retryPlan.scheduledAt } : {}),
+      ...(retryPlan.shouldRetry ? {} : { completed_at: new Date().toISOString() }),
     }).eq("id", jobId);
-    if (shouldRetry) console.log(`[worker] ${jobType} (${jobId}) will retry (${attempts}/${maxAttempts})`);
+    if (retryPlan.shouldRetry) {
+      console.log(`[worker] ${jobType} (${jobId}) will retry (${attempts}/${maxAttempts}) at ${retryPlan.scheduledAt}`);
+    }
   }
+}
+
+function getRetryPlan(
+  jobType: string,
+  errorMessage: string,
+  attempts: number,
+  maxAttempts: number,
+): { shouldRetry: boolean; scheduledAt?: string } {
+  if (attempts >= maxAttempts) return { shouldRetry: false };
+
+  const normalized = errorMessage.toLowerCase();
+  const isLLMJob = LLM_JOB_TYPES.has(jobType);
+  const isProviderBillingBlocked =
+    normalized.includes("insufficient_quota") ||
+    normalized.includes("quota") ||
+    normalized.includes("billing");
+
+  if (isLLMJob && isProviderBillingBlocked) {
+    return { shouldRetry: false };
+  }
+
+  const isRateLimited =
+    normalized.includes("429") ||
+    normalized.includes("rate limit") ||
+    normalized.includes("too many requests");
+
+  if (isLLMJob && isRateLimited) {
+    const delayMs = calculateBackoffMs(attempts);
+    return {
+      shouldRetry: true,
+      scheduledAt: new Date(Date.now() + delayMs).toISOString(),
+    };
+  }
+
+  return { shouldRetry: true };
+}
+
+function calculateBackoffMs(attempts: number): number {
+  const baseMs = Number(process.env.WORKER_LLM_RETRY_BASE_MS) || 5 * 60 * 1000;
+  const maxMs = Number(process.env.WORKER_LLM_RETRY_MAX_MS) || 60 * 60 * 1000;
+  const exponentialMs = Math.min(maxMs, baseMs * 2 ** Math.max(0, attempts - 1));
+  const jitterMs = Math.floor(Math.random() * Math.min(30_000, exponentialMs * 0.1));
+  return exponentialMs + jitterMs;
 }
 
 async function main(): Promise<void> {

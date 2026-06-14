@@ -41,11 +41,21 @@ export async function handleExpandQuery(payload: Record<string, unknown>): Promi
       buildQueryFanoutPrompt(question.question_text),
       { maxTokens: 512, temperature: 0.3 },
     );
-  } catch {
-    subqueries = await fallback.generateJSON<FanoutItem[]>(
-      buildQueryFanoutPrompt(question.question_text),
-      { maxTokens: 512, temperature: 0.3 },
+  } catch (primaryErr) {
+    console.error(
+      `[expand_query] Primary LLM failed for ${questionId}:`,
+      primaryErr instanceof Error ? primaryErr.message : primaryErr,
     );
+
+    try {
+      subqueries = await fallback.generateJSON<FanoutItem[]>(
+        buildQueryFanoutPrompt(question.question_text),
+        { maxTokens: 512, temperature: 0.3 },
+      );
+    } catch (fallbackErr) {
+      const fallbackMessage = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+      throw new Error(`expand_query LLM fanout failed after primary fallback: ${fallbackMessage}`);
+    }
   }
 
   if (!Array.isArray(subqueries) || subqueries.length === 0) {
