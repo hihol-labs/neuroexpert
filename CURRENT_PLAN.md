@@ -1309,22 +1309,23 @@ Approval UX:
 
 **Stage-2-safe status от 2026-06-14:** по явному разрешению пользователя внешний блокер Яндекс 360/SMTP отложен, но Этап 1 login gate остаётся `BLOCKED` и не закрыт. Production failed jobs разобраны без новой email-регистрации: `pending=0`, `processing=0`, historical `failed=754` только для `expand_query`; причина единая — OpenAI quota/billing `429`, при env `LLM_PRIMARY_PROVIDER=claude`, `LLM_FALLBACK_PROVIDER=openai`, provider env present: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENAI_PROXY_URL`. Все 754 jobs имеют уникальный `payload.question_id`; связанные вопросы уже имеют `gap_analyzed_at` и `gap_score`, поэтому `find_gaps -> generate_orders` прошёл, но `sub_queries_total=0` и fan-out enrichment не завершён. Без фикса provider quota эти jobs не retry, иначе будет повторный 429-loop; fake/deterministic subqueries не создавать, чтобы не нарушать no-silent-substitution. Recoverable production mismatch закрыт: один order `processing` при уже `published` content package был guarded update переведён в `published`; итог orders: `pending=20`, `published=1`, `processing=0`, sync `orders/content_packages = published/published`. Подробности: `reports/stage-2-safe-worker-failed-jobs-report.md`.
 
-1. Разобраться с OpenAI quota: пополнить billing, заменить ключ или перевести `expand_query` на Claude/YandexGPT fallback.
-2. Очистить, перезапустить или архивировать failed/pending `expand_query` jobs после фикса quota.
-3. Исправить GigaChat env consistency: код должен использовать `GIGACHAT_CLIENT_ID` и `GIGACHAT_CLIENT_SECRET`, без старых проверок `GIGACHAT_API_KEY`.
-4. Добавить backoff/rate-limit для LLM jobs, чтобы 429 не заливал очередь.
-5. Добавить видимость worker state: pending/failed/completed counts по типам jobs.
-6. Включить foundation Marketing OS без автопубликаций: `generation_framework`, роли генерации, playbook version и обязательный human review.
-7. Зафиксировать Marketing OS contract в workflow schema и playbooks: каждый workflow обязан иметь `demand_source_id`, `output_type`, `target_page_or_task`, `report_id`, `lead_metric_key` и `review_required`; если нет связи `demand source → page/answer/task → report → lead metric`, workflow не запускается как production-процесс и остаётся draft/research.
-8. Проверить Demand-to-Revenue worker handlers только после миграции `024`: enqueue и обработка `generate_daily_growth_tasks`, `generate_local_weekly_report`, `generate_b2b_page_draft`, `analyze_behavior_signals`, `calculate_unit_economics`, `generate_agency_report`.
-9. Для новых jobs зафиксировать failure mode: отсутствие business data не должно валить worker loop, а должно давать понятный failed job с причиной.
+1. `[BLOCKED/PROVIDER]` Разобраться с OpenAI quota: пополнить billing, заменить ключ или перевести `expand_query` на Claude/YandexGPT fallback. Статус: причина 754 failed jobs подтверждена как OpenAI quota/billing `429`, но provider quota/fallback ещё не исправлены.
+2. `[WAITING ON #1]` Очистить, перезапустить или архивировать failed/pending `expand_query` jobs после фикса quota. Статус: очередь классифицирована (`pending=0`, `processing=0`, `failed expand_query=754`), но replay/archive намеренно не выполнен до фикса provider quota/backoff.
+3. `[TODO]` Исправить GigaChat env consistency: код должен использовать `GIGACHAT_CLIENT_ID` и `GIGACHAT_CLIENT_SECRET`, без старых проверок `GIGACHAT_API_KEY`.
+4. `[TODO]` Добавить backoff/rate-limit для LLM jobs, чтобы 429 не заливал очередь.
+5. `[TODO]` Добавить видимость worker state: pending/failed/completed counts по типам jobs. Статус: counts сняты вручную в отчёте, но UI/API visibility ещё не реализована.
+6. `[PARTIAL]` Включить foundation Marketing OS без автопубликаций: `generation_framework`, роли генерации, playbook version и обязательный human review. Статус: foundation/таблицы/playbooks присутствуют после stabilization gate, но production workflow gate и human-review enforcement ещё не закрыты.
+7. `[TODO]` Зафиксировать Marketing OS contract в workflow schema и playbooks: каждый workflow обязан иметь `demand_source_id`, `output_type`, `target_page_or_task`, `report_id`, `lead_metric_key` и `review_required`; если нет связи `demand source → page/answer/task → report → lead metric`, workflow не запускается как production-процесс и остаётся draft/research.
+8. `[TODO]` Проверить Demand-to-Revenue worker handlers только после миграции `024`: enqueue и обработка `generate_daily_growth_tasks`, `generate_local_weekly_report`, `generate_b2b_page_draft`, `analyze_behavior_signals`, `calculate_unit_economics`, `generate_agency_report`.
+9. `[TODO]` Для новых jobs зафиксировать failure mode: отсутствие business data не должно валить worker loop, а должно давать понятный failed job с причиной.
+10. `[DONE]` Закрыть recoverable production mismatch из Stage-2-safe triage. Статус: один stale order `processing` при уже `published` content package guarded update переведён в `published`; итог orders `pending=20`, `published=1`, `processing=0`.
 
 **Gate:**
-- Worker logs не показывают повторяющийся quota-loop.
-- Failed queue понятна: jobs либо retry, либо archived.
-- Новый flow `collect_demand -> find_gaps -> generate_orders` проходит для тестовой ниши.
-- Marketing OS workflow без связи со спросом, задачей/страницей, отчётом и lead metric не может пройти human review в production.
-- Новые Demand-to-Revenue job types не попадают в `Unknown job type`, а ошибки данных видны в `jobs.error`.
+- `[PARTIAL]` Worker logs не показывают повторяющийся quota-loop. Последняя активная очередь пуста, но 754 historical `expand_query` failures остаются до provider fix.
+- `[PARTIAL]` Failed queue понятна: причина и объём зафиксированы, но jobs ещё не retry/archive.
+- `[PARTIAL]` Новый flow `collect_demand -> find_gaps -> generate_orders` проходит для существующих production данных; controlled fresh test niche ещё не прогнан.
+- `[TODO]` Marketing OS workflow без связи со спросом, задачей/страницей, отчётом и lead metric не может пройти human review в production.
+- `[TODO]` Новые Demand-to-Revenue job types не попадают в `Unknown job type`, а ошибки данных видны в `jobs.error`.
 
 ### Этап 3 — Core E2E для эксперта
 
