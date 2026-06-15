@@ -6,7 +6,7 @@ node: "stage-1.1-yandex-360-balance-and-smtp-restore"
 from_role: "codex"
 to_role: "next-session"
 reason: "blocked-external-yandex-360"
-created: "2026-06-13T19:11:42+00:00"
+created: "2026-06-15T12:00:00+03:00"
 tags:
   - pfo/handoff
   - pfo/memory
@@ -14,13 +14,13 @@ tags:
 
 # Handoff
 
-Created: 2026-06-13T19:11:42+00:00
+Created: 2026-06-15T12:00:00+03:00
 From: codex
 To: next-session
 Reason: blocked-external-yandex-360
 
 > [!todo] First Action
-> Technical stabilization is complete: PFO_CONTRACT_GATE PASS, formal checks passed with WSL PATH workaround, AEO smoke passed via Windows Node, deploy scripts are 755. Stage 1 remains externally BLOCKED until Yandex 360 is paid/viewing mode removed; then restart supabase-auth, verify /otp, and verify a real magic-link email.
+> Stage 1 remains externally BLOCKED until Yandex 360 is paid/viewing mode removed. Stage-2-safe worker/DTR smoke is done. Optional web deploy for richer `/api/health` is deferred until a reliable production HTTPS/SSH verification channel is available.
 
 
 ## Current State
@@ -79,7 +79,10 @@ Existing project `neuroexpert` analyzed by Product Factory OS.
 
 ## First Action
 
-Technical stabilization is complete: PFO_CONTRACT_GATE PASS, formal checks passed with WSL PATH workaround, AEO smoke passed via Windows Node, deploy scripts are 755. Stage 1 remains externally BLOCKED until Yandex 360 is paid/viewing mode removed; then restart supabase-auth, verify /otp, and verify a real magic-link email.
+1. Read `AGENTS.md`, then `CURRENT_PLAN.md`.
+2. Do not close Stage 1 login gate until Yandex 360/SMTP is restored and a real magic-link email is verified.
+3. Do not replay/archive the 754 failed `expand_query` jobs until provider quota/fallback is fixed.
+4. If continuing the optional Stage-2-safe web sync, first restore/verify production access, then check whether `/api/health` already exposes `worker.totals`, `worker.by_type`, `worker.scheduled_retries`, and `sample_size`. Deploy web only if a post-deploy smoke channel is available.
 
 ## 2026-06-14 Stage-2-safe Worker Notes
 
@@ -95,3 +98,15 @@ Technical stabilization is complete: PFO_CONTRACT_GATE PASS, formal checks passe
 - Recovered one stale order/content mismatch: order `5c24dd48-5c62-419d-9963-74f047720132` was guarded-updated from `processing` to `published` because linked content package `01a08f05-f617-4101-8829-03ce901bc676` was already `published`.
 - Final verified domain sync after update: orders `pending=20`, `published=1`, `processing=0`; linked content/order sync `published/published=1`.
 - Report: `reports/stage-2-safe-worker-failed-jobs-report.md`.
+
+## 2026-06-15 Stage-2-safe Web Deploy Check
+
+- Local HEAD is `70046095d990b569962b333d191845423df5bbaf`; local web code already includes richer `/api/health` worker totals/by_type shape.
+- No production deploy/restart was performed.
+- Reason: this Codex environment could not establish a reliable verification channel:
+  - `neuroexpertise.ru` resolved to `198.18.1.147` via `MantaRay Tun`;
+  - HTTPS healthchecks timed out;
+  - direct `--resolve neuroexpertise.ru:443:185.221.213.104` returned no response body;
+  - TCP 443/22 to `185.221.213.104` succeeded;
+  - WSL SSH `hostland` connected, then failed at `kex_exchange_identification: Connection closed by remote host`.
+- Status recorded in `.codex-memory/events.jsonl` as `event-20260615T120000Z-stage2-web-deploy-deferred`.

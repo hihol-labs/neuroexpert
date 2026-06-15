@@ -699,7 +699,7 @@
   "completedModules": [],
   "failedValidations": [],
   "blockers": [],
-  "nextAction": "Stage 1 login remains BLOCKED by Yandex 360/SMTP. Stage-2-safe worker hardening is DONE through Demand-to-Revenue production/DB controlled smoke: all 6 DTR jobs completed on fixture a4a9a5ad-39c2-47af-a2c5-d6f520ac0f92 after targeted worker rebuild; expand_query failed=754 remains intentionally untouched. Next: fix provider quota/fallback before replay/archive of expand_query; optionally deploy/sync web if the richer /api/health worker totals/by_type shape is needed on production.",
+  "nextAction": "Stage 1 login remains BLOCKED by Yandex 360/SMTP. Stage-2-safe worker hardening is DONE through Demand-to-Revenue production/DB controlled smoke: all 6 DTR jobs completed on fixture a4a9a5ad-39c2-47af-a2c5-d6f520ac0f92 after targeted worker rebuild; expand_query failed=754 remains intentionally untouched. Optional web deploy for richer /api/health is deferred because current environment cannot get a reliable production HTTPS/SSH verification channel: DNS goes through MantaRay 198.18.x.x, direct production IP HTTP has no response, and SSH closes at kex_exchange_identification. Next: restore/verify production access, then re-check /api/health shape and deploy web only with post-deploy smoke; fix provider quota/fallback before any expand_query replay/archive.",
   "pfoRuntime": {
     "status": "FULLY_ADOPTED",
     "methodologyPath": "/home/hihol/projects/product-factory-os",
@@ -811,8 +811,8 @@
   "learningProposals": [],
   "eventLog": {
     "path": ".codex-memory/events.jsonl",
-    "lastEventId": "event-20260614T232600Z-dtr-production-smoke",
-    "lastEventAt": "2026-06-14T23:26:00+03:00"
+    "lastEventId": "event-20260615T120000Z-stage2-web-deploy-deferred",
+    "lastEventAt": "2026-06-15T12:00:00+03:00"
   },
   "executionPolicy": {
     "path": ".pfo/EXECUTION_POLICY.json",
