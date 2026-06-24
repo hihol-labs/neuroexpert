@@ -9,6 +9,7 @@ export * from "./prompts/content-gen.js";
 export * from "./prompts/query-fanout.js";
 export * from "./prompts/marketing-os.js";
 export * from "./utils/slug.js";
+export * from "./authz.js";
 export * from "./marketing-os.js";
 export * from "./demand-to-revenue.js";
 // NOTE: ./http/telegram-fetch.js is NOT exported from the main index because it imports

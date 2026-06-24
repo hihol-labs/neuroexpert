@@ -127,7 +127,7 @@ MVP собран на монорепо (Turborepo + pnpm; `apps/web` Next.js 14,
 | 4 | Dashboard breaks | ⚪ TODO |
 | 5 | Монетизация и ЮKassa | ⚪ TODO (зависит от одобрения ЮKassa) |
 | 6 | Data authenticity и demand quality | ⚪ TODO |
-| 7 | **Security и trust** | 🟠 TODO — найдены критические уязвимости (SEC-1…5, см. аудит) |
+| 7 | **Security и trust** | 🟡 SEC-1…5 исправлены в коде (2026-06-24, не задеплоено); остальной hardening TODO |
 | 8 | Test coverage | ⚪ TODO (0% покрытия формул подтверждено) |
 | 9 | Community warm-up | ⚪ TODO (маркетинг) |
 | 10 | Promotion readiness | ⚪ TODO |
@@ -216,7 +216,7 @@ MVP собран на монорепо (Turborepo + pnpm; `apps/web` Next.js 14,
 
 ### Обновлённая последовательность Этапа 11 (по результатам аудита)
 
-1. **Этап 11.0 — Security hardening (P0):** закрыть SEC-1…SEC-5. Без этого `/api/v1/*` нельзя выставлять наружу и нельзя начинать B2B-пилот.
+1. **Этап 11.0 — Security hardening (P0): ✅ исправлено в коде 2026-06-24 (не задеплоено).** SEC-1 (`local-competitors` scope по доступным бизнесам), SEC-2 (`ai-visibility` проверка `expert_id`/`business_id`), SEC-5 (`review-queue` PATCH — убран null-пропуск). SEC-3 (`playbooks` POST — admin-гейт по `SMTP_ADMIN_EMAIL`, модель «общая библиотека»), SEC-4 resolved-by-design (read-only для всех залогиненных). Чистые authz-предикаты вынесены в `packages/shared/src/authz.ts` + 12 юнит-тестов. Деплой — при следующем рабочем окне (прод-канал был недоступен).
 2. **Этап 11.1 — Correctness (P0):** BUG-1…BUG-4 (включая дописать 4 правила `analyze_behavior_signals`).
 3. **Этап 11.2 — Honest metrics (P1):** реализовать 6 нон-synthetic формул, вынести `buildLocalSalesOverview()` в shared, убрать `avg()`-эрзац и дубль, добавить тесты.
 4. **Этап 11.3 — Data integrity (P1):** `supabase gen types` (убрать 24 JsonRecord), `collected_at` явно, добить/переименовать колонки `growth_tasks`, allowlist-валидация payload.
@@ -1753,6 +1753,48 @@ Approval UX:
 
 Принцип: клиент видит продуктовый кабинет, а команда НейроЭксперт на старте может заполнять часть данных вручную, через ссылки, CSV, выгрузки и controlled research.
 
+#### Аудит-статус 19 пунктов (2026-06-24)
+
+> Построчный аудит каждого из 19 пунктов плана против фактического кода (миграции `023`/`024`, `apps/web/app/api/local-sales/*` и смежные API, `apps/worker/src/jobs/demand-to-revenue-os.ts`, `packages/shared/src/demand-to-revenue.ts`, RLS, `database.ts`). Легенда: ✅ готово · 🟡 частично · ❌ не сделано/отложено. Детальная приоритизация (P0/P1/P2) — в разделе «Глубокий аудит Этапа 11» выше.
+
+| # | Пункт плана | Статус | Находка |
+|---|---|:---:|---|
+| 1 | Сверить миграции `023`/`024` с целевой моделью, без дублей | ✅ | 26 целевых таблиц добавлены, дублирующих не создано, порядок миграций корректен (forward-ref FK не обнаружены). ~22 таблицы (Autopilot/Synthetic/paid/onboarding) явно отложены — само решение «добить или отложить» выполнено. |
+| 2 | Расширение `service_orders` из `023` (lifecycle, amount, owner…) | ✅ | `status`, `package_label`, `amount`, `payment_status`, `owner/operator`, `business_account_id`, `next_step*`, `closed_reason`, `evidence` присутствуют. `service_orders` создаётся в `020`, `ALTER` в `023` — порядок верен. Открыто: `package_type` решить (добавить явно или убрать из UI/API). |
+| 3 | RLS/ownership + `SECURITY DEFINER is_business_member` | ✅ | RLS включён на всех 29 таблицах `023`/`024`; `is_business_member` — `SECURITY DEFINER` + `search_path=public`. ⚠️ DB-уровень корректен, но API-слой обходит tenancy → **SEC-1, SEC-2, SEC-5**. |
+| 4 | Роли `owner/admin/marketer/neuroexpert_operator` | 🟡 | База знает только `owner/operator/viewer`; `admin`/`marketer` не разведены. Решить: добавить роли без ломки текущих policies или зафиксировать тройку. |
+| 5 | Generated DB types после `021`-`024` | 🟡 | 24 из 28 таблиц `022`-`024` — `Row: JsonRecord`-заглушки (типизированы только `marketing_workflow_runs`, `page_quality_checks`, `proof_of_human_assets`, `business_accounts`). Прогнать `supabase gen types`, убрать `as JsonRecord` касты. |
+| 6 | Единый server-side helper-вход | 🟡 | `apps/web/lib/demand-to-revenue-server.ts` есть, но `getAdmin()/getUser()/hasPermission()/toNumber()` продублированы в `v1/local-demand`, `v1/machine-profiles`, `marketing-os/workflows`. `getAdmin()` без singleton; `assertBusinessAccess` — 2 запроса вместо JOIN. |
+| 7 | Стабилизировать 13 API-эндпоинтов | ✅ | Все 13 существуют и являются полноценными реализациями (не заглушки). ⚠️ Найдены 4 tenancy-уязвимости + 1 авторизационный пропуск → **SEC-1…5** (P0, закрыть до экспонирования `/api/v1/*`). |
+| 8 | Судьба старых planned API (заменены `/api/local-sales`?) | 🟡 | Большинство консолидировано в `/api/local-sales` (14 actions), но явного реестра «оставлен/заменён» для `/api/business-onboarding`, `/api/service-orders/*`, `/api/review-requests`, `/api/lost-leads`, `/api/repeat-touchpoints`, `/api/paid-visibility`, `/api/behavior-*` нет — зафиксировать. |
+| 9 | `source/collected_at/confidence/is_manual` во всех снимках | ✅ | Все 6 сквозных полей data-policy (`source/source_url/collected_at/confidence/is_manual/raw_payload`) присутствуют в схеме. ⚠️ `collected_at` не пишется явно в `channel_unit_economics` и `proof_of_human_assets` (зависит от DB-default) — закрыть в 11.3. |
+| 10 | Paid Visibility — запрет рекламных кабинетов | ✅ | PPC-автоматизация отсутствует, gate соблюдён (только публичная выдача / ручной аудит / ссылки / скриншоты). Таблицы снимков (`paid_visibility_snapshots` и др.) отложены — сам принцип зафиксирован. |
+| 11 | `growth_tasks` daily cadence (9 полей) | 🟡 | Есть 3 из 9 (`priority`, `owner_id`, `status`). Нет `task_date`, `proof_url`, `metric_key`, `paid_signal_id`; `deadline_at`/`expected_effect` существуют как `due_at`/`expected_impact` — решить: переименовать в плане или добавить колонки. |
+| 12 | B2B Page Generator — жизненный цикл страницы | ✅ | Генератор работает; review-gate через `marketing_review_queue`; цепочка черновик → quality check → публикация присутствует. Долг: naming `local_page_quality_checks` vs `page_quality_checks`, читаемый slug (**BUG-4**), расширить решения review 14/28. |
+| 13 | Behavior Signals → задачи (6 правил) | 🟡 | Реализованы 2 из 6 (`views_without_leads`, частично `phone_click`). Нет: cta_click→форма, route_click→скрипт, повтор вопросов→FAQ, лид>SLA→касание, page-opportunity→страница (**BUG-3**). |
+| 14 | Synthetic Audience — правила прогноза | ❌ | Нет таблиц, формул и jobs. Отложено в Этап 11b (не раньше доказанного B2B-traction). |
+| 15 | Autopilot — data contract | ❌ | Нет таблиц `approval_policies`/`action_queue`/`autopilot_runs`/`action_audit_log` и поля `autopilot_mode`. Отложено в 11b. |
+| 16 | Правила риска действий (`auto_safe`/`approval`/`manual`) | ❌ | Риск-классы действий не реализованы (часть Autopilot-контура). Отложено в 11b. |
+| 17 | 12 формул (Local Sales Index … Synthetic Calibration) | 🟡 | Реализованы 2 (`calculateLocalSalesIndex` ✓, `estimateLostRevenue` ✓); AI Visibility — inline-дубль без clamp. 9 отсутствуют (Map Visibility, Review Health, Avito Opportunity, Response SLA, Local Page Opportunity, Behavior Opportunity + 3× Synthetic). UI/API считают метрики примитивным `avg()`, продублированным в `page.tsx` и `route.ts`. 0% тестов. |
+| 18 | Стабилизировать 6 worker jobs | ✅ | Все 6 зарегистрированы и исполняются, общий worker loop не падает. Долг корректности: **BUG-1** (`calculate_unit_economics` глушит ошибку `upsert`), **BUG-2** (`generate_local_weekly_report` без фильтра по неделе), **BUG-4** (`generate_b2b_page_draft`). |
+| 19 | 12 planned worker jobs (добить или отложить) | ❌ | 0 из 12 реализованы (`score_page_opportunities` … `send_client_action_digest`). Отложено в 11b. |
+
+**Итог: 8 ✅ готово · 7 🟡 частично · 4 ❌ отложено.**
+
+#### Блок SEC-1…5 (P0 — БЛОКЕР перед B2B-пилотом и экспонированием `/api/v1/*`)
+
+Дыры позволяют любому пользователю с валидным API-ключом или сессией читать/перезаписывать чужие данные. Закрыть в **Этапе 11.0** до продаж и до публичного доступа к Knowledge API.
+
+| ID | Где | Проблема | Фикс |
+|---|---|---|---|
+| **SEC-1** | `v1/local-competitors` (`route.ts:37`) | `business_id` из query не сверяется с владельцем ключа — любой ключ читает конкурентную разведку любого бизнеса | фильтр/проверка `owner_id = auth.ownerId` или `assertBusinessAccess` |
+| **SEC-2** | `v1/ai-visibility` (`route.ts:34-54`) | `expert_id` и `business_id` не проверяются на принадлежность владельцу ключа | сверять `expert_id === auth.ownerId` и `assertBusinessAccess(business_id)` |
+| **SEC-3** | `marketing-os/playbooks` POST (`route.ts:36-48`) | `upsert` по `key` без владельца — пользователь A перезапишет playbook пользователя B | добавить `owner_id` в таблицу, включить в `onConflict` |
+| **SEC-4** | `marketing-os/playbooks` GET (`route.ts:8-16`) | возвращает все playbooks без фильтра по владельцу | `.eq("owner_id", user.id)` либо `is_public` |
+| **SEC-5** | `marketing-os/review-queue` PATCH (`route.ts:58`) | при `owner_id != me && business_id == null` авторизация пропускается | `if (item.owner_id !== user.id) return Forbidden` без исключения для `null` |
+
+Сопутствующие P0-баги корректности (Этап 11.1): **BUG-1** глушение ошибки `upsert` в `calculate_unit_economics`; **BUG-2** `generate_local_weekly_report` без фильтра по неделе (кумулятив вместо недельного); **BUG-3** 2 из 6 правил `analyze_behavior_signals`; **BUG-4** непробрасываемые ошибки вставки `local_page_sections` + нечитаемый slug. Полные формулировки и приоритизация — в разделе «Глубокий аудит Этапа 11 от 2026-06-23».
+
 1. Сверить уже добавленные миграции `023_demand_to_revenue_os.sql` и `024_complete_demand_to_revenue_os.sql` с целевой моделью, не создавая дублирующие таблицы.
    - Уже добавлено: `business_accounts`, `business_members`, `business_locations`, `local_profiles`, `local_competitors`, `local_queries`, `local_visibility_checks`, `local_reviews`, `lost_leads`, `lead_outcomes`, `growth_tasks`, `local_weekly_reports`, `behavior_events`, `behavior_signals`, `agency_reports`, `result_loop_events`, `revenue_attribution`, `local_generated_pages`, `local_page_sections`, `local_page_result_reviews`, `channel_unit_economics`, `marketing_playbooks`, `marketing_review_queue`, `agency_clients`, `agency_report_exports`, `api_usage_events`.
    - Нужно добить или явно отложить: `business_onboarding`, `local_channel_snapshots`, `review_requests`, `lead_touchpoints`, `repeat_touch_sequences`, `local_integrations`, `local_metric_snapshots`, `paid_visibility_snapshots`, `paid_competitor_offers`, `paid_landing_observations`, `local_page_opportunities`, `local_page_quality_checks`, `behavior_task_suggestions`, `approval_policies`, `action_queue`, `autopilot_runs`, `action_audit_log`, `service_order_events`, `service_order_payments`, `client_commitments`, `operator_audit_checklists`, `operator_audit_evidence`.
@@ -2387,3 +2429,4 @@ Worker jobs:
 - **2026-06-12** — Synthetic Audience Signals и Local Sales OS Autopilot (Copilot/Managed/Full) — оба как будущие слои, разработка не раньше Этапов 11-16.
 - **2026-06-13/14/15** — Technical stabilization gate без SMTP; разбор 754 failed `expand_query` (OpenAI quota); Stage-2-safe worker hardening; Stage 1-safe auth UX.
 - **2026-06-23** — Глубокий аудит Этапа 11 (найдены SEC-1…5 + баги корректности, см. раздел аудита). Консолидация документации: единый `CURRENT_PLAN.md`, операционка → `OPERATIONS.md`, `CLAUDE.md` → тонкий указатель, удалены `LAUNCH_PLAN.md` и `AGENTS.md`.
+- **2026-06-24** — В раздел «Этап 11» добавлена детальная таблица аудита (19 пунктов × статус × находка + блок SEC-1…5). **Этап 11.0 Security исправлен в коде** (не задеплоено): SEC-1/2/5 (tenancy в `v1/local-competitors`, `v1/ai-visibility`, `marketing-os/review-queue`), SEC-3 (admin-гейт POST `playbooks`), SEC-4 resolved-by-design. Чистые authz-предикаты → `packages/shared/src/authz.ts` + 12 тестов. Параллельно с активным внешним блоком Этапа 1 (Яндекс 360), т.к. фиксы не требуют SMTP/login. `/review`: PASSED_WITH_WARNINGS.

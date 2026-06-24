@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { reviewMutationDecision } from "shared";
 import {
   assertBusinessAccess,
   getAccessibleBusinessIds,
@@ -18,6 +19,8 @@ export async function GET(request: NextRequest) {
   const businessIds = await getAccessibleBusinessIds(user.id);
   const admin = getAdmin();
 
+  // user.id и businessIds — UUID из Supabase Auth/БД (формат [0-9a-f-]{36}), безопасны для PostgREST .or().
+  // Если источник id сменится — добавить валидацию формата перед интерполяцией.
   let query = admin
     .from("marketing_review_queue")
     .select("*")
@@ -55,7 +58,12 @@ export async function PATCH(request: NextRequest) {
     .single();
 
   if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (item.owner_id !== user.id && item.business_id) {
+  // Не-владелец проходит только при доказанном доступе к бизнесу; item без business_id → 403 (была дыра SEC-5).
+  const decision = reviewMutationDecision(item.owner_id, user.id, item.business_id);
+  if (decision === "forbid") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  if (decision === "needs_business_check") {
     const access = await assertBusinessAccess(item.business_id, user.id);
     if (!access) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

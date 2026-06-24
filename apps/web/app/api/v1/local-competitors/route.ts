@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { validateApiKey } from "@/lib/api-auth";
-import { getAdmin } from "@/lib/demand-to-revenue-server";
-
-function hasPermission(permissions: unknown, accepted: string[]): boolean {
-  const list = Array.isArray(permissions)
-    ? permissions.map(String)
-    : typeof permissions === "string"
-      ? permissions.split(",").map((item) => item.trim())
-      : [];
-  return list.includes("all") || accepted.some((item) => list.includes(item));
-}
+import { scopeBusinessIds } from "shared";
+import { hasPermission, validateApiKey } from "@/lib/api-auth";
+import { getAccessibleBusinessIds, getAdmin } from "@/lib/demand-to-revenue-server";
 
 export async function GET(request: NextRequest) {
   const auth = await validateApiKey(request);
@@ -26,15 +18,33 @@ export async function GET(request: NextRequest) {
   const businessId = params.get("business_id");
   const limit = Math.min(parseInt(params.get("limit") || "30", 10), 100);
   const offset = parseInt(params.get("offset") || "0", 10);
+
+  // Tenancy: ограничиваем выдачу бизнесами, к которым у владельца ключа есть доступ.
+  const accessibleIds = await getAccessibleBusinessIds(auth.ownerId!);
+  const { allowed, scope } = scopeBusinessIds(businessId, accessibleIds);
+  if (businessId && !allowed) {
+    return NextResponse.json({ error: "Forbidden: business not accessible" }, { status: 403 });
+  }
+  if (scope.length === 0) {
+    return NextResponse.json({
+      data: [],
+      pagination: { total: 0, limit, offset, has_more: false },
+      meta: {
+        description: "Local competitor intelligence with channels, offer gaps, trust signals and AI visibility.",
+        updated_at: new Date().toISOString(),
+      },
+    });
+  }
+
   const admin = getAdmin();
 
   let query = admin
     .from("local_competitors")
     .select("id, business_id, name, website, city, channels, strengths, weaknesses, offer_summary, trust_signals, ai_visibility_score, source, source_url, collected_at, confidence", { count: "exact" })
+    .in("business_id", scope)
     .order("ai_visibility_score", { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (businessId) query = query.eq("business_id", businessId);
   if (city) query = query.ilike("city", `%${city}%`);
   if (q) query = query.ilike("name", `%${q}%`);
 

@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { validateApiKey } from "@/lib/api-auth";
-import { getAdmin, toNumber } from "@/lib/demand-to-revenue-server";
-
-function hasPermission(permissions: unknown, accepted: string[]): boolean {
-  const list = Array.isArray(permissions)
-    ? permissions.map(String)
-    : typeof permissions === "string"
-      ? permissions.split(",").map((item) => item.trim())
-      : [];
-  return list.includes("all") || accepted.some((item) => list.includes(item));
-}
+import { isExpertOwnedByKey } from "shared";
+import { hasPermission, validateApiKey } from "@/lib/api-auth";
+import { assertBusinessAccess, getAdmin, toNumber } from "@/lib/demand-to-revenue-server";
 
 export async function GET(request: NextRequest) {
   const auth = await validateApiKey(request);
@@ -25,6 +17,15 @@ export async function GET(request: NextRequest) {
   const businessId = params.get("business_id");
   const platform = params.get("platform");
   const limit = Math.min(parseInt(params.get("limit") || "50", 10), 200);
+
+  // Tenancy: expert-данные доступны только владельцу ключа; business-данные — при наличии доступа.
+  if (!isExpertOwnedByKey(expertId, auth.ownerId!)) {
+    return NextResponse.json({ error: "Forbidden: expert_id not owned by key" }, { status: 403 });
+  }
+  if (businessId && !(await assertBusinessAccess(businessId, auth.ownerId!))) {
+    return NextResponse.json({ error: "Forbidden: business not accessible" }, { status: 403 });
+  }
+
   const admin = getAdmin();
 
   const [citationsResult, visibilityResult, competitorsResult] = await Promise.all([
