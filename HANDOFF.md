@@ -79,7 +79,7 @@ Existing project `neuroexpert` analyzed by Product Factory OS.
 
 ## First Action
 
-1. Read `AGENTS.md`, then `CURRENT_PLAN.md`.
+1. Read `CURRENT_PLAN.md` (and `OPERATIONS.md` for deploy/ops).
 2. Do not close Stage 1 login gate until Yandex 360/SMTP is restored and a real magic-link email is verified.
 3. Do not replay/archive the 754 failed `expand_query` jobs until provider quota/fallback is fixed.
 4. If continuing the optional Stage-2-safe web sync, first restore/verify production access, then check whether `/api/health` already exposes `worker.totals`, `worker.by_type`, `worker.scheduled_retries`, and `sample_size`. Deploy web only if a post-deploy smoke channel is available.

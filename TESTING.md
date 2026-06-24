@@ -4,7 +4,7 @@ This is a navigation alias. Do not duplicate verification evidence here.
 
 ## Canonical Sources
 
-- Project command reference: `AGENTS.md`
+- Project command reference: `OPERATIONS.md`
 - Active gate checklist: `CURRENT_PLAN.md`
 - Verification contract: `.pfo/VERIFICATION_CONTRACT.json`
 - Golden flows: `.pfo/GOLDEN_FLOWS.md`

@@ -8,9 +8,10 @@
 
 - PFO runtime and contract files under `.pfo/`.
 - PFO state/report files: `.codex-memory/STATE.json`, `PFO_CONTRACT_GATE.json`, `PFO_EXISTING_PROJECT_ANALYSIS.json`, `PFO_REPORT.md`.
-- PFO entrypoint docs: `AGENTS.md`, `CODEX.md`.
+- PFO entrypoint docs: `CLAUDE.md`, `CODEX.md`.
 - PFO navigation aliases: `ARCHITECTURE.md`, `MASTER_CONTEXT.md`, `PROGRESS.md`, `TASKS.md`, `TESTING.md`.
 - Active plan/status documentation: `CURRENT_PLAN.md`.
+- Operations runbook: `OPERATIONS.md`.
 - Generated database types: `packages/shared/src/types/database.ts`.
 - AEO smoke verifier: `scripts/validate-aeo-site.js`.
 - Deploy script executable permissions only: `scripts/deploy.sh`, `scripts/fix-prod.sh`, `scripts/generate-env.sh`, `scripts/render-kong.sh`.

@@ -1,19 +1,28 @@
 # NeuroExpert — единый рабочий план
 
-> Создан 2026-05-04 как объединение `LAUNCH_PLAN.md` и `.codex-memory/NEUROEXPERT_EXECUTION_SEQUENCE.md`.
-> Этот файл — активный источник правды по порядку работ. `LAUNCH_PLAN.md` остаётся бизнес/маркетинговым контекстом и долгосрочной дорожной картой, но не определяет ближайшую очередность.
+> **Единственный канонический план реализации.** Это источник правды по тому, ЧТО и В КАКОМ ПОРЯДКЕ строить.
+> Операционка (КАК деплоить/эксплуатировать) — в [`OPERATIONS.md`](OPERATIONS.md). Правила для AI-агента и стек — в [`CLAUDE.md`](CLAUDE.md).
+> Консолидирован 2026-06-23: в него влиты `LAUNCH_PLAN.md` (бизнес/финмодель) и статус-реестр из `AGENTS.md` (оба удалены, чтобы не было двойной нумерации).
+
+## Executive Summary
+
+- **Продукт:** платформа GEO/AEO — превращает экспертизу в контент, который цитируют AI-движки (ChatGPT, YandexGPT, GigaChat, Perplexity) и находит поиск, плюс ведёт локальные продажи бизнеса.
+- **Два входа:** **Solo** (self-service кабинет эксперта: спрос → голос → страница → трафик → заявка) и **Business / Local Sales OS** (B2B-кабинет: аудит каналов → конкуренты → задачи роста → отзывы → lost leads → обращения). Коммерческий фокус — **Local Sales OS** (высокий чек).
+- **Монетизация (5 потоков):** B2C-подписка, marketplace-комиссия, premium-placement, B2B-подписка (Local Sales OS), Knowledge API Licensing. Цель — **2M ₽/мес MRR к декабрю 2026** (детали в §«Финансовая модель»).
+- **Где мы сейчас:** MVP построен и задеплоен (`neuroexpertise.ru`), Local Sales OS заложен на уровне Copilot. **Активный блокер — Этап 1 (login/Яндекс 360, SMTP)**. Параллельно открыты Этап 7 Security (найдены критические уязвимости, см. аудит ниже) и Этап 11 Local Sales OS.
+- **Как двигаемся:** строго по «Единой последовательности» (Этапы 1→17), сверху вниз, gate за gate'ом.
 
 ## Жёсткое правило очередности
 
-При любой работе над проектом `НейроЭксперт` движение идёт исключительно по этому плану и строго сверху вниз. Перед началом задачи нужно открыть `AGENTS.md`, затем `CURRENT_PLAN.md`, определить активный этап и работать только внутри него.
+При любой работе над проектом `НейроЭксперт` движение идёт исключительно по этому плану и строго сверху вниз. Перед началом задачи нужно открыть `CURRENT_PLAN.md` (этот файл) и `OPERATIONS.md` для эксплуатации, определить активный этап и работать только внутри него.
 
-Нельзя переходить к следующему этапу, брать задачи из `LAUNCH_PLAN.md`, `BACKLOG.md`, старых roadmap-документов или делать новые фичи, пока gate текущего этапа не закрыт. Исключение возможно только если пользователь явно меняет порядок отдельным сообщением.
+Нельзя переходить к следующему этапу, брать задачи из `BACKLOG.md`, старых roadmap-документов или делать новые фичи, пока gate текущего этапа не закрыт. Исключение возможно только если пользователь явно меняет порядок отдельным сообщением.
 
 После каждого meaningful шага нужно обновлять статус в проектной памяти и, если изменился прогресс, в этом плане.
 
 ## Главный вывод
 
-Вчерашний план правит ближайшим порядком: сначала восстанавливаем работоспособность продукта, потом валидируем полный пользовательский цикл, и только после этого возвращаемся к ЮKassa, пилотам, outreach и API-монетизации из `LAUNCH_PLAN.md`.
+Вчерашний план правит ближайшим порядком: сначала восстанавливаем работоспособность продукта, потом валидируем полный пользовательский цикл, и только после этого возвращаемся к ЮKassa, пилотам, outreach и API-монетизации (Этапы 5, 9, 10, 13-17).
 
 Старый launch-план был слишком оптимистичен для текущего состояния: он ставил pre-outreach, ЮKassa и провайдерские ключи впереди, хотя базовый вход через magic link и worker-pipeline ещё требуют stage-gates.
 
@@ -57,6 +66,82 @@
 
 **Правка от 2026-06-12 по Local Sales OS Autopilot:** идеальный режим Local Sales OS фиксируется как три уровня автономности: **Copilot**, **Managed Autopilot** и **Full Autopilot**. Продуктовое обещание: после аудита платформа сама ведёт рост продаж, а владелец подтверждает важные действия. Система должна проходить весь контур `audit intelligence → growth plan → execution queue → result loop`: понять состояние каналов, конкурентов, спроса, отзывов, страниц и обращений; собрать приоритетный план роста; автоматически подготовить или выполнить задачи; измерить результат и обновить следующую задачу. Рискованные действия требуют explicit approval или заранее заданной policy. До закрытия текущих P0-gates разрешены только планирование, тексты и проектирование; разработка — не раньше Этапов 11-16 или явного решения пользователя.
 
+## Что уже построено (фундамент MVP)
+
+> Реестр построенного и задеплоенного. Это «фундамент» (бывшие «Шаги 1-16» из старого статус-реестра) — НЕ путать с «Этапами 1-17» ниже, которые описывают форвард-роадмап доводки и B2B-разворота.
+
+MVP собран на монорепо (Turborepo + pnpm; `apps/web` Next.js 14, `apps/bot` grammY, `apps/worker`, `packages/shared`, `packages/supabase`) и задеплоен на `neuroexpertise.ru`. Построено и работает:
+
+1. **Инфраструктура** — монорепо, Docker (compose + Dockerfiles + nginx/Traefik), `.env.example`.
+2. **БД** — схема, RLS, seed (20 ниш, 300 вопросов), TypeScript-типы, миграции `001`-`024`.
+3. **Auth + лендинг** — Supabase clients, middleware, magic-link login, регистрация + выбор ниши, auth trigger.
+4. **LLM/STT слой** — фабрика провайдеров с fallback (Claude primary → OpenAI/YandexGPT/GigaChat), Whisper/Yandex STT, промпты gap-analysis; `/api/audit` (real-time probing 4 платформы).
+5. **Telegram-бот** — команды, голосовые → STT → job, callback-хендлеры, webhook (внутри Next.js API).
+6. **Генерация контента (worker)** — polling loop, `generate_content` (5 LLM-вызовов: пост/SEO-статья 2900+/карточки/Reels/FAQ), `validate_content`.
+7. **Публичные SSR-страницы** — каталог/профиль/статья с E-E-A-T, Schema.org JSON-LD, robots/sitemap, `/api/leads`, `/api/publish`.
+8. **Дашборд эксперта** — orders, content, leads, profile, billing, аналитика; UI-кит (toast, skeleton, confirm).
+9. **Сбор спроса + поиск дыр** — Wordstat/SerpAPI/Яндекс.Кью, ai-prober, `collect_demand → find_gaps → generate_orders`.
+10. **Оплата (ЮKassa)** — подписки, webhook, tier-логика, split-payment (marketplace).
+11. **Трекинг + аналитика** — citations, SERP, Trust Score, CWV, Share of Voice.
+12. **Scanner + финализация** — AI Visibility Scanner, кросспост, email-дайджесты, PWA.
+13. **Production deploy** — Hostland VDS за Coolify-Traefik, 8 контейнеров, Let's Encrypt.
+14. **Маркетинговый лендинг** — `/for-experts`, `/for-business`, `/how-it-works`, тёмная тема.
+15. **Marketplace + B2B + Knowledge API** — отзывы, booking, smart matching, `/api/v1/*`, OpenAPI docs.
+16. **Citation Network + Knowledge Graph + API Licensing** — `/questions`, `/niches`, blind-spots, GEO-сервисы.
+17. **Demand-to-Revenue / Local Sales OS foundation** — миграции `021`-`024` (29 таблиц), routes `/today`, `/local-sales`, `/marketing-os`, `/agency`, 6 worker-jobs. Уровень Copilot (детали и аудит — в §«Этап 11»).
+
+⚠️ «Построено» ≠ «закрыт gate». Многое из этого требует доводки/проверки — см. форвард-роадмап и аудит Этапа 11.
+
+## Финансовая модель и цель
+
+**Цель: 2M ₽/мес MRR к декабрю 2026** из 5 потоков выручки:
+
+1. **B2C subscription** (эксперты) — Free/Starter/Pro/Expert/Business (тарифы — в [`OPERATIONS.md`](OPERATIONS.md) §7).
+2. **Marketplace commission** — % от платных консультаций.
+3. **Premium placement** — эксперты платят за `is_featured`.
+4. **B2B subscription** — Local Sales OS для клиник/юрфирм/edu (оффер Audit→Setup→Managed→Enterprise, см. §B2B).
+5. **Knowledge API Licensing** — SEO-агентства → Blind Spots data (Read free / Pro $99/мес / Enterprise).
+
+**Цель декабря 2026 по потокам:**
+
+| Поток | Клиентов | ARPU | MRR |
+|---|---|---|---|
+| B2C subscription | 150 | 4 000₽ | 600 000₽ |
+| Marketplace commission | 300 консультаций | 700₽ | 210 000₽ |
+| B2B subscription (Local Sales OS) | 8-10 | 50 000₽ | 400-500 000₽ |
+| Knowledge API Pro | 10-15 × $99 | 10 000₽ | 100-150 000₽ |
+| Knowledge API Enterprise | 1-2 | 200 000₽ | 200-400 000₽ |
+| **Итого НейроЭксперт** | — | — | **1.5-1.9M ₽/мес** |
+
+**Добор до 2M+ через портфель проектов:** Skutr-docs ЭДО pivot (300-500k), добавочный проект (500-800k), Jogai фон (50-150k) → **портфель 2.3-3.4M ₽/мес**.
+
+**Помесячный путь:** месяц 3 ~105k MRR → месяц 5 ~500k → декабрь 1.5-1.9M (NeuroExpert) / 2.3-3.4M (портфель).
+
+## Сводный статус этапов (gate-дашборд)
+
+| Этап | Название | Статус |
+|---|---|---|
+| 1 | Login и базовая доступность | 🔴 BLOCKED (Яндекс 360/SMTP); тех-подпункты частично закрыты |
+| 2 | AI и worker pipeline | 🟡 PARTIAL (часть DONE; OpenAI quota / 754 failed jobs; Marketing OS gate открыт) |
+| 3 | Core E2E для эксперта | ⚪ TODO (упирается в login) |
+| 4 | Dashboard breaks | ⚪ TODO |
+| 5 | Монетизация и ЮKassa | ⚪ TODO (зависит от одобрения ЮKassa) |
+| 6 | Data authenticity и demand quality | ⚪ TODO |
+| 7 | **Security и trust** | 🟠 TODO — найдены критические уязвимости (SEC-1…5, см. аудит) |
+| 8 | Test coverage | ⚪ TODO (0% покрытия формул подтверждено) |
+| 9 | Community warm-up | ⚪ TODO (маркетинг) |
+| 10 | Promotion readiness | ⚪ TODO |
+| 11 | Local Sales OS data foundation | 🟡 PARTIAL (Copilot готов; см. детальный аудит ниже) |
+| 12 | Local Sales OS dashboard MVP | 🟡 PARTIAL (routes есть, read-only) |
+| 13 | Local Sales OS SaaS-first paid pilots | ⚪ TODO |
+| 14 | Channel automation (карты/2ГИС/Авито/отзывы) | ⚪ TODO |
+| 15 | Repeat Touch & Revenue Engine | ⚪ TODO |
+| 16 | Local Sales OS monetization & GTM | ⚪ TODO |
+| 16.5 | Wholesale Demand OS experiment | ⚪ DEFERRED |
+| 17 | Agency / white-label Local Sales OS | ⚪ TODO |
+
+Легенда: 🔴 заблокировано · 🟠 high-priority TODO · 🟡 частично · ⚪ не начато · ✅ закрыт gate · ⏸ отложено.
+
 ## Текущий статус
 
 **Активная фаза:** Этап 1 — восстановить login и базовую доступность.
@@ -69,7 +154,76 @@
 
 **Technical stabilization status от 2026-06-13:** production DB уже содержит сущности из миграций `021`-`024`, `jobs_type_check` пропускает `generate_daily_growth_tasks`, `generate_local_weekly_report`, `generate_b2b_page_draft`, `analyze_behavior_signals`, `calculate_unit_economics`, `generate_agency_report`; PostgREST schema reload отправлен через `NOTIFY pgrst, 'reload schema'`; `/api/health`, `/llms.txt`, `/robots.txt`, `/sitemap.xml`, `/sitemaps/experts`, `/sitemaps/articles`, `/sitemaps/questions`, `/sitemaps/niches`, `/api/v1/docs` отвечают `200`; protected dashboard routes `/today`, `/local-sales`, `/marketing-os`, `/agency` отвечают `307` без сессии; deploy scripts имеют `100755/755`. `packages/shared/src/types/database.ts` обновлён table keys для новых таблиц `022`-`024` и typed surface для `proof_of_human_assets`/`business_accounts`; до полноценной `supabase gen types` остаются широкие `JsonRecord` entries для части Demand-to-Revenue таблиц. `scripts/validate-aeo-site.js` получил явный documented `curl` transport fallback после Node/undici timeout. Формальные проверки закрыты: `pnpm --dir packages/shared build`, `pnpm --dir apps/bot build`, `pnpm --dir apps/worker build`, `pnpm --dir apps/web build`, `pnpm build`, `pnpm --dir apps/web lint`, `pnpm lint`, `pnpm test`, `pnpm --dir packages/shared test`, `pnpm typecheck` проходят в WSL при явном `PATH=/home/hihol/.local/bin:...`; причина прежних pnpm/Turbo сбоев — `pnpm` установлен в `~/.local/bin`, а не-login WSL runner и Turbo child-process не видели его в PATH. `AEO_SITE_URL=https://neuroexpertise.ru` smoke прошёл через Windows Node: robots/llms/sitemap segments/core pages/sample article/sample question — все `OK`, sitemap содержит 3800 URLs; причина WSL AEO timeout — WSL резолвит `neuroexpertise.ru` в proxy/VPN IP `198.18.0.70`, но маршрут из Ubuntu до него не отвечает, при этом Windows curl получает `/api/health` и `/robots.txt` `200` за ~0.18с. `pfo analyze --run-gates --report` с правильным PATH даёт 9/10 PASS и блокируется только на встроенном 90s timeout для `pnpm --dir apps/web build`; тот же web build вручную прошёл за 195.5с, а PFO verification evidence и security artifacts это документируют. `PFO_CONTRACT_GATE.json` переоценён в `PASS`: scopeLock/dataAuthenticity/fallbackPolicy/securityEvidence/noSilentSubstitution зелёные. Этап 1 всё ещё `BLOCKED` до оплаты Яндекс 360 и реальной проверки magic link.
 
+**Stage 1-safe auth UX status от 2026-06-15:** без закрытия login gate и без отправки писем улучшены ошибки входа/регистрации: `/api/auth/magic-link` различает rate limit, SMTP/mail outage, неверный email и отсутствие Supabase public env; login/register ловят сетевые сбои и гарантированно снимают loading-state; email нормализуется перед отправкой. Production deploy не выполнялся: `neuroexpertise.ru` всё ещё резолвится в `198.18.1.147`, доменный и direct-IP HTTPS healthcheck возвращают `HTTP=000 timeout`, WSL SSH `hostland` таймаутится на banner exchange. Проверки: `pnpm --dir apps/web lint` OK, `pnpm --dir apps/web build` OK.
+
 **Правило возврата:** после оплаты Яндекс 360 обязательно вернуться к пунктам Этапа 1 со статусом `BLOCKED/WAITING` и закрыть magic link до полного E2E, production release и перехода к продуктовым этапам, завязанным на новый login.
+
+---
+
+## Глубокий аудит Этапа 11 от 2026-06-23 (Local Sales OS data foundation)
+
+Проведён построчный аудит 19 пунктов Этапа 11 против фактического кода (миграции `023`/`024`, `apps/web/app/api/local-sales/*` и смежные API, `apps/worker/src/jobs/demand-to-revenue-os.ts`, `packages/shared/src/demand-to-revenue.ts`, RLS, `database.ts`). Результат: ядро Copilot-уровня реализовано, но найдены **4 критические уязвимости data-tenancy**, **2 P0-бага корректности**, систематический долг по формулам, типам и data-cadence. Итог по пунктам: **8 готово / 7 частично / 4 отложено**.
+
+### P0 — Безопасность (БЛОКЕР перед любым B2B-пилотом и экспонированием Knowledge API)
+
+Эти дыры позволяют любому пользователю с валидным API-ключом или сессией читать/перезаписывать чужие данные. Закрыть ДО продаж и до публичного доступа к `/api/v1/*`.
+
+- **SEC-1 — `v1/local-competitors` (`route.ts:37`)**: `business_id` из query не сверяется с владельцем ключа. Любой ключ читает конкурентную разведку любого бизнеса. Фикс: фильтр/проверка `owner_id = auth.ownerId` или `assertBusinessAccess`.
+- **SEC-2 — `v1/ai-visibility` (`route.ts:34-54`)**: `expert_id` и `business_id` не проверяются на принадлежность владельцу ключа. Фикс: сверять `expert_id === auth.ownerId` и `assertBusinessAccess(business_id)`.
+- **SEC-3 — `marketing-os/playbooks` POST (`route.ts:36-48`)**: `upsert` по `key` без владельца — пользователь A перезапишет playbook пользователя B. Фикс: добавить `owner_id` в таблицу, включить в `onConflict`.
+- **SEC-4 — `marketing-os/playbooks` GET (`route.ts:8-16`)**: возвращает все playbooks без фильтра по владельцу. Фикс: `.eq("owner_id", user.id)` либо `is_public`.
+- **SEC-5 (важно) — `marketing-os/review-queue` PATCH (`route.ts:58`)**: при `owner_id != me && business_id == null` авторизация пропускается. Фикс: `if (item.owner_id !== user.id) return Forbidden` без исключения для null.
+
+### P0 — Баги корректности
+
+- **BUG-1 — `calculate_unit_economics`**: ошибка `upsert` молча игнорируется → данные могут не сохраниться без сигнала. Фикс: проверять `error` и `throw`.
+- **BUG-2 — `generate_local_weekly_report`**: `growth_tasks` читается без фильтра по дате → «недельный» отчёт показывает кумулятив с момента создания аккаунта. Фикс: `.gte/.lte` по диапазону недели.
+- **BUG-3 — `analyze_behavior_signals` (п.13)**: реализованы только 2 из 6 правил (есть `views_without_leads`, частично `phone_click`; нет cta_click→форма, route_click→скрипт, повтор вопросов→FAQ, лид>SLA→касание, page opportunity→страница).
+- **BUG-4 — `generate_b2b_page_draft`**: ошибки вставки `local_page_sections` не пробрасываются; `slug` = 8 символов UUID (нечитаемо).
+
+### P1 — Честность данных и формулы (п.17, п.5, п.9, п.11)
+
+- **Формулы: 2 из 12 реализованы** (`calculateLocalSalesIndex` ✓, `estimateLostRevenue` ✓; `AI Visibility` — inline-дубль без clamp). **9 отсутствуют**: Map Visibility, Review Health, Avito Opportunity, Response SLA, Local Page Opportunity, Behavior Opportunity + 3× Synthetic. Сейчас UI/API показывают «AI-видимость», «Карты/площадки», «Отзывы» через **примитивный `avg()`**, продублированный в `page.tsx` и `route.ts` — обещание расходится с расчётом.
+- **Дубль Overview-логики**: `getLocalSalesData()` (`page.tsx`) и `buildOverview()` (`route.ts`) — две независимые копии. Вынести в единую `buildLocalSalesOverview()` в `shared`.
+- **Generated types (п.5)**: 24 из 28 таблиц `022`-`024` остаются `Row: JsonRecord`-заглушками (строго типизированы только `marketing_workflow_runs`, `page_quality_checks`, `proof_of_human_assets`, `business_accounts`). Прогнать `supabase gen types`, убрать `as JsonRecord` касты.
+- **`collected_at` не пишется явно** в `channel_unit_economics` и `proof_of_human_assets` (зависит от DB-default) — риск для data-policy.
+- **growth_tasks daily cadence (п.11)**: из 9 требуемых полей есть 3 (`priority`, `owner_id`, `status`). Нет `task_date`, `proof_url`, `metric_key`, `paid_signal_id`; `deadline_at`/`expected_effect` существуют под именами `due_at`/`expected_impact` — **решить: переименовать в плане или добавить колонки**.
+- **Валидация payload**: `body.channels`, `spend_by_channel`, `export_format`, `agent_role`, `status` уходят в worker/БД без allowlist-проверки (несколько роутов).
+- **Тесты формул**: `demand-to-revenue.ts` — 0% покрытия.
+
+### P2 — Рефактор и единообразие (п.6)
+
+- Дубли `getAdmin()`/`getUser()`/`hasPermission()`/`toNumber()` в `v1/local-demand`, `v1/machine-profiles`, `marketing-os/workflows` — импортировать из `demand-to-revenue-server.ts` (п.6 «единый вход»).
+- `assertBusinessAccess` — 2 запроса вместо JOIN; `getAdmin()` без singleton.
+- Баг пагинации `v1/local-demand`: `total` считается до фильтра по `minOpportunity` → неверное число страниц.
+- `monthlyVolume=0` в `calculateDemandOpportunityScore` даёт floor 18 вместо 0.
+
+### Отложено (подтверждено отсутствие, перенос в Этап 11b / 14-16)
+
+- **Autopilot (п.15-16)**: нет таблиц `approval_policies`, `action_queue`, `autopilot_runs`, `action_audit_log`, поля `autopilot_mode`; нет риск-классов действий.
+- **Synthetic Audience (п.14)**: нет таблиц/формул/jobs.
+- **12 planned worker jobs (п.19)**: 0 из 12 (`score_page_opportunities`, `validate_page_quality`, `review_page_results`, `detect_underperforming_pages`, `run_synthetic_audience_forecast`, `calibrate_synthetic_audience`, `plan_autopilot_actions`, `execute_safe_actions`, `request_action_approval`, `process_approved_actions`, `detect_lost_leads`, `send_client_action_digest`).
+- **Роли `admin`/`marketer`** (п.4): только `owner/operator/viewer`.
+- **Naming reconcile**: план упоминает `local_page_quality_checks`, в `021` создана `page_quality_checks` — свести имена.
+
+### Что подтверждено как готовое и корректное
+
+- Все 13 API-эндпоинтов Этапа 11 существуют и являются полноценными реализациями (не заглушки).
+- RLS включён на всех 29 таблицах `023`/`024`; `is_business_member` — `SECURITY DEFINER` + `search_path=public`.
+- Порядок миграций корректен (forward-reference FK не обнаружены; `service_orders` создаётся в `020` до `ALTER` в `023`).
+- 6 worker-jobs Этапа 11 зарегистрированы и работают; B2B page generator имеет review-gate через `marketing_review_queue`.
+- Все 6 сквозных полей data-policy (`source/source_url/collected_at/confidence/is_manual/raw_payload`) присутствуют в схеме.
+
+### Обновлённая последовательность Этапа 11 (по результатам аудита)
+
+1. **Этап 11.0 — Security hardening (P0):** закрыть SEC-1…SEC-5. Без этого `/api/v1/*` нельзя выставлять наружу и нельзя начинать B2B-пилот.
+2. **Этап 11.1 — Correctness (P0):** BUG-1…BUG-4 (включая дописать 4 правила `analyze_behavior_signals`).
+3. **Этап 11.2 — Honest metrics (P1):** реализовать 6 нон-synthetic формул, вынести `buildLocalSalesOverview()` в shared, убрать `avg()`-эрзац и дубль, добавить тесты.
+4. **Этап 11.3 — Data integrity (P1):** `supabase gen types` (убрать 24 JsonRecord), `collected_at` явно, добить/переименовать колонки `growth_tasks`, allowlist-валидация payload.
+5. **Этап 11.4 — Refactor (P2):** единый helper-вход, singleton admin, JOIN в `assertBusinessAccess`, фикс пагинации `v1/local-demand`.
+6. **Этап 11b (отложено):** Autopilot, Synthetic Audience, 12 jobs, роли admin/marketer — не раньше доказанного B2B-traction или явного решения (см. правки от 2026-06-12).
+
+Базовый внешний gate (Этап 1, Яндекс 360 / login) остаётся в силе для пользовательского E2E, но **Этапы 11.0-11.1 (security + correctness) можно и нужно делать параллельно**, так как они не требуют отправки писем.
 
 **Новый release-блокер после анализа 2026-05-24:** последние коммиты добавили миграции `021`-`024` и новые runtime routes/jobs. Нельзя деплоить их как “готово”, пока не пройдены DB migration smoke, generated types refresh, PFO contract gate и проверка executable bit у deploy scripts.
 
@@ -1392,7 +1546,7 @@ Approval UX:
 
 **Цель:** аудит, scanner и рекомендации используют реальные источники и реальные ответы провайдеров.
 
-1. Добрать ключи core-провайдеров из `LAUNCH_PLAN.md` Step 2.0.6: YandexGPT/SpeechKit, GigaChat, Perplexity, XMLRiver, SerpAPI, Resend, Яндекс.Вебмастер, GSC, Bing Webmaster.
+1. Добрать ключи core-провайдеров (таблицы P0-P5 в [`OPERATIONS.md`](OPERATIONS.md) §8): YandexGPT/SpeechKit, GigaChat, Perplexity, XMLRiver, SerpAPI, Resend, Яндекс.Вебмастер, GSC, Bing Webmaster.
 2. В audit использовать вопросы из реальных Wordstat/source данных.
 3. Проверить, что 20 ниш имеют достаточный запас реальных вопросов.
 4. Улучшить фильтрацию качества вопросов, не только minimum word count.
@@ -2167,21 +2321,11 @@ Worker jobs:
 - Support load не съедает маржу.
 - Demand API usage, billing и quota понятны партнёру и оператору.
 
-## Что переносится из LAUNCH_PLAN.md
+## Маппинг старого launch-плана на этапы
 
-Сохраняем цель и каналы:
-- B2C subscriptions.
-- Marketplace commission.
-- Premium placement.
-- B2B subscription.
-- Demand API / Knowledge API Licensing.
-- Local Sales OS managed service.
-- Setup-аудиты и платные B2B-пилоты.
+> Цель и каналы выручки — в §«Финансовая модель». Здесь — как блоки старого launch-плана легли на текущие этапы.
 
-Сохраняем бизнес-цель:
-- Декабрь 2026: стремиться к 2M+ ₽/мес внутри НейроЭксперта, где основной денежный слой — B2B Local Sales OS, а Solo-эксперты, marketplace, Demand API и setup-аудиты усиливают портфель.
-
-Сохраняем, но исполняем позже:
+Исполняем позже (перенесено из старых Block 1-6):
 - ЮKassa Step 2.2 — теперь Этап 5, после login/worker/E2E gates.
 - Community warm-up — теперь Этап 9, после технической устойчивости core flow и тестов.
 - 3-5 пилот-экспертов — теперь Этап 10, после первых feedback-сигналов и готовности лендингов.
@@ -2212,3 +2356,34 @@ Worker jobs:
 5. Закрыть PFO release-блокеры и executable bit deploy-скриптов.
 6. После оплаты Яндекс 360 вернуться к пунктам `[BLOCKED/WAITING]`: перезапустить `supabase-auth`, проверить magic link и `/otp`.
 7. Только если полный gate Этапа 1 проходит — переходить к AI/worker pipeline как следующему продуктовому этапу.
+
+---
+
+## Глоссарий
+
+- **AEO / GEO / AIO** — Answer/Generative/AI Engine Optimization: оптимизация контента под цитирование AI-движками (ChatGPT, YandexGPT, GigaChat, Perplexity), а не только под классический поиск.
+- **Solo** — self-service направление для индивидуального эксперта: спрос → голосовой ответ → страница → трафик → заявка.
+- **Local Sales OS (Business)** — B2B-кабинет собственника локального бизнеса: аудит каналов (карты/2ГИС/Авито/отзывы/сайт) → конкуренты → задачи роста → lost leads → обращения. Основной денежный слой.
+- **Demand Finder** — сбор спроса и поиск «дыр», где AI отвечает слабо (gap_score), для приоритизации тем/страниц.
+- **Result Loop** — контур «demand → published → lead → revenue → decision (keep/improve/merge/delete)»; связывает действие с результатом.
+- **Autopilot** — целевая модель автономности Local Sales OS: Copilot (только предлагает) → Managed Autopilot (выполняет безопасное, важное — на approval) → Full Autopilot. ⚠️ ещё не реализован (отложено).
+- **Trend Score / Paid Visibility Signals** — слои приоритизации спроса: тренд запроса и публичная рекламная разведка (без доступа к PPC-кабинетам).
+- **Knowledge API / Blind Spots** — лицензируемые JSON-эндпоинты `/api/v1/*` для агентств (карта слепых зон AI).
+- **Marketing OS** — workflow-движок генерации с обязательным human-review (playbooks + review queue).
+- **PFO (Product Factory OS)** — runtime-контракты в `.pfo/` (SCOPE_LOCK, DATA_POLICY, FALLBACK_POLICY, FORBIDDEN_CHANGES); release-gate.
+- **Gate** — критерии закрытия этапа; пока не закрыт, к следующему этапу не переходим.
+- **Data-policy паспорт** — поля `source/source_url/collected_at/confidence/is_manual` у записей: система всегда знает, ручные данные или авто и с какой уверенностью.
+
+## Журнал решений (changelog)
+
+Хронология ключевых решений и правок плана (подробности — в соответствующих разделах выше):
+
+- **2026-05-04** — Решение: B2B Local Sales OS как главный высокочековый путь монетизации (не отдельный продукт). Создан план как объединение launch-плана и execution-sequence.
+- **2026-05-05** — Local Sales OS: модель «ежедневные задачи роста + недельный отчёт».
+- **2026-05-10** — SaaS-first concierge; добавлены Demand Trend Signals, Paid Visibility Signals; план по community warm-up и SEO/AIO сайта.
+- **2026-05-11** — B2B Page Generator (услуга+район+цена+FAQ+отзывы+CTA); правила Behavior Signals.
+- **2026-05-16** — Anti-SEO-Failure Framework; требование technical completeness (у каждой публичной функции — явный владелец реализации).
+- **2026-05-23/24** — Marketing OS Runtime + contract; AEO-чеклист; миграции `021`-`024`, новые routes/jobs; PFO/deploy-риски; Wholesale Demand OS как будущий эксперимент.
+- **2026-06-12** — Synthetic Audience Signals и Local Sales OS Autopilot (Copilot/Managed/Full) — оба как будущие слои, разработка не раньше Этапов 11-16.
+- **2026-06-13/14/15** — Technical stabilization gate без SMTP; разбор 754 failed `expand_query` (OpenAI quota); Stage-2-safe worker hardening; Stage 1-safe auth UX.
+- **2026-06-23** — Глубокий аудит Этапа 11 (найдены SEC-1…5 + баги корректности, см. раздел аудита). Консолидация документации: единый `CURRENT_PLAN.md`, операционка → `OPERATIONS.md`, `CLAUDE.md` → тонкий указатель, удалены `LAUNCH_PLAN.md` и `AGENTS.md`.

@@ -29,7 +29,7 @@
     ]
   },
   "requiredInputs": [
-    "AGENTS.md",
+    "CLAUDE.md",
     "CODEX.md",
     ".codex-memory/STATE.json",
     ".pfo/PROJECT_CONTRACT.md",
