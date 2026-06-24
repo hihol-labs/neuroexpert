@@ -110,3 +110,26 @@ Existing project `neuroexpert` analyzed by Product Factory OS.
   - TCP 443/22 to `185.221.213.104` succeeded;
   - WSL SSH `hostland` connected, then failed at `kex_exchange_identification: Connection closed by remote host`.
 - Status recorded in `.codex-memory/events.jsonl` as `event-20260615T120000Z-stage2-web-deploy-deferred`.
+
+## 2026-06-24 Консолидация документации + аудит Этапа 11 (сессия Claude)
+
+**Коммит:** `8419f2c` на ветке `codex/plan-north-star-marketing-contract` (14 файлов, +483/−1733).
+
+### Что сделано
+
+- **Документация консолидирована в единый план.** Устранена двойная нумерация («Шаги 1-16» из AGENTS.md vs «Этапы 1-17» из CURRENT_PLAN.md):
+  - `CURRENT_PLAN.md` — единственный канонический план. Добавлены: Executive Summary, реестр построенного MVP, финмодель (5 потоков, цель 2M ₽/мес к дек 2026), сводный gate-дашборд этапов 1-17, глоссарий, журнал решений (changelog).
+  - `OPERATIONS.md` (новый) — операционка: deploy-runbook, прод-инфра, known issues, тарифы, таблицы API-ключей P0-P5, ЮKassa runbook, регулярные процедуры.
+  - `CLAUDE.md` → тонкий указатель (−275 строк).
+  - **Удалены** `AGENTS.md` и `LAUNCH_PLAN.md` (контент перенесён без потерь). Указатели CODEX/ARCHITECTURE/MASTER_CONTEXT/TASKS/TESTING/HANDOFF/LANDING_BRIEFS/.pfo обновлены на новую структуру.
+- **Прод-IP зафиксирован:** `185.221.213.104` (Hostland); старый `155.212.185.216` помечен устаревшим.
+- **Аудит Этапа 11 (Local Sales OS) проведён устно** (8/19 готово, 7/19 частично, 4/19 отложено по плану) — но детальная таблица в план **ещё не внесена**.
+
+### Next action (приоритет следующей сессии)
+
+1. **Дописать в `CURRENT_PLAN.md` → «### Этап 11» детальную таблицу аудита:** 19 пунктов плана + статус (✅/🟡/❌) + конкретная находка по каждому + блок SEC-1…5. Цель — действительно полный план. (Полный материал аудита — в `~/.claude/projects/-home-hihol-projects/memory/session_2026-06-24.md`.)
+2. Затем реализация: канонично с Этапа 7 Security (SEC-1…5 не блокируются Яндекс 360) или по приоритету пользователя.
+
+### Внимание: незакоммиченный WIP не из этой сессии
+
+Не трогал и не бандлил в коммит: `apps/web/app/(auth)/login|register/page.tsx`, `api/auth/magic-link/route.ts`, `PFO_*.json`, `PFO_REPORT.md`, `NEXT_STEP.md`, `.codex-memory/STATE.json`, `events.jsonl`, `reports/stage-1-safe-auth-ux-hardening-report.md` (работа «stage-1-safe auth» 2026-06-15). Решить: коммитить/откатить.
