@@ -353,3 +353,120 @@ export const LOCAL_SALES_EMPTY_STATE_TASKS = [
   "Занести первые потерянные обращения",
   "Сформировать 5-7 страниц под услуги и районы",
 ] as const;
+
+// --- Behavior signals (Этап 13 / BUG-3) -----------------------------------
+// Чистая логика правил вынесена сюда, чтобы покрыть тестами (в apps/worker нет
+// тест-харнеса). Покрывает 5 page-level правил из behavior_events. Шестое
+// правило, lead_sla_risk, считается в worker из lost_leads (нужен запрос к БД).
+
+export type BehaviorEventLike = {
+  event_type?: string | null;
+  content_id?: string | null;
+  page_url?: string | null;
+  session_hash?: string | null;
+};
+
+export type BehaviorSignalType =
+  | "views_without_leads"
+  | "cta_without_lead"
+  | "phone_without_sale"
+  | "faq_gap"
+  | "high_intent_drop";
+
+export type BehaviorSignalDraft = {
+  key: string;
+  signal_type: BehaviorSignalType;
+  severity: "low" | "medium" | "high" | "critical";
+  summary: string;
+  recommended_action: string;
+  confidence: number;
+};
+
+/**
+ * Превращает 7-дневный поток behavior_events в поведенческие сигналы.
+ * Группирует события по странице (content_id || page_url) и применяет правила.
+ * Несколько правил могут сработать на одной странице — это разные рекомендации.
+ */
+export function deriveBehaviorSignals(events: BehaviorEventLike[]): BehaviorSignalDraft[] {
+  const groups = new Map<string, BehaviorEventLike[]>();
+  for (const event of events) {
+    const key = String(event.content_id || event.page_url || "unknown");
+    groups.set(key, [...(groups.get(key) ?? []), event]);
+  }
+
+  const signals: BehaviorSignalDraft[] = [];
+  for (const [key, rows] of groups.entries()) {
+    const count = (type: string) => rows.filter((row) => row.event_type === type).length;
+    const views = count("view");
+    const leads = count("form_submit");
+    const phoneClicks = count("phone_click");
+    const ctaClicks = count("cta_click");
+    const formStarts = count("form_start");
+    const routeClicks = count("route_click");
+    const messengerClicks = count("messenger_click");
+    const highIntent = formStarts + routeClicks + messengerClicks;
+    const uniqueSessions = new Set(
+      rows.map((row) => row.session_hash).filter((hash): hash is string => Boolean(hash)),
+    ).size;
+
+    // Без заявок — базовое условие для page-level правил.
+    if (leads > 0) continue;
+
+    if (views >= 30) {
+      signals.push({
+        key,
+        signal_type: "views_without_leads",
+        severity: views >= 100 ? "high" : "medium",
+        summary: `Страница получила ${views} просмотров за 7 дней без заявки.`,
+        recommended_action: "Усилить CTA, цену, FAQ, отзывы и форму заявки.",
+        confidence: 0.75,
+      });
+    }
+
+    if (phoneClicks >= 5) {
+      signals.push({
+        key,
+        signal_type: "phone_without_sale",
+        severity: "high",
+        summary: `${phoneClicks} кликов по телефону без зафиксированной заявки.`,
+        recommended_action: "Проверить пропущенные звонки, скрипт администратора и повторный контакт.",
+        confidence: 0.7,
+      });
+    }
+
+    if (ctaClicks >= 3) {
+      signals.push({
+        key,
+        signal_type: "cta_without_lead",
+        severity: ctaClicks >= 10 ? "high" : "medium",
+        summary: `${ctaClicks} кликов по кнопке действия, но ни одной отправленной формы.`,
+        recommended_action: "Упростить форму, сократить поля и добавить запасной канал (мессенджер, звонок).",
+        confidence: 0.7,
+      });
+    }
+
+    if (highIntent >= 4) {
+      signals.push({
+        key,
+        signal_type: "high_intent_drop",
+        severity: highIntent >= 10 ? "high" : "medium",
+        summary: `${highIntent} действий с высоким намерением (форма/маршрут/мессенджер) без заявки.`,
+        recommended_action: "Ускорить ответ, добавить онлайн-запись и скрипт сопровождения для горячих клиентов.",
+        confidence: 0.7,
+      });
+    }
+
+    if (views >= 20 && uniqueSessions > 0 && views / uniqueSessions >= 3) {
+      signals.push({
+        key,
+        signal_type: "faq_gap",
+        severity: "medium",
+        summary: `Посетители возвращаются на страницу повторно (${views} просмотров на ${uniqueSessions} сессий) без заявки.`,
+        recommended_action: "Добавить FAQ и развёрнутые ответы на повторяющиеся вопросы, чтобы закрыть сомнения.",
+        confidence: 0.6,
+      });
+    }
+  }
+
+  return signals;
+}

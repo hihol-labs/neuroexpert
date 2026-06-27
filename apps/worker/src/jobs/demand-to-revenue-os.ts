@@ -2,7 +2,9 @@ import {
   buildB2BPageDraft,
   buildResultLoopSummary,
   calculateUnitEconomics,
+  deriveBehaviorSignals,
   estimateLostRevenue,
+  slugifyLatin,
 } from "shared";
 import { supabase } from "../supabase.js";
 
@@ -279,10 +281,20 @@ export async function handleGenerateLocalWeeklyReport(
 
   const business = await getBusiness(businessId);
   const { start, end } = weekStartEnd();
+  const weekStartTs = `${start}T00:00:00.000Z`;
+  const weekEndTs = `${end}T23:59:59.999Z`;
 
+  // BUG-2: ограничиваем недельной когортой по created_at — единственный
+  // надёжно проставляемый timestamp (completed_at/updated_at для growth_tasks
+  // в коде не пишутся). Без этого «недельный» отчёт показывал кумулятив.
   const [{ data: tasks }, { data: lostLeads }, { data: outcomes }, { data: economics }, { data: resultEvents }] =
     await Promise.all([
-      supabase.from("growth_tasks").select("*").eq("business_id", businessId),
+      supabase
+        .from("growth_tasks")
+        .select("*")
+        .eq("business_id", businessId)
+        .gte("created_at", weekStartTs)
+        .lte("created_at", weekEndTs),
       supabase.from("lost_leads").select("*").eq("business_id", businessId),
       supabase.from("lead_outcomes").select("*").eq("business_id", businessId),
       supabase.from("channel_unit_economics").select("*").eq("business_id", businessId).eq("period_start", start).eq("period_end", end),
@@ -384,7 +396,8 @@ export async function handleGenerateB2BPageDraft(
     cta: ((query as Row).recommended_cta as string) || "Оставить заявку",
   });
 
-  const slug = `${draft.slug}-${String((query as Row).id).slice(0, 8)}`;
+  // BUG-4: читаемый латинский slug (кириллица в slug ломала роутинг 404).
+  const slug = `${slugifyLatin(draft.title) || "page"}-${String((query as Row).id).slice(0, 8)}`;
   const { data: page, error } = await supabase
     .from("local_generated_pages")
     .insert({
@@ -414,13 +427,14 @@ export async function handleGenerateB2BPageDraft(
   if (error) throw error;
 
   for (const [index, section] of draft.sections.entries()) {
-    await supabase.from("local_page_sections").insert({
+    const { error: sectionError } = await supabase.from("local_page_sections").insert({
       page_id: page.id,
       section_type: section.section_type,
       title: section.title,
       body: section.body,
       sort_order: index,
     });
+    if (sectionError) throw sectionError;
   }
 
   await createTask({
@@ -468,43 +482,61 @@ export async function handleAnalyzeBehaviorSignals(
     .eq("business_id", businessId)
     .gte("occurred_at", since);
 
-  const groups = new Map<string, Row[]>();
-  for (const event of (events ?? []) as Row[]) {
-    const key = String(event.content_id || event.page_url || "unknown");
-    groups.set(key, [...(groups.get(key) ?? []), event]);
+  let created = 0;
+
+  // Page-level правила (5 из 6) — чистая логика в shared, протестирована.
+  for (const signal of deriveBehaviorSignals((events ?? []) as Row[])) {
+    await insertBehaviorSignal({
+      business_id: businessId,
+      content_id: isUuid(signal.key) ? signal.key : null,
+      signal_type: signal.signal_type,
+      severity: signal.severity,
+      summary: signal.summary,
+      recommended_action: signal.recommended_action,
+      confidence: signal.confidence,
+    });
+    created++;
   }
 
-  let created = 0;
-  for (const [key, rows] of groups.entries()) {
-    const views = rows.filter((row) => row.event_type === "view").length;
-    const leads = rows.filter((row) => row.event_type === "form_submit").length;
-    const phoneClicks = rows.filter((row) => row.event_type === "phone_click").length;
+  // Шестое правило — lead_sla_risk: открытые обращения с просроченным касанием.
+  const SLA_WAITING_STATUSES = [
+    "new",
+    "missed",
+    "no_answer",
+    "waiting_reply",
+    "price_sent",
+    "not_closed",
+    "repeat_touch_needed",
+  ];
+  const COLD_AFTER_MS = 48 * 60 * 60 * 1000;
+  const nowMs = Date.now();
+  const { data: openLeads } = await supabase
+    .from("lost_leads")
+    .select("*")
+    .eq("business_id", businessId)
+    .in("lead_status", SLA_WAITING_STATUSES);
 
-    if (views >= 30 && leads === 0) {
-      await insertBehaviorSignal({
-        business_id: businessId,
-        content_id: isUuid(key) ? key : null,
-        signal_type: "views_without_leads",
-        severity: views >= 100 ? "high" : "medium",
-        summary: `Страница получила ${views} просмотров за 7 дней без заявки.`,
-        recommended_action: "Усилить CTA, цену, FAQ, отзывы и форму заявки.",
-        confidence: 0.75,
-      });
-      created++;
-    }
+  const overdue = ((openLeads ?? []) as Row[]).filter((lead) => {
+    const nextTouch = lead.next_touch_at ? Date.parse(String(lead.next_touch_at)) : NaN;
+    if (Number.isFinite(nextTouch)) return nextTouch < nowMs;
+    const lastContact = lead.last_contact_at ? Date.parse(String(lead.last_contact_at)) : NaN;
+    if (Number.isFinite(lastContact)) return lastContact < nowMs - COLD_AFTER_MS;
+    const createdAt = lead.created_at ? Date.parse(String(lead.created_at)) : NaN;
+    return Number.isFinite(createdAt) && createdAt < nowMs - COLD_AFTER_MS;
+  });
 
-    if (phoneClicks >= 5 && leads === 0) {
-      await insertBehaviorSignal({
-        business_id: businessId,
-        content_id: isUuid(key) ? key : null,
-        signal_type: "phone_without_sale",
-        severity: "high",
-        summary: `${phoneClicks} кликов по телефону без зафиксированной заявки.`,
-        recommended_action: "Проверить пропущенные звонки, скрипт администратора и повторный контакт.",
-        confidence: 0.7,
-      });
-      created++;
-    }
+  if (overdue.length > 0) {
+    const potential = overdue.reduce((sum, lead) => sum + toNumber(lead.potential_revenue), 0);
+    await insertBehaviorSignal({
+      business_id: businessId,
+      content_id: null,
+      signal_type: "lead_sla_risk",
+      severity: overdue.length >= 3 ? "high" : "medium",
+      summary: `${overdue.length} обращений ждут касания дольше срока (потенциал ${Math.round(potential)} ₽).`,
+      recommended_action: "Связаться по просроченным обращениям сегодня и назначить следующий шаг.",
+      confidence: 0.7,
+    });
+    created++;
   }
 
   return { signals_created: created };
@@ -554,7 +586,7 @@ export async function handleCalculateUnitEconomics(
     const spend = toNumber((payload.spend_by_channel as Record<string, unknown> | undefined)?.[channel]);
     const economics = calculateUnitEconomics({ spend, clicks, leads, customers, revenue });
 
-    await supabase.from("channel_unit_economics").upsert(
+    const { error: upsertError } = await supabase.from("channel_unit_economics").upsert(
       {
         owner_id: business.owner_id,
         business_id: businessId,
@@ -576,6 +608,7 @@ export async function handleCalculateUnitEconomics(
       },
       { onConflict: "business_id,channel,period_start,period_end" },
     );
+    if (upsertError) throw upsertError;
     upserted++;
   }
 
