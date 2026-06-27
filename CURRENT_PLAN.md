@@ -174,12 +174,12 @@ MVP собран на монорепо (Turborepo + pnpm; `apps/web` Next.js 14,
 - **SEC-4 — `marketing-os/playbooks` GET (`route.ts:8-16`)**: возвращает все playbooks без фильтра по владельцу. Фикс: `.eq("owner_id", user.id)` либо `is_public`.
 - **SEC-5 (важно) — `marketing-os/review-queue` PATCH (`route.ts:58`)**: при `owner_id != me && business_id == null` авторизация пропускается. Фикс: `if (item.owner_id !== user.id) return Forbidden` без исключения для null.
 
-### P0 — Баги корректности
+### P0 — Баги корректности ✅ исправлено в коде 2026-06-27 (коммит f6a48f7, не задеплоено)
 
-- **BUG-1 — `calculate_unit_economics`**: ошибка `upsert` молча игнорируется → данные могут не сохраниться без сигнала. Фикс: проверять `error` и `throw`.
-- **BUG-2 — `generate_local_weekly_report`**: `growth_tasks` читается без фильтра по дате → «недельный» отчёт показывает кумулятив с момента создания аккаунта. Фикс: `.gte/.lte` по диапазону недели.
-- **BUG-3 — `analyze_behavior_signals` (п.13)**: реализованы только 2 из 6 правил (есть `views_without_leads`, частично `phone_click`; нет cta_click→форма, route_click→скрипт, повтор вопросов→FAQ, лид>SLA→касание, page opportunity→страница).
-- **BUG-4 — `generate_b2b_page_draft`**: ошибки вставки `local_page_sections` не пробрасываются; `slug` = 8 символов UUID (нечитаемо).
+- **BUG-1 — `calculate_unit_economics`**: ✅ `upsert` теперь проверяет `error` и делает `throw`; `upserted++` только при успехе.
+- **BUG-2 — `generate_local_weekly_report`**: ✅ `growth_tasks` ограничен недельной когортой по `created_at` (единственный надёжный timestamp — `completed_at`/`updated_at` для growth_tasks в коде не пишутся; долг трекинга завершения — в P1 «growth_tasks daily cadence»).
+- **BUG-3 — `analyze_behavior_signals` (п.13)**: ✅ 6 из 6 правил. Добавлены `cta_without_lead`, `high_intent_drop`, `faq_gap` (из `behavior_events`) и `lead_sla_risk` (просроченные `lost_leads.next_touch_at`). Page-логика вынесена в чистую `deriveBehaviorSignals` (shared) + 10 юнит-тестов. Примечание: «повтор вопросов→FAQ» реализован как поведенческий прокси (повторные визиты той же сессии), т.к. `questions` — niche-scoped, не business.
+- **BUG-4 — `generate_b2b_page_draft`**: ✅ ошибки insert `local_page_sections` пробрасываются (`throw`); `slug` теперь латинский через `slugifyLatin(draft.title)` + 8-символьный суффикс для уникальности (кириллица в slug ломала роутинг 404).
 
 ### P1 — Честность данных и формулы (п.17, п.5, п.9, п.11)
 
@@ -217,7 +217,7 @@ MVP собран на монорепо (Turborepo + pnpm; `apps/web` Next.js 14,
 ### Обновлённая последовательность Этапа 11 (по результатам аудита)
 
 1. **Этап 11.0 — Security hardening (P0): ✅ исправлено в коде 2026-06-24 (не задеплоено).** SEC-1 (`local-competitors` scope по доступным бизнесам), SEC-2 (`ai-visibility` проверка `expert_id`/`business_id`), SEC-5 (`review-queue` PATCH — убран null-пропуск). SEC-3 (`playbooks` POST — admin-гейт по `SMTP_ADMIN_EMAIL`, модель «общая библиотека»), SEC-4 resolved-by-design (read-only для всех залогиненных). Чистые authz-предикаты вынесены в `packages/shared/src/authz.ts` + 12 юнит-тестов. Деплой — при следующем рабочем окне (прод-канал был недоступен).
-2. **Этап 11.1 — Correctness (P0):** BUG-1…BUG-4 (включая дописать 4 правила `analyze_behavior_signals`).
+2. **Этап 11.1 — Correctness (P0): ✅ исправлено в коде 2026-06-27 (коммит f6a48f7, не задеплоено).** BUG-1…BUG-4 закрыты (включая 4 дописанных правила `analyze_behavior_signals` → 6/6). Тесты `pnpm --dir packages/shared test` 30/30, worker `tsc` OK. Деплой — вместе с 11.0 в ближайшее окно.
 3. **Этап 11.2 — Honest metrics (P1):** реализовать 6 нон-synthetic формул, вынести `buildLocalSalesOverview()` в shared, убрать `avg()`-эрзац и дубль, добавить тесты.
 4. **Этап 11.3 — Data integrity (P1):** `supabase gen types` (убрать 24 JsonRecord), `collected_at` явно, добить/переименовать колонки `growth_tasks`, allowlist-валидация payload.
 5. **Этап 11.4 — Refactor (P2):** единый helper-вход, singleton admin, JOIN в `assertBusinessAccess`, фикс пагинации `v1/local-demand`.
