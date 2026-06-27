@@ -1,6 +1,6 @@
 {
   "sessionState": "ACTIVE",
-  "currentStage": "HANDOFF_READY",
+  "currentStage": "EXISTING_PROJECT_ANALYZED",
   "intent": "Existing project `neuroexpert` analyzed by Product Factory OS.",
   "classification": {
     "productType": "SaaS Application + Messaging Bot + Background Worker",
@@ -65,6 +65,7 @@
       "pnpm build",
       "pnpm clean",
       "pnpm dev",
+      "pnpm dtr:smoke",
       "pnpm lint",
       "pnpm test",
       "pnpm typecheck",
@@ -394,7 +395,13 @@
       "stage": "VERIFYING_WORK",
       "node": "stage-1.1-yandex-360-balance-and-smtp-restore",
       "evidence": "Formal technical checks completed 2026-06-13. Required WSL workaround: env PATH=/home/hihol/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin because pnpm is installed in ~/.local/bin and Turbo child processes need pnpm on PATH. Passed: pnpm --dir packages/shared build; pnpm --dir apps/bot build; pnpm --dir apps/worker build; pnpm --dir apps/web build manually with 360s timeout in 195.5s; pnpm build; pnpm --dir apps/web lint; pnpm lint; pnpm test; pnpm --dir packages/shared test; pnpm typecheck. AEO smoke: WSL network to neuroexpertise.ru/198.18.0.70 times out, but Windows Node ran scripts/validate-aeo-site.js with AEO_SITE_URL=https://neuroexpertise.ru successfully; Windows curl /api/health and /robots.txt returned 200 in ~0.18s. pfo analyze --run-gates --report rerun with PATH: 9/10 PASS, apps/web build BLOCKED only by PFO hardcoded 90s timeout; manual same command passed.",
-      "recordedAt": "2026-06-13T18:56:35+00:00"
+      "recordedAt": "2026-06-13T21:56:35+03:00"
+    },
+    {
+      "mode": "existing-project-analyze",
+      "stage": "EXISTING_PROJECT_ANALYZED",
+      "status": "PASS",
+      "summary": "Detected SaaS Application + Messaging Bot + Background Worker with Anthropic, Docker Compose, Next.js, Node.js, OpenAI, PostgreSQL, Python, React, Supabase, TailwindCSS, Telegram bot, Turborepo, TypeScript, monorepo, pnpm. Ran 0 gate command(s)."
     },
     {
       "mode": "existing-project-analyze",
@@ -657,6 +664,10 @@
     {
       "event": "stage-2-safe worker failed jobs triage",
       "note": "2026-06-14: User explicitly allowed Stage-2-safe technical work while Stage 1 login remains BLOCKED. Production jobs: pending=0, processing=0, failed expand_query=754, completed collect_demand=60/find_gaps=16/generate_orders=16/generate_content=1/validate_content=3. Root cause for failed expand_query is OpenAI quota/billing 429 after Claude primary failed and OpenAI fallback was used. Recovered one stale order/content mismatch by guarded update from processing to published where linked content was already published. Do not retry 754 expand_query jobs until provider quota/fallback and 429 backoff are fixed."
+    },
+    {
+      "event": "existing project analyzer run",
+      "note": "runGates=False"
     }
   ],
   "artifactHashes": {},
@@ -699,12 +710,12 @@
   "completedModules": [],
   "failedValidations": [],
   "blockers": [],
-  "nextAction": "Stage 1 login remains BLOCKED by Yandex 360/SMTP. Stage-2-safe worker hardening is DONE through Demand-to-Revenue production/DB controlled smoke: all 6 DTR jobs completed on fixture a4a9a5ad-39c2-47af-a2c5-d6f520ac0f92 after targeted worker rebuild; expand_query failed=754 remains intentionally untouched. Optional web deploy for richer /api/health is deferred because current environment cannot get a reliable production HTTPS/SSH verification channel: DNS goes through MantaRay 198.18.x.x, direct production IP HTTP has no response, and SSH closes at kex_exchange_identification. Next: restore/verify production access, then re-check /api/health shape and deploy web only with post-deploy smoke; fix provider quota/fallback before any expand_query replay/archive.",
+  "nextAction": "Stage 1 login remains BLOCKED by Yandex 360/SMTP until account owner restores SMTP and a real magic-link email is verified. Local Stage 1-safe auth UX hardening is done and verified with web lint/build. Next: pay/refill Yandex 360, remove viewing mode, restart supabase-auth, verify /otp and real magic-link email; restore production HTTPS/SSH before any optional web deploy; do not touch 754 failed expand_query jobs until provider quota/fallback is fixed.",
   "pfoRuntime": {
     "status": "FULLY_ADOPTED",
     "methodologyPath": "/home/hihol/projects/product-factory-os",
     "workspace": "/home/hihol/projects",
-    "methodologyRevision": "323016331feb19130ad2cdceb6d20e93e7387b93",
+    "methodologyRevision": "b297228cc750fd05a592138ae9f0a6d9cab52ee9",
     "mode": "automatic-workspace-runtime",
     "codexGoalMode": {
       "enabled": true,
@@ -767,7 +778,7 @@
     "fromRole": "codex",
     "toRole": "next-session",
     "reason": "blocked-external-yandex-360",
-    "createdAt": "2026-06-13T19:11:42+00:00",
+    "createdAt": "2026-06-13T22:11:42+03:00",
     "nextAction": "Technical stabilization is complete: PFO_CONTRACT_GATE PASS, formal checks passed with WSL PATH workaround, AEO smoke passed via Windows Node, deploy scripts are 755. Stage 1 remains externally BLOCKED until Yandex 360 is paid/viewing mode removed; then restart supabase-auth, verify /otp, and verify a real magic-link email."
   },
   "dispatchJournal": [],
@@ -811,8 +822,8 @@
   "learningProposals": [],
   "eventLog": {
     "path": ".codex-memory/events.jsonl",
-    "lastEventId": "event-20260615T120000Z-stage2-web-deploy-deferred",
-    "lastEventAt": "2026-06-15T12:00:00+03:00"
+    "lastEventId": "event-20260615T-stage1-safe-auth-ux-hardening",
+    "lastEventAt": "2026-06-15T21:42:33+03:00"
   },
   "executionPolicy": {
     "path": ".pfo/EXECUTION_POLICY.json",
@@ -879,7 +890,7 @@
   "resumeSnapshot": {
     "path": ".codex-memory/resume-snapshot.md",
     "reason": "blocked-external-yandex-360",
-    "createdAt": "2026-06-13T19:11:42+00:00"
+    "createdAt": "2026-06-13T22:11:42+03:00"
   },
   "contextBudget": {
     "gate": "pfo context-budget",
@@ -887,5 +898,5 @@
     "snapshotPath": ".codex-memory/resume-snapshot.md",
     "status": ""
   },
-  "lastImplementationReport": "reports/stage-2-safe-dtr-production-smoke-report.md"
+  "lastImplementationReport": "reports/stage-1-safe-auth-ux-hardening-report.md"
 }

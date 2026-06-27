@@ -51,31 +51,39 @@ function RegisterForm() {
     setLoading(true);
 
     const referrerSlug = ref || localStorage.getItem("neuroexpert_ref") || undefined;
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedFullName = fullName.trim();
 
-    const slugBase = slugifyLatin(fullName);
+    const slugBase = slugifyLatin(normalizedFullName);
     const slug = slugBase ? `${slugBase}-${crypto.randomUUID().slice(0, 8)}` : undefined;
 
     const supabase = createClient();
-    const { error: authError } = await supabase.auth.signUp({
-      email,
-      password: crypto.randomUUID(),
-      options: {
-        data: {
-          full_name: fullName,
-          slug,
-          niche_id: nicheId || undefined,
-          referrer_slug: referrerSlug,
+    try {
+      const { error: authError } = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password: crypto.randomUUID(),
+        options: {
+          data: {
+            full_name: normalizedFullName,
+            slug,
+            niche_id: nicheId || undefined,
+            referrer_slug: referrerSlug,
+          },
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
         },
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
-      },
-    });
+      });
 
-    setLoading(false);
-
-    if (authError) {
-      setError(getFriendlyAuthError(authError.message));
-    } else {
+      if (authError) {
+        setError(getFriendlyAuthError(authError.message));
+        return;
+      }
+      setEmail(normalizedEmail);
+      setFullName(normalizedFullName);
       setSent(true);
+    } catch {
+      setError("Не удалось связаться с сервисом регистрации. Проверьте подключение и попробуйте ещё раз.");
+    } finally {
+      setLoading(false);
     }
   }
 

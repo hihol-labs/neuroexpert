@@ -14,19 +14,24 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const response = await fetch("/api/auth/magic-link", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
+    try {
+      const response = await fetch("/api/auth/magic-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
 
-    setLoading(false);
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as { error?: string };
+        setError(data.error ?? "Не удалось отправить ссылку для входа. Попробуйте ещё раз через минуту.");
+        return;
+      }
 
-    if (!response.ok) {
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
-      setError(data.error ?? "Не удалось отправить ссылку для входа. Попробуйте ещё раз через минуту.");
-    } else {
       setSent(true);
+    } catch {
+      setError("Не удалось связаться с сервисом входа. Проверьте подключение и попробуйте ещё раз.");
+    } finally {
+      setLoading(false);
     }
   }
 
