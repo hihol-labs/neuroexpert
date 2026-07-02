@@ -128,7 +128,7 @@ MVP собран на монорепо (Turborepo + pnpm; `apps/web` Next.js 14,
 | 5 | Монетизация и ЮKassa | ⚪ TODO (зависит от одобрения ЮKassa) |
 | 6 | Data authenticity и demand quality | ⚪ TODO |
 | 7 | **Security и trust** | 🟡 SEC-1…5 исправлены в коде (2026-06-24, не задеплоено); остальной hardening TODO |
-| 8 | Test coverage | ⚪ TODO (0% покрытия формул подтверждено) |
+| 8 | Test coverage | 🟡 PARTIAL (формулы demand-to-revenue покрыты: 25 тестов, shared 55/55 — 2026-07-02) |
 | 9 | Community warm-up | ⚪ TODO (маркетинг) |
 | 10 | Promotion readiness | ⚪ TODO |
 | 11 | Local Sales OS data foundation | 🟡 PARTIAL (Copilot готов; см. детальный аудит ниже) |
@@ -218,7 +218,7 @@ MVP собран на монорепо (Turborepo + pnpm; `apps/web` Next.js 14,
 
 1. **Этап 11.0 — Security hardening (P0): ✅ исправлено в коде 2026-06-24 (не задеплоено).** SEC-1 (`local-competitors` scope по доступным бизнесам), SEC-2 (`ai-visibility` проверка `expert_id`/`business_id`), SEC-5 (`review-queue` PATCH — убран null-пропуск). SEC-3 (`playbooks` POST — admin-гейт по `SMTP_ADMIN_EMAIL`, модель «общая библиотека»), SEC-4 resolved-by-design (read-only для всех залогиненных). Чистые authz-предикаты вынесены в `packages/shared/src/authz.ts` + 12 юнит-тестов. Деплой — при следующем рабочем окне (прод-канал был недоступен).
 2. **Этап 11.1 — Correctness (P0): ✅ исправлено в коде 2026-06-27 (коммит f6a48f7, не задеплоено).** BUG-1…BUG-4 закрыты (включая 4 дописанных правила `analyze_behavior_signals` → 6/6). Тесты `pnpm --dir packages/shared test` 30/30, worker `tsc` OK. Деплой — вместе с 11.0 в ближайшее окно.
-3. **Этап 11.2 — Honest metrics (P1):** реализовать 6 нон-synthetic формул, вынести `buildLocalSalesOverview()` в shared, убрать `avg()`-эрзац и дубль, добавить тесты.
+3. **Этап 11.2 — Honest metrics (P1): ✅ исправлено в коде 2026-07-02 (коммит 57521b0, не задеплоено).** 6 нон-synthetic формул в `packages/shared/src/demand-to-revenue.ts` (Map Visibility, Review Health, Avito Opportunity, Response SLA, Local Page Opportunity, Behavior Opportunity) + `calculateAiVisibilityScore` с clamp. `buildLocalSalesOverview()` вынесен в shared — дубль `getLocalSalesData()`/`buildOverview()` удалён; API-форма сохранена + 4 additive-ключа в `scores`. 25 тестов формул (shared 55/55). Деплой — вместе с блоком в ближайшее окно.
 4. **Этап 11.3 — Data integrity (P1):** `supabase gen types` (убрать 24 JsonRecord), `collected_at` явно, добить/переименовать колонки `growth_tasks`, allowlist-валидация payload.
 5. **Этап 11.4 — Refactor (P2):** единый helper-вход, singleton admin, JOIN в `assertBusinessAccess`, фикс пагинации `v1/local-demand`.
 6. **Этап 11b (отложено):** Autopilot, Synthetic Audience, 12 jobs, роли admin/marketer — не раньше доказанного B2B-traction или явного решения (см. правки от 2026-06-12).
