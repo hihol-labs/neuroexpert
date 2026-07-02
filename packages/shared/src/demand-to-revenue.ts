@@ -470,3 +470,462 @@ export function deriveBehaviorSignals(events: BehaviorEventLike[]): BehaviorSign
 
   return signals;
 }
+
+// --- Local Sales OS honest metrics (Этап 11.2) ------------------------------
+// Нон-synthetic формулы вместо примитивного avg() и единый billing-нейтральный
+// расчёт Overview. Раньше getLocalSalesData() (page.tsx) и buildOverview()
+// (route.ts) держали две независимые копии — теперь единственный источник здесь.
+
+function num(value: unknown, fallback = 0): number {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function average(values: number[]): number {
+  const clean = values.filter((value) => Number.isFinite(value));
+  if (!clean.length) return 0;
+  return clean.reduce((sum, value) => sum + value, 0) / clean.length;
+}
+
+function round1(value: number): number {
+  return Math.round(clamp(value) * 10) / 10;
+}
+
+/** Каналы «Карты / площадки» — только они участвуют в Map Visibility. */
+export const LOCAL_SALES_PLATFORM_CHANNELS = [
+  "yandex_maps",
+  "two_gis",
+  "google_maps",
+  "avito",
+] as const;
+
+/** Статусы lost_leads, считающиеся открытыми (лид ещё можно вернуть). */
+export const LOCAL_SALES_OPEN_LEAD_STATUSES = [
+  "new",
+  "missed",
+  "no_answer",
+  "waiting_reply",
+  "price_sent",
+  "not_closed",
+  "repeat_touch_needed",
+  "lost",
+] as const;
+
+export type LocalSalesRow = Record<string, unknown>;
+
+export type MapVisibilityProfileInput = {
+  channel?: string | null;
+  visibilityScore?: number | null;
+  rating?: number | null;
+  reviewsCount?: number | null;
+  photosCount?: number | null;
+  servicesCount?: number | null;
+};
+
+/**
+ * Map Visibility: видимость на картах/площадках.
+ * 60% — visibility_score профилей карт, 40% — заполненность профиля
+ * (рейтинг, отзывы, ≥3 фото, услуги — по 25 очков). Не-картографические
+ * каналы (website, phone, …) не учитываются. Нет профилей карт → 0.
+ */
+export function calculateMapVisibilityScore(
+  profiles: MapVisibilityProfileInput[],
+): number {
+  const platformChannels: readonly string[] = LOCAL_SALES_PLATFORM_CHANNELS;
+  const platform = profiles.filter((profile) =>
+    platformChannels.includes(String(profile.channel ?? "")),
+  );
+  if (!platform.length) return 0;
+
+  const perProfile = platform.map((profile) => {
+    const base = clamp(safe(profile.visibilityScore));
+    const completeness =
+      (safe(profile.rating) > 0 ? 25 : 0) +
+      (safe(profile.reviewsCount) > 0 ? 25 : 0) +
+      (safe(profile.photosCount) >= 3 ? 25 : 0) +
+      (safe(profile.servicesCount) > 0 ? 25 : 0);
+    return base * 0.6 + completeness * 0.4;
+  });
+
+  return round1(average(perProfile));
+}
+
+export type ReviewHealthInput = {
+  averageRating?: number | null;
+  reviewsCount?: number | null;
+  /** Доля отзывов с ответом бизнеса, 0-1. Не передан — вес уходит рейтингу/объёму. */
+  respondedShare?: number | null;
+  /** Доля свежих отзывов (≤90 дней), 0-1. Не передан — вес уходит рейтингу/объёму. */
+  freshShare?: number | null;
+};
+
+/**
+ * Review Health: рейтинг (60%) + объём отзывов по log10 (40%);
+ * при наличии данных об ответах/свежести — они добавляются с весами 0.25/0.15
+ * и сумма нормируется. 0 отзывов → 0. Объём: 10 отзывов ≈ 40, 100 ≈ 80.
+ */
+export function calculateReviewHealthScore(input: ReviewHealthInput): number {
+  const count = Math.max(0, safe(input.reviewsCount));
+  if (count === 0) return 0;
+
+  const components: Array<{ value: number; weight: number }> = [
+    { value: clamp((safe(input.averageRating) / 5) * 100), weight: 0.6 },
+    { value: clamp(Math.log10(Math.max(count, 1)) * 40), weight: 0.4 },
+  ];
+  if (input.respondedShare != null) {
+    components.push({
+      value: clamp(Math.min(1, Math.max(0, safe(input.respondedShare))) * 100),
+      weight: 0.25,
+    });
+  }
+  if (input.freshShare != null) {
+    components.push({
+      value: clamp(Math.min(1, Math.max(0, safe(input.freshShare))) * 100),
+      weight: 0.15,
+    });
+  }
+
+  const totalWeight = components.reduce((sum, item) => sum + item.weight, 0);
+  const score =
+    components.reduce((sum, item) => sum + item.value * item.weight, 0) /
+    totalWeight;
+  return round1(score);
+}
+
+export type AvitoOpportunityInput = {
+  hasAvitoProfile: boolean;
+  avitoVisibilityScore?: number | null;
+  localQueriesCount?: number | null;
+  competitorsOnAvito?: number | null;
+};
+
+/**
+ * Avito Opportunity: сколько спроса упускается на Авито (выше = больше упущено).
+ * 50% — разрыв присутствия (нет профиля → 100), 30% — локальный спрос
+ * (log10: 10 запросов ≈ 50, 100 ≈ 100), 20% — конкуренты уже на Авито (по 20 очков).
+ */
+export function calculateAvitoOpportunityScore(
+  input: AvitoOpportunityInput,
+): number {
+  const demand = clamp(
+    Math.log10(Math.max(safe(input.localQueriesCount), 1)) * 50,
+  );
+  const presenceGap = input.hasAvitoProfile
+    ? clamp(100 - safe(input.avitoVisibilityScore))
+    : 100;
+  const competitorPressure = clamp(safe(input.competitorsOnAvito) * 20);
+
+  return round1(presenceGap * 0.5 + demand * 0.3 + competitorPressure * 0.2);
+}
+
+export type ResponseSlaInput = {
+  totalLeads?: number | null;
+  /** Обращения, оставшиеся без ответа (missed / no_answer). */
+  unansweredLeads?: number | null;
+  avgResponseMinutes?: number | null;
+};
+
+/**
+ * Response SLA: доля отвеченных обращений (60%) + скорость ответа (40%,
+ * ≤15 мин → 100, ≥24 ч → 0, линейно между). Без данных о скорости — только
+ * доля отвеченных. Нет обращений → 100 (нарушений SLA нет).
+ */
+export function calculateResponseSlaScore(input: ResponseSlaInput): number {
+  const total = Math.max(0, safe(input.totalLeads));
+  if (total === 0) return 100;
+
+  const unanswered = Math.min(total, Math.max(0, safe(input.unansweredLeads)));
+  const answeredScore = clamp((1 - unanswered / total) * 100);
+  if (input.avgResponseMinutes == null) return round1(answeredScore);
+
+  const minutes = Math.max(0, safe(input.avgResponseMinutes));
+  const speedScore =
+    minutes <= 15 ? 100 : clamp(100 - ((minutes - 15) / (1440 - 15)) * 100);
+  return round1(answeredScore * 0.6 + speedScore * 0.4);
+}
+
+export type LocalPageOpportunityInput = {
+  queriesCount?: number | null;
+  generatedPagesCount?: number | null;
+  publishedPagesCount?: number | null;
+};
+
+/**
+ * Local Page Opportunity: непокрытый страницами локальный спрос,
+ * масштабированный объёмом спроса (log10: ~9 запросов → 50%, 99+ → 100%).
+ * Нет найденного спроса → 0 (нечего покрывать).
+ */
+export function calculateLocalPageOpportunityScore(
+  input: LocalPageOpportunityInput,
+): number {
+  const queries = Math.max(0, safe(input.queriesCount));
+  if (queries === 0) return 0;
+
+  const generated = Math.max(0, safe(input.generatedPagesCount));
+  const published = Math.min(
+    generated,
+    Math.max(0, safe(input.publishedPagesCount, generated)),
+  );
+  const uncovered = clamp((1 - Math.min(1, published / queries)) * 100);
+  const demandScale = clamp(Math.log10(queries + 1) * 50) / 100;
+
+  return round1(uncovered * demandScale);
+}
+
+export type BehaviorSignalLike = {
+  severity?: string | null;
+  status?: string | null;
+};
+
+const BEHAVIOR_SEVERITY_WEIGHT: Record<string, number> = {
+  critical: 40,
+  high: 25,
+  medium: 15,
+  low: 5,
+};
+
+/**
+ * Behavior Opportunity: суммарный вес открытых поведенческих сигналов
+ * (critical 40 / high 25 / medium 15 / low 5), cap 100. Закрытые
+ * (resolved/dismissed/done) не учитываются.
+ */
+export function calculateBehaviorOpportunityScore(
+  signals: BehaviorSignalLike[],
+): number {
+  const open = signals.filter((signal) =>
+    ["open", "in_progress"].includes(String(signal.status ?? "open")),
+  );
+  const score = open.reduce(
+    (sum, signal) =>
+      sum + (BEHAVIOR_SEVERITY_WEIGHT[String(signal.severity ?? "medium")] ?? 15),
+    0,
+  );
+  return round1(Math.min(100, score));
+}
+
+export type AiVisibilityInput = {
+  competitorScores?: Array<number | null | undefined>;
+  ownAiProfileScores?: Array<number | null | undefined>;
+};
+
+/**
+ * AI Visibility: max(среднее ai_visibility_score конкурентов, среднее
+ * visibility_score собственных ai_answer-профилей), с clamp 0-100.
+ * Ровно прежняя inline-семантика из page.tsx/route.ts + отсутствовавший clamp.
+ */
+export function calculateAiVisibilityScore(input: AiVisibilityInput): number {
+  const competitor = average(
+    (input.competitorScores ?? []).map((value) => safe(value)),
+  );
+  const own = average(
+    (input.ownAiProfileScores ?? []).map((value) => safe(value)),
+  );
+  return round1(Math.max(competitor, own));
+}
+
+export type LocalSalesOverviewData = {
+  business_locations?: LocalSalesRow[];
+  local_profiles?: LocalSalesRow[];
+  local_competitors?: LocalSalesRow[];
+  local_queries?: LocalSalesRow[];
+  lost_leads?: LocalSalesRow[];
+  lead_outcomes?: LocalSalesRow[];
+  growth_tasks?: LocalSalesRow[];
+  local_weekly_reports?: LocalSalesRow[];
+  behavior_signals?: LocalSalesRow[];
+  local_generated_pages?: LocalSalesRow[];
+};
+
+export type LocalSalesOverview = {
+  local_sales_index: number;
+  scores: {
+    local_visibility: number;
+    reviews: number;
+    conversion: number;
+    ai_visibility: number;
+    lost_lead_recovery: number;
+    task_completion: number;
+    avito_opportunity: number;
+    response_sla: number;
+    local_page_opportunity: number;
+    behavior_opportunity: number;
+  };
+  counters: {
+    locations: number;
+    channels: number;
+    competitors: number;
+    local_queries: number;
+    open_lost_leads: number;
+    open_tasks: number;
+    weekly_reports: number;
+    behavior_signals: number;
+    generated_pages: number;
+  };
+  money: {
+    estimated_lost_revenue: number;
+    recovered_revenue: number;
+    revenue_won: number;
+  };
+  empty_state_tasks: typeof LOCAL_SALES_EMPTY_STATE_TASKS;
+};
+
+/**
+ * Единый расчёт Local Sales Overview для API-роута и dashboard-страницы.
+ * Принимает сырые строки таблиц (service-role select) и business_account.
+ */
+export function buildLocalSalesOverview(
+  account: LocalSalesRow,
+  data: LocalSalesOverviewData,
+): LocalSalesOverview {
+  const profiles = data.local_profiles ?? [];
+  const competitors = data.local_competitors ?? [];
+  const queries = data.local_queries ?? [];
+  const lostLeads = data.lost_leads ?? [];
+  const leadOutcomes = data.lead_outcomes ?? [];
+  const tasks = data.growth_tasks ?? [];
+  const behaviorSignals = data.behavior_signals ?? [];
+  const generatedPages = data.local_generated_pages ?? [];
+
+  const mapVisibilityScore = calculateMapVisibilityScore(
+    profiles.map((profile) => ({
+      channel: typeof profile.channel === "string" ? profile.channel : null,
+      visibilityScore: num(profile.visibility_score),
+      rating: num(profile.rating),
+      reviewsCount: num(profile.reviews_count),
+      photosCount: num(profile.photos_count),
+      servicesCount: num(profile.services_count),
+    })),
+  );
+
+  const ratedProfiles = profiles.filter((profile) => num(profile.rating) > 0);
+  const reviewScore = calculateReviewHealthScore({
+    averageRating: average(ratedProfiles.map((profile) => num(profile.rating))),
+    reviewsCount: profiles.reduce(
+      (sum, profile) => sum + num(profile.reviews_count),
+      0,
+    ),
+  });
+
+  const conversionScore = clamp(
+    average(profiles.map((profile) => num(profile.conversion_score))),
+  );
+
+  const aiVisibilityScore = calculateAiVisibilityScore({
+    competitorScores: competitors.map((item) => num(item.ai_visibility_score)),
+    ownAiProfileScores: profiles
+      .filter((profile) => profile.channel === "ai_answer")
+      .map((profile) => num(profile.visibility_score)),
+  });
+
+  const openLeadStatuses: readonly string[] = LOCAL_SALES_OPEN_LEAD_STATUSES;
+  const openLostLeads = lostLeads.filter((lead) =>
+    openLeadStatuses.includes(String(lead.lead_status)),
+  );
+  const recoveredLeads = lostLeads.filter(
+    (lead) => lead.lead_status === "recovered",
+  );
+  const lostLeadRecoveryScore = lostLeads.length
+    ? (recoveredLeads.length / lostLeads.length) * 100
+    : 0;
+
+  const taskCompletionScore = tasks.length
+    ? (tasks.filter((task) => task.status === "done").length / tasks.length) *
+      100
+    : 0;
+
+  const localSalesIndex = calculateLocalSalesIndex({
+    localVisibilityScore: mapVisibilityScore,
+    reviewScore,
+    conversionScore,
+    aiVisibilityScore,
+    lostLeadRecoveryScore,
+    taskCompletionScore,
+  });
+
+  const avitoProfile = profiles.find((profile) => profile.channel === "avito");
+  const avitoOpportunityScore = calculateAvitoOpportunityScore({
+    hasAvitoProfile: Boolean(avitoProfile),
+    avitoVisibilityScore: avitoProfile
+      ? num(avitoProfile.visibility_score)
+      : null,
+    localQueriesCount: queries.length,
+    competitorsOnAvito: competitors.filter((item) =>
+      Boolean(
+        (item.channels as Record<string, unknown> | null | undefined)?.avito,
+      ),
+    ).length,
+  });
+
+  const responseSlaScore = calculateResponseSlaScore({
+    totalLeads: lostLeads.length,
+    unansweredLeads: lostLeads.filter((lead) =>
+      ["missed", "no_answer"].includes(String(lead.lead_status)),
+    ).length,
+  });
+
+  const localPageOpportunityScore = calculateLocalPageOpportunityScore({
+    queriesCount: queries.length,
+    generatedPagesCount: generatedPages.length,
+    publishedPagesCount: generatedPages.filter(
+      (page) => page.status === "published",
+    ).length,
+  });
+
+  const behaviorOpportunityScore = calculateBehaviorOpportunityScore(
+    behaviorSignals.map((signal) => ({
+      severity: typeof signal.severity === "string" ? signal.severity : null,
+      status: typeof signal.status === "string" ? signal.status : null,
+    })),
+  );
+
+  const avgCheck = num(account.avg_check);
+  const lostRevenue = openLostLeads.reduce((sum, lead) => {
+    const explicit = num(lead.potential_revenue);
+    if (explicit > 0) return sum + explicit;
+    return (
+      sum +
+      estimateLostRevenue({
+        avgCheck: num(lead.avg_check, avgCheck),
+        leadsCount: 1,
+        conversionProbability: num(lead.conversion_probability, 0.2),
+      })
+    );
+  }, 0);
+
+  return {
+    local_sales_index: localSalesIndex,
+    scores: {
+      local_visibility: Math.round(mapVisibilityScore),
+      reviews: Math.round(reviewScore),
+      conversion: Math.round(conversionScore),
+      ai_visibility: Math.round(aiVisibilityScore),
+      lost_lead_recovery: Math.round(lostLeadRecoveryScore),
+      task_completion: Math.round(taskCompletionScore),
+      avito_opportunity: Math.round(avitoOpportunityScore),
+      response_sla: Math.round(responseSlaScore),
+      local_page_opportunity: Math.round(localPageOpportunityScore),
+      behavior_opportunity: Math.round(behaviorOpportunityScore),
+    },
+    counters: {
+      locations: data.business_locations?.length ?? 0,
+      channels: profiles.length,
+      competitors: competitors.length,
+      local_queries: queries.length,
+      open_lost_leads: openLostLeads.length,
+      open_tasks: tasks.filter((task) => task.status !== "done").length,
+      weekly_reports: data.local_weekly_reports?.length ?? 0,
+      behavior_signals: behaviorSignals.length,
+      generated_pages: generatedPages.length,
+    },
+    money: {
+      estimated_lost_revenue: Math.round(lostRevenue),
+      recovered_revenue: Math.round(
+        lostLeads.reduce((sum, lead) => sum + num(lead.recovered_revenue), 0),
+      ),
+      revenue_won: Math.round(
+        leadOutcomes.reduce((sum, outcome) => sum + num(outcome.amount), 0),
+      ),
+    },
+    empty_state_tasks: LOCAL_SALES_EMPTY_STATE_TASKS,
+  };
+}

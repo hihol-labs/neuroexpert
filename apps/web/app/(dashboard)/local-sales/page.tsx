@@ -14,11 +14,7 @@ import {
   PhoneMissed,
   TrendingUp,
 } from "lucide-react";
-import {
-  LOCAL_SALES_EMPTY_STATE_TASKS,
-  calculateLocalSalesIndex,
-  estimateLostRevenue,
-} from "shared";
+import { LOCAL_SALES_EMPTY_STATE_TASKS, buildLocalSalesOverview } from "shared";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -33,12 +29,6 @@ function getAdmin() {
 function toNumber(value: unknown, fallback = 0): number {
   const parsed = typeof value === "number" ? value : Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function avg(values: number[]): number {
-  const clean = values.filter((value) => Number.isFinite(value));
-  if (!clean.length) return 0;
-  return clean.reduce((sum, value) => sum + value, 0) / clean.length;
 }
 
 function formatRub(value: number): string {
@@ -188,75 +178,22 @@ async function getLocalSalesData(userId: string) {
   const activeGeneratedPages = activeOnly(generatedPages);
   const activeUnitEconomics = activeOnly(unitEconomics);
 
-  const localVisibilityScore = avg(
-    activeProfiles.map((item) => toNumber(item.visibility_score)),
-  );
-  const reviewScore = avg(
-    activeProfiles
-      .filter((item) => item.rating)
-      .map((item) => Math.min(100, (toNumber(item.rating) / 5) * 100)),
-  );
-  const conversionScore = avg(
-    activeProfiles.map((item) => toNumber(item.conversion_score)),
-  );
-  const aiVisibilityScore = Math.max(
-    avg(activeCompetitors.map((item) => toNumber(item.ai_visibility_score))),
-    avg(
-      activeProfiles
-        .filter((item) => item.channel === "ai_answer")
-        .map((item) => toNumber(item.visibility_score)),
-    ),
-  );
-  const recovered = activeLostLeads.filter(
-    (item) => item.lead_status === "recovered",
-  ).length;
-  const lostLeadRecoveryScore = activeLostLeads.length
-    ? (recovered / activeLostLeads.length) * 100
-    : 0;
-  const taskCompletionScore = activeTasks.length
-    ? (activeTasks.filter((item) => item.status === "done").length /
-        activeTasks.length) *
-      100
-    : 0;
-
-  const localSalesIndex = calculateLocalSalesIndex({
-    localVisibilityScore,
-    reviewScore,
-    conversionScore,
-    aiVisibilityScore,
-    lostLeadRecoveryScore,
-    taskCompletionScore,
-  });
-
-  const openLostLeads = activeLostLeads.filter((lead) =>
-    [
-      "new",
-      "missed",
-      "no_answer",
-      "waiting_reply",
-      "price_sent",
-      "not_closed",
-      "repeat_touch_needed",
-      "lost",
-    ].includes(String(lead.lead_status)),
-  );
-  const avgCheck = toNumber(activeBusiness?.avg_check);
-  const lostRevenue = openLostLeads.reduce((sum, lead) => {
-    const explicit = toNumber(lead.potential_revenue);
-    if (explicit > 0) return sum + explicit;
-    return (
-      sum +
-      estimateLostRevenue({
-        avgCheck: toNumber(lead.avg_check, avgCheck),
-        leadsCount: 1,
-        conversionProbability: toNumber(lead.conversion_probability, 0.2),
+  // Единый расчёт Overview в shared (buildLocalSalesOverview) —
+  // та же формула, что в /api/local-sales (Этап 11.2, убран дубль).
+  const overview = activeBusiness
+    ? buildLocalSalesOverview(activeBusiness, {
+        business_locations: activeLocations,
+        local_profiles: activeProfiles,
+        local_competitors: activeCompetitors,
+        local_queries: activeQueries,
+        lost_leads: activeLostLeads,
+        lead_outcomes: activeLeadOutcomes,
+        growth_tasks: activeTasks,
+        local_weekly_reports: activeReports,
+        behavior_signals: activeBehaviorSignals,
+        local_generated_pages: activeGeneratedPages,
       })
-    );
-  }, 0);
-  const wonRevenue = activeLeadOutcomes.reduce(
-    (sum, outcome) => sum + toNumber(outcome.amount),
-    0,
-  );
+    : null;
 
   return {
     businesses: (businesses ?? []) as JsonRecord[],
@@ -272,18 +209,7 @@ async function getLocalSalesData(userId: string) {
     behaviorSignals: activeBehaviorSignals,
     generatedPages: activeGeneratedPages,
     unitEconomics: activeUnitEconomics,
-    overview: {
-      localSalesIndex,
-      localVisibilityScore,
-      reviewScore,
-      conversionScore,
-      aiVisibilityScore,
-      lostLeadRecoveryScore,
-      taskCompletionScore,
-      openLostLeads: openLostLeads.length,
-      lostRevenue,
-      wonRevenue,
-    },
+    overview,
   };
 }
 
@@ -394,19 +320,19 @@ export default async function LocalSalesPage() {
       <div className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-7">
         <Card>
           <CardTitle>Local Sales Index</CardTitle>
-          <CardValue>{overview.localSalesIndex.toFixed(1)}</CardValue>
+          <CardValue>{overview.local_sales_index.toFixed(1)}</CardValue>
         </Card>
         <Card>
           <CardTitle>Потерянные обращения</CardTitle>
-          <CardValue>{overview.openLostLeads}</CardValue>
+          <CardValue>{overview.counters.open_lost_leads}</CardValue>
         </Card>
         <Card>
           <CardTitle>Потенциал возврата</CardTitle>
-          <CardValue>{formatRub(overview.lostRevenue)}</CardValue>
+          <CardValue>{formatRub(overview.money.estimated_lost_revenue)}</CardValue>
         </Card>
         <Card>
           <CardTitle>Деньги</CardTitle>
-          <CardValue>{formatRub(overview.wonRevenue)}</CardValue>
+          <CardValue>{formatRub(overview.money.revenue_won)}</CardValue>
         </Card>
         <Card>
           <CardTitle>Задачи роста</CardTitle>
@@ -429,12 +355,12 @@ export default async function LocalSalesPage() {
             <h2 className="font-semibold text-gray-900">Контур результата</h2>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            <ScoreBar label="Карты / площадки" value={overview.localVisibilityScore} />
-            <ScoreBar label="Отзывы и доверие" value={overview.reviewScore} />
-            <ScoreBar label="Конверсия страниц" value={overview.conversionScore} />
-            <ScoreBar label="AI-видимость" value={overview.aiVisibilityScore} />
-            <ScoreBar label="Возврат лидов" value={overview.lostLeadRecoveryScore} />
-            <ScoreBar label="Выполнение задач" value={overview.taskCompletionScore} />
+            <ScoreBar label="Карты / площадки" value={overview.scores.local_visibility} />
+            <ScoreBar label="Отзывы и доверие" value={overview.scores.reviews} />
+            <ScoreBar label="Конверсия страниц" value={overview.scores.conversion} />
+            <ScoreBar label="AI-видимость" value={overview.scores.ai_visibility} />
+            <ScoreBar label="Возврат лидов" value={overview.scores.lost_lead_recovery} />
+            <ScoreBar label="Выполнение задач" value={overview.scores.task_completion} />
           </div>
         </div>
 
