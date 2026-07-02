@@ -100,7 +100,9 @@ export async function GET() {
     pages_published: count ?? 0,
     auth: {
       status: authHealth,
-      magic_link_ready: smtpConfigured,
+      // Готовность magic-link = SMTP сконфигурирован И auth-сервис здоров.
+      // Только env-переменных SMTP недостаточно: при degraded auth письма не уходят.
+      magic_link_ready: smtpConfigured && authHealth === "ok",
       smtp_configured: smtpConfigured,
     },
     worker: {
