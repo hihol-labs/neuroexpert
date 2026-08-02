@@ -1,84 +1,10 @@
 import Link from "next/link";
-import {
-  ArrowDownRight,
-  ArrowRight,
-  Check,
-  MoveUpRight,
-} from "lucide-react";
+import { ArrowRight, Check, Crosshair, MapPin, Radio, Route } from "lucide-react";
+import { DemandScene } from "@/components/marketing/demand-scene";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/nav";
 import { generateServiceSchema } from "@/lib/schema-org";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://neuroexpertise.ru";
-
-const signalRows = [
-  { source: "Карты и поиск", value: "1 840", delta: "+18%" },
-  { source: "Отзывы и AI-ответы", value: "620", delta: "+31%" },
-  { source: "Формы и звонки", value: "146", delta: "+24%" },
-];
-
-const operatingLoop = [
-  ["01", "Увидеть спрос", "Собираем реальные сигналы: что ищут, сравнивают и спрашивают клиенты рядом с вами."],
-  ["02", "Убрать разрыв", "Находим место, где намерение теряется: карточка, отзыв, страница, звонок или повторное касание."],
-  ["03", "Дать действие", "Превращаем вывод в одну понятную задачу, которую команда может выполнить сегодня."],
-] as const;
-
-function DemandConsole() {
-  return (
-    <div className="nx-console-enter relative overflow-hidden rounded-2xl border border-white/15 bg-[#20251d] text-white shadow-[0_32px_80px_rgba(0,0,0,0.28)]">
-      <div className="nx-console-scan absolute inset-x-0 top-0 z-10 h-px bg-[var(--nx-accent)]/80" aria-hidden="true" />
-      <div className="flex items-center justify-between border-b border-white/15 px-5 py-4 sm:px-7">
-        <div className="flex items-center gap-3">
-          <span className="h-2.5 w-2.5 rounded-full bg-[var(--nx-accent)] shadow-[0_0_0_5px_rgba(217,255,67,0.12)]" />
-          <span className="nx-kicker text-white/60">Live demand map</span>
-        </div>
-        <span className="font-mono text-[11px] text-white/45">02.08 / 14:32</span>
-      </div>
-
-      <div className="grid sm:grid-cols-[1.05fr_0.95fr]">
-        <div className="border-b border-white/15 p-5 sm:border-b-0 sm:border-r sm:p-7">
-          <p className="text-sm text-white/55">Потенциал заявок за 30 дней</p>
-          <div className="mt-4 flex items-end gap-3">
-            <strong className="nx-display text-6xl leading-none text-[var(--nx-accent)] sm:text-7xl">146</strong>
-            <span className="mb-2 text-sm font-semibold text-[var(--nx-accent)]">↗ 24%</span>
-          </div>
-          <div className="mt-8 flex h-24 items-end gap-2" aria-label="График роста спроса">
-            {[31, 45, 38, 56, 52, 67, 61, 83, 72, 94, 88, 100].map((height, index) => (
-              <span
-                key={index}
-                className="nx-chart-bar min-w-0 flex-1 rounded-t-sm bg-white/20 last:bg-[var(--nx-accent)]"
-                style={{ height: `${height}%`, animationDelay: `${index * 55}ms` }}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="p-5 sm:p-7">
-          <p className="nx-kicker text-white/45">Сигналы месяца</p>
-          <div className="mt-5 divide-y divide-white/10">
-            {signalRows.map((row) => (
-              <div key={row.source} className="grid grid-cols-[1fr_auto] gap-4 py-4 first:pt-0">
-                <div>
-                  <p className="text-sm text-white/70">{row.source}</p>
-                  <p className="mt-1 text-xl font-semibold">{row.value}</p>
-                </div>
-                <span className="self-center font-mono text-xs text-[var(--nx-accent)]">{row.delta}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between gap-4 border-t border-white/15 bg-black/20 px-5 py-4 sm:px-7">
-        <div>
-          <p className="nx-kicker text-white/40">Следующий ход</p>
-          <p className="mt-1 text-sm font-medium">Вернуть 9 потерянных обращений</p>
-        </div>
-        <ArrowDownRight className="h-6 w-6 text-[var(--nx-accent)]" />
-      </div>
-    </div>
-  );
-}
-
 const schema = generateServiceSchema({
   name: "НейроЭксперт",
   description: "Local Sales OS для превращения локального спроса в измеримые заявки и продажи.",
@@ -91,191 +17,162 @@ const schema = generateServiceSchema({
   ],
 });
 
-const homepage = (
-    <div className="bg-[var(--nx-paper)] text-[var(--nx-ink)]">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
-      <MarketingHeader />
+const signalSources = [
+  { icon: MapPin, name: "Карты", metric: "1 840", note: "поисков рядом" },
+  { icon: Radio, name: "Отзывы", metric: "31%", note: "без ответа" },
+  { icon: Crosshair, name: "Сайт", metric: "146", note: "целевых действий" },
+  { icon: Route, name: "Повторные касания", metric: "9", note: "можно вернуть" },
+] as const;
 
-      <main>
-        <section className="nx-grid-paper relative overflow-hidden border-b border-[var(--nx-line)]">
-          <div className="pointer-events-none absolute left-[46%] top-20 hidden h-72 w-72 rounded-full bg-[var(--nx-accent)]/25 blur-3xl lg:block" aria-hidden="true" />
-          <div className="mx-auto flex min-h-[calc(100svh-5.5rem)] max-w-[90rem] flex-col px-5 pb-7 pt-5 sm:px-8 sm:pb-8 sm:pt-6 lg:px-12">
-            <div className="flex items-center justify-between border-b border-[var(--nx-ink)] pb-3">
-              <p className="nx-kicker">Local Sales Operating System</p>
-              <p className="hidden font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--nx-ink-soft)] sm:block">
-                Спрос → действие → выручка
-              </p>
-            </div>
-
-            <div className="grid flex-1 gap-8 py-7 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-14 lg:py-4">
-              <div className="nx-hero-copy">
-                <p className="max-w-md text-sm font-semibold leading-6 text-[var(--nx-cobalt)]">
-                  Для локального бизнеса, который хочет видеть не охваты, а следующий источник продаж.
-                </p>
-                <h1 className="nx-display mt-4 max-w-[11ch] text-[clamp(2.65rem,4.8vw,5rem)] leading-[0.96]">
-                  Спрос есть.
-                  <span className="block text-[var(--nx-cobalt)]">Покажем, где</span>
-                  <span className="block">вы теряете продажи.</span>
-                </h1>
-
-                <div className="mt-7 grid gap-5 border-t border-[var(--nx-line)] pt-5 sm:grid-cols-[1fr_auto] sm:items-end">
-                  <p className="max-w-lg text-sm leading-6 text-[var(--nx-ink-soft)] sm:text-base">
-                    Карты, поиск, отзывы, AI-ответы, звонки и формы — в одном контуре. На выходе не отчёт, а приоритетное действие на сегодня.
-                  </p>
-                  <Link
-                    href="/for-business"
-                    className="nx-focus-ring group inline-flex min-h-14 items-center justify-between gap-6 bg-[var(--nx-ink)] px-6 text-sm font-bold text-white transition hover:bg-[var(--nx-cobalt)] sm:min-w-56"
-                  >
-                    Получить аудит
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </Link>
-                </div>
-              </div>
-
-              <div className="relative pb-8 sm:pb-10">
-                <div className="nx-orbit absolute -right-10 -top-10 h-32 w-32 rounded-full border border-[var(--nx-ink)] bg-[var(--nx-accent)] sm:h-40 sm:w-40" aria-hidden="true" />
-                <DemandConsole />
-                <div className="nx-float-card absolute bottom-0 left-3 rounded-xl border border-[var(--nx-ink)] bg-[var(--nx-paper-bright)] px-4 py-3 shadow-[6px_6px_0_var(--nx-ink)] sm:-left-5">
-                  <p className="nx-kicker">Не отчёт</p>
-                  <p className="mt-1 text-sm font-medium">Рабочий план на сегодня</p>
-                </div>
-                <div className="nx-float-card nx-float-card-delayed absolute -right-2 top-16 hidden rounded-xl border border-white/20 bg-[var(--nx-cobalt)] px-4 py-3 text-white shadow-xl sm:block">
-                  <p className="font-mono text-[10px] uppercase tracking-wider text-white/60">Новый сигнал</p>
-                  <p className="mt-1 text-sm font-semibold">+12 запросов рядом</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="border-b border-[var(--nx-line)] bg-[var(--nx-paper-bright)]">
-          <div className="mx-auto grid max-w-[90rem] divide-y divide-[var(--nx-line)] px-5 sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:px-8 lg:px-12">
-            {[
-              ["01", "Один контур", "От первого сигнала до оплаченной заявки"],
-              ["02", "Каждый день", "Приоритеты вместо ещё одного дашборда"],
-              ["03", "В цифрах", "Видно, что принесло обращение и продажу"],
-            ].map(([number, title, copy]) => (
-              <div key={number} className="py-7 sm:px-7 sm:first:pl-0 sm:last:pr-0 lg:py-9">
-                <span className="font-mono text-xs text-[var(--nx-signal)]">/{number}</span>
-                <p className="mt-3 text-lg font-bold">{title}</p>
-                <p className="mt-1 text-sm leading-6 text-[var(--nx-ink-soft)]">{copy}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="bg-[var(--nx-ink)] py-20 text-white sm:py-28">
-          <div className="mx-auto max-w-[90rem] px-5 sm:px-8 lg:px-12">
-            <div className="grid gap-10 lg:grid-cols-[0.7fr_1.3fr] lg:gap-20">
-              <div>
-                <p className="nx-kicker text-[var(--nx-accent)]">Операционный цикл</p>
-                <h2 className="nx-display mt-5 max-w-[9ch] text-5xl leading-[0.95] sm:text-6xl">
-                  Не больше данных. Больше ясности.
-                </h2>
-              </div>
-              <div className="border-t border-white/25">
-                {operatingLoop.map(([number, title, copy]) => (
-                  <div key={number} className="grid gap-4 border-b border-white/25 py-7 sm:grid-cols-[4rem_0.7fr_1.3fr] sm:items-start sm:py-9">
-                    <span className="font-mono text-xs text-[var(--nx-accent)]">{number}</span>
-                    <h3 className="text-xl font-semibold sm:text-2xl">{title}</h3>
-                    <p className="max-w-xl text-sm leading-7 text-white/60 sm:text-base">{copy}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="overflow-hidden border-b border-[var(--nx-line)] bg-[var(--nx-cobalt)] text-white">
-          <div className="mx-auto grid max-w-[90rem] lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="px-5 py-16 sm:px-8 sm:py-24 lg:px-12 lg:py-28">
-              <p className="nx-kicker text-white/60">От сигнала к решению</p>
-              <h2 className="nx-display mt-5 max-w-[10ch] text-5xl leading-[0.94] sm:text-7xl">
-                Сегодня — одна задача, которая двигает продажи.
-              </h2>
-              <p className="mt-8 max-w-xl text-base leading-7 text-white/70 sm:text-lg">
-                Система ранжирует потери по влиянию на выручку: где ответить на отзыв, какую страницу усилить, кому перезвонить и какой канал перестал окупаться.
-              </p>
-            </div>
-            <div className="relative min-h-[27rem] border-t border-white/25 bg-[var(--nx-accent)] p-5 text-[var(--nx-ink)] sm:p-8 lg:border-l lg:border-t-0 lg:p-12">
-              <div className="flex h-full flex-col justify-between border border-[var(--nx-ink)] bg-[var(--nx-paper-bright)] p-6 shadow-[14px_14px_0_var(--nx-ink)] sm:p-9">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="nx-kicker text-[var(--nx-signal)]">Приоритет / 01</p>
-                    <p className="mt-4 text-2xl font-bold leading-tight">Вернуть клиентов, которым не ответили</p>
-                  </div>
-                  <MoveUpRight className="h-7 w-7 shrink-0" />
-                </div>
-                <div className="mt-12">
-                  <div className="flex items-end justify-between border-b border-[var(--nx-line)] pb-4">
-                    <span className="text-sm text-[var(--nx-ink-soft)]">Потенциал</span>
-                    <strong className="nx-display text-5xl">9 заявок</strong>
-                  </div>
-                  <div className="mt-5 space-y-3 text-sm font-semibold">
-                    {[
-                      "Список контактов уже собран",
-                      "Сценарий повторного касания готов",
-                      "Результат попадёт в общую воронку",
-                    ].map((item) => (
-                      <div key={item} className="flex items-center gap-3">
-                        <Check className="h-4 w-4 text-[var(--nx-cobalt)]" />
-                        {item}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-[var(--nx-paper)] py-20 sm:py-28">
-          <div className="mx-auto max-w-[90rem] px-5 sm:px-8 lg:px-12">
-            <div className="grid gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-end">
-              <div>
-                <p className="nx-kicker text-[var(--nx-cobalt)]">Выберите маршрут</p>
-                <h2 className="nx-display mt-5 text-5xl leading-[0.95] sm:text-6xl">Начните с точки, где вы сейчас.</h2>
-              </div>
-              <p className="max-w-2xl text-base leading-7 text-[var(--nx-ink-soft)] lg:justify-self-end">
-                Быстрый аудит покажет главную потерю спроса. Запуск под ключ соберёт всю систему — от аналитики до ежедневного операционного ритма.
-              </p>
-            </div>
-
-            <div className="mt-12 grid border border-[var(--nx-ink)] lg:grid-cols-2">
-              <Link href="/for-business" className="nx-focus-ring group flex min-h-64 flex-col justify-between border-b border-[var(--nx-ink)] bg-[var(--nx-accent)] p-7 transition hover:bg-[var(--nx-accent-strong)] sm:p-10 lg:border-b-0 lg:border-r">
-                <div className="flex items-start justify-between">
-                  <span className="nx-kicker">Диагностика</span>
-                  <ArrowRight className="h-6 w-6 transition-transform group-hover:translate-x-1" />
-                </div>
-                <div>
-                  <h3 className="nx-display text-4xl sm:text-5xl">Найти точку роста</h3>
-                  <p className="mt-3 max-w-md text-sm leading-6 text-[var(--nx-ink-soft)]">Получите карту спроса, потерь и первые действия для команды.</p>
-                </div>
-              </Link>
-              <Link href="/launch" className="nx-focus-ring group flex min-h-64 flex-col justify-between bg-[var(--nx-paper-bright)] p-7 transition hover:bg-white sm:p-10">
-                <div className="flex items-start justify-between">
-                  <span className="nx-kicker">Внедрение</span>
-                  <ArrowRight className="h-6 w-6 transition-transform group-hover:translate-x-1" />
-                </div>
-                <div>
-                  <h3 className="nx-display text-4xl sm:text-5xl">Запустить систему</h3>
-                  <p className="mt-3 max-w-md text-sm leading-6 text-[var(--nx-ink-soft)]">Настроим каналы, аналитику, процессы и ритм роста под ключ.</p>
-                </div>
-              </Link>
-            </div>
-
-            <Link href="/how-it-works" className="nx-focus-ring mt-8 inline-flex items-center gap-2 text-sm font-bold text-[var(--nx-cobalt)] hover:underline">
-              Посмотреть, как устроена система
-              <ArrowDownRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </section>
-      </main>
-
-      <MarketingFooter />
-    </div>
-);
+const operatingSteps = [
+  ["01", "Сигнал", "Клиент ищет услугу, читает отзывы или задаёт вопрос AI."],
+  ["02", "Потеря", "Система находит место, где интерес не стал обращением."],
+  ["03", "Действие", "Команда получает одну задачу с оценкой влияния на выручку."],
+] as const;
 
 export default function LandingPage() {
-  return homepage;
+  return (
+    <div className="sr-site">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+      <MarketingHeader />
+      <main>
+        <HeroSection />
+        <SignalStrip />
+        <StorySection />
+        <ProductSection />
+        <CallToAction />
+      </main>
+      <MarketingFooter />
+    </div>
+  );
+}
+
+function HeroSection() {
+  return (
+    <section className="sr-hero">
+      <div className="sr-hero-copy">
+        <div className="sr-index"><span>NE / 01</span><span>LOCAL SALES OS</span></div>
+        <p className="sr-eyebrow">Система управления локальным спросом</p>
+        <h1>Находим место, где спрос перестаёт быть продажей.</h1>
+        <p className="sr-hero-lede">
+          НейроЭксперт связывает карты, поиск, отзывы, сайт и звонки — и показывает одно действие, которое вернёт больше обращений сегодня.
+        </p>
+        <div className="sr-hero-actions">
+          <Link href="/for-business" className="sr-button sr-button-primary">
+            Найти потери <ArrowRight aria-hidden="true" />
+          </Link>
+          <Link href="/how-it-works" className="sr-text-link">Как работает система</Link>
+        </div>
+        <div className="sr-hero-proof">
+          <div><strong>7 дней</strong><span>до первого измеримого результата</span></div>
+          <div><strong>1 контур</strong><span>от сигнала до обращения</span></div>
+        </div>
+      </div>
+      <div className="sr-hero-visual"><DemandScene /></div>
+    </section>
+  );
+}
+
+function SignalStrip() {
+  return (
+    <section className="sr-signal-strip" aria-label="Источники сигналов">
+      {signalSources.map(({ icon: Icon, name, metric, note }) => (
+        <div className="sr-signal-item" key={name}>
+          <Icon aria-hidden="true" /><span>{name}</span><strong>{metric}</strong><small>{note}</small>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function StorySection() {
+  return (
+    <section className="sr-story">
+      <div className="sr-story-heading">
+        <p className="sr-eyebrow">Не ещё одна аналитика</p>
+        <h2>От поведения клиента — к конкретному решению.</h2>
+        <p>Система не просит собственника изучать графики. Она собирает контекст и объясняет, что делать дальше.</p>
+      </div>
+      <div className="sr-operating-path">
+        {operatingSteps.map(([number, title, copy], index) => (
+          <article className="sr-path-step" key={number}>
+            <div className="sr-path-marker"><span>{number}</span><i /></div>
+            <div><h3>{title}</h3><p>{copy}</p></div>
+            <span className="sr-path-status">{index === 2 ? "готово" : "в обработке"}</span>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ProductSection() {
+  return (
+    <section className="sr-product-section">
+      <div className="sr-product-intro">
+        <div><p className="sr-eyebrow">Рабочий экран</p><h2>Видно не всё. Видно главное.</h2></div>
+        <p>Приоритеты обновляются каждый день и ранжируются по влиянию на обращения и выручку.</p>
+      </div>
+      <div className="sr-workspace">
+        <WorkspaceHeader />
+        <div className="sr-workspace-body">
+          <WorkspaceSources />
+          <PriorityList />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function WorkspaceHeader() {
+  return (
+    <div className="sr-workspace-bar">
+      <span className="sr-brand-mark">N</span><span>Контур спроса / Екатеринбург</span>
+      <div><i /> Данные обновлены 4 мин назад</div>
+    </div>
+  );
+}
+
+function WorkspaceSources() {
+  return (
+    <aside>
+      <span>Источники</span>
+      {[["Карты", "12"], ["Отзывы", "7"], ["Сайт", "3"], ["Звонки", "5"]].map(([label, count], index) => (
+        <div className={index === 1 ? "active" : ""} key={label}><span>{label}</span><em>{count}</em></div>
+      ))}
+    </aside>
+  );
+}
+
+function PriorityList() {
+  const priorities = [
+    ["Ответить на 7 отзывов с вопросом о цене", "+9 обращений", "Начать"],
+    ["Вернуть пропущенные звонки за 48 часов", "+5 обращений", "Сценарий готов"],
+    ["Исправить маршрут записи на странице услуги", "+3 обращения", "Назначено"],
+  ];
+  return (
+    <div className="sr-priority-list">
+      <div className="sr-priority-head"><span>Приоритеты на сегодня</span><span>Влияние</span><span>Статус</span></div>
+      {priorities.map(([task, impact, status], index) => (
+        <div className="sr-priority-row" key={task}>
+          <span className="sr-priority-number">0{index + 1}</span><strong>{task}</strong><span>{impact}</span>
+          <span className={index === 0 ? "hot" : ""}>{status}</span><ArrowRight aria-hidden="true" />
+        </div>
+      ))}
+      <div className="sr-workspace-note">
+        <Check aria-hidden="true" /><span><strong>16 обращений</strong> — суммарный потенциал действий на сегодня</span>
+      </div>
+    </div>
+  );
+}
+
+function CallToAction() {
+  return (
+    <section className="sr-cta">
+      <div><p className="sr-eyebrow">Начать с диагностики</p><h2>Покажем, где бизнес теряет обращения прямо сейчас.</h2></div>
+      <Link href="/for-business" className="sr-button sr-button-light">
+        Получить карту потерь <ArrowRight aria-hidden="true" />
+      </Link>
+    </section>
+  );
 }
