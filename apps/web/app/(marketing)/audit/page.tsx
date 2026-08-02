@@ -1,49 +1,45 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { MarketingHeader } from "@/components/marketing/nav";
+import { useRef, useState } from "react";
+import { ArrowRight, Check, ChevronDown, Minus, Radio, RotateCcw } from "lucide-react";
+import { MarketingFooter, MarketingHeader } from "@/components/marketing/nav";
 
 const NICHES = [
-  { id: "a0000000-0000-0000-0000-000000000001", name: "Психология и психотерапия", icon: "🧠", focus: true },
-  { id: "a0000000-0000-0000-0000-000000000002", name: "Юриспруденция", icon: "⚖️", focus: true },
-  { id: "a0000000-0000-0000-0000-000000000003", name: "Нутрициология", icon: "🥗", focus: true },
-  { id: "a0000000-0000-0000-0000-000000000004", name: "Финансы и инвестиции", icon: "💰", focus: true },
-  { id: "a0000000-0000-0000-0000-000000000005", name: "Бизнес-консалтинг", icon: "📊", focus: true },
-  { id: "a0000000-0000-0000-0000-000000000006", name: "Медицина и здоровье", icon: "🏥", focus: false },
-  { id: "a0000000-0000-0000-0000-000000000007", name: "Фитнес и спорт", icon: "💪", focus: false },
-  { id: "a0000000-0000-0000-0000-000000000008", name: "Образование и репетиторство", icon: "📚", focus: false },
-  { id: "a0000000-0000-0000-0000-000000000009", name: "Маркетинг и SMM", icon: "📱", focus: false },
-  { id: "a0000000-0000-0000-0000-000000000010", name: "IT и программирование", icon: "💻", focus: false },
-  { id: "a0000000-0000-0000-0000-000000000011", name: "Дизайн и архитектура", icon: "🎨", focus: false },
-  { id: "a0000000-0000-0000-0000-000000000012", name: "Недвижимость", icon: "🏠", focus: false },
-  { id: "a0000000-0000-0000-0000-000000000013", name: "Карьера и HR", icon: "👔", focus: false },
-  { id: "a0000000-0000-0000-0000-000000000014", name: "Косметология и эстетика", icon: "✨", focus: false },
-  { id: "a0000000-0000-0000-0000-000000000015", name: "Логопедия и дефектология", icon: "🗣️", focus: false },
-  { id: "a0000000-0000-0000-0000-000000000016", name: "Коучинг и саморазвитие", icon: "🎯", focus: false },
-  { id: "a0000000-0000-0000-0000-000000000017", name: "Бухгалтерия и аудит", icon: "🧮", focus: false },
-  { id: "a0000000-0000-0000-0000-000000000018", name: "Ветеринария", icon: "🐾", focus: false },
-  { id: "a0000000-0000-0000-0000-000000000019", name: "Страхование", icon: "🛡️", focus: false },
-  { id: "a0000000-0000-0000-0000-000000000020", name: "Туризм и путешествия", icon: "✈️", focus: false },
-];
+  ["a0000000-0000-0000-0000-000000000001", "Психология и психотерапия", true],
+  ["a0000000-0000-0000-0000-000000000002", "Юриспруденция", true],
+  ["a0000000-0000-0000-0000-000000000003", "Нутрициология", true],
+  ["a0000000-0000-0000-0000-000000000004", "Финансы и инвестиции", true],
+  ["a0000000-0000-0000-0000-000000000005", "Бизнес-консалтинг", true],
+  ["a0000000-0000-0000-0000-000000000006", "Медицина и здоровье", false],
+  ["a0000000-0000-0000-0000-000000000007", "Фитнес и спорт", false],
+  ["a0000000-0000-0000-0000-000000000008", "Образование и репетиторство", false],
+  ["a0000000-0000-0000-0000-000000000009", "Маркетинг и SMM", false],
+  ["a0000000-0000-0000-0000-000000000010", "IT и программирование", false],
+  ["a0000000-0000-0000-0000-000000000011", "Дизайн и архитектура", false],
+  ["a0000000-0000-0000-0000-000000000012", "Недвижимость", false],
+  ["a0000000-0000-0000-0000-000000000013", "Карьера и HR", false],
+  ["a0000000-0000-0000-0000-000000000014", "Косметология и эстетика", false],
+  ["a0000000-0000-0000-0000-000000000015", "Логопедия и дефектология", false],
+  ["a0000000-0000-0000-0000-000000000016", "Коучинг и саморазвитие", false],
+  ["a0000000-0000-0000-0000-000000000017", "Бухгалтерия и аудит", false],
+  ["a0000000-0000-0000-0000-000000000018", "Ветеринария", false],
+  ["a0000000-0000-0000-0000-000000000019", "Страхование", false],
+  ["a0000000-0000-0000-0000-000000000020", "Туризм и путешествия", false],
+] as const;
 
-const MARKER_LABELS = [
-  { key: "has_expert_name" as const, label: "Имя эксперта" },
-  { key: "has_specific_examples" as const, label: "Примеры из практики" },
-  { key: "has_source_link" as const, label: "Ссылка на источник" },
-  { key: "has_specific_numbers" as const, label: "Конкретные цифры" },
-];
+const MARKERS = [
+  ["has_expert_name", "Имя эксперта"],
+  ["has_specific_examples", "Примеры"],
+  ["has_source_link", "Источник"],
+  ["has_specific_numbers", "Цифры"],
+] as const;
 
 interface PlatformResult {
   platform: string;
   ai_response: string;
   gap_score: number;
-  markers: {
-    has_expert_name: boolean;
-    has_specific_examples: boolean;
-    has_source_link: boolean;
-    has_specific_numbers: boolean;
-  };
+  markers: Record<(typeof MARKERS)[number][0], boolean>;
   weakness: string;
 }
 
@@ -64,370 +60,175 @@ export default function AuditPage() {
   const [gaps, setGaps] = useState<Gap[]>([]);
   const [error, setError] = useState("");
   const [expandedPlatform, setExpandedPlatform] = useState<string | null>(null);
+  const firstNicheRef = useRef<HTMLButtonElement>(null);
+  const resultHeadingRef = useRef<HTMLHeadingElement>(null);
 
-  async function handleNicheSelect(nicheId: string, name: string) {
+  async function selectNiche(nicheId: string, name: string) {
     setNicheName(name);
     setStep("loading");
+    setError("");
 
     try {
-      const res = await fetch("/api/audit", {
+      const response = await fetch("/api/audit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ niche_id: nicheId, type: "free" }),
       });
 
-      if (res.status === 429) {
+      if (response.status === 429) {
         setError("Слишком много запросов. Подождите минуту и попробуйте снова.");
         setStep("error");
         return;
       }
 
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || "Произошла ошибка");
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.error || "Не удалось собрать карту спроса");
         setStep("error");
         return;
       }
 
-      const data = await res.json();
+      const data = await response.json();
       setGaps(data.gaps);
       setStep("results");
+      requestAnimationFrame(() => resultHeadingRef.current?.focus());
     } catch {
-      setError("Ошибка сети. Попробуйте позже.");
+      setError("Сеть не ответила. Попробуйте ещё раз.");
       setStep("error");
     }
   }
 
-  function togglePlatform(key: string) {
-    setExpandedPlatform(expandedPlatform === key ? null : key);
+  function reset() {
+    setStep("select");
+    setGaps([]);
+    setError("");
+    setExpandedPlatform(null);
+    requestAnimationFrame(() => firstNicheRef.current?.focus());
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="sr-site dm-site">
       <MarketingHeader />
-
-      <section className="py-12 sm:py-16">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6">
-          {/* Step 1: Niche Selection */}
-          {step === "select" && (
-            <>
-              <div className="text-center">
-                <h1 className="text-3xl font-bold text-slate-950 sm:text-4xl">
-                  Бесплатная карта спроса
-                </h1>
-                <p className="mt-4 text-lg text-slate-700">
-                  Выберите свою нишу — мы найдём вопросы, по которым люди уже
-                  ищут решение, и покажем, какие из них стоит превратить в страницы для заявок.
-                </p>
-              </div>
-              <div className="mt-10 grid gap-3 sm:mt-12 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
-                {NICHES.map((niche) => (
-                  <button
-                    key={niche.id}
-                    onClick={() => handleNicheSelect(niche.id, niche.name)}
-                    className={`min-h-28 rounded-xl border p-4 text-center transition-all hover:shadow-sm sm:p-5 cursor-pointer ${
-                      niche.focus
-                        ? "border-blue-200 bg-blue-50 hover:border-blue-300"
-                        : "border-slate-200 bg-white hover:border-blue-200 hover:bg-slate-50"
-                    }`}
-                  >
-                    <span className="text-3xl">{niche.icon}</span>
-                    <h3 className="mt-2 text-sm font-semibold text-slate-950">
-                      {niche.name}
-                    </h3>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* Step 2: Loading */}
-          {step === "loading" && (
-            <div className="flex flex-col items-center justify-center py-20">
-              <div className="h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600" />
-              <p className="mt-6 text-lg text-slate-950">
-                Анализируем нишу &laquo;{nicheName}&raquo;...
-              </p>
-              <p className="mt-2 text-sm text-slate-600">
-                Собираем вопросы, проверяем текущие ответы нейросетей и
-                оцениваем потенциал темы. Это займёт 15-30 секунд —
-                мы ищем не просто контент-идеи, а возможности для заявок.
-              </p>
-            </div>
-          )}
-
-          {/* Step 3: Results */}
-          {step === "results" && (
-            <>
-              <div className="text-center">
-                <p className="text-sm font-medium text-blue-700">
-                  Карта спроса
-                </p>
-                <h1 className="mt-2 text-3xl font-bold text-slate-950">
-                  {nicheName}
-                </h1>
-                <p className="mt-2 text-slate-700">
-                  {gaps.length} {gaps.length === 1 ? "вопрос" : "вопроса"} проверено по{" "}
-                  {gaps[0]?.platforms?.length || 0} нейросетевым платформам
-                </p>
-              </div>
-
-              <div className="mt-10 space-y-8">
-                {gaps.map((gap, i) => (
-                  <div
-                    key={gap.id}
-                    className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6"
-                  >
-                    {/* Question header */}
-                    <div className="flex items-start gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-500/20 text-sm font-bold text-red-400">
-                        {i + 1}
-                      </span>
-                      <h3 className="text-lg font-semibold text-slate-950">
-                        {gap.question}
-                      </h3>
-                    </div>
-
-                    {/* Metrics */}
-                    <div className="mt-4 flex flex-wrap items-stretch gap-3 sm:items-center sm:gap-6">
-                      <div className="min-w-28 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-center">
-                        <p className={`text-2xl font-bold ${
-                          gap.avg_gap_score >= 8 ? "text-red-400" :
-                          gap.avg_gap_score >= 5 ? "text-yellow-400" :
-                          "text-green-400"
-                        }`}>
-                          {gap.avg_gap_score}/10
-                        </p>
-                        <p className="text-xs text-slate-600">
-                          слабость текущего ответа нейросети
-                        </p>
-                      </div>
-                      {gap.estimated_monthly_volume && (
-                        <div className="min-w-28 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-center">
-                          <p className="text-2xl font-bold text-blue-700">
-                            {gap.estimated_monthly_volume.toLocaleString("ru-RU")}
-                          </p>
-                          <p className="text-xs text-slate-600">
-                            запросов/мес
-                          </p>
-                        </div>
-                      )}
-                      {gap.search_intent && (
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          gap.search_intent === "commercial" ? "bg-green-50 text-green-700" :
-                          gap.search_intent === "transactional" ? "bg-blue-50 text-blue-700" :
-                          "bg-slate-100 text-slate-700"
-                        }`}>
-                          {gap.search_intent === "commercial" ? "Коммерческий" :
-                           gap.search_intent === "transactional" ? "Транзакционный" :
-                           "Информационный"}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Platform comparison table */}
-                    <div className="mt-5 space-y-3 md:hidden">
-                      {gap.platforms.map((p) => {
-                        const key = `${gap.id}-${p.platform}`;
-                        const isExpanded = expandedPlatform === key;
-                        return (
-                          <button
-                            key={key}
-                            type="button"
-                            onClick={() => togglePlatform(key)}
-                            className="w-full rounded-lg border border-slate-200 bg-slate-50 p-4 text-left"
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <p className="font-semibold text-slate-950">{p.platform}</p>
-                                {p.weakness && (
-                                  <p className="mt-1 text-sm font-medium text-orange-700">{p.weakness}</p>
-                                )}
-                              </div>
-                              <span
-                                className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                                  p.gap_score >= 8
-                                    ? "bg-red-100 text-red-700"
-                                    : p.gap_score >= 5
-                                      ? "bg-yellow-100 text-yellow-700"
-                                      : "bg-green-100 text-green-700"
-                                }`}
-                              >
-                                {p.gap_score}
-                              </span>
-                            </div>
-                            <div className="mt-3 grid grid-cols-2 gap-2">
-                              {MARKER_LABELS.map((m) => (
-                                <div key={m.key} className="rounded-md bg-white px-3 py-2 text-xs text-slate-600">
-                                  <span
-                                    className={
-                                      p.markers[m.key] ? "font-semibold text-green-700" : "font-semibold text-red-600"
-                                    }
-                                  >
-                                    {p.markers[m.key] ? "✓" : "✗"}
-                                  </span>{" "}
-                                  {m.label}
-                                </div>
-                              ))}
-                            </div>
-                            {isExpanded && (
-                              <div className="mt-3 rounded-md border border-slate-200 bg-white p-3">
-                                <p className="text-xs font-medium text-slate-600">
-                                  Ответ {p.platform}:
-                                </p>
-                                <p className="mt-1 whitespace-pre-line text-sm text-slate-700">
-                                  {p.ai_response}
-                                </p>
-                              </div>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <div className="mt-5 hidden overflow-x-auto rounded-lg border border-slate-200 md:block">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="bg-white text-left text-xs font-medium text-slate-600 uppercase">
-                            <th className="px-4 py-2">Платформа</th>
-                            {MARKER_LABELS.map((m) => (
-                              <th key={m.key} className="px-2 py-2 text-center">
-                                {m.label}
-                              </th>
-                            ))}
-                            <th className="px-3 py-2 text-center">Балл</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {gap.platforms.map((p) => {
-                            const key = `${gap.id}-${p.platform}`;
-                            const isExpanded = expandedPlatform === key;
-                            return (
-                              <>
-                                <tr
-                                  key={key}
-                                  className="cursor-pointer hover:bg-white transition-colors"
-                                  onClick={() => togglePlatform(key)}
-                                >
-                                  <td className="px-4 py-3 font-medium text-slate-950">
-                                    <span className="inline-flex items-center gap-1">
-                                      <span className={`text-slate-500 text-xs transition-transform ${isExpanded ? "rotate-90" : ""}`}>&#9654;</span>
-                                      {p.platform}
-                                    </span>
-                                  </td>
-                                  {MARKER_LABELS.map((m) => (
-                                    <td
-                                      key={m.key}
-                                      className="px-2 py-3 text-center"
-                                    >
-                                      <span
-                                        className={
-                                          p.markers[m.key]
-                                            ? "text-green-600"
-                                            : "text-red-500"
-                                        }
-                                      >
-                                        {p.markers[m.key] ? "✓" : "✗"}
-                                      </span>
-                                    </td>
-                                  ))}
-                                  <td className="px-3 py-3 text-center">
-                                    <span
-                                      className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-                                        p.gap_score >= 8
-                                          ? "bg-red-100 text-red-700"
-                                          : p.gap_score >= 5
-                                          ? "bg-yellow-100 text-yellow-700"
-                                          : "bg-green-100 text-green-700"
-                                      }`}
-                                    >
-                                      {p.gap_score}
-                                    </span>
-                                  </td>
-                                </tr>
-                                {isExpanded && (
-                                  <tr key={`${key}-detail`}>
-                                    <td
-                                      colSpan={6}
-                                      className="bg-white px-4 py-3"
-                                    >
-                                      {p.weakness && (
-                                        <p className="text-sm text-orange-700 font-medium mb-2">
-                                          {p.weakness}
-                                        </p>
-                                      )}
-                                      <p className="text-xs font-medium text-slate-600 mb-1">
-                                        Ответ {p.platform} (в реальном времени):
-                                      </p>
-                                      <p className="text-sm text-slate-700 whitespace-pre-line">
-                                        {p.ai_response}
-                                      </p>
-                                    </td>
-                                  </tr>
-                                )}
-                              </>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Призыв к действию */}
-              <div className="mt-12 rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-                <h2 className="text-2xl font-bold text-slate-950">
-                  Хотите превратить эти вопросы в заявки?
-                </h2>
-                <p className="mt-2 text-slate-700">
-                  Наговорите ответ за 10 минут — мы превратим его в страницу
-                  под реальный спрос, добавим кнопку записи и начнём измерять результат.
-                </p>
-                <div className="mt-6">
-                  <Link
-                    href="/launch"
-                    className="rounded-lg bg-blue-700 px-8 py-3 text-base font-semibold text-white transition-colors hover:bg-blue-800"
-                  >
-                    Получить план запуска
-                  </Link>
-                  <p className="mt-3 text-xs text-slate-600">
-                    Без карты · Ответим с планом запуска · Можно начать с пилота
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-6 text-center">
-                <button
-                  onClick={() => {
-                    setStep("select");
-                    setGaps([]);
-                  }}
-                  className="text-sm text-slate-600 hover:text-slate-950 transition-colors"
-                >
-                  &larr; Выбрать другую нишу
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* Error */}
-          {step === "error" && (
-            <div className="flex flex-col items-center justify-center py-20">
-              <p className="text-lg text-red-400">{error}</p>
-              <button
-                onClick={() => {
-                  setStep("select");
-                  setError("");
-                }}
-                className="mt-6 text-sm text-blue-700 hover:text-blue-700 transition-colors"
-              >
-                &larr; Попробовать снова
-              </button>
-            </div>
-          )}
-        </div>
-      </section>
+      <main>
+        {step === "select" && <NicheIndex onSelect={selectNiche} firstRef={firstNicheRef} />}
+        {step === "loading" && <DemandLoading niche={nicheName} />}
+        {step === "results" && <DemandResults niche={nicheName} gaps={gaps} expanded={expandedPlatform} headingRef={resultHeadingRef} onToggle={(key) => setExpandedPlatform(expandedPlatform === key ? null : key)} onReset={reset} />}
+        {step === "error" && <DemandError message={error} onRetry={reset} />}
+      </main>
+      <MarketingFooter />
     </div>
   );
+}
+
+function NicheIndex({ onSelect, firstRef }: { onSelect: (id: string, name: string) => void; firstRef: React.RefObject<HTMLButtonElement> }) {
+  return (
+    <section className="dm-index">
+      <div className="dm-index-copy">
+        <div className="sr-index"><span>01</span><span>Demand Map</span></div>
+        <p className="sr-eyebrow"><span /> Free market scan</p>
+        <h1>Найдите <em>незакрытый спрос</em> своей ниши.</h1>
+        <p>Карта показывает вопросы, где клиент уже ищет решение, а ответы нейросетей остаются слабыми.</p>
+        <div className="dm-index-legend"><span><i /> Высокая плотность данных</span><span><i /> Базовое покрытие</span></div>
+      </div>
+      <div className="dm-niches">
+        <header><span>NICHE INDEX / 20</span><span>SELECT FIELD</span></header>
+        <div className="dm-niche-grid">
+          {NICHES.map(([id, name, focus], index) => (
+            <button ref={index === 0 ? firstRef : undefined} type="button" key={id} onClick={() => onSelect(id, name)} className={focus ? "is-focus" : ""}>
+              <span>{String(index + 1).padStart(2, "0")}</span><b>{name}</b><i>{focus ? "dense" : "open"}</i><ArrowRight aria-hidden="true" />
+            </button>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function DemandLoading({ niche }: { niche: string }) {
+  return (
+    <section className="dm-loading" role="status" aria-live="polite">
+      <div className="dm-loading-copy">
+        <p className="sr-eyebrow"><span /> Field selected</p>
+        <h1>{niche}</h1>
+        <p>Собираем вопросы, читаем ответы четырёх платформ и оцениваем коммерческую плотность сигнала.</p>
+        <div><span>STATUS</span><b>BUILDING MAP</b></div>
+      </div>
+      <div className="dm-field" aria-hidden="true">
+        <header><span>DEMAND FIELD</span><span>LIVE</span></header>
+        <div className="dm-field-grid">{Array.from({ length: 40 }, (_, index) => <i key={index} style={{ animationDelay: `${(index % 8) * 120}ms` }} />)}<b /></div>
+        <div className="dm-field-readout"><span>questions</span><b>collecting</b><span>platforms</span><b>04</b><span>intent</span><b>mapping</b></div>
+      </div>
+    </section>
+  );
+}
+
+function DemandError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <section className="dm-error" role="alert">
+      <Radio aria-hidden="true" /><span>FIELD INTERRUPTED</span><h1>Карта не собрана.</h1><p>{message}</p>
+      <button type="button" onClick={onRetry}><RotateCcw aria-hidden="true" /> Выбрать нишу снова</button>
+    </section>
+  );
+}
+
+function DemandResults({ niche, gaps, expanded, headingRef, onToggle, onReset }: { niche: string; gaps: Gap[]; expanded: string | null; headingRef: React.RefObject<HTMLHeadingElement>; onToggle: (key: string) => void; onReset: () => void }) {
+  const platformCount = gaps[0]?.platforms.length || 0;
+  const totalVolume = gaps.reduce((sum, gap) => sum + (gap.estimated_monthly_volume || 0), 0);
+  return (
+    <>
+      <section className="dm-result-head">
+        <p className="sr-only" role="status" aria-live="polite">Карта спроса готова. Найдено вопросов: {gaps.length}.</p>
+        <div><p className="sr-eyebrow"><span /> Demand map / ready</p><h1 ref={headingRef} tabIndex={-1}>{niche}</h1><p>Ранжируем не «идеи для контента», а места, где сильный экспертный ответ может стать точкой входа.</p></div>
+        <div className="dm-result-summary"><article><span>Вопросы</span><b>{String(gaps.length).padStart(2, "0")}</b></article><article><span>Платформы</span><b>{String(platformCount).padStart(2, "0")}</b></article><article><span>Потенциал / мес</span><b>{totalVolume ? totalVolume.toLocaleString("ru-RU") : "—"}</b></article></div>
+      </section>
+
+      <section className="dm-gap-section">
+        <header><span>№ / Opportunity</span><span>Intent</span><span>Volume</span><span>Gap</span></header>
+        <div className="dm-gap-list">
+          {gaps.map((gap, index) => <GapRow gap={gap} index={index} key={gap.id} expanded={expanded} onToggle={onToggle} />)}
+        </div>
+      </section>
+
+      <section className="dm-result-cta">
+        <div><p>Из вопроса — в точку входа</p><h2>Ответьте голосом. Систему соберём мы.</h2></div>
+        <Link className="sr-button sr-button-light" href="/launch">Получить план запуска <ArrowRight aria-hidden="true" /></Link>
+        <button type="button" onClick={onReset}>Выбрать другую нишу</button>
+      </section>
+    </>
+  );
+}
+
+function GapRow({ gap, index, expanded, onToggle }: { gap: Gap; index: number; expanded: string | null; onToggle: (key: string) => void }) {
+  return (
+    <article className="dm-gap">
+      <div className="dm-gap-main"><span>{String(index + 1).padStart(2, "0")}</span><h2>{gap.question}</h2><IntentLabel intent={gap.search_intent} /><b>{gap.estimated_monthly_volume?.toLocaleString("ru-RU") || "—"}</b><Score value={gap.avg_gap_score} /></div>
+      <div className="dm-platforms">
+        {gap.platforms.map((platform) => {
+          const key = `${gap.id}-${platform.platform}`;
+          const isOpen = expanded === key;
+          const detailId = `platform-${key.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+          return (
+            <div className="dm-platform" key={key}>
+              <button type="button" aria-expanded={isOpen} aria-controls={detailId} onClick={() => onToggle(key)}>
+                <span>{platform.platform}</span><b>{platform.weakness || "Ответ требует усиления"}</b>
+                <span className="dm-marker-set">{MARKERS.map(([marker, label]) => <i key={marker} title={label} aria-label={`${label}: ${platform.markers[marker] ? "есть" : "нет"}`}>{platform.markers[marker] ? <Check /> : <Minus />}</i>)}</span>
+                <Score value={platform.gap_score} /><ChevronDown aria-hidden="true" />
+              </button>
+              {isOpen && <div className="dm-platform-detail" id={detailId}><span>Ответ {platform.platform} / live</span><p>{platform.ai_response}</p></div>}
+            </div>
+          );
+        })}
+      </div>
+    </article>
+  );
+}
+
+function Score({ value }: { value: number }) {
+  const band = value >= 8 ? "high" : value >= 5 ? "medium" : "low";
+  return <strong className={`dm-score dm-score-${band}`}><span>{value}</span><small>/10</small></strong>;
+}
+
+function IntentLabel({ intent }: { intent?: string }) {
+  const label = intent === "commercial" ? "commercial" : intent === "transactional" ? "transaction" : "information";
+  return <em>{label}</em>;
 }
