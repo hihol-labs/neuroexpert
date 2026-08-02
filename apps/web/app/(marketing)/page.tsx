@@ -24,7 +24,8 @@ const operatingLoop = [
 
 function DemandConsole() {
   return (
-    <div className="relative border border-white/20 bg-[#20251d] text-white shadow-[0_40px_90px_rgba(0,0,0,0.28)]">
+    <div className="nx-console-enter relative overflow-hidden rounded-2xl border border-white/15 bg-[#20251d] text-white shadow-[0_32px_80px_rgba(0,0,0,0.28)]">
+      <div className="nx-console-scan absolute inset-x-0 top-0 z-10 h-px bg-[var(--nx-accent)]/80" aria-hidden="true" />
       <div className="flex items-center justify-between border-b border-white/15 px-5 py-4 sm:px-7">
         <div className="flex items-center gap-3">
           <span className="h-2.5 w-2.5 rounded-full bg-[var(--nx-accent)] shadow-[0_0_0_5px_rgba(217,255,67,0.12)]" />
@@ -44,8 +45,8 @@ function DemandConsole() {
             {[31, 45, 38, 56, 52, 67, 61, 83, 72, 94, 88, 100].map((height, index) => (
               <span
                 key={index}
-                className="min-w-0 flex-1 bg-white/20 last:bg-[var(--nx-accent)]"
-                style={{ height: `${height}%` }}
+                className="nx-chart-bar min-w-0 flex-1 rounded-t-sm bg-white/20 last:bg-[var(--nx-accent)]"
+                style={{ height: `${height}%`, animationDelay: `${index * 55}ms` }}
               />
             ))}
           </div>
@@ -96,8 +97,9 @@ const homepage = (
       <MarketingHeader />
 
       <main>
-        <section className="nx-grid-paper overflow-hidden border-b border-[var(--nx-line)]">
-          <div className="mx-auto max-w-[90rem] px-5 pb-16 pt-10 sm:px-8 sm:pb-24 sm:pt-14 lg:px-12 lg:pb-28">
+        <section className="nx-grid-paper relative overflow-hidden border-b border-[var(--nx-line)]">
+          <div className="pointer-events-none absolute left-[46%] top-20 hidden h-72 w-72 rounded-full bg-[var(--nx-accent)]/25 blur-3xl lg:block" aria-hidden="true" />
+          <div className="mx-auto flex min-h-[calc(100svh-5.5rem)] max-w-[90rem] flex-col px-5 pb-7 pt-5 sm:px-8 sm:pb-8 sm:pt-6 lg:px-12">
             <div className="flex items-center justify-between border-b border-[var(--nx-ink)] pb-3">
               <p className="nx-kicker">Local Sales Operating System</p>
               <p className="hidden font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--nx-ink-soft)] sm:block">
@@ -105,20 +107,20 @@ const homepage = (
               </p>
             </div>
 
-            <div className="grid gap-12 pt-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-end lg:gap-16 lg:pt-16">
-              <div>
+            <div className="grid flex-1 gap-8 py-7 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-14 lg:py-4">
+              <div className="nx-hero-copy">
                 <p className="max-w-md text-sm font-semibold leading-6 text-[var(--nx-cobalt)]">
                   Для локального бизнеса, который хочет видеть не охваты, а следующий источник продаж.
                 </p>
-                <h1 className="nx-display mt-6 max-w-[12ch] text-[clamp(3.5rem,7.2vw,7.6rem)] leading-[0.87]">
-                  Спрос уже есть.
-                  <span className="mt-2 block italic text-[var(--nx-cobalt)]">Превратим его</span>
-                  <span className="block">в заявки.</span>
+                <h1 className="nx-display mt-4 max-w-[11ch] text-[clamp(2.65rem,4.8vw,5rem)] leading-[0.96]">
+                  Спрос есть.
+                  <span className="block text-[var(--nx-cobalt)]">Покажем, где</span>
+                  <span className="block">вы теряете продажи.</span>
                 </h1>
 
-                <div className="mt-10 grid gap-6 border-t border-[var(--nx-line)] pt-6 sm:grid-cols-[1fr_auto] sm:items-end">
-                  <p className="max-w-xl text-base leading-7 text-[var(--nx-ink-soft)] sm:text-lg">
-                    НейроЭксперт соединяет карты, поиск, отзывы, AI-ответы, звонки и формы в одну рабочую систему. Каждый день вы видите, где теряются клиенты и что исправить первым.
+                <div className="mt-7 grid gap-5 border-t border-[var(--nx-line)] pt-5 sm:grid-cols-[1fr_auto] sm:items-end">
+                  <p className="max-w-lg text-sm leading-6 text-[var(--nx-ink-soft)] sm:text-base">
+                    Карты, поиск, отзывы, AI-ответы, звонки и формы — в одном контуре. На выходе не отчёт, а приоритетное действие на сегодня.
                   </p>
                   <Link
                     href="/for-business"
@@ -130,12 +132,16 @@ const homepage = (
                 </div>
               </div>
 
-              <div className="relative pb-14 lg:pb-16">
-                <div className="absolute -right-6 -top-7 h-28 w-28 bg-[var(--nx-accent)] sm:-right-8 sm:-top-10 sm:h-40 sm:w-40" aria-hidden="true" />
+              <div className="relative pb-8 sm:pb-10">
+                <div className="nx-orbit absolute -right-10 -top-10 h-32 w-32 rounded-full border border-[var(--nx-ink)] bg-[var(--nx-accent)] sm:h-40 sm:w-40" aria-hidden="true" />
                 <DemandConsole />
-                <div className="absolute bottom-0 left-0 border border-[var(--nx-ink)] bg-[var(--nx-paper-bright)] px-4 py-3 sm:-left-4">
+                <div className="nx-float-card absolute bottom-0 left-3 rounded-xl border border-[var(--nx-ink)] bg-[var(--nx-paper-bright)] px-4 py-3 shadow-[6px_6px_0_var(--nx-ink)] sm:-left-5">
                   <p className="nx-kicker">Не отчёт</p>
                   <p className="mt-1 text-sm font-medium">Рабочий план на сегодня</p>
+                </div>
+                <div className="nx-float-card nx-float-card-delayed absolute -right-2 top-16 hidden rounded-xl border border-white/20 bg-[var(--nx-cobalt)] px-4 py-3 text-white shadow-xl sm:block">
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-white/60">Новый сигнал</p>
+                  <p className="mt-1 text-sm font-semibold">+12 запросов рядом</p>
                 </div>
               </div>
             </div>

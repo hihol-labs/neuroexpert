@@ -79,4 +79,71 @@
   .nx-focus-ring:focus-visible {
     box-shadow: 0 0 0 3px var(--nx-paper), 0 0 0 6px var(--nx-cobalt);
   }
+
+  .nx-hero-copy {
+    animation: nx-rise 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .nx-console-enter {
+    animation: nx-rise 780ms 100ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .nx-console-scan {
+    animation: nx-scan 4.5s ease-in-out infinite;
+    box-shadow: 0 0 18px var(--nx-accent);
+  }
+
+  .nx-chart-bar {
+    animation: nx-bar 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    transform-origin: bottom;
+  }
+
+  .nx-orbit {
+    animation: nx-orbit 14s linear infinite;
+    background-image: radial-gradient(circle at 30% 30%, #f3ffb5, var(--nx-accent) 58%, #b8e800);
+  }
+
+  .nx-float-card {
+    animation: nx-float 5s ease-in-out infinite;
+  }
+
+  .nx-float-card-delayed {
+    animation-delay: -2.1s;
+  }
+}
+
+@keyframes nx-rise {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes nx-bar {
+  from { transform: scaleY(0); opacity: 0.25; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+
+@keyframes nx-scan {
+  0%, 100% { transform: translateY(0); opacity: 0; }
+  12%, 82% { opacity: 0.8; }
+  90% { transform: translateY(28rem); opacity: 0; }
+}
+
+@keyframes nx-orbit {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes nx-float {
+  0%, 100% { transform: translateY(0) rotate(-0.4deg); }
+  50% { transform: translateY(-8px) rotate(0.4deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nx-hero-copy,
+  .nx-console-enter,
+  .nx-console-scan,
+  .nx-chart-bar,
+  .nx-orbit,
+  .nx-float-card {
+    animation: none;
+  }
 }
