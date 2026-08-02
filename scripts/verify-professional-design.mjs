@@ -117,6 +117,52 @@ if (!unit) {
       fail("apps/web", `production build failed\n${output}`, "fix the reported Next.js build error and rerun the unit oracle");
     }
   }
+} else if (unit === "G-002") {
+  const css = await requireText("apps/web/app/globals.css", [
+    "--sr-bg:",
+    "--sr-ivory:",
+    "--sr-accent:",
+    ".sr-header",
+    ".sr-footer",
+    ".sr-button",
+    ".br-site",
+    "@keyframes br-route",
+    "@media (prefers-reduced-motion: reduce)",
+  ]);
+  const nav = await requireText("apps/web/components/marketing/nav.tsx", [
+    "sr-header",
+    "sr-logo-mark",
+    "sr-nav-cta",
+    "sr-mobile-menu",
+    "sr-footer",
+  ]);
+  const landing = await requireText("apps/web/app/(marketing)/page.tsx", [
+    'className="sr-site"',
+    "DemandScene",
+    "sr-button sr-button-primary",
+  ]);
+  const business = await requireText("apps/web/app/(marketing)/for-business/page.tsx", [
+    'className="sr-site br-site"',
+    "BusinessDemandPath",
+    "BusinessLeadForm",
+    "br-section-intro",
+  ]);
+
+  for (const [path, text] of [
+    ["apps/web/components/marketing/nav.tsx", nav],
+    ["apps/web/app/(marketing)/page.tsx", landing],
+    ["apps/web/app/(marketing)/for-business/page.tsx", business],
+  ]) {
+    for (const pattern of ["bg-blue-50", "rounded-2xl", "shadow-sm"]) {
+      if (text.includes(pattern)) {
+        fail(path, `deprecated generic marketing primitive remains: ${pattern}`, "use the shared Signal Room design primitives");
+      }
+    }
+  }
+
+  if (!css.includes("@media (max-width: 760px)") || !css.includes(".br-flow-dot { display: none; }")) {
+    fail("apps/web/app/globals.css", "responsive or reduced-motion contract is incomplete", "restore the mobile breakpoint and static reduced-motion state");
+  }
 } else {
   fail("scripts/verify-professional-design.mjs", `unit ${unit} has no implemented oracle yet`, "implement the unit-specific checks before activation");
 }
