@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --nx-ink: #171a14;
+  --nx-ink-soft: #353a30;
+  --nx-paper: #f3f1e8;
+  --nx-paper-bright: #faf9f4;
+  --nx-line: #cbc9bd;
+  --nx-accent: #d9ff43;
+  --nx-accent-strong: #b8e800;
+  --nx-signal: #ff5d3a;
+  --nx-cobalt: #2447e6;
+  --nx-display: Georgia, "Times New Roman", serif;
+  --nx-sans: Arial, Helvetica, sans-serif;
+  --nx-radius-sm: 0.375rem;
+  --nx-radius-md: 0.75rem;
+}
+
 @layer base {
   html {
     overflow-x: hidden;
@@ -12,6 +28,10 @@
   body {
     min-width: 0;
     overflow-x: hidden;
+    background: var(--nx-paper);
+    color: var(--nx-ink);
+    font-family: var(--nx-sans);
+    text-rendering: optimizeLegibility;
   }
 
   img,
@@ -26,5 +46,37 @@
   select,
   button {
     font: inherit;
+  }
+}
+
+@layer components {
+  .nx-display {
+    font-family: var(--nx-display);
+    font-weight: 400;
+    letter-spacing: -0.045em;
+  }
+
+  .nx-kicker {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .nx-grid-paper {
+    background-color: var(--nx-paper);
+    background-image:
+      linear-gradient(to right, rgb(23 26 20 / 5%) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(23 26 20 / 5%) 1px, transparent 1px);
+    background-size: 2.75rem 2.75rem;
+  }
+
+  .nx-focus-ring {
+    outline: none;
+  }
+
+  .nx-focus-ring:focus-visible {
+    box-shadow: 0 0 0 3px var(--nx-paper), 0 0 0 6px var(--nx-cobalt);
   }
 }
