@@ -68,17 +68,10 @@ if (serverCopyResult.status !== 0) {
 cpSync(resolve(serverRoot, "server.js"), resolve(serverRoot, "server.cjs"));
 writeFileSync(
   resolve(dist, "server/index.js"),
-  'import { createRequire } from "node:module";\n' +
-    'import { existsSync, realpathSync } from "node:fs";\n' +
-    'import { isAbsolute, resolve } from "node:path";\n' +
-    'const cwd = realpathSync("/proc/self/cwd");\n' +
-    'const entryArg = process.argv[1] || "";\n' +
-    'const entry = entryArg && isAbsolute(entryArg) ? entryArg : resolve(cwd, entryArg || ".");\n' +
-    'const entryDist = resolve(entry, "..", "..");\n' +
-    'const distRoot = existsSync(`${entryDist}/server/server.cjs`) ? entryDist : (existsSync(`${cwd}/dist/server/server.cjs`) ? `${cwd}/dist` : cwd);\n' +
-    'const serverRoot = resolve(distRoot, "server");\n' +
-    'globalThis.require = createRequire(`${serverRoot}/index.js`);\n' +
-    'globalThis.__dirname = serverRoot;\n' +
-    'await import("./server.cjs");\n',
+  'import { existsSync } from "node:fs";\n' +
+    'import { spawn } from "node:child_process";\n' +
+    'const serverPath = existsSync("dist/server/server.js") ? "dist/server/server.js" : "server/server.js";\n' +
+    'const child = spawn(process.execPath, [serverPath], { stdio: "inherit", env: process.env });\n' +
+    'child.on("exit", (code) => process.exit(code ?? 1));\n',
   "utf8",
 );
