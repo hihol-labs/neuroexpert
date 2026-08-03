@@ -69,10 +69,11 @@ cpSync(resolve(serverRoot, "server.js"), resolve(serverRoot, "server.cjs"));
 writeFileSync(
   resolve(dist, "server/index.js"),
   'import { createRequire } from "node:module";\n' +
-    'import { existsSync } from "node:fs";\n' +
+    'import { existsSync, realpathSync } from "node:fs";\n' +
     'import { resolve } from "node:path";\n' +
-    'const cwd = resolve(process.cwd());\n' +
-    'const entry = resolve(process.argv[1] || cwd);\n' +
+    'const cwd = realpathSync(".");\n' +
+    'const entryArg = process.argv[1] || "";\n' +
+    'const entry = entryArg && existsSync(entryArg) ? realpathSync(entryArg) : resolve(cwd, entryArg || ".");\n' +
     'const entryDist = resolve(entry, "..", "..");\n' +
     'const distRoot = existsSync(`${entryDist}/server/server.cjs`) ? entryDist : (existsSync(`${cwd}/dist/server/server.cjs`) ? `${cwd}/dist` : cwd);\n' +
     'const serverRoot = resolve(distRoot, "server");\n' +
