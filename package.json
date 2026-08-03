@@ -4,7 +4,7 @@
   "packageManager": "pnpm@9.15.4",
   "scripts": {
     "dev": "turbo dev",
-    "build": "turbo build",
+    "build": "npm --prefix packages/shared run build && npm --prefix apps/web run build",
     "lint": "turbo lint",
     "test": "pnpm --filter shared test",
     "typecheck": "turbo build",
