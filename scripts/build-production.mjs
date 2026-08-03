@@ -57,6 +57,6 @@ cpSync(
 mkdirSync(resolve(dist, "server"), { recursive: true });
 writeFileSync(
   resolve(dist, "server/index.js"),
-  'require("../apps/web/server.js");\n',
+  'import { createRequire } from "node:module";\nconst require = createRequire(import.meta.url);\nrequire("../apps/web/server.js");\n',
   "utf8",
 );
