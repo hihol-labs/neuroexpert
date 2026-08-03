@@ -68,7 +68,7 @@ if (serverCopyResult.status !== 0) {
 }
 const standaloneServer = readFileSync(resolve(serverRoot, "server.js"), "utf8")
   .replaceAll("require('next/dist/server/lib/start-server')", "require('./node_modules/next/dist/server/lib/start-server')")
-  .replaceAll("require('next')", "require('./node_modules/next')");
+  .replaceAll("require('next')", "require('./node_modules/next/dist/server/next.js')");
 writeFileSync(resolve(serverRoot, "server.cjs"), standaloneServer, "utf8");
 writeFileSync(
   resolve(dist, "server/index.js"),
