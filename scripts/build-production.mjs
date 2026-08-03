@@ -59,7 +59,7 @@ mkdirSync(resolve(dist, "server"), { recursive: true });
 const serverRoot = resolve(dist, "server");
 const serverCopyResult = spawnSync(
   "cp",
-  ["-aL", `${standalone}/apps/web/.`, `${serverRoot}/`],
+  ["-rL", `${standalone}/apps/web/.`, `${serverRoot}/`],
   { cwd: root, env: buildEnv, stdio: "inherit" },
 );
 if (serverCopyResult.error) throw serverCopyResult.error;
