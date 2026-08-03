@@ -39,7 +39,7 @@ const dist = resolve(root, "dist");
 
 rmSync(dist, { recursive: true, force: true });
 mkdirSync(dist, { recursive: true });
-cpSync(standalone, dist, { recursive: true });
+cpSync(standalone, dist, { recursive: true, dereference: true });
 cpSync(resolve(root, "apps/web/public"), resolve(dist, "apps/web/public"), {
   recursive: true,
 });
