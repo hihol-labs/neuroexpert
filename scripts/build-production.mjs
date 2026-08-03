@@ -68,10 +68,12 @@ if (serverCopyResult.status !== 0) {
 cpSync(resolve(serverRoot, "server.js"), resolve(serverRoot, "server.cjs"));
 writeFileSync(
   resolve(dist, "server/index.js"),
-  'import { existsSync } from "node:fs";\n' +
-    'import { spawn } from "node:child_process";\n' +
-    'const serverPath = existsSync("dist/server/server.js") ? "dist/server/server.js" : "server/server.js";\n' +
-    'const child = spawn(process.execPath, [serverPath], { stdio: "inherit", env: process.env });\n' +
-    'child.on("exit", (code) => process.exit(code ?? 1));\n',
+  'import { createRequire } from "node:module";\n' +
+    'import { existsSync } from "node:fs";\n' +
+    'import { pathToFileURL } from "node:url";\n' +
+    'const serverRoot = existsSync("dist/server/server.cjs") ? "dist/server" : "server";\n' +
+    'globalThis.require = createRequire(pathToFileURL(`${serverRoot}/index.js`));\n' +
+    'globalThis.__dirname = serverRoot;\n' +
+    'await import("./server.cjs");\n',
   "utf8",
 );
