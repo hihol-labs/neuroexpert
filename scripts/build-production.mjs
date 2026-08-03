@@ -55,10 +55,17 @@ cpSync(
   resolve(dist, ".openai/hosting.json"),
 );
 mkdirSync(resolve(dist, "server"), { recursive: true });
-cpSync(
-  resolve(dist, "apps/web/server.js"),
-  resolve(dist, "server/server.cjs"),
+const serverRoot = resolve(dist, "server");
+const serverCopyResult = spawnSync(
+  "cp",
+  ["-aL", `${standalone}/apps/web/.`, `${serverRoot}/`],
+  { cwd: root, env: buildEnv, stdio: "inherit" },
 );
+if (serverCopyResult.error) throw serverCopyResult.error;
+if (serverCopyResult.status !== 0) {
+  process.exit(serverCopyResult.status ?? 1);
+}
+cpSync(resolve(serverRoot, "server.js"), resolve(serverRoot, "server.cjs"));
 writeFileSync(
   resolve(dist, "server/index.js"),
   'import { createRequire } from "node:module";\n' +
@@ -68,8 +75,9 @@ writeFileSync(
     'const entry = resolve(process.argv[1] || cwd);\n' +
     'const entryDist = resolve(entry, "..", "..");\n' +
     'const distRoot = existsSync(`${entryDist}/server/server.cjs`) ? entryDist : (existsSync(`${cwd}/dist/server/server.cjs`) ? `${cwd}/dist` : cwd);\n' +
-    'globalThis.require = createRequire(`${distRoot}/server/index.js`);\n' +
-    'globalThis.__dirname = `${distRoot}/apps/web`;\n' +
+    'const serverRoot = resolve(distRoot, "server");\n' +
+    'globalThis.require = createRequire(`${serverRoot}/index.js`);\n' +
+    'globalThis.__dirname = serverRoot;\n' +
     'await import("./server.cjs");\n',
   "utf8",
 );
