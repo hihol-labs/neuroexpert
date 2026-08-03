@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { CatalogFooter, CatalogHeader } from "@/components/catalog/catalog-shell";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 function getAdmin() {
@@ -55,7 +56,9 @@ export default async function TrackLeadPage({ params }: Props) {
   const status = STATUS_LABELS[lead.status] || STATUS_LABELS.new;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="catalog-shell catalog-track">
+      <CatalogHeader />
+      <main className="catalog-track-main">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
           <div className="text-center">
@@ -170,12 +173,14 @@ export default async function TrackLeadPage({ params }: Props) {
               Посмотреть других экспертов
             </Link>
           </div>
-        </div>
-
-        <p className="text-center text-xs text-gray-400 mt-4">
-          Сохраните эту ссылку для отслеживания статуса
-        </p>
       </div>
+      </div>
+
+      <p className="text-center text-xs text-gray-400 mt-4">
+        Сохраните эту ссылку для отслеживания статуса
+      </p>
+      </main>
+      <CatalogFooter />
     </div>
   );
 }

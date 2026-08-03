@@ -36,7 +36,7 @@ export default function PricingPage() {
   ];
 
   return (
-    <div className="min-h-screen">
+    <div className="sr-site pricing-site">
       {schemas.map((schema, i) => (
         <script
           key={i}

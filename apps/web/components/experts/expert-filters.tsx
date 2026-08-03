@@ -57,6 +57,7 @@ export function ExpertFilters({ niches }: Props) {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          suppressHydrationWarning
           placeholder="Поиск по имени, квалификации..."
           className="min-w-0 flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:py-2"
         />

@@ -13,6 +13,7 @@ function getAdmin() {
 }
 import { generateArticleMetadata } from "@/lib/seo";
 import { BookingForm } from "@/components/experts/booking-form";
+import { CatalogFooter, CatalogHeader } from "@/components/catalog/catalog-shell";
 import { ArticleAnalytics } from "@/components/article/analytics";
 import {
   generateArticleSchema,
@@ -216,7 +217,7 @@ export default async function ArticlePage({ params }: Props) {
   ].filter(Boolean);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="catalog-shell catalog-article">
       {/* JSON-LD */}
       {schemas.map((schema, i) => (
         <script
@@ -227,18 +228,10 @@ export default async function ArticlePage({ params }: Props) {
       ))}
 
       {/* Header */}
-      <header className="border-b bg-white sticky top-0 z-10">
-        <nav className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3 sm:px-6">
-          <Link href="/" className="text-lg font-bold text-gray-900">НейроЭксперт</Link>
-          <div className="flex gap-4 text-sm">
-            <Link href="/experts" className="text-gray-600 hover:text-gray-900">Эксперты</Link>
-            <Link href="/audit" className="text-gray-600 hover:text-gray-900">Аудит</Link>
-          </div>
-        </nav>
-      </header>
+      <CatalogHeader active="articles" />
 
       <ArticleAnalytics expertSlug={expert.slug} articleSlug={article.slug} contentId={article.id} />
-      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+      <main className="catalog-main mx-auto max-w-4xl px-4 py-8 sm:px-6">
         {/* Breadcrumbs */}
         <nav className="text-sm text-gray-500 mb-6">
           <Link href="/" className="hover:text-gray-700">Главная</Link>
@@ -522,11 +515,7 @@ export default async function ArticlePage({ params }: Props) {
         </div>
       </main>
 
-      <footer className="bg-gray-900 py-8">
-        <div className="mx-auto max-w-4xl px-4 text-center text-sm text-gray-400 sm:px-6">
-          &copy; {new Date().getFullYear()} НейроЭксперт
-        </div>
-      </footer>
+      <CatalogFooter />
     </div>
   );
 }

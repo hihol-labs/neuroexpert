@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { generateItemListSchema } from "@/lib/schema-org";
+import { CatalogFooter, CatalogHeader } from "@/components/catalog/catalog-shell";
 
 function getAdmin() {
   return createSupabaseClient(
@@ -92,7 +93,7 @@ export default async function QuestionsPage({
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="catalog-shell catalog-questions">
       {schemas.map((schema, i) => (
         <script
           key={i}
@@ -101,23 +102,9 @@ export default async function QuestionsPage({
         />
       ))}
 
-      <header className="border-b bg-white">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-          <Link href="/" className="text-lg font-bold text-gray-900">
-            НейроЭксперт
-          </Link>
-          <div className="flex gap-4 text-sm">
-            <Link href="/experts" className="text-gray-600 hover:text-gray-900">
-              Эксперты
-            </Link>
-            <Link href="/questions" className="text-blue-600 font-medium">
-              Вопросы
-            </Link>
-          </div>
-        </nav>
-      </header>
+      <CatalogHeader active="questions" />
 
-      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+      <main className="catalog-main mx-auto max-w-4xl px-4 py-8 sm:px-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
           Вопросы экспертам
         </h1>
@@ -210,11 +197,7 @@ export default async function QuestionsPage({
         )}
       </main>
 
-      <footer className="bg-gray-900 py-8 mt-12">
-        <div className="mx-auto max-w-4xl px-4 text-center text-sm text-gray-400 sm:px-6">
-          &copy; {new Date().getFullYear()} НейроЭксперт
-        </div>
-      </footer>
+      <CatalogFooter />
     </div>
   );
 }
