@@ -43,6 +43,11 @@ cpSync(standalone, dist, { recursive: true });
 cpSync(resolve(root, "apps/web/public"), resolve(dist, "apps/web/public"), {
   recursive: true,
 });
+mkdirSync(resolve(dist, ".openai"), { recursive: true });
+cpSync(
+  resolve(root, ".openai/hosting.json"),
+  resolve(dist, ".openai/hosting.json"),
+);
 mkdirSync(resolve(dist, "server"), { recursive: true });
 writeFileSync(
   resolve(dist, "server/index.js"),
