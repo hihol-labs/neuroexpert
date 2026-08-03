@@ -55,8 +55,12 @@ cpSync(
   resolve(dist, ".openai/hosting.json"),
 );
 mkdirSync(resolve(dist, "server"), { recursive: true });
+cpSync(
+  resolve(dist, "apps/web/server.js"),
+  resolve(dist, "server/server.cjs"),
+);
 writeFileSync(
   resolve(dist, "server/index.js"),
-  'import "../apps/web/server.js";\n',
+  'import "./server.cjs";\n',
   "utf8",
 );
