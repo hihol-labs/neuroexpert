@@ -1,6 +1,5 @@
 import { spawnSync } from "node:child_process";
 import {
-  cpSync,
   mkdirSync,
   rmSync,
   writeFileSync,
@@ -39,7 +38,13 @@ const dist = resolve(root, "dist");
 
 rmSync(dist, { recursive: true, force: true });
 mkdirSync(dist, { recursive: true });
-cpSync(standalone, dist, { recursive: true, dereference: true });
+const copyResult = spawnSync("cp", ["-aL", `${standalone}/.`, `${dist}/`], {
+  cwd: root,
+  env: buildEnv,
+  stdio: "inherit",
+});
+if (copyResult.error) throw copyResult.error;
+if (copyResult.status !== 0) process.exit(copyResult.status ?? 1);
 cpSync(resolve(root, "apps/web/public"), resolve(dist, "apps/web/public"), {
   recursive: true,
 });
