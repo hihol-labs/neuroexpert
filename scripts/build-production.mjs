@@ -2,11 +2,12 @@ import { spawnSync } from "node:child_process";
 import {
   cpSync,
   mkdirSync,
-  readFileSync,
+  readdirSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
-import { resolve } from "node:path";
+import { relative, resolve } from "node:path";
 
 const buildEnv = {
   ...process.env,
@@ -18,9 +19,10 @@ const buildEnv = {
     process.env.SUPABASE_SERVICE_ROLE_KEY || "verification-service-key",
 };
 
+const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
 const commands = [
-  ["npm", ["--prefix", "packages/shared", "run", "build"]],
-  ["npm", ["--prefix", "apps/web", "run", "build"]],
+  [npmCommand, ["--prefix", "packages/shared", "run", "build"]],
+  [npmCommand, ["--prefix", "apps/web", "run", "build"]],
 ];
 
 for (const [command, args] of commands) {
@@ -28,6 +30,7 @@ for (const [command, args] of commands) {
     cwd: process.cwd(),
     env: buildEnv,
     stdio: "inherit",
+    shell: process.platform === "win32",
   });
 
   if (result.error) throw result.error;
@@ -35,49 +38,56 @@ for (const [command, args] of commands) {
 }
 
 const root = process.cwd();
-const standalone = resolve(root, "apps/web/.next/standalone");
+const nextOutput = resolve(root, "apps/web/.next");
 const dist = resolve(root, "dist");
 
 rmSync(dist, { recursive: true, force: true });
 mkdirSync(dist, { recursive: true });
-const copyResult = spawnSync("cp", ["-aL", `${standalone}/.`, `${dist}/`], {
-  cwd: root,
-  env: buildEnv,
-  stdio: "inherit",
-});
-if (copyResult.error) throw copyResult.error;
-if (copyResult.status !== 0) process.exit(copyResult.status ?? 1);
-cpSync(resolve(root, "apps/web/public"), resolve(dist, "apps/web/public"), {
+cpSync(resolve(nextOutput, "static"), resolve(dist, "_next/static"), {
   recursive: true,
 });
+const publicOutput = resolve(root, "apps/web/public");
+for (const entry of readdirSync(publicOutput)) {
+  cpSync(resolve(publicOutput, entry), resolve(dist, entry), { recursive: true });
+}
+
+const appOutput = resolve(nextOutput, "server/app");
+function stageRenderedPages(sourceDir) {
+  for (const entry of readdirSync(sourceDir)) {
+    const sourcePath = resolve(sourceDir, entry);
+    const metadata = statSync(sourcePath);
+    if (metadata.isDirectory()) {
+      stageRenderedPages(sourcePath);
+      continue;
+    }
+    if (!entry.endsWith(".html")) continue;
+    const route = relative(appOutput, sourcePath)
+      .replaceAll("\\", "/")
+      .replace(/^_not-found\.html$/, "404.html");
+    const target = resolve(dist, route);
+    mkdirSync(resolve(target, ".."), { recursive: true });
+    cpSync(sourcePath, target);
+  }
+}
+stageRenderedPages(appOutput);
+
 mkdirSync(resolve(dist, ".openai"), { recursive: true });
 cpSync(
   resolve(root, ".openai/hosting.json"),
   resolve(dist, ".openai/hosting.json"),
 );
 mkdirSync(resolve(dist, "server"), { recursive: true });
-const serverRoot = resolve(dist, "server");
-const serverCopyResult = spawnSync(
-  "cp",
-  ["-rL", `${standalone}/apps/web/.`, `${serverRoot}/`],
-  { cwd: root, env: buildEnv, stdio: "inherit" },
-);
-if (serverCopyResult.error) throw serverCopyResult.error;
-if (serverCopyResult.status !== 0) {
-  process.exit(serverCopyResult.status ?? 1);
-}
-const standaloneServer = readFileSync(resolve(serverRoot, "server.js"), "utf8")
-  .replaceAll("require('next/dist/server/lib/start-server')", "require('./node_modules/next/dist/server/lib/start-server')")
-  .replaceAll("require('next')", "require('./node_modules/next/dist/server/next.js')");
-writeFileSync(resolve(serverRoot, "server.cjs"), standaloneServer, "utf8");
 writeFileSync(
   resolve(dist, "server/index.js"),
-  'import { createRequire } from "node:module";\n' +
-    'import { existsSync } from "node:fs";\n' +
-    'import { pathToFileURL } from "node:url";\n' +
-    'const serverRoot = existsSync("dist/server/server.cjs") ? "dist/server" : "server";\n' +
-    'globalThis.require = createRequire(pathToFileURL(`${serverRoot}/index.js`));\n' +
-    'globalThis.__dirname = serverRoot;\n' +
-    'await import("./server.cjs");\n',
+  'const html = (path) => path === "/" ? "/index.html" : `${path.replace(/\\/$/, "")}.html`;\n' +
+    'const asset = (request, env, path) => env.ASSETS.fetch(new Request(new URL(path, request.url), request));\n' +
+    'export default {\n' +
+    '  async fetch(request, env) {\n' +
+    '    const url = new URL(request.url);\n' +
+    '    if (url.pathname.startsWith("/_next/") || url.pathname.includes(".")) return asset(request, env, url.pathname);\n' +
+    '    const direct = await asset(request, env, html(url.pathname));\n' +
+    '    return direct.status === 404 ? asset(request, env, "/404.html") : direct;\n' +
+    '  },\n' +
+    '};\n',
   "utf8",
 );
