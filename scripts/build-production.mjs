@@ -61,6 +61,12 @@ cpSync(
 );
 writeFileSync(
   resolve(dist, "server/index.js"),
-  'import "./server.cjs";\n',
+  'import { createRequire } from "node:module";\n' +
+    'import { existsSync } from "node:fs";\n' +
+    'const cwd = process.cwd();\n' +
+    'const distRoot = existsSync(`${cwd}/dist/server/server.cjs`) ? `${cwd}/dist` : cwd;\n' +
+    'globalThis.require = createRequire(`${distRoot}/server/index.js`);\n' +
+    'globalThis.__dirname = `${distRoot}/apps/web`;\n' +
+    'await import("./server.cjs");\n',
   "utf8",
 );
