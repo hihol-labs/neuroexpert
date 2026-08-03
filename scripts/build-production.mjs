@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import {
   cpSync,
   mkdirSync,
+  readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -65,7 +66,10 @@ if (serverCopyResult.error) throw serverCopyResult.error;
 if (serverCopyResult.status !== 0) {
   process.exit(serverCopyResult.status ?? 1);
 }
-cpSync(resolve(serverRoot, "server.js"), resolve(serverRoot, "server.cjs"));
+const standaloneServer = readFileSync(resolve(serverRoot, "server.js"), "utf8")
+  .replaceAll("require('next/dist/server/lib/start-server')", "require('./node_modules/next/dist/server/lib/start-server')")
+  .replaceAll("require('next')", "require('./node_modules/next')");
+writeFileSync(resolve(serverRoot, "server.cjs"), standaloneServer, "utf8");
 writeFileSync(
   resolve(dist, "server/index.js"),
   'import { createRequire } from "node:module";\n' +
