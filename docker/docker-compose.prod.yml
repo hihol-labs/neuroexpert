@@ -146,6 +146,8 @@ services:
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+        GIT_SHA: ${GIT_SHA:-unknown}
+        BUILD_TIME: ${BUILD_TIME:-unknown}
     depends_on:
       supabase-kong:
         condition: service_started

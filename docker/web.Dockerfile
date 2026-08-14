@@ -46,6 +46,12 @@ RUN pnpm --filter web build
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+# Release identity для /api/version (ADR-002): SHA и время сборки задаются
+# deploy-скриптом через build args.
+ARG GIT_SHA=unknown
+ARG BUILD_TIME=unknown
+ENV GIT_SHA=${GIT_SHA}
+ENV BUILD_TIME=${BUILD_TIME}
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 COPY --from=builder /app/apps/web/.next/standalone ./
 COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
