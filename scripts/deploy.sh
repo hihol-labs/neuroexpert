@@ -34,15 +34,17 @@ fi
 echo "=== НейроЭксперт: Deploy ==="
 echo "→ SHA: $DEPLOY_SHA (ветка: $DEPLOY_BRANCH)"
 
-# Любой сбой после захвата lock снимает его (ревью-находка r5: fail-путь
-# оставлял lock до stale-таймаута и блокировал срочный корректирующий деплой).
-trap 'ssh "$SERVER" rm -rf /opt/neuroexpert/.deploy.lock 2>/dev/null || true' ERR
+# Любой сбой после захвата lock снимает его, но ТОЛЬКО свой: lock несёт
+# ownership-токен (ревью-находка r6: безусловный trap второго запуска,
+# упавшего на «lock busy», удалял lock первого и открывал третий параллельный).
+RUN_ID="$$-$(date +%s)"
+trap 'echo "$RUN_ID" | ssh "$SERVER" "read RID; [ \"\$(cat /opt/neuroexpert/.deploy.lock/owner 2>/dev/null)\" = \"\$RID\" ] && rm -rf /opt/neuroexpert/.deploy.lock || true" 2>/dev/null || true' ERR
 
 # --- 1. Lock + sync repo on server to exact SHA ---
 echo "[1/6] Lock и синхронизация кода (checkout $DEPLOY_SHA)..."
-ssh "$SERVER" bash -s -- "$DEPLOY_SHA" "$DEPLOY_BRANCH" <<'REMOTE'
+ssh "$SERVER" bash -s -- "$DEPLOY_SHA" "$DEPLOY_BRANCH" "$RUN_ID" <<'REMOTE'
 set -euo pipefail
-DEPLOY_SHA="$1"; DEPLOY_BRANCH="$2"
+DEPLOY_SHA="$1"; DEPLOY_BRANCH="$2"; RUN_ID="$3"
 APP_DIR="/opt/neuroexpert"
 REPO="git@github.com:hihol-labs/neuroexpert.git"
 LOCK="$APP_DIR/.deploy.lock"
@@ -65,6 +67,7 @@ if ! mkdir "$LOCK" 2>/dev/null; then
   fi
 fi
 date +%s > "$LOCK/started"
+printf '%s\n' "$RUN_ID" > "$LOCK/owner"
 
 cd "$APP_DIR"
 # Полная очистка: tracked-модификации сбрасываются, untracked и ignored
@@ -243,10 +246,9 @@ fi
 echo "  → Canonical host ✓ ($CANON_SHA)"
 REMOTE
 
-# --- 6. Release lock ---
+# --- 6. Release lock (только свой, по ownership-токену) ---
 echo "[6/6] Снятие deploy-lock..."
-ssh "$SERVER" rmdir /opt/neuroexpert/.deploy.lock/started /opt/neuroexpert/.deploy.lock 2>/dev/null \
-  || ssh "$SERVER" rm -rf /opt/neuroexpert/.deploy.lock
+echo "$RUN_ID" | ssh "$SERVER" "read RID; [ \"\$(cat /opt/neuroexpert/.deploy.lock/owner 2>/dev/null)\" = \"\$RID\" ] && rm -rf /opt/neuroexpert/.deploy.lock || true"
 
 echo ""
 echo "=== Деплой завершён: $DEPLOY_SHA на https://$DOMAIN ==="
