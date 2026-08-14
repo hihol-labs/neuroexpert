@@ -16,12 +16,25 @@ const routes = [
 ];
 
 const failures = [];
+const canonicalHost = new URL(baseUrl).host;
+
+// Redirect может увести с canonical-домена (ревью-находка): финальный URL
+// обязан остаться на canonical-хосте, иначе проверяется чужой контент.
+function assertCanonical(path, response) {
+  const finalHost = new URL(response.url).host;
+  if (finalHost !== canonicalHost) {
+    failures.push(`${path}: redirected off-canonical to ${finalHost}`);
+    return false;
+  }
+  return true;
+}
 
 for (const [path, marker, heading] of routes) {
   const url = `${baseUrl}${path}`;
   try {
     const response = await fetch(url, { redirect: "follow", cache: "no-store", signal: AbortSignal.timeout(15_000) });
     const html = await response.text();
+    if (!assertCanonical(path, response)) continue;
     if (!response.ok) failures.push(`${path}: HTTP ${response.status}`);
     if (!html.includes(marker)) failures.push(`${path}: missing Signal Room marker ${marker}`);
     if (!html.includes(heading)) failures.push(`${path}: missing expected heading`);
@@ -31,13 +44,17 @@ for (const [path, marker, heading] of routes) {
 }
 
 if (requireHead) {
-  // Release identity (ADR-002): «задеплоено» = SHA на canonical-хосте == локальный HEAD.
+  // Release identity (ADR-002): «задеплоено» = SHA на canonical-хосте ==
+  // ожидаемый SHA. По умолчанию — локальный HEAD; при деплое явного
+  // DEPLOY_SHA передаётся EXPECTED_SHA (ревью-находка: HEAD != DEPLOY_SHA).
   try {
-    const head = execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
+    const expected = (process.env.EXPECTED_SHA || execSync("git rev-parse HEAD", { encoding: "utf8" })).trim();
     const response = await fetch(`${baseUrl}/api/version`, { cache: "no-store", signal: AbortSignal.timeout(15_000) });
-    const body = await response.json();
-    if (!response.ok) failures.push(`/api/version: HTTP ${response.status}`);
-    else if (body.sha !== head) failures.push(`/api/version: sha ${body.sha} != local HEAD ${head}`);
+    if (assertCanonical("/api/version", response)) {
+      const body = await response.json();
+      if (!response.ok) failures.push(`/api/version: HTTP ${response.status}`);
+      else if (body.sha !== expected) failures.push(`/api/version: sha ${body.sha} != expected ${expected}`);
+    }
   } catch (error) {
     failures.push(`/api/version: ${error instanceof Error ? error.message : String(error)}`);
   }
