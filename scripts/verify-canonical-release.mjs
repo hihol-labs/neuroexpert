@@ -16,14 +16,14 @@ const routes = [
 ];
 
 const failures = [];
-const canonicalHost = new URL(baseUrl).host;
+const canonicalOrigin = new URL(baseUrl).origin;
 
-// Redirect может увести с canonical-домена (ревью-находка): финальный URL
-// обязан остаться на canonical-хосте, иначе проверяется чужой контент.
+// Redirect может увести с canonical-origin (ревью-находки r2/r4): финальный
+// URL обязан совпадать по origin (схема+хост+порт) — https→http тоже провал.
 function assertCanonical(path, response) {
-  const finalHost = new URL(response.url).host;
-  if (finalHost !== canonicalHost) {
-    failures.push(`${path}: redirected off-canonical to ${finalHost}`);
+  const finalOrigin = new URL(response.url).origin;
+  if (finalOrigin !== canonicalOrigin) {
+    failures.push(`${path}: redirected off-canonical to ${finalOrigin}`);
     return false;
   }
   return true;

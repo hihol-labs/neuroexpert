@@ -67,7 +67,7 @@ cd "$APP_DIR"
 # удаляются из build context (ревью-находка: stale overlays в образе).
 # Исключения — только серверные runtime-файлы: .env и рендеренный kong.yml.
 git reset --hard HEAD
-git clean -fdx -e .env -e '.env.*' -e docker/supabase/kong.yml
+git clean -fdx -e .env -e '.env.*' -e docker/supabase/kong.yml -e .deploy.lock
 git fetch origin --prune
 # SHA обязан быть ровно tip задеплоиваемой ветки на origin — не «какой-то
 # достижимый коммит». show-ref не парсит rev-выражения (защита от main~2).
