@@ -25,6 +25,11 @@ if ! [[ "$DEPLOY_SHA" =~ ^[0-9a-f]{40}$ ]]; then
   echo "✗ DEPLOY_SHA должен быть полным 40-hex SHA, получено: '$DEPLOY_SHA'"
   exit 1
 fi
+# DEPLOY_BRANCH — только имя ветки, не rev-выражение (main~2 и т.п.).
+if ! [[ "$DEPLOY_BRANCH" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]*$ ]] || [[ "$DEPLOY_BRANCH" == *..* ]]; then
+  echo "✗ DEPLOY_BRANCH содержит недопустимые символы: '$DEPLOY_BRANCH'"
+  exit 1
+fi
 
 echo "=== НейроЭксперт: Deploy ==="
 echo "→ SHA: $DEPLOY_SHA (ветка: $DEPLOY_BRANCH)"
@@ -42,12 +47,14 @@ if [ ! -d "$APP_DIR/.git" ]; then
   git clone "$REPO" "$APP_DIR"
 fi
 
-# Deploy-lock: один запуск за раз. Stale-lock (>30 мин) переустанавливается.
+# Deploy-lock: один запуск за раз. Stale-lock (>60 мин) переустанавливается;
+# rm -rf, т.к. каталог непустой (внутри started). Остаточно: активный деплой
+# длиннее часа теоретически может быть перекрыт — принято для соло-оператора.
 if ! mkdir "$LOCK" 2>/dev/null; then
   AGE=$(( $(date +%s) - $(stat -c %Y "$LOCK") ))
-  if [ "$AGE" -gt 1800 ]; then
+  if [ "$AGE" -gt 3600 ]; then
     echo "  → Stale lock (${AGE}s), переустанавливаю"
-    rmdir "$LOCK" && mkdir "$LOCK"
+    rm -rf "$LOCK" && mkdir "$LOCK"
   else
     echo "  ✗ Идёт другой деплой (lock ${AGE}s). Повтори позже или удали $LOCK"
     exit 1
@@ -63,8 +70,8 @@ git reset --hard HEAD
 git clean -fdx -e .env -e '.env.*' -e docker/supabase/kong.yml
 git fetch origin --prune
 # SHA обязан быть ровно tip задеплоиваемой ветки на origin — не «какой-то
-# достижимый коммит» (ревью-находка: stale branch под тем же значением).
-TIP=$(git rev-parse "refs/remotes/origin/$DEPLOY_BRANCH")
+# достижимый коммит». show-ref не парсит rev-выражения (защита от main~2).
+TIP=$(git show-ref --hash --verify "refs/remotes/origin/$DEPLOY_BRANCH")
 if [ "$TIP" != "$DEPLOY_SHA" ]; then
   echo "  ✗ origin/$DEPLOY_BRANCH tip = $TIP, ожидался $DEPLOY_SHA."
   echo "  → Запушь актуальный HEAD: git push origin HEAD"
@@ -137,7 +144,7 @@ if [ "$TRACKED" = "0" ] && [ "$TABLES" -gt "0" ]; then
     echo "    BASELINE_THROUGH=019_transliterate_slugs.sql bash scripts/deploy.sh"
     exit 1
   fi
-  echo "$MIGRATIONS" | grep -qx "packages/supabase/migrations/$BASELINE_THROUGH" \
+  echo "$MIGRATIONS" | grep -qxF "packages/supabase/migrations/$BASELINE_THROUGH" \
     || { echo "  ✗ BASELINE_THROUGH='$BASELINE_THROUGH' не найден среди tracked-миграций"; exit 1; }
   echo "  → Baseline по операторскому указанию: файлы по $BASELINE_THROUGH включительно"
   for f in $MIGRATIONS; do
