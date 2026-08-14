@@ -34,6 +34,10 @@ fi
 echo "=== НейроЭксперт: Deploy ==="
 echo "→ SHA: $DEPLOY_SHA (ветка: $DEPLOY_BRANCH)"
 
+# Любой сбой после захвата lock снимает его (ревью-находка r5: fail-путь
+# оставлял lock до stale-таймаута и блокировал срочный корректирующий деплой).
+trap 'ssh "$SERVER" rm -rf /opt/neuroexpert/.deploy.lock 2>/dev/null || true' ERR
+
 # --- 1. Lock + sync repo on server to exact SHA ---
 echo "[1/6] Lock и синхронизация кода (checkout $DEPLOY_SHA)..."
 ssh "$SERVER" bash -s -- "$DEPLOY_SHA" "$DEPLOY_BRANCH" <<'REMOTE'
@@ -75,7 +79,7 @@ TIP=$(git show-ref --hash --verify "refs/remotes/origin/$DEPLOY_BRANCH")
 if [ "$TIP" != "$DEPLOY_SHA" ]; then
   echo "  ✗ origin/$DEPLOY_BRANCH tip = $TIP, ожидался $DEPLOY_SHA."
   echo "  → Запушь актуальный HEAD: git push origin HEAD"
-  rmdir "$LOCK" 2>/dev/null || true
+  rm -rf "$LOCK"
   exit 1
 fi
 git checkout --detach "$DEPLOY_SHA"
@@ -135,7 +139,9 @@ MIGRATIONS=$(git ls-files -- 'packages/supabase/migrations/*.sql' | sort)
 [ -n "$MIGRATIONS" ] || { echo "  ✗ tracked-миграции не найдены"; exit 1; }
 
 TRACKED=$($PSQL -qAtc "SELECT count(*) FROM public.schema_migrations")
-TABLES=$($PSQL -qAtc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name <> 'schema_migrations'")
+# Обжитость схемы — по pg_class (таблицы, вьюхи, секвенсы), не только по
+# information_schema.tables (ревью-находка r5: обход guard схемой без таблиц).
+TABLES=$($PSQL -qAtc "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname <> 'schema_migrations' AND c.relkind IN ('r','v','m','S','p')")
 if [ "$TRACKED" = "0" ] && [ "$TABLES" -gt "0" ]; then
   if [ -z "$BASELINE_THROUGH" ]; then
     echo "  ✗ Схема обжита ($TABLES таблиц), а schema_migrations пуст."
@@ -147,12 +153,16 @@ if [ "$TRACKED" = "0" ] && [ "$TABLES" -gt "0" ]; then
   echo "$MIGRATIONS" | grep -qxF "packages/supabase/migrations/$BASELINE_THROUGH" \
     || { echo "  ✗ BASELINE_THROUGH='$BASELINE_THROUGH' не найден среди tracked-миграций"; exit 1; }
   echo "  → Baseline по операторскому указанию: файлы по $BASELINE_THROUGH включительно"
+  # Все baseline-строки — ОДНОЙ транзакцией (ревью-находка r5: прерванный
+  # построчный baseline оставлял частичную таблицу и обходил guard TRACKED=0).
+  BASELINE_SQL=""
   for f in $MIGRATIONS; do
     NAME=$(basename "$f")
     SUM=$(sha256sum "$f" | cut -d' ' -f1)
-    $PSQL -qAtc "INSERT INTO public.schema_migrations(filename, checksum) VALUES ('$NAME','$SUM') ON CONFLICT DO NOTHING"
+    BASELINE_SQL="$BASELINE_SQL INSERT INTO public.schema_migrations(filename, checksum) VALUES ('$NAME','$SUM') ON CONFLICT DO NOTHING;"
     [ "$NAME" = "$BASELINE_THROUGH" ] && break
   done
+  printf '%s\n' "$BASELINE_SQL" | $PSQL --single-transaction -f /dev/stdin
 fi
 
 APPLIED=0
