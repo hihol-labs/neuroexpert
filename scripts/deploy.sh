@@ -6,7 +6,14 @@
 # Контракт:
 #   - Деплоится ровно DEPLOY_SHA (по умолчанию локальный HEAD), не origin/main.
 #     Если SHA нет на origin — скрипт падает с подсказкой «сначала git push».
-#   - Миграции трекаются в public.schema_migrations; ошибка миграции валит деплой.
+#   - Основной путь доставки — DEPLOY_MODE=artifact: локально мнётся
+#     `git archive DEPLOY_SHA`, digest сверяется на сервере. На проде НЕТ .git
+#     (там rsync-дерево), поэтому checkout по SHA неприменим. DEPLOY_MODE=git —
+#     легаси-путь для сервера с git-клоном.
+#   - Инвариант «деплоим только опубликованное» проверяется ЛОКАЛЬНО (на сервере
+#     проверять нечем). Осознанный обход — ALLOW_UNPUSHED=1, печатается громко.
+#   - Миграции трекаются в public.neuroexpert_migrations (public.neuroexpert_migrations
+#     занята внутренней таблицей Supabase-сервиса); ошибка миграции валит деплой.
 #   - «Деплой завершён» печатается ТОЛЬКО после: health зелёный И
 #     /api/version отдаёт DEPLOY_SHA. Иначе exit 1.
 # =============================================================================
@@ -19,6 +26,13 @@ DOMAIN="neuroexpertise.ru"
 DEPLOY_SHA="${DEPLOY_SHA:-$(git rev-parse HEAD)}"
 DEPLOY_BRANCH="${DEPLOY_BRANCH:-$(git rev-parse --abbrev-ref HEAD)}"
 BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+DEPLOY_MODE="${DEPLOY_MODE:-artifact}"      # artifact (по умолчанию) | git
+ALLOW_UNPUSHED="${ALLOW_UNPUSHED:-0}"
+
+if [ "$DEPLOY_MODE" != "artifact" ] && [ "$DEPLOY_MODE" != "git" ]; then
+  echo "✗ DEPLOY_MODE должен быть artifact или git, получено: '$DEPLOY_MODE'"
+  exit 1
+fi
 
 # DEPLOY_SHA — только полный 40-hex SHA (никаких символических refs).
 if ! [[ "$DEPLOY_SHA" =~ ^[0-9a-f]{40}$ ]]; then
@@ -32,7 +46,7 @@ if ! [[ "$DEPLOY_BRANCH" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]*$ ]] || [[ "$DEPLOY_BRAN
 fi
 
 echo "=== НейроЭксперт: Deploy ==="
-echo "→ SHA: $DEPLOY_SHA (ветка: $DEPLOY_BRANCH)"
+echo "→ SHA: $DEPLOY_SHA (ветка: $DEPLOY_BRANCH, режим: $DEPLOY_MODE)"
 
 # Любой сбой после захвата lock снимает его, но ТОЛЬКО свой: lock несёт
 # ownership-токен (ревью-находка r6: безусловный trap второго запуска,
@@ -40,22 +54,106 @@ echo "→ SHA: $DEPLOY_SHA (ветка: $DEPLOY_BRANCH)"
 RUN_ID="$$-$(date +%s)"
 trap 'echo "$RUN_ID" | ssh "$SERVER" "read RID; [ \"\$(cat /opt/neuroexpert/.deploy.lock/owner 2>/dev/null)\" = \"\$RID\" ] && rm -rf /opt/neuroexpert/.deploy.lock || true" 2>/dev/null || true' ERR
 
-# --- 1. Lock + sync repo on server to exact SHA ---
-echo "[1/6] Lock и синхронизация кода (checkout $DEPLOY_SHA)..."
-ssh "$SERVER" bash -s -- "$DEPLOY_SHA" "$DEPLOY_BRANCH" "$RUN_ID" <<'REMOTE'
-set -euo pipefail
-DEPLOY_SHA="$1"; DEPLOY_BRANCH="$2"; RUN_ID="$3"
-APP_DIR="/opt/neuroexpert"
-REPO="git@github.com:hihol-labs/neuroexpert.git"
-LOCK="$APP_DIR/.deploy.lock"
+# --- 1. Lock + доставка кода на сервер ---
+echo "[1/6] Lock и доставка кода (режим $DEPLOY_MODE, $DEPLOY_SHA)..."
 
-if [ ! -d "$APP_DIR/.git" ]; then
-  git clone "$REPO" "$APP_DIR"
+# Инвариант «деплоится только то, что есть на origin» теперь проверяется ЛОКАЛЬНО:
+# на проде нет .git, там проверять нечем. show-ref не парсит rev-выражения.
+git fetch origin --prune >/dev/null 2>&1 \
+  || echo "  ! git fetch origin не прошёл (сеть?) — сверяю по локальным remote-ref"
+TIP="$(git show-ref --hash --verify "refs/remotes/origin/$DEPLOY_BRANCH" 2>/dev/null || true)"
+if [ "$TIP" != "$DEPLOY_SHA" ]; then
+  if [ "$ALLOW_UNPUSHED" = "1" ]; then
+    echo "  ! origin/$DEPLOY_BRANCH tip = '${TIP:-<ветки нет на origin>}'"
+    echo "  ! ALLOW_UNPUSHED=1 — осознанный обход: деплоится неопубликованный код,"
+    echo "  !   офсайт-копии этого коммита не существует."
+  else
+    echo "  ✗ origin/$DEPLOY_BRANCH tip = '${TIP:-<ветки нет на origin>}', ожидался $DEPLOY_SHA."
+    echo "  → Запушь актуальный HEAD: git push origin HEAD"
+    echo "  → Либо осознанно: ALLOW_UNPUSHED=1 bash scripts/deploy.sh"
+    exit 1
+  fi
 fi
+
+if [ "$DEPLOY_MODE" = "artifact" ]; then
+  # Артефакт = ровно tracked-дерево коммита: тот же объект, который принимает
+  # pre-release-гейт (git archive DEPLOY_SHA + sha256). Untracked/ignored файлы
+  # в него не попадают by construction.
+  ART="$(mktemp -t nx-release-XXXXXX.tar)"
+  git archive --format=tar "$DEPLOY_SHA" > "$ART"
+  DIGEST="$(sha256sum "$ART" | cut -d' ' -f1)"
+  echo "  → Артефакт: $(wc -c < "$ART") байт, sha256 $DIGEST"
+  scp -q "$ART" "$SERVER:/tmp/nx-release-$RUN_ID.tar"
+  rm -f "$ART"
+
+  ssh "$SERVER" bash -s -- "$DEPLOY_SHA" "$RUN_ID" "$DIGEST" <<'REMOTE'
+set -euo pipefail
+DEPLOY_SHA="$1"; RUN_ID="$2"; DIGEST="$3"
+APP_DIR="/opt/neuroexpert"
+LOCK="$APP_DIR/.deploy.lock"
+mkdir -p "$APP_DIR"
 
 # Deploy-lock: один запуск за раз. Stale-lock (>60 мин) переустанавливается;
 # rm -rf, т.к. каталог непустой (внутри started). Остаточно: активный деплой
 # длиннее часа теоретически может быть перекрыт — принято для соло-оператора.
+if ! mkdir "$LOCK" 2>/dev/null; then
+  AGE=$(( $(date +%s) - $(stat -c %Y "$LOCK") ))
+  if [ "$AGE" -gt 3600 ]; then
+    echo "  → Stale lock (${AGE}s), переустанавливаю"
+    rm -rf "$LOCK" && mkdir "$LOCK"
+  else
+    echo "  ✗ Идёт другой деплой (lock ${AGE}s). Повтори позже или удали $LOCK"
+    exit 1
+  fi
+fi
+date +%s > "$LOCK/started"
+printf '%s\n' "$RUN_ID" > "$LOCK/owner"
+
+# Digest обязан совпасть с локально посчитанным: доставили ровно то, что мнули.
+ACTUAL="$(sha256sum "/tmp/nx-release-$RUN_ID.tar" | cut -d' ' -f1)"
+if [ "$ACTUAL" != "$DIGEST" ]; then
+  echo "  ✗ digest артефакта на сервере '$ACTUAL' != локального '$DIGEST'"
+  rm -rf "$LOCK"; exit 1
+fi
+
+STAGE="$APP_DIR/.release-stage"
+rm -rf "$STAGE"; mkdir -p "$STAGE"
+tar -xf "/tmp/nx-release-$RUN_ID.tar" -C "$STAGE"
+[ -f "$STAGE/docker/docker-compose.prod.yml" ] \
+  || { echo "  ✗ артефакт не похож на дерево проекта (нет docker-compose.prod.yml)"; rm -rf "$LOCK"; exit 1; }
+
+# Дерево приводится к артефакту ровно (--delete): stale-файлы, включая untracked
+# и ignored, уходят из build context. Сохраняются только серверные runtime-файлы
+# и локальное состояние сервера (.env, рендеренный kong.yml, lock, бэкапы).
+rsync -a --delete \
+  --exclude '.env' \
+  --exclude '.env.*' \
+  --exclude 'docker/supabase/kong.yml' \
+  --exclude '.deploy.lock' \
+  --exclude '.release-stage' \
+  --exclude '.release-sha' \
+  --exclude '.deploy-backups' \
+  "$STAGE/" "$APP_DIR/"
+
+rm -rf "$STAGE" "/tmp/nx-release-$RUN_ID.tar"
+printf '%s\n' "$DEPLOY_SHA" > "$APP_DIR/.release-sha"
+echo "  → Дерево синхронизировано с артефактом (digest ✓), .release-sha = $DEPLOY_SHA"
+REMOTE
+
+else
+  # Легаси-путь: сервер с полноценным git-клоном.
+  ssh "$SERVER" bash -s -- "$DEPLOY_SHA" "$DEPLOY_BRANCH" "$RUN_ID" <<'REMOTE'
+set -euo pipefail
+DEPLOY_SHA="$1"; DEPLOY_BRANCH="$2"; RUN_ID="$3"
+APP_DIR="/opt/neuroexpert"
+LOCK="$APP_DIR/.deploy.lock"
+
+if [ ! -d "$APP_DIR/.git" ]; then
+  echo "  ✗ $APP_DIR не является git-репозиторием (на этом проде — rsync-дерево)."
+  echo "  → Используй основной путь: DEPLOY_MODE=artifact (по умолчанию)."
+  exit 1
+fi
+
 if ! mkdir "$LOCK" 2>/dev/null; then
   AGE=$(( $(date +%s) - $(stat -c %Y "$LOCK") ))
   if [ "$AGE" -gt 3600 ]; then
@@ -86,8 +184,10 @@ if [ "$TIP" != "$DEPLOY_SHA" ]; then
   exit 1
 fi
 git checkout --detach "$DEPLOY_SHA"
+printf '%s\n' "$DEPLOY_SHA" > "$APP_DIR/.release-sha"
 echo "  → checked out $(git rev-parse --short HEAD)"
 REMOTE
+fi
 
 # --- 2. Check .env + render kong.yml ---
 echo "[2/6] Проверка .env и kong.yml..."
@@ -119,9 +219,16 @@ REMOTE
 # применены все миграции по этот файл включительно». Догадки по числу таблиц
 # запрещены (ревью-находка: count-эвристика молча пропустила бы 020-024).
 echo "[4/6] Миграции БД..."
-ssh "$SERVER" bash -s -- "${BASELINE_THROUGH:-}" <<'REMOTE'
+# Перечень миграций берётся из КОММИТА (git ls-tree по DEPLOY_SHA), а не с сервера:
+# там нет .git, а исполнять «что нашлось в каталоге» нельзя. base64 — чтобы
+# многострочный список пережил склейку argv в ssh.
+MIG_B64="$(git ls-tree -r --name-only "$DEPLOY_SHA" -- packages/supabase/migrations \
+  | grep '\.sql$' | sort | base64 -w0)"
+[ -n "$MIG_B64" ] || { echo "  ✗ в коммите $DEPLOY_SHA нет файлов миграций"; exit 1; }
+ssh "$SERVER" bash -s -- "${BASELINE_THROUGH:-}" "$MIG_B64" <<'REMOTE'
 set -euo pipefail
 BASELINE_THROUGH="${1:-}"
+MIG_B64="${2:-}"
 cd /opt/neuroexpert
 COMPOSE="docker compose -f docker/docker-compose.prod.yml"
 
@@ -133,21 +240,24 @@ PSQL="$COMPOSE exec -T supabase-db psql -U postgres -d postgres -v ON_ERROR_STOP
 
 # Трекинг применённых миграций (checksum — против молчаливого пропуска
 # изменённого уже-применённого файла, ревью-находка r2).
-$PSQL -qAtc "CREATE TABLE IF NOT EXISTS public.schema_migrations (
+$PSQL -qAtc "CREATE TABLE IF NOT EXISTS public.neuroexpert_migrations (
   filename text PRIMARY KEY, checksum text, applied_at timestamptz NOT NULL DEFAULT now())"
-$PSQL -qAtc "ALTER TABLE public.schema_migrations ADD COLUMN IF NOT EXISTS checksum text"
+$PSQL -qAtc "ALTER TABLE public.neuroexpert_migrations ADD COLUMN IF NOT EXISTS checksum text"
 
-# Только tracked-файлы текущего checkout — stale/untracked SQL не исполняем.
-MIGRATIONS=$(git ls-files -- 'packages/supabase/migrations/*.sql' | sort)
-[ -n "$MIGRATIONS" ] || { echo "  ✗ tracked-миграции не найдены"; exit 1; }
+# Исполняем ровно файлы из манифеста коммита — stale/untracked SQL мимо.
+MIGRATIONS=$(printf '%s' "$MIG_B64" | base64 -d)
+[ -n "$MIGRATIONS" ] || { echo "  ✗ манифест миграций пуст"; exit 1; }
+for f in $MIGRATIONS; do
+  [ -f "$f" ] || { echo "  ✗ миграция из манифеста отсутствует в дереве: $f"; exit 1; }
+done
 
-TRACKED=$($PSQL -qAtc "SELECT count(*) FROM public.schema_migrations")
+TRACKED=$($PSQL -qAtc "SELECT count(*) FROM public.neuroexpert_migrations")
 # Обжитость схемы — по pg_class (таблицы, вьюхи, секвенсы), не только по
 # information_schema.tables (ревью-находка r5: обход guard схемой без таблиц).
-TABLES=$($PSQL -qAtc "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname <> 'schema_migrations' AND c.relkind IN ('r','v','m','S','p')")
+TABLES=$($PSQL -qAtc "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname <> 'neuroexpert_migrations' AND c.relkind IN ('r','v','m','S','p')")
 if [ "$TRACKED" = "0" ] && [ "$TABLES" -gt "0" ]; then
   if [ -z "$BASELINE_THROUGH" ]; then
-    echo "  ✗ Схема обжита ($TABLES таблиц), а schema_migrations пуст."
+    echo "  ✗ Схема обжита ($TABLES таблиц), а neuroexpert_migrations пуст."
     echo "  → Fail-closed: укажи явно BASELINE_THROUGH=<последний применённый файл.sql>"
     echo "    (проверь на проде, какие миграции реально применены), например:"
     echo "    BASELINE_THROUGH=019_transliterate_slugs.sql bash scripts/deploy.sh"
@@ -162,7 +272,7 @@ if [ "$TRACKED" = "0" ] && [ "$TABLES" -gt "0" ]; then
   for f in $MIGRATIONS; do
     NAME=$(basename "$f")
     SUM=$(sha256sum "$f" | cut -d' ' -f1)
-    BASELINE_SQL="$BASELINE_SQL INSERT INTO public.schema_migrations(filename, checksum) VALUES ('$NAME','$SUM') ON CONFLICT DO NOTHING;"
+    BASELINE_SQL="$BASELINE_SQL INSERT INTO public.neuroexpert_migrations(filename, checksum) VALUES ('$NAME','$SUM') ON CONFLICT DO NOTHING;"
     [ "$NAME" = "$BASELINE_THROUGH" ] && break
   done
   printf '%s\n' "$BASELINE_SQL" | $PSQL --single-transaction -f /dev/stdin
@@ -172,9 +282,9 @@ APPLIED=0
 for f in $MIGRATIONS; do
   NAME=$(basename "$f")
   SUM=$(sha256sum "$f" | cut -d' ' -f1)
-  EXISTS=$($PSQL -qAtc "SELECT count(*) FROM public.schema_migrations WHERE filename='$NAME'")
+  EXISTS=$($PSQL -qAtc "SELECT count(*) FROM public.neuroexpert_migrations WHERE filename='$NAME'")
   if [ "$EXISTS" != "0" ]; then
-    STORED=$($PSQL -qAtc "SELECT coalesce(checksum,'') FROM public.schema_migrations WHERE filename='$NAME'")
+    STORED=$($PSQL -qAtc "SELECT coalesce(checksum,'') FROM public.neuroexpert_migrations WHERE filename='$NAME'")
     if [ -n "$STORED" ] && [ "$STORED" != "$SUM" ]; then
       echo "  ✗ $NAME изменён после применения (checksum mismatch)."
       echo "  → Уже применённые миграции неизменяемы; новая правка = новый файл."
@@ -184,7 +294,7 @@ for f in $MIGRATIONS; do
   fi
   echo "  → Applying $NAME (single transaction)..."
   # Файл + запись трекинга в ОДНОЙ транзакции: неудача откатывает и то и другое.
-  { cat "$f"; printf "\nINSERT INTO public.schema_migrations(filename, checksum) VALUES ('%s','%s');\n" "$NAME" "$SUM"; } \
+  { cat "$f"; printf "\nINSERT INTO public.neuroexpert_migrations(filename, checksum) VALUES ('%s','%s');\n" "$NAME" "$SUM"; } \
     | $PSQL --single-transaction -f /dev/stdin
   APPLIED=$((APPLIED+1))
 done
