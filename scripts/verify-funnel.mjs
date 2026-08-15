@@ -226,9 +226,9 @@ function checkFragmentTargets(route, html, anchors) {
   }
 }
 
-function checkAuthDeadEnds(route, anchors) {
+function checkAuthDeadEnds(route, anchors, pageUrl) {
   for (const anchor of anchors) {
-    const path = pathOf(anchor.href);
+    const path = pathOf(anchor.href, pageUrl);
     if (!path || !AUTH_DEAD_ENDS.includes(path)) continue;
     // Осознанное исключение размечается в разметке, а не в оракуле: правка
     // видна в дифе страницы, а не спрятана в списке внутри гейта.
@@ -238,14 +238,14 @@ function checkAuthDeadEnds(route, anchors) {
   }
 }
 
-function checkChromeLinks(route, html) {
+function checkChromeLinks(route, html, pageUrl) {
   for (const [tag, chromeClass, human] of [["header", "sr-header", "шапке"], ["footer", "sr-footer", "подвале"]]) {
     const section = extractChrome(html, tag, chromeClass);
     if (section === null) {
       fail(route, `не найден <${tag}> — нечем проверить ссылки в ${human}`);
       continue;
     }
-    const paths = new Set(parseAnchors(section).map((anchor) => pathOf(anchor.href)).filter(Boolean));
+    const paths = new Set(parseAnchors(section).map((anchor) => pathOf(anchor.href, pageUrl)).filter(Boolean));
     for (const required of REQUIRED_CHROME_LINKS) {
       if (!paths.has(required)) fail(route, `нет ссылки на ${required} в ${human}`);
     }
@@ -277,6 +277,15 @@ function checkLiveChannel(route, html) {
  * клиентским переключателем (например, вкладка «Эксперт» на /pricing), в
  * серверном HTML отсутствует, но клиент его увидит и упрётся в форму входа.
  * Отключается FUNNEL_SKIP_SOURCE=1 (прогон против чужого/старого билда).
+ *
+ * ЗАЯВЛЕННАЯ ГРАНИЦА (ревью, раунд 5). Ступень видит только литеральные цели в
+ * позиции href. Вычисляемая цель (`href={target}`, тернарник, склейка строк,
+ * значение из внешних данных) статически не разрешается — доказать её
+ * назначение без исполнения кода нельзя. Такие CTA покрываются проверкой
+ * живого HTML тогда и только тогда, когда попадают в серверную разметку;
+ * то, что рендерится ТОЛЬКО после клиентского взаимодействия и вычисляется
+ * динамически, этим оракулом не покрыто — это осознанный предел, а не
+ * пропущенный дефект. Практика проекта: цель CTA задаётся литералом.
  */
 function checkClientOnlyDeadEnds() {
   if (process.env.FUNNEL_SKIP_SOURCE === "1") return;
@@ -396,14 +405,14 @@ async function main() {
 
     const anchors = parseAnchors(html);
 
-    checkAuthDeadEnds(route, anchors);
-    checkChromeLinks(route, html);
+    checkAuthDeadEnds(route, anchors, response.url);
+    checkChromeLinks(route, html, response.url);
     checkLiveChannel(route, html);
     checkFragmentTargets(route, html, anchors);
 
     for (const anchor of anchors) {
-      if (!isInternalPage(anchor.href, `${canonicalOrigin}${route}`)) continue;
-      const target = new URL(anchor.href, `${canonicalOrigin}${route}`);
+      if (!isInternalPage(anchor.href, response.url)) continue;
+      const target = new URL(anchor.href, response.url);
       const key = `${target.pathname}${target.search}`;
       if (!internalTargets.has(key)) internalTargets.set(key, route);
     }
