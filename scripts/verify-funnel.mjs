@@ -21,6 +21,17 @@
  */
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+// Корень репозитория берётся от файла скрипта: привязка к process.cwd()
+// означала бы, что запуск из другого каталога молча отключает обе
+// проверки по исходникам и гейт зеленеет впустую.
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const SOURCE_ROOTS = ["apps/web/app/(marketing)", "apps/web/components/marketing"];
+// Разметка, которая рендерится на КАЖДОМ маркетинговом маршруте: id из неё
+// доступны любой странице, id из самой страницы — только ей.
+const SHARED_CHROME_ROOT = "apps/web/components/marketing";
 
 const baseUrl = (process.env.FUNNEL_URL || process.env.CANONICAL_URL || "https://neuroexpertise.ru").replace(/\/$/, "");
 const canonicalOrigin = new URL(baseUrl).origin;
@@ -179,10 +190,24 @@ function pathOf(href, base = `${canonicalOrigin}/`) {
  * (href="broken"): такая ссылка ведёт на реальный маршрут и точно так же может
  * отдать 404, поэтому пропускать её нельзя.
  */
-function isInternalPage(href) {
+function isInternalPage(href, base) {
   if (/^(mailto:|tel:|javascript:|#)/i.test(href)) return false;
-  if (/^[a-z][a-z0-9+.-]*:/i.test(href)) return /^https?:/i.test(href) && pathOf(href) !== null;
-  return !href.startsWith("//");
+  if (/^[a-z][a-z0-9+.-]*:/i.test(href) && !/^https?:/i.test(href)) return false;
+  // Сюда попадают и protocol-relative адреса (//neuroexpertise.ru/…): их
+  // origin определяется только после разбора, отбрасывать их вслепую нельзя.
+  return pathOf(href, base) !== null;
+}
+
+/**
+ * Исключение действует, только если атрибут стоит на САМОМ элементе ссылки:
+ * совпадение по строке позволяло комментарию или соседнему элементу прикрыть
+ * настоящий /register и, наоборот, краснело на честной многострочной разметке.
+ */
+function isExemptElement(source, index) {
+  const start = source.lastIndexOf("<", index);
+  const end = source.indexOf(">", index);
+  if (start === -1 || end === -1 || end < start) return false;
+  return /\bdata-funnel-exempt\b/.test(source.slice(start, end));
 }
 
 /**
@@ -254,7 +279,7 @@ function checkLiveChannel(route, html) {
  */
 function checkClientOnlyDeadEnds() {
   if (process.env.FUNNEL_SKIP_SOURCE === "1") return;
-  const roots = ["apps/web/app/(marketing)", "apps/web/components/marketing"];
+  const roots = SOURCE_ROOTS;
   // Ловится любая строковая цель, а не только атрибут href="…": CTA часто
   // описан данными (`{ cta: "…", href: "/register?plan=pro" }`) и попадает в
   // разметку через <Link href={offer.href}> — форма, ради которой и заведена
@@ -263,15 +288,16 @@ function checkClientOnlyDeadEnds() {
   // адрес (`https://neuroexpertise.ru/login`): обе формы ведут в тот же тупик.
   const pattern = /["'`](?:https?:\/\/(?:www\.)?neuroexpertise\.ru)?(\/(?:register|login)\/?(?:[?#][^"'`]*)?)["'`]/g;
   for (const root of roots) {
-    if (!existsSync(root)) continue;
-    for (const file of walk(root)) {
+    const absolute = resolve(repoRoot, root);
+    if (!existsSync(absolute)) {
+      fail(root, "каталог маркетинговой поверхности не найден — ступень по исходникам не выполнена");
+      continue;
+    }
+    for (const file of walk(absolute)) {
       const source = readFileSync(file, "utf8");
-      const lines = source.split("\n");
       for (const match of source.matchAll(pattern)) {
         const line = source.slice(0, match.index).split("\n").length;
-        // Исключение засчитывается только на СВОЕЙ строке: окно в ±200 символов
-        // позволяло соседней размеченной ссылке прикрыть настоящий /register.
-        if (/\bdata-funnel-exempt\b/.test(lines[line - 1] ?? "")) continue;
+        if (isExemptElement(source, match.index)) continue;
         fail(`${file}:${line}`, `в исходнике маркетинговой страницы CTA ведёт на ${match[1]}`);
       }
     }
@@ -286,20 +312,30 @@ function checkClientOnlyDeadEnds() {
  */
 function checkSourceFragmentTargets() {
   if (process.env.FUNNEL_SKIP_SOURCE === "1") return;
-  const roots = ["apps/web/app/(marketing)", "apps/web/components/marketing"];
   const files = [];
-  for (const root of roots) {
-    if (existsSync(root)) files.push(...walk(root));
+  for (const root of SOURCE_ROOTS) {
+    const absolute = resolve(repoRoot, root);
+    if (!existsSync(absolute)) {
+      fail(root, "каталог маркетинговой поверхности не найден — проверка якорей по исходникам не выполнена");
+      continue;
+    }
+    files.push(...walk(absolute));
   }
   const sources = new Map(files.map((file) => [file, readFileSync(file, "utf8")]));
-  const declaredIds = new Set();
-  for (const source of sources.values()) {
-    for (const match of source.matchAll(/\bid="([^"]+)"/g)) declaredIds.add(match[1]);
+  const idsByFile = new Map();
+  const chromeIds = new Set();
+  for (const [file, source] of sources) {
+    const ids = new Set([...source.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]));
+    idsByFile.set(file, ids);
+    if (file.includes(SHARED_CHROME_ROOT)) for (const id of ids) chromeIds.add(id);
   }
   for (const [file, source] of sources) {
     // Только цели ссылок: без привязки к href в выборку попадают hex-цвета.
     for (const match of source.matchAll(/\bhref\s*[:=]\s*\{?\s*["'`]#([A-Za-z][\w-]*)["'`]/g)) {
-      if (declaredIds.has(match[1])) continue;
+      // Цель обязана быть объявлена на этой же странице либо в общем chrome:
+      // общий пул id по всей поверхности позволял одноимённому якорю с чужого
+      // маршрута подтвердить несуществующую цель.
+      if (idsByFile.get(file)?.has(match[1]) || chromeIds.has(match[1])) continue;
       const line = source.slice(0, match.index).split("\n").length;
       fail(`${file}:${line}`, `CTA ведёт на якорь #${match[1]}, но элемента с таким id в маркетинговых исходниках нет`);
     }
@@ -343,7 +379,7 @@ async function main() {
     checkFragmentTargets(route, html, anchors);
 
     for (const anchor of anchors) {
-      if (!isInternalPage(anchor.href)) continue;
+      if (!isInternalPage(anchor.href, `${canonicalOrigin}${route}`)) continue;
       const target = new URL(anchor.href, `${canonicalOrigin}${route}`);
       const key = `${target.pathname}${target.search}`;
       if (!internalTargets.has(key)) internalTargets.set(key, route);
