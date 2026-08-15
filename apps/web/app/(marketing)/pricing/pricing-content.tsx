@@ -156,10 +156,10 @@ const PRICE_FACTORS = [
 ];
 
 const EXPERT_PLANS: Offer[] = [
-  { name: "Free", price: "0 ₽", period: "навсегда", fit: "Проверить спрос и опубликовать первые страницы без риска.", scope: ["1 ниша", "3 страницы в месяц", "Карта спроса", "2 формата контента", "Комиссия 15%"], cta: "Начать бесплатно", href: "/register" },
-  { name: "Starter", price: "1 490 ₽", period: "/ месяц", fit: "Регулярно закрывать подтверждённый спрос экспертными страницами.", scope: ["2 ниши", "Страницы без лимита", "Все 5 форматов", "Полный экспорт", "Комиссия 7%"], cta: "Выбрать Starter", href: "/register?plan=starter" },
-  { name: "Pro", price: "2 990 ₽", period: "/ месяц", fit: "Добавить дистрибуцию и быстрее видеть, что приводит заявки.", scope: ["3 ниши", "Всё из Starter", "Кросспостинг", "Помощь с распространением", "Комиссия 3%"], cta: "Выбрать Pro", href: "/register?plan=pro", highlight: true },
-  { name: "Expert", price: "4 990 ₽", period: "/ месяц", fit: "Видеть весь путь: спрос, трафик, клики, запись и заявка.", scope: ["5 ниш", "Всё из Pro", "Аналитика страниц", "Сравнение с конкурентами", "Комиссия 0%"], cta: "Выбрать Expert", href: "/register?plan=expert" },
+  { name: "Free", price: "0 ₽", period: "навсегда", fit: "Проверить спрос и опубликовать первые страницы без риска.", scope: ["1 ниша", "3 страницы в месяц", "Карта спроса", "2 формата контента", "Комиссия 15%"], cta: "Начать бесплатно", href: "/scan" },
+  { name: "Starter", price: "1 490 ₽", period: "/ месяц", fit: "Регулярно закрывать подтверждённый спрос экспертными страницами.", scope: ["2 ниши", "Страницы без лимита", "Все 5 форматов", "Полный экспорт", "Комиссия 7%"], cta: "Выбрать Starter", href: "#funnel-contact" },
+  { name: "Pro", price: "2 990 ₽", period: "/ месяц", fit: "Добавить дистрибуцию и быстрее видеть, что приводит заявки.", scope: ["3 ниши", "Всё из Starter", "Кросспостинг", "Помощь с распространением", "Комиссия 3%"], cta: "Выбрать Pro", href: "#funnel-contact", highlight: true },
+  { name: "Expert", price: "4 990 ₽", period: "/ месяц", fit: "Видеть весь путь: спрос, трафик, клики, запись и заявка.", scope: ["5 ниш", "Всё из Pro", "Аналитика страниц", "Сравнение с конкурентами", "Комиссия 0%"], cta: "Выбрать Expert", href: "#funnel-contact" },
 ];
 
 const EXPERT_COMPARISON = [
@@ -325,7 +325,7 @@ function ExpertSelector({ index, onSelect }: { index: number; onSelect: (index: 
         </div>
       </section>
 
-      <section className="pr-enterprise"><p>Первый шаг / 0 ₽</p><h2>Проверьте спрос до подписки.</h2><Link className="sr-button sr-button-light" href="/register">Начать бесплатно <ArrowRight aria-hidden="true" /></Link></section>
+      <section className="pr-enterprise"><p>Первый шаг / 0 ₽</p><h2>Проверьте спрос до подписки.</h2><Link className="sr-button sr-button-light" href="/scan">Начать бесплатно <ArrowRight aria-hidden="true" /></Link></section>
     </>
   );
 }
