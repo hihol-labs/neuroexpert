@@ -56,16 +56,40 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
  * Запрос с ретраями. Сетевой сбой (WARP роняет 2-3 запроса из 4) не должен
  * выглядеть как находка оракула — иначе гейт врёт в обе стороны.
  */
+// Временный отказ инфраструктуры — не находка оракула, а помеха: ретраится
+// наравне с сетевым сбоем, иначе гейт краснеет по причине, не связанной с CTA.
+const RETRYABLE_STATUS = new Set([429, 502, 503, 504]);
+
 async function fetchWithRetry(url, init = {}) {
   let lastError;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     try {
-      return await fetch(url, {
+      const response = await fetch(url, {
         redirect: "follow",
         cache: "no-store",
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         ...init,
       });
+      if (RETRYABLE_STATUS.has(response.status) && attempt < MAX_ATTEMPTS) {
+        await sleep(RETRY_DELAY_MS);
+        continue;
+      }
+      return response;
+    } catch (error) {
+      lastError = error;
+      if (attempt < MAX_ATTEMPTS) await sleep(RETRY_DELAY_MS);
+    }
+  }
+  throw lastError ?? new Error("исчерпаны попытки");
+}
+
+/** Читает тело страницы целиком; обрыв чтения ретраится вместе с запросом. */
+async function fetchPage(url) {
+  let lastError;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    const response = await fetchWithRetry(url);
+    try {
+      return { response, html: await response.text() };
     } catch (error) {
       lastError = error;
       if (attempt < MAX_ATTEMPTS) await sleep(RETRY_DELAY_MS);
@@ -74,10 +98,21 @@ async function fetchWithRetry(url, init = {}) {
   throw lastError;
 }
 
-function assertCanonical(route, response) {
-  const finalOrigin = new URL(response.url).origin;
-  if (finalOrigin !== canonicalOrigin) {
-    fail(route, `redirected off-canonical to ${finalOrigin}`);
+const normalizePath = (path) => path.replace(/\/+$/, "") || "/";
+
+/**
+ * Финальный URL обязан совпасть и по origin, и по пути. Проверки только по
+ * origin недостаточно: если все маршруты редиректят на главную, каждый из них
+ * проверялся бы по её HTML и гейт был бы ложно-зелёным.
+ */
+function assertFinalUrl(route, response) {
+  const finalUrl = new URL(response.url);
+  if (finalUrl.origin !== canonicalOrigin) {
+    fail(route, `redirected off-canonical to ${finalUrl.origin}`);
+    return false;
+  }
+  if (normalizePath(finalUrl.pathname) !== normalizePath(route)) {
+    fail(route, `redirected to ${finalUrl.pathname} — проверялся бы чужой HTML`);
     return false;
   }
   return true;
@@ -129,19 +164,39 @@ function extractChrome(html, tag, chromeClass) {
   return anyMatch ? anyMatch[1] : null;
 }
 
-function pathOf(href) {
+function pathOf(href, base = `${canonicalOrigin}/`) {
   try {
-    const url = new URL(href, `${canonicalOrigin}/`);
-    return url.origin === canonicalOrigin ? url.pathname.replace(/\/$/, "") || "/" : null;
+    const url = new URL(href, base);
+    return url.origin === canonicalOrigin ? normalizePath(url.pathname) : null;
   } catch {
     return null;
   }
 }
 
+/**
+ * Внутренняя страница — в том числе относительная ссылка без ведущего слэша
+ * (href="broken"): такая ссылка ведёт на реальный маршрут и точно так же может
+ * отдать 404, поэтому пропускать её нельзя.
+ */
 function isInternalPage(href) {
   if (/^(mailto:|tel:|javascript:|#)/i.test(href)) return false;
-  if (/^https?:\/\//i.test(href)) return pathOf(href) !== null;
-  return href.startsWith("/") && !href.startsWith("//");
+  if (/^[a-z][a-z0-9+.-]*:/i.test(href)) return /^https?:/i.test(href) && pathOf(href) !== null;
+  return !href.startsWith("//");
+}
+
+/**
+ * Якорные CTA (#funnel-contact) проверяются на существование цели: без этого
+ * опечатка или удаление блока оставляют кнопку зелёной, но мёртвой.
+ */
+function checkFragmentTargets(route, html, anchors) {
+  for (const anchor of anchors) {
+    if (!anchor.href.startsWith("#") || anchor.href === "#") continue;
+    const id = decodeURIComponent(anchor.href.slice(1));
+    const idPattern = new RegExp(`\\bid="${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`);
+    if (!idPattern.test(html)) {
+      fail(route, `CTA ведёт на якорь ${anchor.href}, но элемента с таким id на странице нет`);
+    }
+  }
 }
 
 function checkAuthDeadEnds(route, anchors) {
@@ -199,15 +254,21 @@ function checkLiveChannel(route, html) {
 function checkClientOnlyDeadEnds() {
   if (process.env.FUNNEL_SKIP_SOURCE === "1") return;
   const roots = ["apps/web/app/(marketing)", "apps/web/components/marketing"];
-  const pattern = /href=\{?["'`](\/(?:register|login)(?:[?#][^"'`]*)?)["'`]/g;
+  // Ловится любая строковая цель, а не только атрибут href="…": CTA часто
+  // описан данными (`{ cta: "…", href: "/register?plan=pro" }`) и попадает в
+  // разметку через <Link href={offer.href}> — форма, ради которой и заведена
+  // эта ступень.
+  const pattern = /["'`](\/(?:register|login)(?:[?#][^"'`]*)?)["'`]/g;
   for (const root of roots) {
     if (!existsSync(root)) continue;
     for (const file of walk(root)) {
       const source = readFileSync(file, "utf8");
+      const lines = source.split("\n");
       for (const match of source.matchAll(pattern)) {
         const line = source.slice(0, match.index).split("\n").length;
-        const context = source.slice(Math.max(0, match.index - 200), match.index + 200);
-        if (/\bdata-funnel-exempt\b/.test(context)) continue;
+        // Исключение засчитывается только на СВОЕЙ строке: окно в ±200 символов
+        // позволяло соседней размеченной ссылке прикрыть настоящий /register.
+        if (/\bdata-funnel-exempt\b/.test(lines[line - 1] ?? "")) continue;
         fail(`${file}:${line}`, `в исходнике маркетинговой страницы CTA ведёт на ${match[1]}`);
       }
     }
@@ -230,28 +291,29 @@ async function main() {
   for (const route of ROUTES) {
     const url = `${baseUrl}${route}`;
     let response;
+    let html;
     try {
-      response = await fetchWithRetry(url);
+      ({ response, html } = await fetchPage(url));
     } catch (error) {
       fail(route, `запрос не прошёл: ${error instanceof Error ? error.message : String(error)}`);
       continue;
     }
-    if (!assertCanonical(route, response)) continue;
+    if (!assertFinalUrl(route, response)) continue;
     if (!response.ok) {
       fail(route, `HTTP ${response.status}`);
       continue;
     }
 
-    const html = await response.text();
     const anchors = parseAnchors(html);
 
     checkAuthDeadEnds(route, anchors);
     checkChromeLinks(route, html);
     checkLiveChannel(route, html);
+    checkFragmentTargets(route, html, anchors);
 
     for (const anchor of anchors) {
       if (!isInternalPage(anchor.href)) continue;
-      const target = new URL(anchor.href, `${canonicalOrigin}/`);
+      const target = new URL(anchor.href, `${canonicalOrigin}${route}`);
       const key = `${target.pathname}${target.search}`;
       if (!internalTargets.has(key)) internalTargets.set(key, route);
     }

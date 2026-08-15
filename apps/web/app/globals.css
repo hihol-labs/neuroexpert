@@ -201,7 +201,7 @@
 .sr-mobile-menu a { padding: 0.9rem 0; border-bottom: 1px solid rgba(255,255,255,.1); color: rgba(242,240,233,.7); font-size: 0.85rem; }
 .sr-mobile-menu .sr-mobile-cta { margin-top: 0.8rem; padding: 0.9rem; border: 0; background: #ff4f2e; color: #0a0b0d; font-weight: 750; text-align: center; }
 
-.sr-contact-band { display: grid; grid-template-columns: 1.5fr 1fr; align-items: center; gap: 2.5rem; padding: 3.5rem clamp(1.5rem, 5vw, 6rem); border-top: 1px solid rgba(10,11,13,.1); background: #f2f0e9; color: #0a0b0d; }
+.sr-contact-band { --sr-accent: #ff4f2e; display: grid; grid-template-columns: 1.5fr 1fr; align-items: center; gap: 2.5rem; padding: 3.5rem clamp(1.5rem, 5vw, 6rem); border-top: 1px solid rgba(10,11,13,.1); background: #f2f0e9; color: #0a0b0d; }
 .sr-contact-band h2 { margin: 1rem 0 .75rem; font-size: clamp(1.35rem, 2.4vw, 2rem); line-height: 1.15; letter-spacing: -.02em; }
 .sr-contact-band p { max-width: 34rem; color: rgba(10,11,13,.6); font-size: .84rem; line-height: 1.6; }
 .sr-contact-actions { display: flex; flex-direction: column; align-items: flex-start; gap: .85rem; }
@@ -524,6 +524,7 @@
 
 @media (max-width: 1023px) {
   .sr-nav-links { display: none; }
+  .sr-menu-button { display: grid; }
   .sr-hero { grid-template-columns: 1fr; }
   .sr-hero-copy { min-height: auto; padding-top: 5.5rem; border-right: 0; border-bottom: 1px solid var(--sr-line); }
   .sr-index { top: 1.25rem; }

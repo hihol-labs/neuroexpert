@@ -69,7 +69,7 @@ export function FunnelContactBand() {
       <div className="sr-contact-copy">
         <p className="sr-eyebrow"><span /> Следующий шаг</p>
         <h2>Начните с бесплатного замера — или спросите нас напрямую.</h2>
-        <p>Покажем, называют ли вас нейросети по запросам ваших клиентов, и кого называют вместо вас.</p>
+        <p>Зададим ваш запрос четырём ИИ-платформам и покажем, кого они называют в ответе и попадаете ли туда вы.</p>
       </div>
       <div className="sr-contact-actions">
         <Link href="/scan" className="sr-button sr-button-primary">Бесплатный замер <ArrowUpRight /></Link>
