@@ -29,9 +29,10 @@ import { fileURLToPath } from "node:url";
 // проверки по исходникам и гейт зеленеет впустую.
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCE_ROOTS = ["apps/web/app/(marketing)", "apps/web/components/marketing"];
-// Разметка, которая рендерится на КАЖДОМ маркетинговом маршруте: id из неё
-// доступны любой странице, id из самой страницы — только ей.
-const SHARED_CHROME_ROOT = "apps/web/components/marketing";
+// Единственный компонент, который рендерится на КАЖДОМ маркетинговом
+// маршруте (MarketingHeader/MarketingFooter): только его id доступны любой
+// странице. Остальные компоненты этой папки принадлежат отдельным лендингам.
+const SHARED_CHROME_SOURCE = "apps/web/components/marketing/nav.tsx";
 
 const baseUrl = (process.env.FUNNEL_URL || process.env.CANONICAL_URL || "https://neuroexpertise.ru").replace(/\/$/, "");
 const canonicalOrigin = new URL(baseUrl).origin;
@@ -286,7 +287,7 @@ function checkClientOnlyDeadEnds() {
   // эта ступень.
   // Учитываются и завершающий слэш (`/register/`), и абсолютный same-origin
   // адрес (`https://neuroexpertise.ru/login`): обе формы ведут в тот же тупик.
-  const pattern = /["'`](?:https?:\/\/(?:www\.)?neuroexpertise\.ru)?(\/(?:register|login)\/?(?:[?#][^"'`]*)?)["'`]/g;
+  const pattern = /\bhref\s*[:=]\s*\{?\s*["'`](?:https?:\/\/(?:www\.)?neuroexpertise\.ru)?(\/(?:register|login)\/?(?:[?#][^"'`]*)?)["'`]/g;
   for (const root of roots) {
     const absolute = resolve(repoRoot, root);
     if (!existsSync(absolute)) {
@@ -302,6 +303,28 @@ function checkClientOnlyDeadEnds() {
       }
     }
   }
+}
+
+/**
+ * Внутренние цели ссылок, объявленные в исходниках маркетинговой поверхности.
+ * Нужны потому, что CTA за клиентским переключателем в серверный HTML не
+ * попадает: опечатка `/scna` в скрытых данных тарифов иначе осталась бы
+ * непроверенной до клика реального клиента.
+ */
+export function collectSourceLinkTargets() {
+  if (process.env.FUNNEL_SKIP_SOURCE === "1") return [];
+  const targets = new Set();
+  for (const root of SOURCE_ROOTS) {
+    const absolute = resolve(repoRoot, root);
+    if (!existsSync(absolute)) continue;
+    for (const file of walk(absolute)) {
+      const source = readFileSync(file, "utf8");
+      for (const match of source.matchAll(/\bhref\s*[:=]\s*\{?\s*["'`](\/[^"'`\s]*)["'`]/g)) {
+        targets.add(match[1]);
+      }
+    }
+  }
+  return [...targets];
 }
 
 /**
@@ -327,7 +350,7 @@ function checkSourceFragmentTargets() {
   for (const [file, source] of sources) {
     const ids = new Set([...source.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]));
     idsByFile.set(file, ids);
-    if (file.includes(SHARED_CHROME_ROOT)) for (const id of ids) chromeIds.add(id);
+    if (file.endsWith(SHARED_CHROME_SOURCE)) for (const id of ids) chromeIds.add(id);
   }
   for (const [file, source] of sources) {
     // Только цели ссылок: без привязки к href в выборку попадают hex-цвета.
@@ -386,12 +409,31 @@ async function main() {
     }
   }
 
+  for (const target of collectSourceLinkTargets()) {
+    if (!internalTargets.has(target)) internalTargets.set(target, "исходники маркетинговой поверхности");
+  }
+
   for (const [target, foundOn] of internalTargets) {
     const url = `${canonicalOrigin}${target}`;
     try {
       const response = await fetchWithRetry(url);
       if (response.status >= 400) {
         fail(foundOn, `внутренняя ссылка ${target} отдаёт HTTP ${response.status}`);
+        continue;
+      }
+      // Статуса мало: ссылка вида /start, редиректящая на /login с кодом 200,
+      // приводит клиента ровно в тот тупик, который проверяет весь оракул.
+      const finalUrl = new URL(response.url);
+      if (finalUrl.origin !== canonicalOrigin) {
+        fail(foundOn, `внутренняя ссылка ${target} уводит на чужой origin ${finalUrl.origin}`);
+      } else if (
+        AUTH_DEAD_ENDS.includes(normalizePath(finalUrl.pathname)) &&
+        normalizePath(target.split("?")[0]) !== normalizePath(finalUrl.pathname)
+      ) {
+        // Ссылка, которая сама объявлена как /login (размеченный вход для
+        // действующих клиентов), проверяется правилом CTA. Здесь ловится другое:
+        // нейтральный на вид адрес, скрытно приводящий в форму входа.
+        fail(foundOn, `внутренняя ссылка ${target} редиректит на ${finalUrl.pathname}`);
       }
     } catch (error) {
       fail(foundOn, `внутренняя ссылка ${target} не проверена: ${error instanceof Error ? error.message : String(error)}`);
