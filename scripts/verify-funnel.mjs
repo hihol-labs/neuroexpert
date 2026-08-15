@@ -159,9 +159,10 @@ function decodeEntities(value) {
 function extractChrome(html, tag, chromeClass) {
   const scoped = new RegExp(`<${tag}\\b[^>]*class="[^"]*${chromeClass}[^"]*"[^>]*>([\\s\\S]*?)<\\/${tag}>`, "i");
   const scopedMatch = html.match(scoped);
-  if (scopedMatch) return scopedMatch[1];
-  const anyMatch = html.match(new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)<\\/${tag}>`, "i"));
-  return anyMatch ? anyMatch[1] : null;
+  // Фоллбэка на произвольный первый <header>/<footer> нет умышленно: страницы
+  // содержат собственные заголовки секций, и подстановка чужого элемента
+  // означала бы «сайтовый chrome сломан, но проверка прошла».
+  return scopedMatch ? scopedMatch[1] : null;
 }
 
 function pathOf(href, base = `${canonicalOrigin}/`) {
@@ -258,7 +259,9 @@ function checkClientOnlyDeadEnds() {
   // описан данными (`{ cta: "…", href: "/register?plan=pro" }`) и попадает в
   // разметку через <Link href={offer.href}> — форма, ради которой и заведена
   // эта ступень.
-  const pattern = /["'`](\/(?:register|login)(?:[?#][^"'`]*)?)["'`]/g;
+  // Учитываются и завершающий слэш (`/register/`), и абсолютный same-origin
+  // адрес (`https://neuroexpertise.ru/login`): обе формы ведут в тот же тупик.
+  const pattern = /["'`](?:https?:\/\/(?:www\.)?neuroexpertise\.ru)?(\/(?:register|login)\/?(?:[?#][^"'`]*)?)["'`]/g;
   for (const root of roots) {
     if (!existsSync(root)) continue;
     for (const file of walk(root)) {
@@ -271,6 +274,34 @@ function checkClientOnlyDeadEnds() {
         if (/\bdata-funnel-exempt\b/.test(lines[line - 1] ?? "")) continue;
         fail(`${file}:${line}`, `в исходнике маркетинговой страницы CTA ведёт на ${match[1]}`);
       }
+    }
+  }
+}
+
+/**
+ * Якорные цели, объявленные в исходниках. Проверка по живому HTML их не
+ * покрывает: CTA за клиентским переключателем (вкладка «Эксперт» на /pricing)
+ * в серверный HTML не попадает, и опечатка в `#funnel-contact` осталась бы
+ * незамеченной до клика реального клиента.
+ */
+function checkSourceFragmentTargets() {
+  if (process.env.FUNNEL_SKIP_SOURCE === "1") return;
+  const roots = ["apps/web/app/(marketing)", "apps/web/components/marketing"];
+  const files = [];
+  for (const root of roots) {
+    if (existsSync(root)) files.push(...walk(root));
+  }
+  const sources = new Map(files.map((file) => [file, readFileSync(file, "utf8")]));
+  const declaredIds = new Set();
+  for (const source of sources.values()) {
+    for (const match of source.matchAll(/\bid="([^"]+)"/g)) declaredIds.add(match[1]);
+  }
+  for (const [file, source] of sources) {
+    // Только цели ссылок: без привязки к href в выборку попадают hex-цвета.
+    for (const match of source.matchAll(/\bhref\s*[:=]\s*\{?\s*["'`]#([A-Za-z][\w-]*)["'`]/g)) {
+      if (declaredIds.has(match[1])) continue;
+      const line = source.slice(0, match.index).split("\n").length;
+      fail(`${file}:${line}`, `CTA ведёт на якорь #${match[1]}, но элемента с таким id в маркетинговых исходниках нет`);
     }
   }
 }
@@ -332,6 +363,7 @@ async function main() {
   }
 
   checkClientOnlyDeadEnds();
+  checkSourceFragmentTargets();
 
   if (failures.length) {
     console.error(`Funnel verification FAILED for ${baseUrl} (${ROUTES.length} routes, ${internalTargets.size} internal links)`);
