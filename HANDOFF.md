@@ -54,6 +54,35 @@
 4. `python3 ~/.claude/skills/goal/scripts/itd_goal_verify.py G-010` → verified с evidence.
 5. `/session-save`.
 
+
+## СТАТУС ДЕПЛОЯ на 2026-08-15 (важно для следующей сессии)
+
+Квитанции и гейт ПРОЙДЕНЫ, деплой упирается в сеть.
+
+- Независимое ревью раунда 6/7: **PASSED, находок нет** (отчёт и промпт —
+  `.itd-memory/verification-loop/reports|prompts/G-010-round7-*`).
+- Квитанции machine -> checker(full) -> adjudication собраны:
+  `.itd-memory/verification-loop/receipts/2dd93c4ec7c3be4f/`.
+- Pre-deploy гейт: **ALLOWED**, класс irreversible, артефакт `.itd-memory/deploy-input.tar`,
+  sha256 `712cda2feeab9af4c67f46b8bef560ffca0a5708cee7251671a01bf2f23799f2`.
+- Деплой запускался ЧЕТЫРЕ раза, все упали на доставке артефакта: `scp: Connection closed`.
+  Первый прогон висел 2ч19м на оборванном канале — вылечено добавлением keepalive
+  (`ServerAliveInterval 20`, `ServerAliveCountMax 3`) в блок `Host hostland` в `~/.ssh/config`.
+- **Ключевое наблюдение:** тот же артефакт 3 747 840 байт ПРОШЁЛ потоком
+  `ssh hostland "cat > /tmp/probe-transfer.tar" < deploy-input.tar` (exit 0).
+  То есть канал объём тянет, ломается именно scp (SFTP-подсистема под WARP).
+- **Прод не изменён:** в `/opt/neuroexpert` нет `.release-sha` и `deploy-*.tar`,
+  образ `docker-web:latest` от 13:37 MSK (сборка прошлой сессии), контейнер
+  `docker-web-1 Up 8 hours (healthy)`, сайт на `f48de09`.
+
+### Рекомендуемый следующий шаг
+
+Заменить в `scripts/deploy.sh` доставку через `scp` на поток
+`ssh "" "cat > <путь>" < ""` (или `scp -O`). Это правка кода, поэтому
+digest кандидата изменится и потребуется НОВЫЙ раунд квитанций (machine -> checker -> adjudicate)
+перед гейтом. Альтернатива без правки кода: выключить WARP на Windows и повторить
+`bash <scratchpad>/run-deploy.sh`.
+
 ## Ловушки окружения (проверено этой сессией)
 
 - Pre-deploy хук валит fail-closed любую команду, которую не может слексовать: подстановки
