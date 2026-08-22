@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
 import { PricingContent } from "./pricing-content";
 import { generateServiceSchema } from "@/lib/schema-org";
+import { OfferBlock } from "@/components/marketing/offer";
 
 const TITLE = "Тарифы НейроЭксперт — Local Sales OS, заявки и продажи";
 const DESCRIPTION =
@@ -16,7 +17,12 @@ export const metadata: Metadata = {
   twitter: { title: TITLE, description: DESCRIPTION },
 };
 
-export default function PricingPage() {
+export default function PricingPage({ searchParams }: { searchParams?: { for?: string } }) {
+  // Аудитория приходит query-параметром, а не якорем: hash браузер серверу не
+  // отправляет, поэтому при hash-подходе страница успевала отрисовать бизнес-
+  // пакеты и только потом переключиться (находка раунда 24). С параметром
+  // выбор известен уже на сервере — переключения на глазах у клиента нет.
+  const initialAudience = searchParams?.for === "expert" ? "expert" : "business";
   const schemas = [
     generateServiceSchema({
       name: "Тарифы НейроЭксперт",
@@ -46,7 +52,14 @@ export default function PricingPage() {
       ))}
 
       <MarketingHeader />
-      <PricingContent />
+      <PricingContent initialAudience={initialAudience}>
+        <OfferBlock
+          artifact="Аудит, запуск или сопровождение — по выбранному пакету"
+          price="7 900 ₽ аудит · 31 100 ₽ запуск · 29 000 ₽/мес сопровождение"
+          term="3–7 дней · 30 дней · ежемесячно"
+          cta={{ href: "/launch?package=audit_start", label: "Начать с аудита за 7 900 ₽" }}
+        />
+      </PricingContent>
       <MarketingFooter />
     </div>
   );

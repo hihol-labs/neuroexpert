@@ -208,6 +208,18 @@
 .sr-contact-actions a:not(.sr-button) { color: rgba(10,11,13,.65); font-size: .8rem; transition: color 180ms ease; }
 .sr-contact-actions a:not(.sr-button):hover { color: #0a0b0d; }
 @media (max-width: 900px) { .sr-contact-band { grid-template-columns: 1fr; gap: 1.75rem; } }
+/* Блок оффера (G-010b). --sr-accent объявлен ЛОКАЛЬНО: вне .sr-site токен не
+   определён, и кнопка теряла бы фон на страницах без этой обёртки — ровно эта
+   находка вскрылась ревью на /terms, /privacy, /requisites. */
+.sr-offer { --sr-accent: #ff4f2e; display: grid; grid-template-columns: 1.4fr .8fr .9fr; align-items: center; gap: 2.5rem; margin: 0 clamp(1.5rem, 5vw, 6rem); padding: 2.5rem clamp(1.25rem, 3vw, 2.5rem); border: 1px solid rgba(10,11,13,.12); border-top: 2px solid var(--sr-accent); background: #f2f0e9; color: #0a0b0d; }
+.sr-offer h2 { margin: .9rem 0 0; font-size: clamp(1.15rem, 2vw, 1.65rem); line-height: 1.2; letter-spacing: -.02em; }
+.sr-offer-terms { display: flex; gap: 2.25rem; margin: 0; }
+.sr-offer-terms dt { color: rgba(10,11,13,.72); font: 600 .68rem/1 ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase; }
+.sr-offer-terms dd { margin: .5rem 0 0; font-size: 1rem; font-weight: 600; }
+.sr-offer-action { display: flex; flex-direction: column; align-items: flex-start; gap: .85rem; }
+.sr-offer-note { max-width: 22rem; color: rgba(10,11,13,.6); font-size: .74rem; line-height: 1.55; }
+@media (max-width: 1023px) { .sr-offer { grid-template-columns: 1fr; gap: 1.75rem; } }
+
 .sr-footer { padding: 4.5rem clamp(1.5rem, 5vw, 6rem) 1.5rem; border-top: 1px solid rgba(255,255,255,.13); background: #0a0b0d; color: #f2f0e9; }
 .sr-footer-top { display: grid; grid-template-columns: 1.4fr repeat(3, .75fr); gap: 4rem; }
 .sr-footer-brand p { max-width: 20rem; margin-top: 1.3rem; color: rgba(242,240,233,.4); font-size: 0.76rem; line-height: 1.6; }
@@ -721,6 +733,7 @@
 .br-funnel-row em { font-size: 1.7rem; font-style: normal; font-weight: 600; letter-spacing: -.045em; }
 .br-funnel-row > span:last-child { max-width: 17rem; color: #6d6e69; font-size: .72rem; line-height: 1.45; }
 .br-funnel-row > span.alert { display: inline-flex; align-items: center; width: fit-content; padding: .55rem .7rem; background: var(--sr-accent); color: var(--sr-bg); }
+.br-funnel-disclaimer { padding: 0 0 .9rem; color: #56574f; font-size: .72rem; line-height: 1.5; }
 .br-funnel-summary { display: flex; align-items: center; gap: 1rem; padding: 1.2rem 1.4rem; background: #d9d7cf; font-size: .74rem; }
 .br-funnel-summary svg { width: 1rem; color: var(--sr-accent); }
 .br-funnel-summary strong { margin-left: auto; font-size: .86rem; }
@@ -1431,6 +1444,7 @@
 .dm-error button svg { width: .9rem; }
 
 .dm-result-head { display: grid; min-height: 34rem; align-items: end; padding: clamp(5rem,8vw,8rem) clamp(1.5rem,6vw,7rem); grid-template-columns: 1fr 1fr; gap: clamp(3rem,8vw,9rem); }
+.dm-result-note { padding: .85rem 1rem 0; color: rgba(242,240,233,.62); font-size: .72rem; line-height: 1.5; }
 .dm-result-summary { display: grid; border-top: 1px solid rgba(242,240,233,.18); border-bottom: 1px solid rgba(242,240,233,.18); grid-template-columns: repeat(3,1fr); }
 .dm-result-summary article { display: grid; min-height: 8.5rem; align-content: center; padding: 1rem; border-right: 1px solid rgba(242,240,233,.18); gap: 1.1rem; }
 .dm-result-summary article:last-child { border-right: 0; }

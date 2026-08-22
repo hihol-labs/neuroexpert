@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowDown, ArrowRight, Check, Flag, Radio } from "lucide-react";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/nav";
 import { generateServiceSchema } from "@/lib/schema-org";
+import { OfferBlock } from "@/components/marketing/offer";
 
 const TITLE = "Запуск Local Sales OS за 30 дней | НейроЭксперт";
 const DESCRIPTION = "Запускаем измеримый контур привлечения клиентов: диагностика, точки входа, события, первые действия и контроль результата.";
@@ -48,7 +49,15 @@ export default function LaunchPage({ searchParams }: Props) {
     <div className="sr-site ln-site">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <MarketingHeader />
-      <main><LaunchHero /><PhaseSection /><GateSection /><ApplicationSection packageType={packageType} packageLabel={searchParams.package} success={searchParams.success === "1"} /></main>
+      <main>
+        <LaunchHero />
+        <OfferBlock
+          artifact="Карта спроса с приоритетами, план работ и пакеты сопровождения"
+          price="7 900 ₽ аудит · 31 100 ₽ запуск"
+          term="3–7 дней / 30 дней"
+          cta={{ href: "#application", label: "Оставить заявку на запуск" }}
+        />
+        <PhaseSection /><GateSection /><ApplicationSection packageType={packageType} packageLabel={searchParams.package} success={searchParams.success === "1"} /></main>
       <MarketingFooter />
     </div>
   );

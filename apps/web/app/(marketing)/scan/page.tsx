@@ -5,13 +5,18 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { ArrowRight, Crosshair, Radio, RotateCcw } from "lucide-react";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/nav";
+import { OfferBlock } from "@/components/marketing/offer";
 
 type Step = "form" | "loading" | "error";
 
+// Названия платформ в радаре и прогрессе — обещание клиенту, а не декорация:
+// адаптеры в app/api/scan/route.ts возвращают null без ключа, поэтому имена
+// неподключённых движков рисовать нельзя (находка раунда 23). Здесь остаются
+// нейтральные подписи стадий; фактический состав платформ виден в результате.
 const PLATFORMS = [
-  { id: "01", name: "ChatGPT", position: "sc-node-one" },
-  { id: "02", name: "Perplexity", position: "sc-node-two" },
-  { id: "03", name: "YandexGPT", position: "sc-node-three" },
+  { id: "01", name: "Запрос", position: "sc-node-one" },
+  { id: "02", name: "Ответы ИИ", position: "sc-node-two" },
+  { id: "03", name: "Сравнение", position: "sc-node-three" },
 ];
 
 export default function ScanPage() {
@@ -72,10 +77,16 @@ export default function ScanPage() {
     <div className="sr-site sc-site">
       <MarketingHeader />
       <main>
-        <section className="sc-hero">
+        <section className="sc-hero" id="scan-probe">
           <ScanIntro />
           <ProbeConsole step={step} query={query} competitor={competitor} error={error} inputRef={queryInputRef} onQuery={setQuery} onCompetitor={setCompetitor} onSubmit={handleSubmit} onRetry={retry} />
         </section>
+        <OfferBlock
+          artifact="Страница результата замера по постоянной ссылке"
+          price="Бесплатно"
+          term="Сразу"
+          cta={{ href: "#scan-probe", label: "Запустить замер" }}
+        />
         <ScanReadout />
       </main>
       <MarketingFooter />
@@ -89,8 +100,8 @@ function ScanIntro() {
       <div className="sr-index"><span>01</span><span>AI Visibility Probe</span></div>
       <p className="sr-eyebrow"><span /> Live diagnostic</p>
       <h1>Кому нейросети <em>отдают ваш спрос?</em></h1>
-      <p className="sc-lede">Один запрос проходит через три платформы. Вы видите не абстрактную «видимость», а кому достаётся внимание клиента прямо сейчас.</p>
-      <div className="sc-spec"><div><span>Платформы</span><b>03</b></div><div><span>Режим</span><b>LIVE</b></div><div><span>Время</span><b>10–40 сек</b></div></div>
+      <p className="sc-lede">Один запрос проходит через подключённые ИИ-платформы. Вы видите не абстрактную «видимость», а кому достаётся внимание клиента прямо сейчас.</p>
+      <div className="sc-spec"><div><span>Режим</span><b>LIVE</b></div><div><span>Время</span><b>10–40 сек</b></div><div><span>Отчёт</span><b>ССЫЛКА</b></div></div>
     </div>
   );
 }
@@ -118,12 +129,12 @@ function ProbeConsole({ step, query, competitor, error, inputRef, onQuery, onCom
 function ScanReadout() {
   return (
     <>
-      <section className="sc-readout"><header><p className="sr-eyebrow sr-eyebrow-dark"><span /> Readout</p><h2>Три ответа.<br />Одна картина спроса.</h2></header><div className="sc-readout-list">
+      <section className="sc-readout"><header><p className="sr-eyebrow sr-eyebrow-dark"><span /> Readout</p><h2>Ответы платформ.<br />Одна картина спроса.</h2></header><div className="sc-readout-list">
         <article><span>01</span><h3>Присутствие</h3><p>Появляетесь ли вы в ответе и в каком контексте.</p><b>FIND</b></article>
         <article><span>02</span><h3>Сравнение</h3><p>Кому платформа отдаёт приоритет: вам или альтернативе.</p><b>COMPARE</b></article>
         <article><span>03</span><h3>Следующий ход</h3><p>Какую точку входа запустить, чтобы забрать потерянный спрос.</p><b>ACT</b></article>
       </div></section>
-      <section className="sc-audit-cta"><div><p>Нужна карта по всей нише?</p><h2>Добавьте четвёртую платформу и вопросы клиентов.</h2></div><Link className="sr-button sr-button-light" href="/audit">Открыть карту спроса <ArrowRight aria-hidden="true" /></Link></section>
+      <section className="sc-audit-cta"><div><p>Нужна карта по всей нише?</p><h2>Добавьте вопросы клиентов и сравнение ответов.</h2></div><Link className="sr-button sr-button-light" href="/audit">Открыть карту спроса <ArrowRight aria-hidden="true" /></Link></section>
     </>
   );
 }

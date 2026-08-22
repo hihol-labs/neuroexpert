@@ -18,6 +18,30 @@
  *
  * Окружение: сеть WSL → прод нестабильна (WARP), поэтому каждый запрос
  * ретраится внутри скрипта — снаружи циклов не требуется.
+ *
+ * ---------------------------------------------------------------------------
+ * Режим --check-offer (оракул юнита G-010b «Оффер и прямой язык лендингов»)
+ * ---------------------------------------------------------------------------
+ * Добавляет к проверкам выше структурную проверку блока оффера: на каждом
+ * маршруте есть ровно один элемент с атрибутом data-offer, а внутри него
+ * четыре размеченных поля:
+ *   data-offer-artifact — что клиент получает на руки;
+ *   data-offer-price    — цена: сумма с цифрами либо слово «бесплатно»;
+ *   data-offer-term     — срок («—» допустим как явное «не применимо»);
+ *   data-offer-cta      — ровно ОДИН основной CTA: ссылка с href и подписью.
+ * Никаких лишних фетчей: проверка идёт по уже загруженному HTML маршрута.
+ *
+ * ЗАЯВЛЕННАЯ ГРАНИЦА (важно, не расширять молча):
+ *   Проверяется НАЛИЧИЕ и РАЗМЕТКА оффера, а НЕ смысл, точность и
+ *   убедительность текста. Машина не судит, честна ли формулировка, совпадает
+ *   ли цифра с /pricing по существу и нет ли в тексте обещания автоматического
+ *   внедрения. Эти части критерия юнита несёт раунд независимого ревью, а не
+ *   этот скрипт.
+ *   LLM-судья в гейт НЕ ставится сознательно: он недетерминирован, то есть
+ *   один и тот же кандидат мог бы получить разный вердикт, а гейт, который
+ *   иногда зелёный, — не гейт. Цена ошибки — ложное «проверено».
+ *   Проверка формата цены (цифры или «бесплатно») — это проверка ФОРМЫ строки,
+ *   а не утверждение, что цена верная.
  */
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
@@ -58,6 +82,20 @@ const AUTH_DEAD_ENDS = ["/register", "/login"];
 const MAX_ATTEMPTS = Number(process.env.FUNNEL_ATTEMPTS || 8);
 const RETRY_DELAY_MS = Number(process.env.FUNNEL_RETRY_DELAY_MS || 1500);
 const REQUEST_TIMEOUT_MS = Number(process.env.FUNNEL_TIMEOUT_MS || 20_000);
+
+// Разбор аргументов строгий: неизвестный флаг — ошибка, а не «молча
+// проигнорирую». Опечатка вида --check-offers иначе дала бы ЗЕЛЁНЫЙ прогон
+// без проверки оффера, и гейт закрылся бы на более слабой проверке, чем
+// думает оператор.
+const KNOWN_FLAGS = new Set(["--check-offer"]);
+const cliFlags = process.argv.slice(2);
+const unknownFlags = cliFlags.filter((flag) => !KNOWN_FLAGS.has(flag));
+if (unknownFlags.length) {
+  console.error(`Неизвестный аргумент: ${unknownFlags.join(", ")}`);
+  console.error(`Допустимые: ${[...KNOWN_FLAGS].join(", ")}`);
+  process.exit(2);
+}
+const CHECK_OFFER = cliFlags.includes("--check-offer");
 
 const failures = [];
 const fail = (route, message) => failures.push(`${route}: ${message}`);
@@ -154,13 +192,386 @@ function stripTags(fragment) {
 
 function decodeEntities(value) {
   return value
-    .replace(/&amp;/g, "&")
+    // Числовые ссылки — ПЕРВЫМИ и наравне с именованными: браузер раскрывает
+    // `java&#x0A;script:` в `java\nscript:` и дальше нормализует URL в
+    // `javascript:`, а оракул видел безобидную строку (находка раунда 10).
+    // &amp; раскрывается последним, иначе `&amp;#x0A;` (экранированный текст,
+    // а не ссылка) превратился бы в перевод строки.
+    // Точка с запятой НЕОБЯЗАТЕЛЬНА: браузер раскрывает и `&#x0Ascript`
+    // (находка раунда 11). Шестнадцатеричная форма ограничена шестью цифрами —
+    // столько нужно на максимальную кодовую точку, дальше это уже текст.
+    .replace(/&#(\d{1,7});?/g, (_, code) => safeCodePoint(Number(code)))
+    .replace(/&#[xX]([0-9a-fA-F]{1,6});?/g, (_, code) => safeCodePoint(parseInt(code, 16)))
     .replace(/&quot;/g, '"')
-    .replace(/&#x27;/g, "'")
-    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
-    .replace(/&nbsp;/g, " ");
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&");
+}
+
+/** Кодовая точка вне допустимого диапазона — оставляем как есть, не падаем. */
+function safeCodePoint(code) {
+  if (!Number.isFinite(code) || code < 0 || code > 0x10ffff) return "";
+  try {
+    return String.fromCodePoint(code);
+  } catch {
+    return "";
+  }
+}
+
+// --- Блок оффера (--check-offer) -------------------------------------------
+
+// Теги без закрывающей пары: их нельзя искать парным сканером глубины.
+const VOID_TAGS = new Set([
+  "area", "base", "br", "col", "embed", "hr", "img", "input",
+  "link", "meta", "source", "track", "wbr",
+]);
+
+const ATTR_RE = /([a-zA-Z_:][-a-zA-Z0-9_:.]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
+
+/**
+ * Вырезает участки, где угловые скобки НЕ создают видимых элементов:
+ * комментарии, <script>, <template>, <style>, <noscript>.
+ *
+ * Без этого разметка `<!-- <section data-offer>…</section> -->` считалась
+ * настоящим блоком: оракул давал зелёный, а пользователь оффера не видел
+ * (находка независимого ревью, раунд 1). Содержимое заменяется пробелами
+ * ТОЙ ЖЕ длины — смещения остальной разметки не сдвигаются.
+ */
+// Элементы, чьё содержимое пользователь не видит. RAW_TEXT не разбирается
+// вовсе и закрывается ПЕРВЫМ своим закрывающим тегом (как в браузере);
+// NESTABLE — обычные контейнеры, они вкладываются сами в себя.
+// iframe/noembed/noframes добавлены в раунде 13: содержимое iframe — отдельный
+// документ, а не разметка этой страницы, и спрятанный там оффер пользователь
+// на маршруте не видит.
+const INERT_RAW_TEXT = new Set([
+  "script", "style", "textarea", "title", "xmp", "iframe", "noembed", "noframes",
+]);
+const INERT_NESTABLE = new Set(["template", "noscript"]);
+// Матчер тега пропускает кавычки целиком: строка «<script>» внутри значения
+// чужого атрибута тегом не считается (раунд 4).
+const TAG_AT_RE = /^<(\/?)([a-zA-Z][a-zA-Z0-9-]*)((?:"[^"]*"|'[^']*'|[^>])*?)(\/?)>/;
+
+/**
+ * Гасит участки, которых пользователь не видит: комментарии, CDATA, содержимое
+ * script/style/textarea/title/xmp, template/noscript и всё после plaintext.
+ * Заменяются пробелами той же длины — смещения остальной разметки не сдвигаются.
+ *
+ * Один проход В ПОРЯДКЕ ДОКУМЕНТА, а не серия независимых замен. Два прохода
+ * ломались в обе стороны, и обе поломки воспроизведены ревью:
+ *   комментарии первыми — валидный `<script><!-- </script> --></script>` терял
+ *   настоящий закрывающий тег, script считался незакрытым и глушил реальный
+ *   оффер ниже (ложный красный, раунд 6);
+ *   теги первыми — комментарий `<!-- <script> -->` перед оффером открывал
+ *   несуществующую зону и глушил хвост (ложный красный, раунд 7).
+ * Внутри raw-text ничего не разбирается, поэтому `</template>` в строке
+ * JavaScript больше не закрывает внешний template (ложный зелёный, раунд 7).
+ *
+ * Заявленная граница: сканер рассчитан на разметку, которую производит наша же
+ * сборка. HTML с НЕЗАКРЫТОЙ кавычкой в атрибуте браузер и это сканирование
+ * читают по-разному, такой ввод не моделируется. Полноценный HTML-парсер как
+ * зависимость ради случая, которого сборка не производит, осознанно не вводился.
+ */
+function stripInertRegions(html) {
+  // split("") даёт UTF-16-единицы — ровно ту же систему координат, в которой
+  // работают indexOf/regexp. Спред [...html] режет по КОДОВЫМ ТОЧКАМ, и один
+  // символ вне BMP сдвигал бы всё гашение на позицию вправо, портя видимую
+  // разметку (ложный красный, находка раунда 13).
+  const chars = html.split("");
+  const blank = (from, to) => {
+    for (let k = from; k < to; k += 1) chars[k] = " ";
+  };
+
+  // Конец raw-text элемента: первый закрывающий тег того же имени.
+  const rawTextEnd = (from, tag) => {
+    const match = html.slice(from).match(new RegExp(`</${tag}\\s*>`, "i"));
+    return match ? from + match.index + match[0].length : html.length;
+  };
+
+  // Возвращает индекс сразу за закрывающим тегом stopTag (или конец строки).
+  const scan = (start, stopTag) => {
+    let i = start;
+    while (i < html.length) {
+      if (html[i] !== "<") { i += 1; continue; }
+
+      if (html.startsWith("<!--", i)) {
+        const found = html.indexOf("-->", i + 4);
+        const stop = found === -1 ? html.length : found + 3;
+        blank(i, stop); i = stop; continue;
+      }
+      if (html.startsWith("<![CDATA[", i)) {
+        const found = html.indexOf("]]>", i + 9);
+        const stop = found === -1 ? html.length : found + 3;
+        blank(i, stop); i = stop; continue;
+      }
+
+      const match = TAG_AT_RE.exec(html.slice(i));
+      if (!match) { i += 1; continue; }
+      const tagEnd = i + match[0].length;
+      const isClose = match[1] === "/";
+      const tag = match[2].toLowerCase();
+      const selfClosing = match[4] === "/";
+
+      if (isClose) {
+        if (stopTag && tag === stopTag) return tagEnd;
+        i = tagEnd; continue;
+      }
+      // <plaintext> закрыть нельзя: всё после него — текст (раунд 5).
+      if (tag === "plaintext") { blank(i, html.length); return html.length; }
+      // Слэш в `<script/>` и `<template/>` браузер ИГНОРИРУЕТ: самозакрытие
+      // работает только в чужеродном контенте (SVG/MathML), а в HTML это
+      // обычный открывающий тег. Раньше сканер верил слэшу и оставлял
+      // содержимое видимым — ложный зелёный (находка раунда 9).
+      if (selfClosing && !INERT_RAW_TEXT.has(tag) && !INERT_NESTABLE.has(tag)) {
+        i = tagEnd; continue;
+      }
+      if (INERT_RAW_TEXT.has(tag)) {
+        const stop = rawTextEnd(tagEnd, tag);
+        blank(i, stop); i = stop; continue;
+      }
+      if (INERT_NESTABLE.has(tag)) {
+        // Рекурсия: внутри найдутся и вложенные контейнеры, и raw-text.
+        const stop = scan(tagEnd, tag);
+        blank(i, stop); i = stop; continue;
+      }
+      i = tagEnd;
+    }
+    return html.length;
+  };
+
+  scan(0, null);
+  return chars.join("");
+}
+
+/** Атрибуты открывающего тега → Map. Булев атрибут (без значения) → "". */
+function parseAttrs(attrString) {
+  const attrs = new Map();
+  for (const match of (attrString ?? "").matchAll(ATTR_RE)) {
+    const name = match[1].toLowerCase();
+    const value = match[2] ?? match[3] ?? match[4] ?? "";
+    if (!attrs.has(name)) attrs.set(name, decodeEntities(value));
+  }
+  return attrs;
+}
+
+/**
+ * Находит элементы с ровно указанным атрибутом и возвращает их содержимое.
+ *
+ * Почему сканер глубины, а не регулярка `<div…>([\s\S]*?)</div>`: у блока
+ * оффера внутри есть вложенные элементы того же тега, и ленивая регулярка
+ * закрыла бы блок на ПЕРВОМ вложенном </div> — половина полей оказалась бы
+ * «снаружи» и проверка врала бы в обе стороны.
+ *
+ * Имя атрибута сравнивается точно: data-offer не должен матчиться на
+ * data-offer-price (это разные атрибуты, и их путаница дала бы ложный успех).
+ */
+function findElementsWithAttribute(html, attrName) {
+  const found = [];
+  const openTagRe = /<([a-zA-Z][a-zA-Z0-9-]*)((?:"[^"]*"|'[^']*'|[^>])*?)(\/?)>/g;
+  for (const match of html.matchAll(openTagRe)) {
+    const tag = match[1].toLowerCase();
+    const attrs = parseAttrs(match[2]);
+    if (!attrs.has(attrName)) continue;
+
+    const openEnd = match.index + match[0].length;
+    if (match[3] === "/" || VOID_TAGS.has(tag)) {
+      found.push({ tag, attrs, inner: "", outer: match[0] });
+      continue;
+    }
+
+    // Парный сканер: считаем открытия и закрытия ТОГО ЖЕ тега.
+    const pairRe = new RegExp(`<(\\/?)${tag}\\b((?:"[^"]*"|'[^']*'|[^>])*?)(\\/?)>`, "gi");
+    pairRe.lastIndex = openEnd;
+    let depth = 1;
+    let closeStart = -1;
+    let pair;
+    while ((pair = pairRe.exec(html)) !== null) {
+      if (pair[1] === "/") {
+        depth -= 1;
+        if (depth === 0) { closeStart = pair.index; break; }
+      } else if (pair[3] !== "/") {
+        depth += 1;
+      }
+    }
+    // Незакрытый элемент — не находка «пустого оффера», а поломанная разметка:
+    // сообщаем честно, вместо того чтобы молча взять хвост документа.
+    found.push({
+      tag,
+      attrs,
+      inner: closeStart === -1 ? null : html.slice(openEnd, closeStart),
+      outer: match[0],
+    });
+  }
+  return found;
+}
+
+/** Текст поля: разметка снята, сущности раскрыты, пробелы схлопнуты. */
+function fieldText(block, attrName) {
+  const elements = findElementsWithAttribute(block, attrName);
+  if (elements.length === 0) return null;
+  const element = elements[0];
+  // Значение можно нести и атрибутом (data-offer-price="7900"), и текстом.
+  // Голый JSX-атрибут (<dd data-offer-price>) React рендерит как ="true" — это
+  // МАРКЕР поля, а не его содержимое. Без этой отсечки «true» прошло бы за
+  // валидный артефакт и срок (ложный зелёный, пойман локальным прогоном).
+  const rawAttr = (element.attrs.get(attrName) ?? "").trim();
+  const attrValue = rawAttr === "true" ? "" : rawAttr;
+  const textValue = stripTags(element.inner ?? "").trim();
+  return attrValue || textValue;
+}
+
+const PRICE_RE = /\d|бесплатн/i;
+// «—», «-», «–» — явное «не применимо»; пустая строка таковой пометкой не является.
+const EXPLICIT_NA_RE = /^[—–-]$/;
+
+
+/** Внешний адрес обязан разбираться и иметь непустой хост. */
+function isParsableExternal(href) {
+  try {
+    const url = new URL(href);
+    return url.hostname.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Ссылка ведёт на тот же маршрут без якоря — то есть просто перезагружает
+ * страницу. Якорь (`#scan-probe`) таким не считается: он ведёт к блоку.
+ */
+function isSameRouteLink(route, href) {
+  if (href.startsWith("#")) return false;
+  const target = pathOf(href);
+  if (target === null) return false;
+  // Сравнение по ДЕКОДИРОВАННОМУ пути: `new URL` процентно кодирует кириллицу,
+  // а маршрут записан как есть, и без декодирования правило молчало бы.
+  const decode = (value) => {
+    try {
+      return decodeURI(normalizePath(value));
+    } catch {
+      return normalizePath(value);
+    }
+  };
+  return decode(target) === decode(route);
+}
+
+/**
+ * Структурная проверка оффера. Границы — в шапке файла: наличие и разметка,
+ * не смысл текста.
+ */
+function checkOfferBlock(route, rawHtml) {
+  // Скрипты, шаблоны и комментарии — не видимая пользователю разметка.
+  const html = stripInertRegions(rawHtml);
+  const blocks = findElementsWithAttribute(html, "data-offer");
+  if (blocks.length === 0) {
+    fail(route, "нет блока оффера (элемент с атрибутом data-offer)");
+    return;
+  }
+  if (blocks.length > 1) {
+    // Два оффера на маршруте = у клиента нет одного понятного предложения.
+    fail(route, `блоков оффера ${blocks.length}, ожидался ровно один`);
+    return;
+  }
+
+  const block = blocks[0];
+
+  // Блок вне <main> скринридер пропускает при переходе к основному содержимому:
+  // визуально оффер на месте, а по клавиатуре его нет (реальный дефект
+  // /pricing, находка раунда 17). Проверяем по позиции в разметке.
+  const mainOpen = html.search(/<main\b[^>]*>/i);
+  const mainClose = html.search(/<\/main\s*>/i);
+  const offerAt = html.indexOf(block.outer);
+  if (mainOpen === -1 || mainClose === -1) {
+    fail(route, "на маршруте нет landmark <main> — оффер негде разместить правильно");
+  } else if (!(offerAt > mainOpen && offerAt < mainClose)) {
+    fail(route, "блок оффера вне <main>: переход скринридера к основному содержимому его пропустит");
+  }
+
+  if (block.inner === null) {
+    fail(route, `блок оффера не закрыт: <${block.tag} data-offer …> без парного </${block.tag}>`);
+    return;
+  }
+
+  const artifact = fieldText(block.inner, "data-offer-artifact");
+  if (!artifact) fail(route, "в оффере нет поля data-offer-artifact (что клиент получает)");
+  else if (EXPLICIT_NA_RE.test(artifact)) fail(route, "поле data-offer-artifact — прочерк; артефакт обязан быть назван");
+
+  const price = fieldText(block.inner, "data-offer-price");
+  if (!price) fail(route, "в оффере нет поля data-offer-price (цена или «бесплатно»)");
+  else if (!PRICE_RE.test(price)) fail(route, `поле data-offer-price = «${price}»: ожидалась сумма или «бесплатно»`);
+
+  const term = fieldText(block.inner, "data-offer-term");
+  if (!term) fail(route, "в оффере нет поля data-offer-term (срок; «—» допустим)");
+
+  const ctas = findElementsWithAttribute(block.inner, "data-offer-cta");
+  if (ctas.length === 0) {
+    fail(route, "в оффере нет основного CTA (элемент с data-offer-cta)");
+    return;
+  }
+  if (ctas.length > 1) {
+    fail(route, `в оффере ${ctas.length} элементов data-offer-cta, основной CTA должен быть один`);
+    return;
+  }
+
+  const cta = ctas[0];
+  // Кликабельность — часть контракта: <div data-offer-cta href="/scan"> имеет
+  // href, но никуда не ведёт (находка независимого ревью, раунд 1). Next/Link
+  // рендерится в <a>, поэтому требование к тегу выполнимо без оговорок.
+  if (cta.tag !== "a") {
+    fail(route, `основной CTA оффера — <${cta.tag}>, а не ссылка <a>: элемент не кликабелен`);
+    return;
+  }
+  const rawHref = (cta.attrs.get("href") ?? "").trim();
+  // Браузер выбрасывает пробельные и управляющие символы ВНУТРИ схемы, поэтому
+  // `java\nscript:` для него — тот же `javascript:`. Сравнивать надо по той же
+  // нормализованной форме, иначе заглушка проходит проверку (находка раунда 5).
+  const href = rawHref.replace(/[\u0000-\u0020\u007f]/g, "");
+  // Допуск СПИСКОМ РАЗРЕШЁННОГО, а не перечнем опасного. Перечень опасного
+  // проигрывал раунд за раундом: javascript: -> about: -> java\nscript: ->
+  // java&#x0A;script: -> java&#x0Ascript -> &NewLine;/&colon; (раунды 2, 4, 5,
+  // 10, 11, 12). Именованных ссылок в HTML больше двух тысяч, гонка за ними
+  // бесконечна. Рабочих форм у CTA ровно пять, всё остальное — красное.
+  const ALLOWED_HREF = new RegExp(
+    "^(?:"
+    + "/(?![/\\\\])\\S*"          // внутренний путь; //host и /\host исключены
+    + "|#[A-Za-z][\\w.:-]*"        // якорь с именем (пустой # не проходит)
+    // Хост обязателен: `https:///` и `https://?x` — синтаксически ссылка, а
+    // фактически никуда (находка раунда 14).
+    + "|https?://[^\\s/?#]+\\S*"    // внешний адрес с хостом
+    + "|tel:\\+?[\\d\\s().-]{3,}"  // телефон
+    + "|mailto:[^\\s@]+@[^\\s@]+"   // почта
+    + ")$",
+  );
+
+  // Именованная сущность, которую мы НЕ раскрываем, — красное, а не «текст».
+  // `/&NewLine;/evil.example` выглядит внутренним путём, а браузер раскрывает
+  // сущность, выбрасывает перевод строки и уходит на чужой хост (находка
+  // раунда 18). Раскрывать все две тысячи имён смысла нет: в наших href
+  // сущностей быть не должно вовсе, кроме уже раскрытого `&amp;`.
+  const UNKNOWN_ENTITY_RE = /&[a-zA-Z][a-zA-Z0-9]{1,31};/;
+
+  if (!href) {
+    fail(route, "основной CTA оффера без href — кнопка никуда не ведёт");
+  } else if (UNKNOWN_ENTITY_RE.test(href)) {
+    fail(route, `основной CTA оффера с href="${rawHref}" — нераскрытая HTML-сущность: браузер прочтёт адрес иначе`);
+  } else if (/^https?:/i.test(href) && !isParsableExternal(href)) {
+    // Шаблон пропускал `https://%` и `https://[` — синтаксически похоже на
+    // адрес, а браузер такую ссылку не откроет (находка раунда 17).
+    fail(route, `основной CTA оффера с href="${rawHref}" — адрес не разбирается как URL`);
+  } else if (!ALLOWED_HREF.test(href)) {
+    fail(route, `основной CTA оффера с href="${rawHref}" — не рабочая ссылка (допустимы путь, якорь с именем, http(s), tel:, mailto:)`);
+  } else if (AUTH_DEAD_ENDS.includes(normalizePath(pathOf(href) ?? ""))) {
+    // Дублирует правило CTA намеренно: тут адресная ошибка называется по месту.
+    fail(route, `основной CTA оффера ведёт в ${href} — это тупик авторизации`);
+  } else if (isSameRouteLink(route, href)) {
+    // Ссылка на саму себя перезагружает страницу и ничего не запускает
+    // (реальный дефект /scan, находка раунда 7; правило — чтобы не вернулся).
+    fail(route, `основной CTA оффера ведёт на текущую страницу ${href} — клик ничего не делает`);
+  }
+
+  const label = stripTags(cta.inner ?? "").trim();
+  if (!label) fail(route, "у основного CTA оффера нет подписи");
 }
 
 /**
@@ -409,6 +820,9 @@ async function main() {
     checkChromeLinks(route, html, response.url);
     checkLiveChannel(route, html);
     checkFragmentTargets(route, html, anchors);
+    // Проверки G-010 остаются включёнными: тот же HTML уже загружен, лишней
+    // сети нет, а регрессия живой CTA-цепочки видна сразу.
+    if (CHECK_OFFER) checkOfferBlock(route, html);
 
     for (const anchor of anchors) {
       if (!isInternalPage(anchor.href, response.url)) continue;
@@ -452,12 +866,15 @@ async function main() {
   checkClientOnlyDeadEnds();
   checkSourceFragmentTargets();
 
+  // Режим печатается в итоговой строке: она уходит в квитанцию как evidence,
+  // и по ней должно быть видно, ЧТО именно проверялось.
+  const mode = CHECK_OFFER ? ", offer blocks" : "";
   if (failures.length) {
-    console.error(`Funnel verification FAILED for ${baseUrl} (${ROUTES.length} routes, ${internalTargets.size} internal links)`);
+    console.error(`Funnel verification FAILED for ${baseUrl} (${ROUTES.length} routes, ${internalTargets.size} internal links${mode})`);
     for (const failure of failures) console.error(`- ${failure}`);
     process.exitCode = 1;
   } else {
-    console.log(`Funnel verification passed for ${baseUrl} (${ROUTES.length} routes, ${internalTargets.size} internal links)`);
+    console.log(`Funnel verification passed for ${baseUrl} (${ROUTES.length} routes, ${internalTargets.size} internal links${mode})`);
   }
 }
 

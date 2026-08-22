@@ -3,6 +3,7 @@ import { ArrowRight, Check, Crosshair, MapPin, Radio, Route } from "lucide-react
 import { DemandScene } from "@/components/marketing/demand-scene";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/nav";
 import { generateServiceSchema } from "@/lib/schema-org";
+import { OfferBlock } from "@/components/marketing/offer";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://neuroexpertise.ru";
 const schema = generateServiceSchema({
@@ -37,6 +38,12 @@ export default function LandingPage() {
       <MarketingHeader />
       <main>
         <HeroSection />
+        <OfferBlock
+          artifact="Страница результата замера по постоянной ссылке"
+          price="Бесплатно"
+          term="Сразу"
+          cta={{ href: "/scan", label: "Запустить замер" }}
+        />
         <SignalStrip />
         <StorySection />
         <ProductSection />
@@ -160,7 +167,7 @@ function PriorityList() {
         </div>
       ))}
       <div className="sr-workspace-note">
-        <Check aria-hidden="true" /><span><strong>16 обращений</strong> — суммарный потенциал действий на сегодня</span>
+        <Check aria-hidden="true" /><span><strong>17 обращений</strong> — сумма по примеру выше; ваши цифры покажет замер</span>
       </div>
     </div>
   );

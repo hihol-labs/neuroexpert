@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { ArrowRight, Check, ChevronDown, Minus, Radio, RotateCcw } from "lucide-react";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/nav";
+import { OfferBlock } from "@/components/marketing/offer";
 
 const NICHES = [
   ["a0000000-0000-0000-0000-000000000001", "Психология и психотерапия", true],
@@ -114,6 +115,15 @@ export default function AuditPage() {
         {step === "loading" && <DemandLoading niche={nicheName} />}
         {step === "results" && <DemandResults niche={nicheName} gaps={gaps} expanded={expandedPlatform} headingRef={resultHeadingRef} onToggle={(key) => setExpandedPlatform(expandedPlatform === key ? null : key)} onReset={reset} />}
         {step === "error" && <DemandError message={error} onRetry={reset} />}
+        {/* Оффер идёт ПОСЛЕ степ-блока: единственный h1 страницы живёт внутри него,
+            а h2 оффера выше h1 ломает переход скринридера по заголовкам. */}
+        <OfferBlock
+          artifact="Карта спроса с приоритетами по вашей нише"
+          price="7 900 ₽"
+          term="3–7 дней"
+          cta={{ href: "/launch?package=audit_start", label: "Заказать карту спроса" }}
+          note="Карта на этой странице — бесплатная. 7 900 ₽ — расширенный разбор пакета «Аудит Старт»."
+        />
       </main>
       <MarketingFooter />
     </div>
@@ -150,13 +160,13 @@ function DemandLoading({ niche }: { niche: string }) {
       <div className="dm-loading-copy">
         <p className="sr-eyebrow"><span /> Field selected</p>
         <h1>{niche}</h1>
-        <p>Собираем вопросы, читаем ответы четырёх платформ и оцениваем коммерческую плотность сигнала.</p>
+        <p>Собираем вопросы, читаем ответы подключённых ИИ-платформ и оцениваем коммерческую плотность сигнала.</p>
         <div><span>STATUS</span><b>BUILDING MAP</b></div>
       </div>
       <div className="dm-field" aria-hidden="true">
         <header><span>DEMAND FIELD</span><span>LIVE</span></header>
         <div className="dm-field-grid">{Array.from({ length: 40 }, (_, index) => <i key={index} style={{ animationDelay: `${(index % 8) * 120}ms` }} />)}<b /></div>
-        <div className="dm-field-readout"><span>questions</span><b>collecting</b><span>platforms</span><b>04</b><span>intent</span><b>mapping</b></div>
+        <div className="dm-field-readout"><span>questions</span><b>collecting</b><span>platforms</span><b>polling</b><span>intent</span><b>mapping</b></div>
       </div>
     </section>
   );
@@ -179,7 +189,8 @@ function DemandResults({ niche, gaps, expanded, headingRef, onToggle, onReset }:
       <section className="dm-result-head">
         <p className="sr-only" role="status" aria-live="polite">Карта спроса готова. Найдено вопросов: {gaps.length}.</p>
         <div><p className="sr-eyebrow"><span /> Demand map / ready</p><h1 ref={headingRef} tabIndex={-1}>{niche}</h1><p>Ранжируем не «идеи для контента», а места, где сильный экспертный ответ может стать точкой входа.</p></div>
-        <div className="dm-result-summary"><article><span>Вопросы</span><b>{String(gaps.length).padStart(2, "0")}</b></article><article><span>Платформы</span><b>{String(platformCount).padStart(2, "0")}</b></article><article><span>Потенциал / мес</span><b>{totalVolume ? totalVolume.toLocaleString("ru-RU") : "—"}</b></article></div>
+        <div className="dm-result-summary"><article><span>Вопросы</span><b>{String(gaps.length).padStart(2, "0")}</b></article><article><span>Платформы</span><b>{String(platformCount).padStart(2, "0")}</b></article><article><span>Оценка спроса / мес</span><b>{totalVolume ? totalVolume.toLocaleString("ru-RU") : "—"}</b></article></div>
+        <p className="dm-result-note">Оценка по типу запроса: точные частоты подставляются, когда доступны данные Wordstat.</p>
       </section>
 
       <section className="dm-gap-section">

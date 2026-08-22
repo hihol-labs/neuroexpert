@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useState } from "react";
 import { ArrowRight, Check, Code2, Database, Radio } from "lucide-react";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/nav";
+import { OfferBlock } from "@/components/marketing/offer";
 
 const PLANS = [
   { id: "read", name: "Read", price: "Free", limit: "100 req / hour", description: "Public data для быстрых аудитов и discovery.", features: ["Experts, articles, questions", "Markers слабых ответов", "JSON + OpenAPI", "Без требований к attribution"] },
   { id: "pro", name: "Pro", price: "$99", limit: "1 000 req / hour", description: "Карта спроса и полные ответы для клиентского контура.", features: ["Всё из Read", "Blind spots + opportunity score", "Статьи, аудио и цитаты", "Commercial license + source"] },
-  { id: "enterprise", name: "Enterprise", price: "Custom", limit: "Без лимитов", description: "Слой данных под брендом агентства и SLA.", features: ["Всё из Pro", "Webhooks и выделенный канал", "White-label по договору", "SLA 99.9% и менеджер"] },
+  { id: "enterprise", name: "Enterprise", price: "Custom", limit: "Без лимитов", description: "Слой данных под брендом агентства и SLA.", features: ["Всё из Pro", "Webhooks и выделенный канал", "White-label по договору", "SLA по договору и менеджер"] },
 ];
 
 const DATA_STREAM = [
@@ -34,7 +35,14 @@ export default function ForAgenciesPage() {
           <AgencyConsole />
         </section>
 
-        <section className="ag-proof"><article><span>INPUT</span><b>Real demand</b><small>не ручная гипотеза</small></article><article><span>PROCESS</span><b>4 AI platforms</b><small>сравнение ответа</small></article><article><span>OUTPUT</span><b>Lead action</b><small>готово для клиента</small></article></section>
+        <OfferBlock
+          artifact="Доступ к API: карта спроса и ответы платформ для клиентов агентства"
+          price="Free / $99 / Custom — по тарифу доступа"
+          term="Доступ в течение 24 часов"
+          cta={{ href: "https://t.me/neuroexpertise", label: "Обсудить в Telegram" }}
+          note="Замер и карту спроса даём мы. Работу с клиентом ведёт агентство."
+        />
+        <section className="ag-proof"><article><span>INPUT</span><b>Real demand</b><small>не ручная гипотеза</small></article><article><span>PROCESS</span><b>AI platforms</b><small>сравнение ответа</small></article><article><span>OUTPUT</span><b>Lead action</b><small>готово для клиента</small></article></section>
 
         <section className="ag-pipeline">
           <header><p className="sr-eyebrow sr-eyebrow-dark"><span /> Data contract</p><h2>Соберите свой клиентский слой.</h2><p>НейроЭксперт отдаёт фактуру. Агентство добавляет стратегию, исполнение и собственный интерфейс.</p></header>
@@ -59,7 +67,7 @@ export default function ForAgenciesPage() {
 }
 
 function AgencyConsole() {
-  return <div className="ag-console" aria-hidden="true"><header><span>AGENCY / DATA STREAM</span><span><i /> LIVE</span></header><div className="ag-motion-grid">{Array.from({ length: 28 }, (_, index) => <i key={index} style={{ animationDelay: `${(index % 7) * 130}ms` }} />)}<b /></div><div className="ag-console-output"><span>GET /blind-spots</span><strong>200 OK</strong><small>response mapped to client action</small></div><div className="ag-console-foot"><span>latency 420ms</span><span>source 4 platforms</span><span>format JSON</span></div></div>;
+  return <div className="ag-console" aria-hidden="true"><header><span>AGENCY / DATA STREAM</span><span><i /> LIVE</span></header><div className="ag-motion-grid">{Array.from({ length: 28 }, (_, index) => <i key={index} style={{ animationDelay: `${(index % 7) * 130}ms` }} />)}<b /></div><div className="ag-console-output"><span>GET /blind-spots</span><strong>200 OK</strong><small>response mapped to client action</small></div><div className="ag-console-foot"><span>latency 420ms</span><span>source AI platforms</span><span>format JSON</span></div></div>;
 }
 
 function AgencyControlPlane() {

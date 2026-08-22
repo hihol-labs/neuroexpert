@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight, Check, Mic2 } from "lucide-react";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/nav";
 import { generateServiceSchema } from "@/lib/schema-org";
+import { OfferBlock } from "@/components/marketing/offer";
 
 const TITLE = "Новые клиенты для экспертов из поиска и нейросетей | НейроЭксперт";
 const DESCRIPTION = "НейроЭксперт находит реальные вопросы клиентов и помогает эксперту пройти путь: спрос → точка входа → действие клиента → заявка или запись.";
@@ -70,6 +71,13 @@ export default function ForExpertsPage() {
           <VoiceScene />
         </section>
 
+        <OfferBlock
+          artifact="Страница эксперта и публикации на площадке"
+          price="0 / 1 490 / 2 990 / 4 990 ₽ в месяц"
+          term="Страница открывается сразу после регистрации"
+          cta={{ href: "/pricing?for=expert#experts", label: "Выбрать тариф эксперта" }}
+          note="Площадку, страницу и публикацию даём мы. Экспертизу и ответы приносите вы."
+        />
         <section className="ex-proof">
           <article><span>INPUT</span><b>Реальный вопрос</b><small>не тема из контент-плана</small></article>
           <article><span>SOURCE</span><b>Ваш голос</b><small>не синтетический эксперт</small></article>

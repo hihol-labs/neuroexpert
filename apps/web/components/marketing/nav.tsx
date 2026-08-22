@@ -69,8 +69,10 @@ export function FunnelContactBand() {
       <div className="sr-contact-copy">
         <p className="sr-eyebrow"><span /> Следующий шаг</p>
         <h2>Начните с бесплатного замера — или спросите нас напрямую.</h2>
-        {/* Число и состав платформ обязаны совпадать с apps/web/app/api/scan/route.ts. */}
-        <p>Зададим ваш запрос ИИ-платформам — ChatGPT, Perplexity, YandexGPT — и покажем ответы тех, кто ответил: кого называют и попадаете ли туда вы.</p>
+        {/* Имена платформ здесь не перечисляются: адаптеры в apps/web/app/api/scan/route.ts
+            возвращают null без ключа, поэтому состав известен только в рантайме, а этот
+            подвал рендерится на всех 9 маршрутах (находка раунда 25). */}
+        <p>Зададим ваш запрос подключённым ИИ-платформам и покажем ответы тех, кто ответил: кого называют и попадаете ли туда вы.</p>
       </div>
       <div className="sr-contact-actions">
         <Link href="/scan" className="sr-button sr-button-primary">Бесплатный замер <ArrowUpRight /></Link>

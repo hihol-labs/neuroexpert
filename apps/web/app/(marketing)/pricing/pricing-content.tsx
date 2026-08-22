@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, Check, MoveRight } from "lucide-react";
 
 type Audience = "business" | "expert";
@@ -171,8 +171,27 @@ const EXPERT_COMPARISON = [
   ["Комиссия", "15%", "7%", "3%", "0%"],
 ];
 
-export function PricingContent() {
-  const [audience, setAudience] = useState<Audience>("business");
+/**
+ * Слот `children` рендерится внутри <main>: блок оффера на этом маршруте
+ * раньше стоял в page.tsx рядом с <main> и оказывался ВНЕ landmark, поэтому
+ * переход скринридера к основному содержимому его пропускал (находка ревью,
+ * раунд 17). На остальных восьми маршрутах <main> живёт в самой странице.
+ */
+export function PricingContent({ children, initialAudience = "business" }: {
+  children?: React.ReactNode;
+  /** Аудитория из query-параметра `?for=`, вычисленная на сервере. */
+  initialAudience?: Audience;
+}) {
+  const [audience, setAudience] = useState<Audience>(initialAudience);
+
+  // Внешние CTA («Выбрать тариф эксперта» на /for-experts) ведут на
+  // /pricing?for=expert. При клиентской навигации Next отдаёт новое значение
+  // пропа, а не перемонтирует компонент, поэтому состояние синхронизируется
+  // здесь: без этого повторный переход по той же ссылке после ручного
+  // переключения оставлял бы бизнес-пакеты (находка раунда 24).
+  useEffect(() => {
+    setAudience(initialAudience);
+  }, [initialAudience]);
   const [stageIndex, setStageIndex] = useState(1);
   const [offerIndex, setOfferIndex] = useState(1);
   const [expertIndex, setExpertIndex] = useState(2);
@@ -192,7 +211,7 @@ export function PricingContent() {
             Сначала определяем следующий предел роста. Затем подключаем ровно тот
             контур, который нужен, чтобы дойти от спроса до обращения.
           </p>
-          <div className="pr-audience" role="group" aria-label="Для кого подобрать тариф">
+          <div className="pr-audience" id="experts" role="group" aria-label="Для кого подобрать тариф">
             <button type="button" aria-pressed={audience === "business"} onClick={() => setAudience("business")}>Бизнес</button>
             <button type="button" aria-pressed={audience === "expert"} onClick={() => setAudience("expert")}>Эксперт</button>
           </div>
@@ -221,6 +240,8 @@ export function PricingContent() {
       ) : (
         <ExpertSelector index={expertIndex} onSelect={setExpertIndex} />
       )}
+
+      {children}
     </main>
   );
 }
