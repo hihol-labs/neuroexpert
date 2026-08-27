@@ -3,6 +3,36 @@
 # НейроЭксперт — Deploy to production (ADR-002: SHA-pinned, fail-loud)
 # Запуск с локальной машины: bash scripts/deploy.sh
 #
+# Коды возврата (важно для внешней автоматики — она НЕ должна читать любой
+# ненулевой код как «релиз не доехал» и запускать повтор):
+#   0 — релиз выкачен, состояние сервера чистое.
+#   1 — релиз НЕ выкачен: отказ по существу (гейт, миграция, красный health,
+#       оборванный транспорт). Прод может остаться на новой сборке — см. ниже.
+#   2 — релиз ВЫКАЧЕН и проверен, но deploy-lock остался на сервере. Повторять
+#       деплой не нужно, нужно снять lock; следующий запуск иначе не стартует.
+#   4 — релиз ВЫКАЧЕН и подтверждён на контейнере (шаг 5), но canonical-хост
+#       проверить не удалось (сеть/edge/транспорт). Повторять деплой НЕ нужно —
+#       разобраться с edge и прогнать verify-canonical-release.mjs вручную.
+#       Если при этом остался deploy-lock, код ОСТАЁТСЯ 4 (не 2) — смотри
+#       вывод: строка про неснятый lock печатается явно.
+#
+# Автооткат — ЧАСТИЧНЫЙ, и это надо понимать до запуска:
+#   - откатывается ТОЛЬКО служба web (перед пересборкой её образ помечается
+#     тегом neuroexpert-web:rollback, имя образа сохраняется в .rollback-image);
+#   - bot и worker пересобираются в шаге 3 и на новом коде ОСТАЮТСЯ;
+#   - применённые миграции (шаг 4) НЕ откатываются — после отката web работает
+#     старый код против новой схемы БД, совместимость проверяет оператор;
+#   - отказ на шаге 4 (миграция) откат НЕ запускает: контейнеры уже подменены.
+# Триггеры отката: красный health, несовпадение /api/version, чужой sha на
+# canonical-хосте. Отказ на шаге 3 (сборка/запуск) откат НЕ запускает: точка
+# возврата к этому моменту создана, но контейнеры могли быть подменены лишь
+# частично — состояние разбирает оператор.
+# Успех подтверждается идентичностью запущенного образа (не зелёным health) и
+# перепроверкой canonical. Нет точки возврата, откат не подтвердился или edge
+# всё ещё отдаёт сломанный релиз — печатается ЯВНО, разбор ручной.
+# Код возврата после отката ВСЕГДА 1 (релиз не состоялся), даже если при этом
+# остался deploy-lock: код 2 зарезервирован за успешным релизом.
+#
 # Контракт:
 #   - Деплоится ровно DEPLOY_SHA (по умолчанию локальный HEAD), не origin/main.
 #     Если SHA нет на origin — скрипт падает с подсказкой «сначала git push».
@@ -65,6 +95,12 @@ T_HEALTH="${T_HEALTH:-300}"                 # ожидание health + пров
 # деплой законно идёт дольше одной суммы потолков (находка раунда 21).
 STEP_CEILING=$(( T_UPLOAD + T_SYNC + T_BUILD + T_MIGRATE + 2 * T_HEALTH ))
 BACKOFF_TOTAL=$(( NET_BACKOFF * NET_RETRIES * (NET_RETRIES + 1) / 2 * 5 ))
+# Порог намеренно большой (порядка нескольких часов): раньше него чужой lock
+# снимать НЕЛЬЗЯ — под ним может идти живой деплой с ретраями, и мы убьём его
+# на середине. Оператор, который ТОЧНО знает, что деплой оборвался, снимает
+# lock руками (команда печатается при отказе) либо задаёт STALE_AFTER=<сек>
+# на один запуск. Автоматически порог не снижаем: цена ошибки — сломанный
+# наполовину релиз, цена ожидания — задержка (находка cross-model ревью).
 STALE_AFTER="${STALE_AFTER:-$(( STEP_CEILING * NET_RETRIES + BACKOFF_TOTAL + 600 ))}"
 
 # Временные файлы удалённых шагов: heredoc нельзя переиспользовать при ретрае
@@ -81,6 +117,11 @@ REMOTE_PARTS=""   # список недоубранных кусков (по о�
 
 cleanup_on_exit() {
   local rc=$?
+  # Уборка идёт БЕЗ ретраев: на аварийном выходе канал чаще всего уже мёртв, и
+  # три попытки с бэкоффами лишь оттягивают выход, маскируя исходную ошибку
+  # задержкой в несколько минут (находка cross-model ревью 2026-08-22).
+  # Не убранное здесь состояние печатается оператору явной строкой ниже.
+  local NET_RETRIES=1
   if [ -n "$REMOTE_PARTS" ]; then
     # Каждая попытка пишет в СВОЙ файл, поэтому убирать надо все, а не только
     # последний: иначе оборванные куски копятся в /tmp (находка раунда 21).
@@ -98,6 +139,115 @@ cleanup_on_exit() {
   return "$rc"
 }
 trap cleanup_on_exit EXIT
+
+# Возврат прода на предыдущий образ. Вызывается ТОЛЬКО когда контейнеры уже
+# подменены, а проверка красная: до этого момента откатывать нечего.
+# Печатает исход явно — молчаливый откат хуже отсутствия отката: оператор
+# должен знать, на каком коде остался прод.
+rollback_release() {
+  local reason="$1"
+  echo ""
+  echo "  ✗ ОТКАТ: $reason"
+  cat > "$TMPDIR_RUN/rollback.sh" <<'REMOTE'
+set -uo pipefail
+DOMAIN="$1"; FAILED_SHA="$2"
+cd /opt/neuroexpert
+COMPOSE="docker compose -f docker/docker-compose.prod.yml --env-file .env"
+
+if [ ! -s .rollback-image ] || ! docker image inspect neuroexpert-web:rollback >/dev/null 2>&1; then
+  echo "  ✗ Точки возврата нет (.rollback-image или тег neuroexpert-web:rollback отсутствуют)."
+  echo "  → Прод остался на НОВОЙ сборке. Откат только повторным деплоем прошлого SHA."
+  exit 1
+fi
+WEB_IMAGE=$(sed -n '1p' .rollback-image)
+WANT_ID=$(sed -n '2p' .rollback-image)
+if [ -z "$WEB_IMAGE" ] || [ -z "$WANT_ID" ]; then
+  echo "  ✗ Точка возврата неполная (.rollback-image повреждён) — откат не выполняю."
+  exit 1
+fi
+
+# Перевешиваем имя ИМЕННО службы web на сохранённый образ. Ошибку не глушим:
+# молчаливый провал здесь и был причиной ложного «откат выполнен».
+if ! docker tag neuroexpert-web:rollback "$WEB_IMAGE"; then
+  echo "  ✗ docker tag не сработал ($WEB_IMAGE) — откат не выполнен."
+  exit 1
+fi
+# --no-deps обязателен: web зависит от supabase-kong, тот — от rest/auth/storage,
+# те — от supabase-db. Без флага --force-recreate пересоздал бы ВЕСЬ Supabase-стек
+# вместе с прод-БД, и это посреди инцидента (находка cross-model ревью, important).
+$COMPOSE up -d --force-recreate --no-deps --no-build web || {
+  echo "  ✗ Откат не поднялся: прод в неопределённом состоянии, нужен ручной разбор."
+  exit 1
+}
+
+# Успех подтверждается ИДЕНТИЧНОСТЬЮ ОБРАЗА, а не зелёным health: оба триггера
+# отката (чужой sha в /api/version и на canonical) прекрасно уживаются с
+# зелёным health на новой сборке, и проверка по health печатала бы «откат
+# выполнен», когда web остался на сломанном коде (находка ревью, critical).
+LIVE_ID=""
+for i in $(seq 1 12); do
+  LIVE_ID=$($COMPOSE images -q web 2>/dev/null | head -1 || true)
+  if [ "$LIVE_ID" = "$WANT_ID" ] \
+     && $COMPOSE exec -T web wget -q --spider http://localhost:3000/api/health 2>/dev/null; then
+    echo "  → Контейнер web поднят на образе $WANT_ID и healthy"
+    # Внутренний health НЕ доказывает, что публичный домен переключился: один из
+    # триггеров отката — как раз чужой sha на canonical, то есть проблема могла
+    # быть на edge/прокси. Без этой проверки печаталось бы «прод возвращён», пока
+    # клиенты видят сломанный релиз (находка cross-model ревью, important).
+    # `|| RCODE=""`, а не `|| echo`: при connect/DNS-сбое curl всё равно печатает
+    # 000, и ветка «edge неизвестен» была бы мертва — оператора слали бы чинить
+    # прокси при обычном обрыве сети (находка раунда 5, minor).
+    RCODE=$(curl -sS -o /tmp/nx-rb-version.json -w '%{http_code}' --max-redirs 0 --max-time 20 "https://$DOMAIN/api/version" 2>/dev/null) || RCODE=""
+    CANON=$(tr -d ' ' < /tmp/nx-rb-version.json 2>/dev/null | sed -n 's/.*"sha":"\([^"]*\)".*/\1/p')
+    if [ -z "$RCODE" ]; then
+      echo "  ! Canonical не ответил — откат контейнера выполнен, состояние edge неизвестно."
+    elif [ "$RCODE" != "200" ]; then
+      # HTTP-код проверяем так же, как шаг 5b: 3xx/5xx — не «не ответил», а
+      # явная проблема edge, о ней надо сказать (находка раунда 4, minor).
+      echo "  ! Canonical вернул HTTP $RCODE — откат контейнера выполнен, но edge отвечает некорректно, разбирай прокси."
+    elif [ "$CANON" = "$FAILED_SHA" ]; then
+      echo "  ✗ Canonical ВСЁ ЕЩЁ отдаёт $CANON (тот релиз, из-за которого откат)."
+      echo "  → Контейнер откачен, но клиенты видят сломанный релиз: разбирай edge/прокси."
+      exit 1
+    elif [ -z "$CANON" ]; then
+      # HTTP 200 без поля sha: утверждать «сломанный релиз не виден» нельзя —
+      # мы не знаем, что именно отдаёт домен (находка раунда 5, minor).
+      echo "  ! Canonical ответил 200, но sha в ответе не распознан — что видит клиент, неизвестно."
+    else
+      # SHA точки возврата мы не знаем (файл хранит имя и ID образа), поэтому
+      # утверждаем только проверяемое: сломанный релиз публично не виден.
+      echo "  → Canonical отдаёт $CANON — сломанный релиз ($FAILED_SHA) публично не виден"
+    fi
+    echo "  ! Откачен ТОЛЬКО web. bot и worker остались на новом коде;"
+    echo "    применённые миграции не откатываются — проверь совместимость вручную."
+    exit 0
+  fi
+  sleep 5
+done
+if [ "$LIVE_ID" = "$WANT_ID" ]; then
+  # Образ верный, но health так и не позеленел: сообщение «работает X, ожидался
+  # X» с одинаковыми значениями вводило бы в заблуждение (раунд 4, minor).
+  echo "  ✗ Откат НЕ подтверждён: образ верный ($WANT_ID), но web не стал healthy за 60с."
+else
+  echo "  ✗ Откат НЕ подтверждён: работает образ '$LIVE_ID', ожидался '$WANT_ID'."
+fi
+echo "  → Считать прод откаченным нельзя, нужен ручной разбор."
+exit 1
+REMOTE
+  if ssh_script "$T_HEALTH" "откат на предыдущий образ" "$TMPDIR_RUN/rollback.sh" "$DOMAIN" "$DEPLOY_SHA"; then
+    # Формулировка намеренно узкая: «прод возвращён» было бы неправдой — bot и
+    # worker остались на новом коде, миграции применены (находка ревью, minor).
+    echo "  → Служба web возвращена на предыдущий образ; bot, worker и схема БД — на новом релизе."
+  else
+    # Ненулевой код rollback-скрипта покрывает РАЗНЫЕ исходы (нет точки возврата,
+    # образ не подтвердился, контейнер откачен, но edge отдаёт сломанный релиз) —
+    # категоричное «ОТКАТ НЕ УДАЛСЯ» противоречило бы уже напечатанным строкам
+    # вида «контейнер откачен» (находка раунда 6, minor). Итог читать в выводе выше.
+    echo "  ! Откат НЕ ПОДТВЕРЖДЁН как успешный — точный исход в строках выше."
+    echo "  → Прод может быть на сломанной сборке; разбирай вручную:"
+    echo "    ssh $SERVER 'cd $APP_DIR && docker compose -f docker/docker-compose.prod.yml ps'"
+  fi
+}
 
 # Ретраятся ТОЛЬКО транспортные сбои: 124 (сработал timeout) и 255 (ssh не
 # смог соединиться / соединение оборвалось). Ненулевой код удалённой команды —
@@ -539,8 +689,45 @@ if ! flock -w 1800 9; then
 fi
 export GIT_SHA="$1" BUILD_TIME="$2"
 cd /opt/neuroexpert
-docker compose -f docker/docker-compose.prod.yml --env-file .env build --parallel
-docker compose -f docker/docker-compose.prod.yml --env-file .env up -d
+COMPOSE="docker compose -f docker/docker-compose.prod.yml --env-file .env"
+
+# Точка возврата ДО пересборки: помечаем образ, который сейчас реально работает.
+# Без неё красный health на шаге 5 оставлял прод на новой сломанной сборке —
+# откатывать было нечем (находка cross-model ревью 2026-08-22). Тег переживает
+# пересборку: build перевесит имя образа на новый слой, а rollback-тег держит
+# старый по его digest.
+# Точка возврата идемпотентна ПО РЕЛИЗУ. Транспортный ретрай этого шага после
+# уже успешного `up -d` иначе перезахватил бы PREV_IMAGE с НОВОГО контейнера и
+# перезаписал точку возврата — откат тогда «подтверждённо» вернул бы web на
+# сломанный релиз (находка раунда 4, critical, тот же класс ложного успеха,
+# что в раунде 2). Третья строка файла — SHA деплоящегося релиза: совпал —
+# точка уже снята этим прогоном, повторный захват запрещён.
+if [ -s /opt/neuroexpert/.rollback-image ] \
+   && [ "$(sed -n '3p' /opt/neuroexpert/.rollback-image)" = "$GIT_SHA" ] \
+   && docker image inspect neuroexpert-web:rollback >/dev/null 2>&1; then
+  echo "  → Точка возврата для $GIT_SHA уже существует (ретрай шага или повтор того же релиза) — сохраняю прежнюю"
+else
+  PREV_IMAGE=$($COMPOSE images -q web 2>/dev/null | head -1 || true)
+  # Имя образа берём У СЛУЖБЫ web поимённо. Без имени службы `config --images`
+  # печатает по строке на каждую из восьми служб, и `head -1` давал бы bot или
+  # supabase-db: откат перевесил бы тег ЧУЖОГО образа, а web остался бы на новой
+  # сборке (находка cross-model ревью 2026-08-22, critical).
+  WEB_IMAGE=$($COMPOSE config --images web 2>/dev/null | head -1 || true)
+  rm -f /opt/neuroexpert/.rollback-image
+  if [ -n "$PREV_IMAGE" ] && [ -n "$WEB_IMAGE" ]; then
+    docker tag "$PREV_IMAGE" neuroexpert-web:rollback
+    printf '%s\n%s\n%s\n' "$WEB_IMAGE" "$PREV_IMAGE" "$GIT_SHA" > /opt/neuroexpert/.rollback-image
+    echo "  → Точка возврата: $WEB_IMAGE ← $PREV_IMAGE (тег neuroexpert-web:rollback)"
+  else
+    # Первый деплой на чистый сервер: откатывать не к чему, и это не ошибка.
+    # Файл удалён выше — устаревшая точка возврата от прошлого релиза не должна
+    # выглядеть актуальной.
+    echo "  ! Точки возврата нет (нет рабочего образа web или имени образа) — откат будет недоступен"
+  fi
+fi
+
+$COMPOSE build --parallel
+$COMPOSE up -d
 echo "  → Контейнеры запущены"
 REMOTE
 ssh_script "$T_BUILD" "сборка и запуск" "$TMPDIR_RUN/step3-build.sh" "$DEPLOY_SHA" "$BUILD_TIME"
@@ -688,7 +875,10 @@ fi
 echo "  → Release identity ✓ ($LIVE_SHA)"
 $COMPOSE ps
 REMOTE
-ssh_script "$T_HEALTH" "health и версия релиза" "$TMPDIR_RUN/step5-health.sh" "$DEPLOY_SHA"
+if ! ssh_script "$T_HEALTH" "health и версия релиза" "$TMPDIR_RUN/step5-health.sh" "$DEPLOY_SHA"; then
+  rollback_release "красный health или несовпадение версии"
+  exit 1
+fi
 
 # --- 5b. Canonical host check (через публичный домен, с сервера) ---
 echo "[5b] Проверка canonical-хоста https://$DOMAIN ..."
@@ -697,11 +887,23 @@ set -euo pipefail
 DEPLOY_SHA="$1"; DOMAIN="$2"
 # Строгий статус: 200 без редиректов (ревью-находка r2: 3xx/5xx с телом,
 # содержащим ожидаемый sha, не должны считаться успехом).
-CODE=$(curl -sS -o /tmp/nx-version.json -w '%{http_code}' --max-redirs 0 --max-time 20 "https://$DOMAIN/api/version") \
-  || { echo "  ✗ https://$DOMAIN/api/version недоступен с сервера"; exit 1; }
+# Сетевой сбой и кривой edge — НЕ повод откатывать релиз, подтверждённый шагом 5:
+# откат контейнера не чинит ни сеть, ни прокси, а здоровый релиз терять нельзя
+# (находка раунда 4, important). Такие исходы выходят кодом 3 — вызывающая
+# сторона падает громко, но БЕЗ отката. Код 1 остаётся только за фактом
+# «canonical отдаёт другой sha».
+CODE=""
+for i in 1 2 3; do
+  CODE=$(curl -sS -o /tmp/nx-version.json -w '%{http_code}' --max-redirs 0 --max-time 20 "https://$DOMAIN/api/version") && break
+  CODE=""; echo "  → canonical не ответил (попытка $i/3)"; sleep 5
+done
+if [ -z "$CODE" ]; then
+  echo "  ✗ https://$DOMAIN/api/version недоступен с сервера после 3 попыток (сеть/edge)."
+  exit 3
+fi
 if [ "$CODE" != "200" ]; then
-  echo "  ✗ https://$DOMAIN/api/version вернул HTTP $CODE (ожидался 200 без редиректов)."
-  exit 1
+  echo "  ✗ https://$DOMAIN/api/version вернул HTTP $CODE (ожидался 200 без редиректов) — проблема edge/прокси."
+  exit 3
 fi
 CANON_SHA=$(tr -d ' ' < /tmp/nx-version.json | sed -n 's/.*"sha":"\([^"]*\)".*/\1/p')
 if [ "$CANON_SHA" != "$DEPLOY_SHA" ]; then
@@ -711,7 +913,22 @@ if [ "$CANON_SHA" != "$DEPLOY_SHA" ]; then
 fi
 echo "  → Canonical host ✓ ($CANON_SHA)"
 REMOTE
-ssh_script "$T_HEALTH" "canonical-хост" "$TMPDIR_RUN/step5b-canonical.sh" "$DEPLOY_SHA" "$DOMAIN"
+# Откат — ТОЛЬКО при коде 1 (canonical отдаёт другой sha). Код 3 (сеть/edge) и
+# транспортные коды ssh (124/255) валят релиз громко, но контейнер не трогают:
+# он подтверждён шагом 5, а откат сетевые проблемы не чинит (раунд 4, important).
+RC5B=0
+ssh_script "$T_HEALTH" "canonical-хост" "$TMPDIR_RUN/step5b-canonical.sh" "$DEPLOY_SHA" "$DOMAIN" || RC5B=$?
+if [ "$RC5B" = "1" ]; then
+  rollback_release "canonical-хост отдаёт не этот релиз"
+  exit 1
+elif [ "$RC5B" != "0" ]; then
+  echo "  ✗ Canonical проверить не удалось (код $RC5B: сеть/edge/транспорт)."
+  echo "  → Релиз на контейнере подтверждён шагом 5; откат НЕ запускаю — он не чинит edge."
+  echo "  → Разберись с сетью/прокси и повтори проверку: EXPECTED_SHA=$DEPLOY_SHA node scripts/verify-canonical-release.mjs --require-head"
+  # Код 4, не 1: по контракту кодов 1 читается как «релиз НЕ выкачен», и внешняя
+  # автоматика повторила бы деплой при живом релизе (находка раунда 5, important).
+  exit 4
+fi
 
 # --- 6. Release lock (только свой, по ownership-токену) ---
 echo "[6/6] Снятие deploy-lock..."
