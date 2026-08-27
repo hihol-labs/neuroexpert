@@ -120,6 +120,37 @@ async function checkPerplexity(query: string, proxiedFetch?: FetchFn): Promise<P
   };
 }
 
+// --- DeepSeek check ---
+// OpenAI-совместимый API (api.deepseek.com), доступен из РФ напрямую — прокси
+// не нужен (в отличие от ChatGPT). Гейт по ключу: без DEEPSEEK_API_KEY адаптер
+// возвращает null и платформа просто не участвует в замере — тот же контракт,
+// что у остальных (G-011b, icebox снят пользователем 2026-08-27).
+async function checkDeepSeek(query: string): Promise<PlatformVisibility | null> {
+  if (!process.env.DEEPSEEK_API_KEY) return null;
+
+  const client = new OpenAI({
+    apiKey: process.env.DEEPSEEK_API_KEY,
+    baseURL: "https://api.deepseek.com",
+  });
+
+  const res = await client.chat.completions.create({
+    model: "deepseek-chat",
+    max_tokens: 400,
+    temperature: 0.7,
+    messages: [{ role: "user", content: `Кто такой/что такое "${query}"? Расскажи подробно.` }],
+  });
+
+  const text = res.choices[0]?.message?.content || "";
+  const mentioned = text.toLowerCase().includes(query.toLowerCase());
+
+  return {
+    platform: "DeepSeek",
+    mentioned,
+    context: text.slice(0, 300),
+    sentiment: mentioned ? "positive" : "not_found",
+  };
+}
+
 // --- YandexGPT check ---
 async function checkYandexGPT(query: string): Promise<PlatformVisibility | null> {
   if (!process.env.YANDEX_API_KEY || !process.env.YANDEX_FOLDER_ID) return null;
@@ -160,6 +191,7 @@ async function scanAllPlatforms(query: string, proxiedFetch?: FetchFn): Promise<
     checkChatGPT(query, proxiedFetch),
     checkPerplexity(query, proxiedFetch),
     checkYandexGPT(query),
+    checkDeepSeek(query),
   ];
 
   const results = await Promise.all(
