@@ -1,4 +1,9 @@
 FROM node:20-alpine AS base
+# Alpine CDN (dl-cdn.alpinelinux.org) блокируется из ЦОД Hostland — тот же класс,
+# что Docker Hub (нужны зеркала) и api.telegram.org (нужен прокси). Инцидент
+# 2026-08-27: apk ждал 480с и валил сборку «wget (no such package)». Зеркало
+# Яндекса отдаёт те же подписанные индексы — подмена хоста не ослабляет доверие.
+RUN sed -i 's#https://dl-cdn.alpinelinux.org#https://mirror.yandex.ru/mirrors#' /etc/apk/repositories
 RUN corepack enable
 
 # Install НУЦ Минцифры CA (root + sub) for Russian gov-signed endpoints
