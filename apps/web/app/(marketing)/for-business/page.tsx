@@ -101,9 +101,9 @@ function RouteSection() {
   return (
     <section className="br-route-section">
       <SectionIntro index="01 / МАРШРУТ" title="Не просто трафик. Вся цепочка до денег." copy="Смотрим не на каналы по отдельности, а на переходы между ними. Именно там чаще всего исчезает уже оплаченный или заработанный спрос." />
-      <div className="br-funnel">
+      <div className="br-funnel" data-demo-figures>
         <div className="br-funnel-head"><span>Этап</span><span>Объём</span><span>Сигнал</span></div>
-        <p className="br-funnel-disclaimer">Пример разбора: цифры условные, показывают формат отчёта. В вашем аудите — данные вашей клиники.</p>
+        <p className="br-funnel-disclaimer" data-demo-disclaimer>Пример разбора: цифры условные, показывают формат отчёта. В вашем аудите — данные вашей клиники.</p>
         {routeStages.map(({ icon: Icon, ...stage }) => (
           <article className="br-funnel-row" key={stage.index}>
             <span className="br-funnel-index">{stage.index}</span><Icon aria-hidden="true" />

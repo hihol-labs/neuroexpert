@@ -1201,6 +1201,9 @@
 .pr-enterprise { display: grid; align-items: end; padding: clamp(4.5rem,8vw,7rem) clamp(1.5rem,6vw,7rem); background: var(--sr-accent); grid-template-columns: .35fr 1fr auto; gap: clamp(2rem,5vw,5rem); }
 .pr-enterprise > p { color: rgba(10,11,13,.5); font: 650 .55rem/1.4 ui-monospace,monospace; letter-spacing: .06em; text-transform: uppercase; }
 .pr-enterprise h2 { max-width: 10ch; margin: 0; }
+/* Шаг оплаты в постоянной части /pricing — отдельной строкой под секциями. */
+.pr-pay-note { padding: 0 clamp(1.5rem,6vw,7rem) clamp(3rem,6vw,5rem); font-size: .82rem; }
+.pr-pay-note a { text-decoration: underline; text-underline-offset: .2em; }
 
 .pr-expert-layout { display: grid; min-height: 38rem; margin-top: 4.5rem; border: 1px solid #aaa8a1; grid-template-columns: .8fr 1.2fr; }
 .pr-plan-scale { display: grid; border-right: 1px solid #aaa8a1; grid-template-rows: repeat(4,1fr); }
@@ -1482,6 +1485,12 @@
 .dm-result-cta > div > p { color: rgba(10,11,13,.5); font: 650 .53rem/1 ui-monospace,monospace; text-transform: uppercase; }
 .dm-result-cta h2 { max-width: 12ch; margin-top: 1rem; font-size: clamp(2.5rem,4.2vw,4.6rem); font-weight: 520; letter-spacing: -.065em; line-height: .97; }
 .dm-result-cta > button { width: fit-content; color: rgba(10,11,13,.58); font-size: .65rem; text-decoration: underline; text-underline-offset: 4px; }
+/* Шаг оплаты идёт отдельной строкой под кнопками секции. */
+.dm-result-cta > p.dm-result-cta-note { color: rgba(10,11,13,.72); font-size: .8rem; grid-column: 1 / -1; }
+.dm-result-cta > p.dm-result-cta-note a { text-decoration: underline; text-underline-offset: .2em; }
+/* Тот же шаг в постоянной части /audit — он и попадает в серверный HTML. */
+.dm-pay-note { padding: 0 clamp(1.5rem,6vw,7rem) clamp(3rem,6vw,5rem); font-size: .82rem; }
+.dm-pay-note a { text-decoration: underline; text-underline-offset: .2em; }
 
 @keyframes dm-signal { 50% { opacity: .25; transform: scale(.55) rotate(45deg); } }
 @keyframes dm-scanline { 0%,100% { top: 8%; opacity: 0; } 15%,85% { opacity: 1; } 50% { top: 92%; } }

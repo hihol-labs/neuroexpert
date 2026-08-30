@@ -150,7 +150,7 @@ rollback_release() {
   echo "  ✗ ОТКАТ: $reason"
   cat > "$TMPDIR_RUN/rollback.sh" <<'REMOTE'
 set -uo pipefail
-DOMAIN="$1"; FAILED_SHA="$2"
+DOMAIN="$1"; FAILED_SHA="$2"; STALE_OK="${3:-0}"
 cd /opt/neuroexpert
 COMPOSE="docker compose -f docker/docker-compose.prod.yml --env-file .env"
 
@@ -161,9 +161,26 @@ if [ ! -s .rollback-image ] || ! docker image inspect neuroexpert-web:rollback >
 fi
 WEB_IMAGE=$(sed -n '1p' .rollback-image)
 WANT_ID=$(sed -n '2p' .rollback-image)
+POINT_SHA=$(sed -n '3p' .rollback-image)
 if [ -z "$WEB_IMAGE" ] || [ -z "$WANT_ID" ]; then
   echo "  ✗ Точка возврата неполная (.rollback-image повреждён) — откат не выполняю."
   exit 1
+fi
+# Точка возврата обязана принадлежать ИМЕННО падающему релизу. Третья строка —
+# SHA релиза, в котором точка снята: если он не совпал с упавшим, точка осталась
+# от более раннего деплоя (захват в этом прогоне не удался — например, контейнера
+# web нет вовсе или его образ задан digest'ом). Молчаливый откат по такой точке
+# увёл бы прод на ДВА релиза назад против уже применённых миграций, напечатав
+# «откат выполнен» (находка независимого ревью 2026-08-30, important).
+if [ "$POINT_SHA" != "$FAILED_SHA" ]; then
+  echo "  ✗ Точка возврата принадлежит другому релизу: сохранена в ${POINT_SHA:-неизвестно}, падает $FAILED_SHA."
+  echo "    Откат по ней вернул бы web на образ ПРЕДЫДУЩЕГО релиза, тогда как миграции применены от нового."
+  if [ "$STALE_OK" != "1" ]; then
+    echo "  → Автооткат не выполняю. Осознанный откат по устаревшей точке:"
+    echo "    перезапустить деплой с ROLLBACK_STALE_OK=1 в окружении (значение уходит на сервер аргументом)."
+    exit 1
+  fi
+  echo "  ! ROLLBACK_STALE_OK=1 — откатываюсь по устаревшей точке осознанно."
 fi
 
 # Перевешиваем имя ИМЕННО службы web на сохранённый образ. Ошибку не глушим:
@@ -234,7 +251,11 @@ fi
 echo "  → Считать прод откаченным нельзя, нужен ручной разбор."
 exit 1
 REMOTE
-  if ssh_script "$T_HEALTH" "откат на предыдущий образ" "$TMPDIR_RUN/rollback.sh" "$DOMAIN" "$DEPLOY_SHA"; then
+  # Третий аргумент — осознанный откат по устаревшей точке возврата. Через
+  # `ssh … bash -s --` окружение НЕ пробрасывается, поэтому переменная,
+  # выставленная оператором локально, до скрипта не дошла бы, и подсказка
+  # оказалась бы нерабочей (находка ревью, раунд 3).
+  if ssh_script "$T_HEALTH" "откат на предыдущий образ" "$TMPDIR_RUN/rollback.sh" "$DOMAIN" "$DEPLOY_SHA" "${ROLLBACK_STALE_OK:-0}"; then
     # Формулировка намеренно узкая: «прод возвращён» было бы неправдой — bot и
     # worker остались на новом коде, миграции применены (находка ревью, minor).
     echo "  → Служба web возвращена на предыдущий образ; bot, worker и схема БД — на новом релизе."
@@ -707,22 +728,54 @@ if [ -s /opt/neuroexpert/.rollback-image ] \
    && docker image inspect neuroexpert-web:rollback >/dev/null 2>&1; then
   echo "  → Точка возврата для $GIT_SHA уже существует (ретрай шага или повтор того же релиза) — сохраняю прежнюю"
 else
-  PREV_IMAGE=$($COMPOSE images -q web 2>/dev/null | head -1 || true)
-  # Имя образа берём У СЛУЖБЫ web поимённо. Без имени службы `config --images`
-  # печатает по строке на каждую из восьми служб, и `head -1` давал бы bot или
-  # supabase-db: откат перевесил бы тег ЧУЖОГО образа, а web остался бы на новой
-  # сборке (находка cross-model ревью 2026-08-22, critical).
-  WEB_IMAGE=$($COMPOSE config --images web 2>/dev/null | head -1 || true)
-  rm -f /opt/neuroexpert/.rollback-image
+  # Точку возврата снимаем С ЖИВОГО КОНТЕЙНЕРА службы web, а не из compose.
+  # `docker compose config --images web` на серверной версии compose ИГНОРИРУЕТ
+  # имя службы и печатает по строке на каждую из восьми служб: `head -1` дал
+  # `kong:3.5`, и откат перевесил бы тег Supabase-гейтвея на web-образ, уронив
+  # весь стек (живой прогон 2026-08-27; семь раундов статического ревью этого
+  # не поймали, потому что локальный compose фильтр уважает).
+  # `docker inspect` контейнера отвечает на тот же вопрос из состояния демона,
+  # где подмены службы быть не может: .Config.Image — имя тега, с которым web
+  # запущен, .Image — id образа под этим тегом.
+  # `-a`: контейнер web может быть ОСТАНОВЛЕН — это типичная причина, по которой
+  # деплой и запускают. Без флага `ps -q` его не видит, захват пустеет, и раньше
+  # безусловный `rm -f` уничтожал ВАЛИДНУЮ точку возврата от прошлого релиза:
+  # откат потом отказывал из-за отсутствия файла при живом теге
+  # (находка независимого ревью 2026-08-30, important).
+  WEB_CID=$($COMPOSE ps -aq web 2>/dev/null | head -1 || true)
+  if [ -n "$WEB_CID" ]; then
+    WEB_IMAGE=$(docker inspect "$WEB_CID" --format '{{.Config.Image}}' 2>/dev/null || true)
+    PREV_IMAGE=$(docker inspect "$WEB_CID" --format '{{.Image}}' 2>/dev/null || true)
+  else
+    WEB_IMAGE=""
+    PREV_IMAGE=""
+  fi
+  # Имя образа обязано быть ИМЕНЕМ, а не id: контейнер, запущенный по digest,
+  # даёт `sha256:…` в .Config.Image, и откат упал бы на `docker tag` с такой
+  # целью — точка возврата была бы бесполезной (находка ревью, minor).
+  case "$WEB_IMAGE" in
+    sha256:*|"") WEB_IMAGE="" ;;
+  esac
   if [ -n "$PREV_IMAGE" ] && [ -n "$WEB_IMAGE" ]; then
     docker tag "$PREV_IMAGE" neuroexpert-web:rollback
-    printf '%s\n%s\n%s\n' "$WEB_IMAGE" "$PREV_IMAGE" "$GIT_SHA" > /opt/neuroexpert/.rollback-image
+    # Пишем через временный файл: прежняя точка возврата остаётся на месте до
+    # тех пор, пока новая не записана целиком.
+    printf '%s\n%s\n%s\n' "$WEB_IMAGE" "$PREV_IMAGE" "$GIT_SHA" > /opt/neuroexpert/.rollback-image.new \
+      && mv -f /opt/neuroexpert/.rollback-image.new /opt/neuroexpert/.rollback-image
     echo "  → Точка возврата: $WEB_IMAGE ← $PREV_IMAGE (тег neuroexpert-web:rollback)"
   else
     # Первый деплой на чистый сервер: откатывать не к чему, и это не ошибка.
-    # Файл удалён выше — устаревшая точка возврата от прошлого релиза не должна
-    # выглядеть актуальной.
-    echo "  ! Точки возврата нет (нет рабочего образа web или имени образа) — откат будет недоступен"
+    # Прежняя точка возврата НЕ удаляется: если она осталась от предыдущего
+    # релиза, вместе с тегом neuroexpert-web:rollback она согласована и
+    # по-прежнему годится для отката — уничтожать её здесь значит менять
+    # «откат к прошлому релизу» на «отката нет».
+    echo "  ! Новую точку возврата снять не с чего (нет контейнера web или имя образа — digest)."
+    if [ -s /opt/neuroexpert/.rollback-image ]; then
+      echo "    Прежняя точка возврата оставлена как есть: релиз $(sed -n '3p' /opt/neuroexpert/.rollback-image), образ $(sed -n '1p' /opt/neuroexpert/.rollback-image)."
+      echo "    Автооткат ею НЕ воспользуется (сверка SHA на шаге отката) — это осознанный ручной путь."
+    else
+      echo "    Прежней точки возврата тоже нет — откат будет недоступен."
+    fi
   fi
 fi
 

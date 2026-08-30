@@ -16,6 +16,9 @@ const PUBLIC_ROUTES = [
   "/terms",
   "/privacy",
   "/requisites",
+  // Шаг оплаты обязан быть публичным: покупатель платит по счёту ДО того, как
+  // у него появляется аккаунт (auth отложен в фазу D по ADR-002).
+  "/pay",
 ];
 
 const PUBLIC_PREFIXES = [

@@ -94,7 +94,7 @@ export function MarketingFooter() {
           <p>Система, которая превращает локальный спрос в понятные действия команды.</p>
         </div>
         <FooterColumn title="Продукт" links={[["Замер в ИИ", "/scan"], ["Карта спроса", "/audit"], ["Как работает", "/how-it-works"], ["Для бизнеса", "/for-business"], ["Запуск", "/launch"], ["Тарифы", "/pricing"]]} />
-        <FooterColumn title="Компания" links={[["Экспертам", "/for-experts"], ["Агентствам", "/for-agencies"], ["Документация API", "/api/v1/docs"], ["Реквизиты", "/requisites"]]} />
+        <FooterColumn title="Компания" links={[["Экспертам", "/for-experts"], ["Агентствам", "/for-agencies"], ["Документация API", "/api/v1/docs"], ["Оплата", "/pay"], ["Реквизиты", "/requisites"]]} />
         <div className="sr-footer-column">
           <span>Контакт</span>
           <a href="tel:+79051238877">+7 905 123-88-77</a>

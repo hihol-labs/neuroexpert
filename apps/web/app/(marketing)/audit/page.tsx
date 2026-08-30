@@ -124,6 +124,13 @@ export default function AuditPage() {
           cta={{ href: "/launch?package=audit_start", label: "Заказать карту спроса" }}
           note="Карта на этой странице — бесплатная. 7 900 ₽ — расширенный разбор пакета «Аудит Старт»."
         />
+        {/* Шаг оплаты живёт в ПОСТОЯННОЙ части страницы: блок результатов
+            рендерится только после выбора ниши, и ссылка внутри него не
+            попадает в серверный HTML — воронка обрывалась бы там, где её
+            проверяют. */}
+        <p className="dm-pay-note">
+          Объём работ уже согласован? <Link href="/pay">Счёт, оплата и документы</Link>
+        </p>
       </main>
       <MarketingFooter />
     </div>
@@ -204,6 +211,7 @@ function DemandResults({ niche, gaps, expanded, headingRef, onToggle, onReset }:
         <div><p>Из вопроса — в точку входа</p><h2>Ответьте голосом. Систему соберём мы.</h2></div>
         <Link className="sr-button sr-button-light" href="/launch">Получить план запуска <ArrowRight aria-hidden="true" /></Link>
         <button type="button" onClick={onReset}>Выбрать другую нишу</button>
+        <p className="dm-result-cta-note">Объём согласован? <Link href="/pay">Счёт, оплата и документы</Link></p>
       </section>
     </>
   );

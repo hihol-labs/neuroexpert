@@ -140,6 +140,7 @@
 ### P0 — критично (монетизация)
 | Интеграция | Где взять | Переменные | Стоимость |
 |---|---|---|---|
+| **Платёжная ссылка** (`/pay`) | Приложение банка или «Мой налог» → ссылка/QR на перевод. Принимается только `https://`; пусто — страница показывает путь «Запросить счёт» | `PAYMENT_LINK_URL` | 0₽ |
 | **ЮKassa** (ИП/самозанятый) | yookassa.ru → ЛК → API. Webhook: `https://neuroexpertise.ru/api/webhooks/yukassa` | `YUKASSA_SHOP_ID`, `YUKASSA_SECRET_KEY`, `YUKASSA_WEBHOOK_SECRET` | комиссия 2.8-3.5% |
 | **SMTP** (Yandex 360) | `noreply@neuroexpertise.ru`, app password из Яндекс ID | `SMTP_HOST=smtp.yandex.ru`, `SMTP_PORT=465`, `SMTP_USER`, `SMTP_PASS`, `SMTP_ADMIN_EMAIL` | 0₽ |
 

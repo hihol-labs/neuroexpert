@@ -124,6 +124,7 @@ export async function getSitemapUrls(kind: SitemapKind): Promise<SitemapUrl[]> {
       { loc: `${APP_URL}/questions`, lastmod: now, changefreq: "daily", priority: 0.7 },
       { loc: `${APP_URL}/compare`, lastmod: now, changefreq: "monthly", priority: 0.5 },
       { loc: `${APP_URL}/pricing`, lastmod: now, changefreq: "monthly", priority: 0.5 },
+      { loc: `${APP_URL}/pay`, lastmod: now, changefreq: "monthly", priority: 0.4 },
     ];
   }
 

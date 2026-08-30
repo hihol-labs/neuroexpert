@@ -13,6 +13,7 @@ run() { # <метка> <команда…>
 }
 
 run "оракул оффера (синтетический HTML)" node scripts/tests/offer-parser.test.mjs
+run "оракул платёжного пути (синтетический HTML)" node scripts/tests/payment-path.test.mjs
 run "канон digest квитанции (паритет с python3)" node scripts/tests/canonical-parity.test.mjs
 run "допуск квитанции гейта" bash scripts/tests/gate-receipt.test.sh
 run "транспорт деплоя (таймауты и ретраи)" bash scripts/tests/transport.test.sh
