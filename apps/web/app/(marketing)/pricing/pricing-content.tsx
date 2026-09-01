@@ -296,6 +296,46 @@ function BusinessSelector({ stageIndex, offerIndex, onStage, onOffer }: { stageI
 
       <SystemLedger />
 
+      {/* Граница автоматизации (AF-0): статичная секция, а не карточка
+          выбранного оффера — в серверный HTML должны попадать все три SKU
+          сразу, конфигуратор же рендерит только выбранный. Разметка
+          data-automation-boundary проверяется оракулом verify-preflight.mjs. */}
+      <section className="pr-factors" id="automation-boundary">
+        <div>
+          <p className="sr-eyebrow sr-eyebrow-dark"><span /> Automation boundary</p>
+          <h2>Что делает система, а что — люди.</h2>
+        </div>
+        <ol>
+          <li>
+            <span>01</span>
+            <div data-automation-boundary="audit-start">
+              <b>Аудит Старт — автоматический.</b> Система сама собирает спрос по
+              паре «ниша × город», опрашивает AI-платформы и формирует отчёт с
+              планом действий; сотрудник не готовит отчёт вручную. От вас — ниша,
+              город и email.
+            </div>
+          </li>
+          <li>
+            <span>02</span>
+            <div data-automation-boundary="launch-start">
+              <b>Запуск Старт — guided setup.</b> Система готовит структуру,
+              страницы под спрос и аналитику; внедрение на площадках идёт вместе
+              с вами — потребуются доступы к карточкам и сайту, часть работ
+              выполняют люди.
+            </div>
+          </li>
+          <li>
+            <span>03</span>
+            <div data-automation-boundary="managed-lite">
+              <b>Сопровождение Лайт — с участием человека.</b> Система мониторит
+              видимость и формирует ежедневные задачи; выполнение и контроль
+              остаются за командой — вашей или нашей. Это не подписка на полную
+              автоматику.
+            </div>
+          </li>
+        </ol>
+      </section>
+
       <section className="pr-factors">
         <div><p className="sr-eyebrow sr-eyebrow-dark"><span /> Pricing logic</p><h2>Цена меняется только вместе с объёмом.</h2></div>
         <ol>{PRICE_FACTORS.map((factor, index) => <li key={factor}><span>0{index + 1}</span>{factor}</li>)}</ol>
