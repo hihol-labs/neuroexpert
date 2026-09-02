@@ -19,10 +19,10 @@
  *   ЖИВОЙ КОНТУР (по --base-url, штатно гоняется с прод-сервера):
  *     - canary magic-link/SMTP: /api/health -> auth.magic_link_ready === true
  *       и auth.smtp_configured === true;
- *     - canary expand_query: worker.by_type.expand_query.completed >= 1
- *       (свидетельство хотя бы одного успешно завершённого прогона; до
- *       архивации QUEUE-1 сэмпл health может быть забит историческими failed —
- *       порядок «сначала QUEUE-1, потом канарейка» согласован в плане);
+ *     - canary expand_query: worker.last_expand_query.status === "completed"
+ *       И worker.last_expand_query.subqueries >= 1 — свидетельство по
+ *       существу (QUEUE-4: «completed» с нулём подзапросов — пустой успех, а
+ *       не канарейка);
  *     - canary кассы: POST /api/webhooks/yukassa пустым JSON -> 4xx, но не 404
  *       (маршрут существует и отвергает неавторизованный/мусорный вход; 2xx на
  *       мусор или 5xx — дефект). Честная граница: при настроенных IP-allowlist
@@ -294,12 +294,22 @@ function checkHealthPayload(health) {
     finding("/api/health", "auth.magic_link_ready !== true",
       "canary magic-link: SMTP сконфигурирован И auth-сервис здоров");
   }
-  const eq = health.worker?.by_type?.expand_query;
-  const completed = Number(eq?.completed ?? 0);
-  if (!(completed >= 1)) {
-    finding("/api/health", "worker.by_type.expand_query.completed < 1",
+  // Канарейка доказывается СУЩЕСТВОМ, а не статусом: 2026-09-01 job закрылся
+  // «completed» с нулём подзапросов (QUEUE-4). Health отдаёт число реально
+  // созданных sub_queries последнего expand_query — требуем его.
+  const last = health.worker?.last_expand_query;
+  if (!last || typeof last !== "object") {
+    finding("/api/health", "worker.last_expand_query отсутствует",
+      "health обязан отдавать свидетельство последнего expand_query "
+      + "(status + subqueries) — иначе пустой успех невидим");
+  } else if (last.status !== "completed") {
+    finding("/api/health", `последний expand_query в статусе «${last.status}»`
+      + (last.error ? ` (${String(last.error).slice(0, 100)})` : ""),
       "canary expand_query: один НОВЫЙ прогон должен завершиться успешно "
       + "(после архивации QUEUE-1; массовый replay запрещён)");
+  } else if (!(Number(last.subqueries) >= 1)) {
+    finding("/api/health", `последний expand_query completed, но subqueries=${last.subqueries ?? "null"}`,
+      "пустой fan-out — не успех: провайдер вернул ноль подзапросов");
   }
 }
 

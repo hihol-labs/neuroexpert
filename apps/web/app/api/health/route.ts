@@ -76,7 +76,7 @@ export async function GET() {
     .select("id", { count: "exact", head: true })
     .eq("status", "published");
 
-  const [{ count: pendingJobs }, { count: failedJobs }, { data: workerJobs }, authHealth] = await Promise.all([
+  const [{ count: pendingJobs }, { count: failedJobs }, { data: workerJobs }, { data: lastExpandQuery }, authHealth] = await Promise.all([
     supabase.from("jobs").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("jobs").select("id", { count: "exact", head: true }).eq("status", "failed"),
     supabase
@@ -85,8 +85,22 @@ export async function GET() {
       .in("status", ["pending", "processing", "completed", "failed"])
       .order("created_at", { ascending: false })
       .range(0, 9999),
+    // Свидетельство канарейки expand_query: статуса «completed» недостаточно —
+    // job закрывался успехом с нулём подзапросов (QUEUE-4), поэтому наружу
+    // отдаётся и число реально созданных sub_queries из result.
+    supabase
+      .from("jobs")
+      .select("status,result,error,completed_at")
+      .eq("type", "expand_query")
+      .neq("status", "archived")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
     checkAuthHealth(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
   ]);
+
+  const lastExpandResult = (lastExpandQuery?.result ?? null) as { subqueries?: unknown } | null;
+  const lastExpandSubqueries = typeof lastExpandResult?.subqueries === "number" ? lastExpandResult.subqueries : null;
 
   const smtpConfigured = Boolean(
     process.env.SMTP_HOST &&
@@ -109,6 +123,14 @@ export async function GET() {
       pending_jobs: pendingJobs ?? 0,
       failed_jobs: failedJobs ?? 0,
       ...buildWorkerStats(workerJobs ?? []),
+      last_expand_query: lastExpandQuery
+        ? {
+            status: lastExpandQuery.status,
+            subqueries: lastExpandSubqueries,
+            error: lastExpandQuery.error ? String(lastExpandQuery.error).slice(0, 160) : null,
+            completed_at: lastExpandQuery.completed_at,
+          }
+        : null,
     },
     timestamp: new Date().toISOString(),
   });

@@ -71,6 +71,7 @@ const GREEN_HEALTH = {
     pending_jobs: 0,
     failed_jobs: 0,
     by_type: { expand_query: { pending: 0, processing: 0, completed: 3, failed: 0 } },
+    last_expand_query: { status: "completed", subqueries: 4, error: null, completed_at: "2026-09-01T12:00:00Z" },
   },
 };
 
@@ -157,11 +158,25 @@ try {
       { sales: GREEN_SALES + "2026-09-01 | много касаний, все хорошие\n" }, {}, []],
     ["health: magic_link_ready=false",
       {}, { health: { ...GREEN_HEALTH, auth: { ...GREEN_HEALTH.auth, magic_link_ready: false } } }, []],
-    ["health: expand_query.completed=0",
+    ["health: последний expand_query failed",
       {}, {
         health: {
           ...GREEN_HEALTH,
-          worker: { ...GREEN_HEALTH.worker, by_type: { expand_query: { pending: 0, processing: 0, completed: 0, failed: 754 } } },
+          worker: { ...GREEN_HEALTH.worker, last_expand_query: { status: "failed", subqueries: null, error: "credit balance too low", completed_at: null } },
+        },
+      }, []],
+    ["health: пустой успех — completed с subqueries=0 (QUEUE-4)",
+      {}, {
+        health: {
+          ...GREEN_HEALTH,
+          worker: { ...GREEN_HEALTH.worker, last_expand_query: { status: "completed", subqueries: 0, error: null, completed_at: "2026-09-01T12:00:00Z" } },
+        },
+      }, []],
+    ["health: свидетельство last_expand_query отсутствует",
+      {}, {
+        health: {
+          ...GREEN_HEALTH,
+          worker: { ...GREEN_HEALTH.worker, last_expand_query: null },
         },
       }, []],
     ["webhook: маршрут отсутствует (404)", {}, { webhookStatus: 404 }, []],
