@@ -140,7 +140,16 @@ expect_red(
 
 expect_red(
     'SCOPE_LOCK откачен на прежнюю задачу',
-    lambda d: patch_text(d, '.itd/SCOPE_LOCK.md', '**AF-0**', 'STRAT-003-DRAFT'),
+    lambda d: patch_text(d, '.itd/SCOPE_LOCK.md', '**G-018**', 'STRAT-003-DRAFT'),
+)
+
+expect_red(
+    'AF-0 разотмечен из verified (откат закрытого юнита)',
+    lambda d: patch_json(
+        d, '.itd-memory/GOAL.json',
+        lambda g: [u.__setitem__('status', 'pending')
+                   for u in g['units'] if u['id'] == 'AF-0'],
+    ),
 )
 
 expect_red(

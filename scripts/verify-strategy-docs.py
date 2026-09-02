@@ -84,19 +84,31 @@ check(
 print("== 3. Согласованность леджера ==")
 current = goal.get("currentUnitId")
 status_by_id = {u["id"]: u["status"] for u in goal["units"]}
-check("GOAL.currentUnitId == AF-0", current == "AF-0", str(current))
-check("STATE.currentUnit == AF-0", state.get("currentUnit", {}).get("id") == "AF-0")
-check("SCOPE_LOCK Current Task == AF-0", "**AF-0**" in scope and "STRAT-003-DRAFT" not in scope)
+# Ожидаемый активный юнит ВЫЧИСЛЯЕТСЯ из леджера (первый не verified/skipped/
+# blocked), а не зашит в оракул: после verified AF-0 (2026-09-02) жёсткая
+# привязка к AF-0 противоречила бы проверке «первый незакрытый = current».
+expected = next(
+    (u["id"] for u in goal["units"] if u["status"] not in ("verified", "skipped", "blocked")),
+    None,
+)
+check("в леджере есть незакрытый юнит", expected is not None)
+check("GOAL.currentUnitId == первый незакрытый (%s)" % expected, current == expected, str(current))
+check(
+    "STATE.currentUnit == %s" % expected,
+    state.get("currentUnit", {}).get("id") == expected,
+    str(state.get("currentUnit", {}).get("id")),
+)
+scope_current = scope.split("## Allowed Change Areas")[0]
+check(
+    "SCOPE_LOCK Current Task == %s" % expected,
+    ("**%s**" % expected) in scope_current and "STRAT-003-DRAFT" not in scope,
+)
 check(
     "активный юнит не заблокирован",
     status_by_id.get(current) != "blocked",
     "статус %s" % status_by_id.get(current),
 )
-check(
-    "первый незакрытый юнит совпадает с currentUnitId",
-    next(u["id"] for u in goal["units"] if u["status"] not in ("verified", "skipped", "blocked"))
-    == current,
-)
+check("AF-0 закрыт как verified (2026-09-02)", status_by_id.get("AF-0") == "verified")
 check("все статусы юнитов валидны", all(s in ALLOWED_STATUS for s in status_by_id.values()))
 check(
     "каждый blocked юнит несёт причину",
