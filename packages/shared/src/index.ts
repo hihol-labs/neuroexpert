@@ -8,6 +8,7 @@ export * from "./prompts/filter.js";
 export * from "./prompts/content-gen.js";
 export * from "./prompts/query-fanout.js";
 export * from "./orders/index.js";
+export * from "./pairs/index.js";
 export * from "./prompts/marketing-os.js";
 export * from "./utils/slug.js";
 export * from "./authz.js";

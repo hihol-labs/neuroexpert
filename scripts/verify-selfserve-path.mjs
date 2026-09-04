@@ -186,6 +186,8 @@ function repoPair() {
       ["ADD COLUMN IF NOT EXISTS vertical", "niches.vertical"],
       ["ADD COLUMN IF NOT EXISTS demand_status", "niches.demand_status"],
       ["niches_local_pair_shape", "CHECK: пара ⇒ city и id с префиксом b"],
+      ["BEFORE INSERT ON public.niches", "триггер: пара рождается is_active=false (§5, схемная защита cron)"],
+      ["niches_local_pair_born_inactive", "функция/триггер born_inactive"],
       ["CREATE TABLE IF NOT EXISTS public.pair_requests", "таблица pair_requests"],
       ["pair_requests_niche_email", "UNIQUE (niche_id, email)"],
     ]],
