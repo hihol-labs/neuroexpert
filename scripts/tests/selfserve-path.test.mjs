@@ -1,9 +1,11 @@
 /**
- * Мутационный тест оракула scripts/verify-selfserve-path.mjs (--stage=order).
+ * Мутационный тест оракула scripts/verify-selfserve-path.mjs (--stage=order и --stage=pair).
  *
  * Зелёный фикстурный репо + зелёные сетевые фикстуры (dark) → exit 0; на каждой
  * заведомой регрессии оракул обязан покраснеть (exit 1). Плюс режим live и
- * usage-контракт.
+ * usage-контракт. Стадия pair (G-018b): зелёное репо шагов 2-6, «пустое» репо
+ * даёт ровно 6 групповых находок (producer-first: красный HEAD шага 1),
+ * 11 репо-регрессий + 4 живых.
  *
  * Запуск: node scripts/tests/selfserve-path.test.mjs
  * Успех: exit 0 и «ВСЕ ПРОВЕРКИ ПРОШЛИ».
@@ -50,6 +52,31 @@ const LIVE_FX = {
   "order-page.json": '{"status":200}',
   "orders-post.json": '{"status":400}',
 };
+
+// ===== стадия pair (G-018b): зелёное фикстурное репо шагов 2-6 =====
+const CRON_003 = "SELECT cron.schedule('weekly-demand', '0 3 * * 1',\n  $$INSERT INTO public.jobs (type, payload) SELECT 'collect_demand', jsonb_build_object('niche_id', id) FROM public.niches WHERE is_active = TRUE$$\n);\n";
+const FILES_PAIR = {
+  "packages/supabase/migrations/027_local_pairs.sql":
+    "CREATE TABLE IF NOT EXISTS public.local_verticals (\n  id TEXT PRIMARY KEY,\n  CONSTRAINT local_verticals_templates_8 CHECK (true)\n);\nINSERT INTO public.local_verticals VALUES ('dental'), ('clinic'), ('autoservice');\nALTER TABLE public.niches ADD COLUMN IF NOT EXISTS city TEXT;\nALTER TABLE public.niches ADD COLUMN IF NOT EXISTS vertical TEXT;\nALTER TABLE public.niches ADD COLUMN IF NOT EXISTS demand_status TEXT;\nALTER TABLE public.niches ADD CONSTRAINT niches_local_pair_shape CHECK (true);\nCREATE TABLE IF NOT EXISTS public.pair_requests (\n  CONSTRAINT pair_requests_niche_email UNIQUE (niche_id, email)\n);\n",
+  "packages/supabase/migrations/003_cron_schedules.sql": CRON_003,
+  "packages/shared/src/pairs/index.ts":
+    "export function normalizeCity() {}\nexport function buildPairSlug() {}\nexport function buildPairId() {}\nexport function buildPairName() {}\nexport function expandSeedTemplates() {}\nexport const PAIR_MIN_QUESTIONS = 10;\nexport function decidePairPreflight() {}\nexport function decideOnDemandOutcome() {}\n",
+  "packages/shared/src/index.ts": "export * from \"./orders/index.js\";\nexport * from \"./pairs/index.js\";\n",
+  "apps/web/app/api/orders/route.ts":
+    "const vertical = body.vertical;\nconst v = await admin.from(\"local_verticals\").select(\"id\");\nawait admin.from(\"niches\").insert({ is_active: false });\nconst pair = decidePairPreflight({});\nif (pair.status !== \"ready\") {\n  await admin.from(\"pair_requests\").upsert({});\n  await admin.from(\"jobs\").insert({ type: \"collect_demand\", payload: { mode: \"on_demand\" } });\n  return NextResponse.json({}, { status: 202 });\n}\nconst d = decidePreflight({});\nawait admin.from(\"package_orders\").insert({});\nheaders: { \"Idempotence-Key\": `package-${id}` }\nreturn NextResponse.json({}, { status: 404 });\nfetch(\"https://api.yookassa.ru/v3/payments\")\n",
+  "apps/web/app/api/health/route.ts": "return NextResponse.json({ local_pairs: { total, active, collecting, filled, empty } });\n",
+  "apps/worker/src/jobs/collect-demand.ts":
+    "const onDemand = payload.mode === \"on_demand\";\nawait supabase.from(\"niches\").update({ demand_status: \"filled\" });\nawait anon.auth.signInWithOtp({ email });\nif (!onDemand) {\n  await supabase.from(\"jobs\").insert({ type: \"find_gaps\" });\n}\n",
+  "apps/web/app/(marketing)/order/audit-start/order-form.tsx": "<select name=\"vertical\" />\n<section data-pair-status=\"collecting\" />\n",
+  "apps/web/app/(marketing)/order/audit-start/page.tsx": "const { data } = await getAdmin().from(\"local_verticals\").select(\"id, name\");\n",
+};
+const PAIR_DARK_FX = {
+  "order-page.json": '{"status":404}',
+  "orders-post.json": '{"status":404}',
+  "orders-post-vertical.json": '{"status":400}',
+  "health.json": '{"status":"ok","local_pairs":{"total":1,"active":0,"collecting":1,"filled":0,"empty":0}}',
+};
+const PAIR_LIVE_FX = { ...PAIR_DARK_FX, "order-page.json": '{"status":200}', "orders-post.json": '{"status":400}' };
 
 function writeTree(root, overrides = {}) {
   for (const [rel, body] of Object.entries({ ...FILES, ...overrides })) {
@@ -120,7 +147,53 @@ try {
     expect(`мутация live: ${label}`, r.code, 1, r.out);
   });
 
-  { const r = run(["--stage=pair"]); expect("usage: --stage=pair не поддерживается -> exit 2", r.code, 2, r.out); }
+  // ===== стадия pair (G-018b) =====
+  const pairGreen = join(work, "pair-green"); writeTree(pairGreen, FILES_PAIR);
+  const pairFxDark = join(work, "pair-fx-dark"); writeFx(pairFxDark, PAIR_DARK_FX);
+  const pairFxLive = join(work, "pair-fx-live"); writeFx(pairFxLive, PAIR_LIVE_FX);
+  { const r = run(["--stage=pair", "--repo-root", pairGreen, "--fixture-dir", pairFxDark]); expect("pair: позитив dark", r.code, 0, r.out); }
+  { const r = run(["--stage=pair", "--repo-root", pairGreen, "--fixture-dir", pairFxLive, "--checkout", "live"]); expect("pair: позитив live", r.code, 0, r.out); }
+  { const r = run(["--stage=pair", "--repo-root", pairGreen, "--repo-only"]); expect("pair: --repo-only на зелёном репо", r.code, 0, r.out); }
+  {
+    // Красный HEAD шага 1: ни одного файла шагов 2-6 — ровно 6 групповых находок (по одной на шаг).
+    const bare = join(work, "pair-bare"); writeTree(bare, { "packages/supabase/migrations/003_cron_schedules.sql": CRON_003 });
+    const r = run(["--stage=pair", "--repo-root", bare, "--repo-only"]);
+    expect("pair: пустое репо шагов 2-6 -> exit 1", r.code, 1, r.out);
+    const m = /(\d+) finding\(s\)/.exec(r.out);
+    expect("pair: пустое репо даёт ровно 6 групповых находок", m ? Number(m[1]) : -1, 6, r.out);
+  }
+  const P = FILES_PAIR;
+  const pairRepoMutations = [
+    ["миграция: снят CHECK формы пары (city + префикс b)", { "packages/supabase/migrations/027_local_pairs.sql": P["packages/supabase/migrations/027_local_pairs.sql"].replace("niches_local_pair_shape", "x") }],
+    ["миграция: снят CHECK 8 шаблонов с {город}", { "packages/supabase/migrations/027_local_pairs.sql": P["packages/supabase/migrations/027_local_pairs.sql"].replace("local_verticals_templates_8", "x") }],
+    ["cron 003: weekly-demand берёт все ниши (в т.ч. b-пары)", { "packages/supabase/migrations/003_cron_schedules.sql": CRON_003.replace("WHERE is_active = TRUE", "WHERE TRUE") }],
+    ["shared: порог пары опущен до 1", { "packages/shared/src/pairs/index.ts": P["packages/shared/src/pairs/index.ts"].replace("PAIR_MIN_QUESTIONS = 10", "PAIR_MIN_QUESTIONS = 1") }],
+    ["orders: 202 отдаётся раньше pre-flight пары", { "apps/web/app/api/orders/route.ts": "return NextResponse.json({}, { status: 202 });\n" + P["apps/web/app/api/orders/route.ts"].replace("return NextResponse.json({}, { status: 202 });\n", "") }],
+    ["orders: новая пара создаётся is_active = true", { "apps/web/app/api/orders/route.ts": P["apps/web/app/api/orders/route.ts"].replace("is_active: false", "is_active: true") }],
+    ["orders: заказ пишется раньше pre-flight пары", { "apps/web/app/api/orders/route.ts": "await admin.from(\"package_orders\").insert({});\n" + P["apps/web/app/api/orders/route.ts"].replace("await admin.from(\"package_orders\").insert({});\n", "") }],
+    ["worker: find_gaps ставится и в on_demand (guard снят)", { "apps/worker/src/jobs/collect-demand.ts": P["apps/worker/src/jobs/collect-demand.ts"].replace("if (!onDemand)", "if (true)") }],
+    ["worker: письмо ожидающим не шлётся", { "apps/worker/src/jobs/collect-demand.ts": P["apps/worker/src/jobs/collect-demand.ts"].replace("signInWithOtp", "noop") }],
+    ["UI: экран «готовим замер» удалён", { "apps/web/app/(marketing)/order/audit-start/order-form.tsx": "<select name=\"vertical\" />\n" }],
+    ["health: блок local_pairs удалён", { "apps/web/app/api/health/route.ts": "return NextResponse.json({});\n" }],
+  ];
+  pairRepoMutations.forEach(([label, ov], i) => {
+    const d = join(work, `pair-m${i}`); writeTree(d, { ...FILES_PAIR, ...ov });
+    const r = run(["--stage=pair", "--repo-root", d, "--fixture-dir", pairFxDark]);
+    expect(`pair мутация репо: ${label}`, r.code, 1, r.out);
+  });
+  const pairLiveMutations = [
+    ["health: пара активирована без решения владельца (active = 1)", { "health.json": '{"local_pairs":{"total":1,"active":1,"collecting":0,"filled":1,"empty":0}}' }],
+    ["health: блока local_pairs нет", { "health.json": '{"status":"ok"}' }],
+    ["POST с неизвестной вертикалью создаёт пару (202 вместо 400)", { "orders-post-vertical.json": '{"status":202}' }],
+    ["dark: страница заказа отвечает 200", { "order-page.json": '{"status":200}' }],
+  ];
+  pairLiveMutations.forEach(([label, ov], i) => {
+    const d = join(work, `pair-fx-m${i}`); writeFx(d, { ...PAIR_DARK_FX, ...ov });
+    const r = run(["--stage=pair", "--repo-root", pairGreen, "--fixture-dir", d]);
+    expect(`pair мутация live: ${label}`, r.code, 1, r.out);
+  });
+
+  { const r = run(["--stage=delivery"]); expect("usage: --stage=delivery не поддерживается -> exit 2", r.code, 2, r.out); }
   { const r = run(["--stage=order", "--repo-root", green, "--repo-only"]); expect("--repo-only на зелёном репо", r.code, 0, r.out); }
 } finally {
   rmSync(work, { recursive: true, force: true });

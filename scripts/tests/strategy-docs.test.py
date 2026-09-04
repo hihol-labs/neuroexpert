@@ -140,7 +140,12 @@ expect_red(
 
 expect_red(
     'SCOPE_LOCK откачен на прежнюю задачу',
-    lambda d: patch_text(d, '.itd/SCOPE_LOCK.md', '**G-018**', 'STRAT-003-DRAFT'),
+    # Активный юнит вычисляется из леджера копии (оракул тоже): хардкод id
+    # ломал тест при каждом переводе леджера (регрессия после G-018 -> G-018b).
+    lambda d: patch_text(
+        d, '.itd/SCOPE_LOCK.md',
+        '**%s**' % json.load(open(os.path.join(d, '.itd-memory/GOAL.json')))['currentUnitId'],
+        'STRAT-003-DRAFT'),
 )
 
 expect_red(
