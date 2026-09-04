@@ -84,7 +84,17 @@ export function OrderForm({
             </p>
           )}
           <p>
-            <Link href="/order/audit-start">Указать другой город</Link>
+            {/* Не route-ссылка: в dark /order/audit-start отдаёт 404, а оракул воронки
+                проверяет каждый внутренний href из исходников; сброс состояния — на месте. */}
+            <a
+              href="#order"
+              onClick={(event) => {
+                event.preventDefault();
+                setPair(null);
+              }}
+            >
+              Указать другой город
+            </a>
           </p>
         </div>
       </section>
