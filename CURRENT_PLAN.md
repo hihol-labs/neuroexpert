@@ -58,7 +58,7 @@
 
 **Goal:** один внешний клиент проходит `register → input → pay 7 900 ₽ → report → dashboard/email` без сотрудника.
 
-- [ ] **G-018 / Order:** server-authoritative package registry; authenticated owner; idempotent payment/webhook; unpaid order не запускает job; публичный CTA остаётся dark.
+- [x] **G-018 / Order — VERIFIED 2026-09-04:** server-authoritative package registry; authenticated owner; idempotent payment/webhook; unpaid order не запускает job; публичный CTA остаётся dark. Свидетельство: канарейка через **тестовый магазин ЮKassa** — заказ `a02880f7` → оплата тестовой картой → webhook `payment.succeeded` → `paid` + job `run_audit` с полным payload (обработчик — G-019); оракул `verify-selfserve-path.mjs --stage=order` с прод-сервера exit 0; регрессии preflight/funnel/payment-path exit 0; full-чекер PASSED 7/7; adjudication `receipts/c2a07bc5afe236c3/G-018-adjudication-a1.json`. Публичный checkout **не включён** (`SELF_SERVE_CHECKOUT` dark), реальные деньги не двигались; on-demand пары «вертикаль × город» — юнит G-018b.
 - [ ] **G-019 / Delivery:** fixed artifact; 100% material claims с provenance; owner-only access; visible `failed/retry`; email о готовности.
 - [ ] интегрированный minimum-payment E2E зелёный; checkout включается публично атомарно только после готовности обеих стадий.
 - [ ] не менее 90% отчётов без staff intervention на прогонах приёмки; 0 silent failures.
