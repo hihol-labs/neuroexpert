@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import { getPackage } from "shared";
+import { getPackage, isLocalVerticalId, normalizeCity } from "shared";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/nav";
 import { OrderForm } from "./order-form";
 
 /**
  * /order/audit-start — экран заказа пакета «Аудит Старт» (G-018, решение AF-1 №1):
- * ровно три поля до оплаты — ниша (из БД, не хардкод), город, email.
+ * ровно три поля до оплаты — вертикаль (три локальные вертикали из таблицы
+ * local_verticals, G-018b; свободного ввода ниши нет — спецификация §1), город
+ * (свободное поле), email. Письмо «данные готовы» возвращает сюда с prefill
+ * `?vertical=…&city=…`.
  *
  * Dark launch: пока SELF_SERVE_CHECKOUT !== "live", страница отвечает 404 —
  * публичные CTA ведут на /launch, а канарейка ходит в API с секретным
@@ -18,7 +21,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Заказать «Аудит Старт» — НейроЭксперт",
-  description: "Замер локального спроса по вашей нише и городу: три поля до оплаты, отчёт формирует система.",
+  description: "Замер локального спроса по вашей вертикали и городу: три поля до оплаты, отчёт формирует система.",
   robots: { index: false, follow: false },
 };
 
@@ -30,17 +33,26 @@ function getAdmin() {
   );
 }
 
-export default async function OrderAuditStartPage() {
+type SearchParams = Record<string, string | string[] | undefined>;
+
+function firstParam(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
+export default async function OrderAuditStartPage({ searchParams }: { searchParams?: SearchParams }) {
   if (process.env.SELF_SERVE_CHECKOUT !== "live") notFound();
 
   const pkg = getPackage("audit_start");
   if (!pkg) notFound();
 
-  const { data: niches } = await getAdmin()
-    .from("niches")
-    .select("id, name")
-    .eq("is_active", true)
-    .order("name");
+  const { data: verticals } = await getAdmin()
+    .from("local_verticals")
+    .select("id, name, sort")
+    .order("sort");
+
+  const initialVerticalRaw = firstParam(searchParams?.vertical);
+  const initialVertical = isLocalVerticalId(initialVerticalRaw) ? initialVerticalRaw : "";
+  const initialCity = normalizeCity(firstParam(searchParams?.city)) ?? "";
 
   return (
     <div className="sr-site dm-site">
@@ -48,14 +60,19 @@ export default async function OrderAuditStartPage() {
       <main>
         <section className="dm-hero">
           <p className="sr-eyebrow"><span /> {pkg.title} · {pkg.amountRub.toLocaleString("ru-RU")} ₽</p>
-          <h1>Замер спроса по вашей нише и городу.</h1>
+          <h1>Замер спроса по вашей вертикали и городу.</h1>
           <p>
-            Система сама соберёт вопросы реального спроса, опросит AI-платформы и
-            сформирует отчёт с планом действий. От вас — три поля. Оплата открывается
-            только если замер выполним.
+            Система сама соберёт вопросы реального спроса по вашему городу, опросит
+            AI-платформы и сформирует отчёт с планом действий. От вас — три поля.
+            Оплата открывается только когда данные по городу собраны и замер выполним.
           </p>
         </section>
-        <OrderForm niches={(niches ?? []) as Array<{ id: string; name: string }>} amountRub={pkg.amountRub} />
+        <OrderForm
+          verticals={(verticals ?? []) as Array<{ id: string; name: string }>}
+          amountRub={pkg.amountRub}
+          initialVertical={initialVertical}
+          initialCity={initialCity}
+        />
       </main>
       <MarketingFooter />
     </div>

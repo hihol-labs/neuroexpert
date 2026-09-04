@@ -76,7 +76,7 @@ export async function GET() {
     .select("id", { count: "exact", head: true })
     .eq("status", "published");
 
-  const [{ count: pendingJobs }, { count: failedJobs }, { data: workerJobs }, { data: lastExpandQuery }, authHealth] = await Promise.all([
+  const [{ count: pendingJobs }, { count: failedJobs }, { data: workerJobs }, { data: lastExpandQuery }, authHealth, { data: localPairs }] = await Promise.all([
     supabase.from("jobs").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("jobs").select("id", { count: "exact", head: true }).eq("status", "failed"),
     supabase
@@ -97,7 +97,19 @@ export async function GET() {
       .limit(1)
       .maybeSingle(),
     checkAuthHealth(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+    // G-018b: on-demand пары «вертикаль × город» — оракул стадии pair и канарейка
+    // читают состояние пар отсюда; active > 0 допустим только после решения владельца (§5).
+    supabase.from("niches").select("is_active, demand_status").not("vertical", "is", null),
   ]);
+
+  const pairRows = (localPairs ?? []) as Array<{ is_active: boolean | null; demand_status: string | null }>;
+  const localPairsStats = {
+    total: pairRows.length,
+    active: pairRows.filter((p) => p.is_active === true).length,
+    collecting: pairRows.filter((p) => p.demand_status === "queued" || p.demand_status === "running").length,
+    filled: pairRows.filter((p) => p.demand_status === "filled").length,
+    empty: pairRows.filter((p) => p.demand_status === "empty").length,
+  };
 
   const lastExpandResult = (lastExpandQuery?.result ?? null) as { subqueries?: unknown } | null;
   const lastExpandSubqueries = typeof lastExpandResult?.subqueries === "number" ? lastExpandResult.subqueries : null;
@@ -132,6 +144,7 @@ export async function GET() {
           }
         : null,
     },
+    local_pairs: localPairsStats,
     timestamp: new Date().toISOString(),
   });
 }
