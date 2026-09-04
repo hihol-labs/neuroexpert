@@ -365,6 +365,140 @@ question_id), `service_orders` — ручная лид-форма с опера�
 ненаполненной паре); (б) канарейка оплаты — тестовый магазин ЮKassa, не реальные
 деньги; (в) письмо после оплаты — только ссылка на статус, без шаблонов.
 
+## Юнит G-018b — on-demand пара «вертикаль × город» (план утверждён 2026-09-04)
+
+> Статус: **ACTIVE** (утверждён владельцем 2026-09-04, все шесть решений приняты как рекомендовано), tier high. Task-контракт:
+> `.itd-memory/contracts/G-018b.md`. Входы: спецификация вертикалей v1 (§2, §4, §5, §6),
+> контракт Audit Start v1 §6 «данные раньше денег» (pre-flight уже в `POST /api/orders`),
+> `apps/worker/src/jobs/collect-demand.ts`, cron `003_cron_schedules.sql`.
+> Подход **producer-first**: оракул `--stage=pair` пишется первым шагом и стоит
+> красным с именованными находками; каждый следующий шаг гасит свои находки, и
+> ни один шаг не начинается, пока проверка предыдущего не зелёная.
+
+**Фактура (по коду, 2026-09-04):** `niches` = `id, name UNIQUE, slug UNIQUE, icon,
+is_focus, is_active, seed_keywords TEXT[]` — колонок `city`/`vertical` нет; ниш
+`dental/clinic/autoservice` в БД нет (20 экспертных `a0000000-…`). `POST /api/orders`
+принимает `niche_id` (UUID), отвергает `is_active = false` как 404, pre-flight
+считает `questions` по нише с порогом 1 и отвечает 503 `reason:"questions"`.
+`/order/audit-start` показывает select из всех активных ниш. Worker
+`collect_demand` читает `seed_keywords`, пишет `questions` (UNIQUE `niche_id,
+question_text`) и **всегда** ставит `find_gaps`, который создаёт до 50
+`expand_query` — это и есть хвост очереди из решения по 754. Cron `weekly-demand`
+берёт все `is_active = TRUE`. Письмо статуса в G-018 — `signInWithOtp` (magic-link,
+без шаблонов). Транслит slug — `slugifyLatin` (shared) и `transliterate_cyrillic` (019).
+
+**Оракул `node scripts/verify-selfserve-path.mjs --stage=pair` (контракт до кода):**
+
+- Слой РЕПО (`--repo-only`, без сети): миграция 027 (`local_verticals` с 3 строками
+  по 8 шаблонов, `niches.city/vertical/demand_status`, `pair_requests`, CHECK «пара
+  ⇒ city и id с префиксом b»); shared `pairs/*` (детерминированный id, slug,
+  подстановка `{город}`, порог пары); `POST /api/orders` — ветка `vertical` до
+  платежа, ответ 202 `collecting`, ни одной записи `package_orders` до pre-flight;
+  worker — режим `on_demand` без `find_gaps` и уведомление `pair_requests`;
+  UI — select вертикалей и экран `data-pair-status="collecting"`; cron 003 не
+  изменён (`WHERE is_active = TRUE`).
+- Слой ЖИВОЙ (`--base-url`, штатно с прод-сервера, `--checkout dark`): `POST
+  /api/orders` пустым JSON → 404 (dark) / 400 (live), с неизвестной вертикалью
+  под канареечным заголовком → 400, `/api/health` содержит блок `local_pairs`
+  (`total`, `active`, `collecting`, `filled`, `empty`) и `local_pairs.active = 0`,
+  пока владелец не активировал пары после канарейки; `/order/audit-start` → 404 в dark.
+- Мутационный тест `scripts/tests/selfserve-path.test.mjs`: +8 репо-регрессий
+  (снят CHECK, шаблон без `{город}`, worker ставит `find_gaps` в on_demand,
+  pre-flight пары читает порог 1, cron берёт `b`-пары, UI без экрана collecting,
+  202 до pre-flight, `is_active = true` у новой пары) + 3 живых фикстуры.
+- Граница: оракул не создаёт пары и заказы и не дёргает провайдеров спроса;
+  сквозная канарейка (шаг 7) читается из health и БД.
+
+**Шаги (каждый — со своей верификацией, зелёной до следующего):**
+
+1. **Оракул first.** `--stage=pair` в `verify-selfserve-path.mjs` (репо + живой слой,
+   фикстуры) и расширение мутационного теста. Проверка: `--stage=pair --repo-only`
+   на HEAD выходит **1** ровно с 6 именованными находками (миграция, shared, API,
+   worker, UI, health); usage-контракт exit 2; стадия `order` не регрессирует
+   (`--stage=order --repo-only` exit 0).
+2. **Миграция 027.** `local_verticals(id TEXT PK ∈ dental|clinic|autoservice, name,
+   seed_keyword_templates TEXT[8] CHECK cardinality = 8 и каждый содержит '{город}',
+   sort)` + seed 3 × 8 из §4 (данные, не код); `niches.city TEXT`,
+   `niches.vertical TEXT REFERENCES local_verticals`, `niches.demand_status TEXT
+   CHECK (queued|running|filled|empty)`, `niches.demand_collected_at`; CHECK
+   `vertical IS NULL OR (city IS NOT NULL AND id::text LIKE 'b%')`; таблица
+   `pair_requests(niche_id, email, status pending|notified, UNIQUE(niche_id, email))`,
+   RLS: только service_role. Cron 003 **не трогаем**: пары рождаются с
+   `is_active = false` и в `weekly-demand` не попадают по построению. Проверка:
+   001→027 на ephemeral postgres; SQL-инварианты (пара без city — ошибка; 24
+   шаблона; запрос cron не видит `b`-пары; `a`-ниши без изменений).
+3. **shared `pairs/`.** Чистые функции: `normalizeCity` («екатеринбург » →
+   «Екатеринбург»), `buildPairSlug` = `<vertical>-<slugifyLatin(city)>`,
+   `buildPairId` = UUID с первым hex `b` и остатком из md5(`pair:<slug>`)
+   (детерминирован между окружениями, одинаковые написания города дают одну пару),
+   `buildPairName`, `expandSeedTemplates(templates, city)` (8 → 8, без остатка
+   `{город}`), `PAIR_MIN_QUESTIONS` = `questionCount` пакета (10) и
+   `decidePairPreflight` (`ready | collecting | empty`); `decidePreflight` G-018 не
+   меняется. Проверка: `pnpm --filter shared test` (≥ 15 новых кейсов, 73 старых
+   зелёные).
+4. **API.** `POST /api/orders`: новая ветка `vertical + city + email` (ветка
+   `niche_id` остаётся для экспертных ниш, канарейки и регрессий G-018). Порядок:
+   валидация → ensure-pair (insert `ON CONFLICT (slug)` → select; `is_active =
+   false`) → счёт `questions` по паре → при `≥ 10` — существующий путь к платежу
+   (для пар `is_active` не требуется) → иначе upsert `pair_requests(email)`, при
+   `demand_status IS NULL` — job `collect_demand {niche_id, mode:"on_demand"}`
+   priority 2 и `demand_status = 'queued'`, ответ **202** `{status:"collecting"}`;
+   `empty` → 202 `{status:"empty"}` с честным текстом, без повторной постановки.
+   Ни одной записи `package_orders` и ни одного платежа до `ready`. `/api/health`:
+   блок `local_pairs`. Проверка: `pnpm build` web; оракул `--repo-only` гасит
+   находки API/health; фикстурный живой слой (`--fixture-dir`) зелёный.
+5. **Worker.** `collect-demand.ts`, режим `on_demand`: `demand_status = 'running'`
+   на старте; после upsert — `filled`/`empty` + `demand_collected_at`;
+   **`find_gaps` не ставится** (отчёт Audit Start читает `questions` и пробует
+   платформы сам, разрывы ему не нужны — хвост `expand_query` исключён по
+   построению); каждому `pair_requests.pending` — magic-link через
+   `signInWithOtp` (`shouldCreateUser: true`, redirect на
+   `/order/audit-start?vertical=…&city=…`), статус `notified`; при `empty` письмо
+   не шлётся. Cron-режим (без `mode`) не меняется. Проверка: логика решения
+   вынесена в shared (`pairs/demand.ts`, тесты); `pnpm build` worker; оракул гасит
+   находку worker.
+6. **UI dark.** `/order/audit-start`: select трёх вертикалей из `local_verticals`
+   вместо списка экспертных ниш, поле город, email; ответ 202 → экран «Готовим
+   замер по {город} — письмо придёт на {email}» (`data-pair-status`); prefill из
+   query для возврата по письму; страница по-прежнему 404 без `SELF_SERVE_CHECKOUT
+   = live`. Проверка: `pnpm build`; оракул `--repo-only` exit 0 (все 6 находок
+   погашены); `--stage=order --repo-only` exit 0.
+7. **Выкатка dark + канарейка + закрытие.** Миграция 027 на проде (бэкап, затем
+   `NOTIFY pgrst, 'reload schema'`), web и worker пересозданы. Канарейка через
+   канареечный заголовок: `POST /api/orders {vertical:"dental", city:<тестовый
+   город>, email: владелец}` → 202 `collecting` → job `collect_demand on_demand`
+   → `questions ≥ 10` → письмо получено → повторный POST → `pending`-заказ с
+   `confirmation_url` тестового магазина (оплата не требуется: путь оплаты
+   доказан G-018). Оракул `--stage=pair --base-url https://neuroexpertise.ru` с
+   прод-сервера exit 0; регрессии контракта (order/preflight/funnel/payment-path/
+   стратегия) exit 0; петля high (machine → full-чекер иной модели →
+   adjudication) → `verified` скриптом ОТК. Прод только одиночными короткими
+   SSH-командами (VPN MantaRay).
+
+**Решения владельца (нужны до кода):**
+
+- (а) On-demand сбор **без** цепочки `find_gaps → expand_query` (режим `on_demand`);
+  включение пары в еженедельный cron (`is_active = true`) — отдельная ручная
+  операция после зелёной канарейки по §5, в юнит не входит. Рекомендую: да.
+- (б) Порог открытия оплаты для пары — **10** вопросов (= `questionCount` пакета),
+  а не 1; экспертные ниши остаются на пороге 1. Рекомендую: 10.
+- (в) Форма заказа показывает **три вертикали** вместо 20 экспертных ниш (§1:
+  свободного ввода ниши нет); `niche_id` в API сохраняется для регрессий.
+- (г) Письмо «данные готовы» = magic-link `signInWithOtp` с созданием аккаунта по
+  email (как в G-018: письмо — только ссылка).
+- (д) ID пары — префикс `b` + хеш slug, а не счётчик `b0000000-…-NNNN`: множество
+  пар открытое, детерминизм между окружениями важнее читаемости.
+- (е) Город канарейки — не из прогретых пар фазы C (предложение: Тюмень).
+
+**Риски:** ключи источников спроса (Wordstat/XMLRIVER, SerpAPI, Кью) могут дать 0
+по малому городу — путь `empty` честный, но юнит закрывается только при `filled`;
+перед шагом 7 проверить провайдеры одной пробной парой. OTP-лимиты Supabase (1
+письмо / 60 с на адрес) — для канарейки достаточно.
+
+**Исключения:** обработчик `run_audit`, авто-возврат, degraded mode — G-019; цены,
+публичный checkout (`SELF_SERVE_CHECKOUT` dark), cron 003, экспертные ниши и
+бесплатный сканер `/audit` (сетка экспертных ниш — тикет в BACKLOG) не трогаются.
+
 ## Сопутствующее (не юниты, но блокируют выше)
 
 - **Остаток Спринта 0 п.0.1:** рестарт `supabase-auth` → живая проверка magic
