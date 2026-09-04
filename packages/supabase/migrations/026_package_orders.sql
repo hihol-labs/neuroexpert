@@ -23,6 +23,9 @@ CREATE TABLE IF NOT EXISTS public.package_orders (
   confirmation_url    TEXT,
   job_id              UUID UNIQUE REFERENCES public.jobs(id) ON DELETE SET NULL,
   failure_reason      TEXT,
+  -- Дозаполнение на экране ожидания (решение AF-1 №2): сайт, конкуренты,
+  -- заметки. Читается исполнением отчёта (G-019); ключи валидирует API.
+  details             JSONB NOT NULL DEFAULT '{}'::jsonb,
   paid_at             TIMESTAMPTZ,
   refunded_at         TIMESTAMPTZ,
   created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),

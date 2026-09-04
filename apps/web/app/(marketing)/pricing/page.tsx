@@ -3,6 +3,7 @@ import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
 import { PricingContent } from "./pricing-content";
 import { generateServiceSchema } from "@/lib/schema-org";
 import { OfferBlock } from "@/components/marketing/offer";
+import { auditStartHref } from "@/lib/checkout";
 
 const TITLE = "Тарифы НейроЭксперт — Local Sales OS, заявки и продажи";
 const DESCRIPTION =
@@ -52,7 +53,7 @@ export default function PricingPage({ searchParams }: { searchParams?: { for?: s
       ))}
 
       <MarketingHeader />
-      <PricingContent initialAudience={initialAudience}>
+      <PricingContent initialAudience={initialAudience} auditStartHref={auditStartHref()}>
         <OfferBlock
           artifact="Аудит, запуск или сопровождение — по выбранному пакету"
           price="7 900 ₽ аудит · 31 100 ₽ запуск · 29 000 ₽/мес сопровождение"

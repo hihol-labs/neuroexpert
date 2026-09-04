@@ -177,10 +177,12 @@ const EXPERT_COMPARISON = [
  * переход скринридера к основному содержимому его пропускал (находка ревью,
  * раунд 17). На остальных восьми маршрутах <main> живёт в самой странице.
  */
-export function PricingContent({ children, initialAudience = "business" }: {
+export function PricingContent({ children, initialAudience = "business", auditStartHref }: {
   children?: React.ReactNode;
   /** Аудитория из query-параметра `?for=`, вычисленная на сервере. */
   initialAudience?: Audience;
+  /** Ссылка CTA «Аудит Старт» по серверному флагу checkout (G-018, dark launch). */
+  auditStartHref?: string;
 }) {
   const [audience, setAudience] = useState<Audience>(initialAudience);
 
@@ -236,7 +238,7 @@ export function PricingContent({ children, initialAudience = "business" }: {
       </section>
 
       {audience === "business" ? (
-        <BusinessSelector stageIndex={stageIndex} offerIndex={offerIndex} onStage={selectStage} onOffer={setOfferIndex} />
+        <BusinessSelector stageIndex={stageIndex} offerIndex={offerIndex} onStage={selectStage} onOffer={setOfferIndex} auditStartHref={auditStartHref} />
       ) : (
         <ExpertSelector index={expertIndex} onSelect={setExpertIndex} />
       )}
@@ -253,9 +255,11 @@ export function PricingContent({ children, initialAudience = "business" }: {
   );
 }
 
-function BusinessSelector({ stageIndex, offerIndex, onStage, onOffer }: { stageIndex: number; offerIndex: number; onStage: (index: number) => void; onOffer: (index: number) => void }) {
+function BusinessSelector({ stageIndex, offerIndex, onStage, onOffer, auditStartHref }: { stageIndex: number; offerIndex: number; onStage: (index: number) => void; onOffer: (index: number) => void; auditStartHref?: string }) {
   const stage = BUSINESS_STAGES[stageIndex];
   const offer = stage.offers[offerIndex];
+  // Единственный автономный SKU: его CTA переключается серверным флагом (G-018).
+  const offerHref = offer.href === "/launch?package=audit_start" && auditStartHref ? auditStartHref : offer.href;
 
   return (
     <>
@@ -289,7 +293,7 @@ function BusinessSelector({ stageIndex, offerIndex, onStage, onOffer }: { stageI
             <div className="pr-price"><strong>{offer.price}</strong><span>{offer.period}</span></div>
             <p>{offer.fit}</p>
             <ul>{offer.scope.map((item) => <li key={item}><Check aria-hidden="true" />{item}</li>)}</ul>
-            <Link href={offer.href}>Выбрать этот контур <ArrowRight aria-hidden="true" /></Link>
+            <Link href={offerHref}>Выбрать этот контур <ArrowRight aria-hidden="true" /></Link>
           </article>
         </div>
       </section>

@@ -29,6 +29,10 @@ const PUBLIC_PREFIXES = [
   "/track",
   "/compare",
   "/api",
+  // Экран заказа пакета публичен (три поля до оплаты, email = аккаунт).
+  // Именно "/order/" со слэшем: префикс "/order" покрыл бы и "/orders/[id]" —
+  // страницу статуса, которая обязана оставаться за auth (owner-only).
+  "/order/",
   "/auth",
   "/_next",
   "/favicon.ico",

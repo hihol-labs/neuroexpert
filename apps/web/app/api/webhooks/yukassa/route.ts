@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { mayEnqueueAuditJob, parsePackageMetadata, transition, type PackageOrderStatus } from "shared";
 import { createClient } from "@supabase/supabase-js";
 
 const WEBHOOK_SECRET = process.env.YUKASSA_WEBHOOK_SECRET || "";
@@ -58,6 +59,132 @@ function getAdmin() {
   );
 }
 
+type Admin = ReturnType<typeof getAdmin>;
+
+function appUrl(): string {
+  return (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "https://neuroexpertise.ru").replace(/\/$/, "");
+}
+
+/**
+ * Пакетный заказ оплачен (G-018). Инварианты: статус меняется только через
+ * машину состояний; job аудита ставится ровно один раз (guard `job_id IS NULL`
+ * на UPDATE — параллельный повтор webhook не создаст второй job); письмо со
+ * ссылкой на статус уходит сразу после оплаты (решение AF-1 №2) как magic link
+ * — без отдельного почтового транспорта.
+ */
+async function handlePackagePaymentSucceeded(
+  admin: Admin,
+  orderId: string,
+  paymentId: string,
+  amount: { value: string; currency: string },
+): Promise<void> {
+  const { data: order } = await admin
+    .from("package_orders")
+    .select("id, owner_id, email, package, amount_rub, niche_id, city, status, job_id, yukassa_payment_id")
+    .eq("id", orderId)
+    .maybeSingle();
+  if (!order) {
+    console.error(`[yukassa] package order ${orderId} not found for payment ${paymentId}`);
+    return;
+  }
+  if (order.yukassa_payment_id && order.yukassa_payment_id !== paymentId) {
+    console.error(`[yukassa] payment ${paymentId} does not match order ${orderId} (${order.yukassa_payment_id})`);
+    return;
+  }
+  const paidRub = Math.round(parseFloat(amount.value));
+  if (paidRub !== order.amount_rub || amount.currency !== "RUB") {
+    console.error(`[yukassa] amount mismatch for order ${orderId}: got ${amount.value} ${amount.currency}, expected ${order.amount_rub} RUB`);
+    await admin
+      .from("package_orders")
+      .update({ status: "failed", failure_reason: `amount mismatch: ${amount.value} ${amount.currency}`, yukassa_payment_id: paymentId })
+      .eq("id", orderId)
+      .eq("status", "pending");
+    return;
+  }
+
+  const t = transition(order.status as PackageOrderStatus, "payment.succeeded");
+  if (!t.ok) {
+    console.error(`[yukassa] order ${orderId}: ${t.error}`);
+    return;
+  }
+  if (t.changed) {
+    await admin
+      .from("package_orders")
+      .update({ status: "paid", paid_at: new Date().toISOString(), yukassa_payment_id: paymentId })
+      .eq("id", orderId)
+      .eq("status", "pending");
+  }
+
+  if (mayEnqueueAuditJob("paid", order.job_id as string | null)) {
+    const { data: job } = await admin
+      .from("jobs")
+      .insert({
+        type: "run_audit",
+        priority: 1,
+        payload: { order_id: orderId, package: order.package, niche_id: order.niche_id, city: order.city, owner_id: order.owner_id },
+      })
+      .select("id")
+      .single();
+    if (job?.id) {
+      const { data: claimed } = await admin
+        .from("package_orders")
+        .update({ job_id: job.id })
+        .eq("id", orderId)
+        .is("job_id", null)
+        .select("id");
+      if (!claimed || claimed.length === 0) {
+        // Параллельный повтор webhook успел раньше — наш job лишний.
+        await admin.from("jobs").delete().eq("id", job.id);
+      }
+    }
+  }
+
+  if (t.changed) {
+    // Письмо со ссылкой на статус = magic link на /orders/{id}; отправляет
+    // Supabase Auth через сконфигурированный SMTP. Ошибка отправки не откатывает
+    // оплату — заказ уже paid, ссылка доступна и по возврату с кассы.
+    try {
+      const { createClient } = await import("@supabase/supabase-js");
+      const anon = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+      const { error } = await anon.auth.signInWithOtp({
+        email: order.email as string,
+        options: { emailRedirectTo: `${appUrl()}/auth/callback?next=/orders/${orderId}`, shouldCreateUser: false },
+      });
+      if (error) console.error(`[yukassa] status email for order ${orderId} failed:`, error.message);
+    } catch (err) {
+      console.error(`[yukassa] status email for order ${orderId} threw:`, err instanceof Error ? err.message : err);
+    }
+  }
+}
+
+/** payment.canceled / refund.succeeded для пакетного заказа; true — если заказ найден и обработан. */
+async function handlePackageTerminalEvent(
+  admin: Admin,
+  paymentId: string,
+  event: "payment.canceled" | "refund.succeeded",
+): Promise<boolean> {
+  const { data: order } = await admin
+    .from("package_orders")
+    .select("id, status")
+    .eq("yukassa_payment_id", paymentId)
+    .maybeSingle();
+  if (!order) return false;
+  const t = transition(order.status as PackageOrderStatus, event);
+  if (!t.ok) {
+    console.error(`[yukassa] order ${order.id}: ${t.error}`);
+    return true;
+  }
+  if (t.changed) {
+    const patch = event === "refund.succeeded"
+      ? { status: "refunded", refunded_at: new Date().toISOString() }
+      : { status: "failed", failure_reason: "payment.canceled" };
+    await admin.from("package_orders").update(patch).eq("id", order.id).eq("status", order.status);
+  }
+  return true;
+}
+
 export async function POST(request: NextRequest) {
   // 1) IP-проверка. Работает поверх Traefik (он передаёт X-Forwarded-For).
   const allowlist = allowlistedIps();
@@ -100,6 +227,14 @@ export async function POST(request: NextRequest) {
       const paymentId = object.id as string;
       const amount = object.amount as { value: string; currency: string };
       const metadata = (object.metadata ?? {}) as Record<string, string>;
+
+      // Пакетный заказ (G-018): отдельный контур, expert_id не нужен.
+      const packageMeta = parsePackageMetadata(metadata);
+      if (packageMeta) {
+        await handlePackagePaymentSucceeded(admin, packageMeta.order_id, paymentId, amount);
+        return NextResponse.json({ ok: true });
+      }
+
       const expertId = metadata.expert_id;
       const paymentType = metadata.type || "subscription"; // audit | subscription
 
@@ -147,13 +282,20 @@ export async function POST(request: NextRequest) {
     }
 
     if (event === "payment.canceled" || event === "refund.succeeded") {
-      const paymentId = object.id as string;
+      // refund.succeeded несёт объект возврата: платёж — в payment_id; для
+      // payment.canceled объект — сам платёж.
+      const paymentId = (event === "refund.succeeded"
+        ? (object.payment_id as string | undefined) ?? (object.id as string)
+        : (object.id as string));
       const status = event === "refund.succeeded" ? "refunded" : "failed";
 
-      await admin
-        .from("payments")
-        .update({ status })
-        .eq("yukassa_payment_id", paymentId);
+      const handledPackage = await handlePackageTerminalEvent(admin, paymentId, event);
+      if (!handledPackage) {
+        await admin
+          .from("payments")
+          .update({ status })
+          .eq("yukassa_payment_id", paymentId);
+      }
     }
 
     // Catch-all: события которые мы не обрабатываем (payment.waiting_for_capture,

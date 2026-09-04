@@ -639,6 +639,63 @@ export interface Database {
           created_at?: string;
         };
       };
+      package_orders: {
+        Row: {
+          id: string;
+          owner_id: string;
+          package: string;
+          amount_rub: number;
+          niche_id: string;
+          city: string;
+          email: string;
+          status: string;
+          yukassa_payment_id: string | null;
+          confirmation_url: string | null;
+          job_id: string | null;
+          failure_reason: string | null;
+          details: Json;
+          paid_at: string | null;
+          refunded_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          owner_id: string;
+          package: string;
+          amount_rub: number;
+          niche_id: string;
+          city: string;
+          email: string;
+          status?: string;
+          yukassa_payment_id?: string | null;
+          confirmation_url?: string | null;
+          job_id?: string | null;
+          failure_reason?: string | null;
+          paid_at?: string | null;
+          refunded_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          owner_id?: string;
+          package?: string;
+          amount_rub?: number;
+          niche_id?: string;
+          city?: string;
+          email?: string;
+          status?: string;
+          yukassa_payment_id?: string | null;
+          confirmation_url?: string | null;
+          job_id?: string | null;
+          failure_reason?: string | null;
+          paid_at?: string | null;
+          refunded_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       jobs: {
         Row: {
           id: string;
