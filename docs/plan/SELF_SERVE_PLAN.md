@@ -330,6 +330,41 @@ on-demand пары по мере спроса.
 
 ---
 
+## Юнит G-018 — автономный заказ и оплата Audit Start (план утверждён 2026-09-03)
+
+> Статус: **ACTIVE**, tier high. Task-контракт: `.itd-memory/contracts/G-018.md`.
+> Входы: контракт Audit Start v1 (§1, §4, §6), спецификация вертикалей v1, B-024,
+> QUEUE-2/3, снятие хардкода `NICHE_NAMES`.
+
+**Фактура (по коду, 2026-09-03):** `orders` — заказы экспертам (expert_id +
+question_id), `service_orders` — ручная лид-форма с операторским lifecycle,
+`payments.expert_id NOT NULL`, webhook ЮKassa знает только expert-платежи и
+идемпотентен по `yukassa_payment_id`, в CHECK `jobs.type` нет типа аудита,
+профиль создаётся триггером на любого auth-пользователя, magic-link есть.
+
+**Шаги (каждый — со своей верификацией, зелёной до следующего):**
+
+1. Миграция 026: `package_orders` + `run_audit` в `jobs.type`. Отдельная таблица —
+   ручной и автономный контуры не смешивают статусы; `payments` не трогаем.
+2. shared: реестр пакетов (server-authoritative), машина состояний, чистый
+   pre-flight (§6), нормализация metadata + тесты.
+3. API: `POST /api/orders` → pre-flight → пользователь по email → заказ pending →
+   платёж ЮKassa (Idempotence-Key = order_id) → `confirmation_url`;
+   `GET /api/orders/[id]` owner-only; webhook: `type:"package"` → paid + `run_audit`
+   идемпотентно + письмо со ссылкой; `refund.succeeded` → refunded. Неоплаченный
+   заказ job не создаёт.
+4. UI dark: `/order/audit-start`, `/orders/[id]`; CTA `/pricing`, `/audit` — на
+   `/launch`, пока `SELF_SERVE_CHECKOUT != live` (атомарное включение в AF-1).
+5. `NICHE_NAMES` → чтение из БД.
+6. Оферта `/terms` §5 — автоматический возврат (B-024).
+7. Оракул `verify-selfserve-path.mjs --stage=order` + мутационный тест; деплой
+   dark; канарейка заказа через тестовый магазин ЮKassa.
+
+**Три решения владельца (2026-09-03):** (а) on-demand пара «вертикаль × город» —
+отдельный юнит **G-018b** после G-018 (в G-018 pre-flight честно отказывает по
+ненаполненной паре); (б) канарейка оплаты — тестовый магазин ЮKassa, не реальные
+деньги; (в) письмо после оплаты — только ссылка на статус, без шаблонов.
+
 ## Сопутствующее (не юниты, но блокируют выше)
 
 - **Остаток Спринта 0 п.0.1:** рестарт `supabase-auth` → живая проверка magic
