@@ -125,6 +125,37 @@ test("buildPairReturnPath: prefill формы для возврата по пи�
   assert.equal(buildPairReturnPath("dental", "Тюмень"), "/order/audit-start?vertical=dental&city=%D0%A2%D1%8E%D0%BC%D0%B5%D0%BD%D1%8C");
 });
 
+test("pairKeywordStems: город и generic-слова исключены, основы по 5 букв", () => {
+  const { pairKeywordStems } = require("../dist/pairs/index.js");
+  assert.deepEqual(pairKeywordStems("имплантация зубов Тюмень", "Тюмень"), ["импла", "зубов"]);
+  assert.deepEqual(pairKeywordStems("виниры цена Тюмень", "Тюмень"), ["винир"]);
+  assert.deepEqual(pairKeywordStems("сдать анализы Нижний Новгород", "Нижний Новгород"), ["анали"]);
+  assert.deepEqual(pairKeywordStems("узи платно Тюмень", "Тюмень"), ["узи"]);
+  assert.deepEqual(pairKeywordStems("вызов врача на дом Тюмень", "Тюмень"), ["врача"]);
+});
+
+test("isRelevantPairPhrase: короткий термин «узи» и все 24 шаблона §4 дают непустые основы", () => {
+  const { isRelevantPairPhrase, pairKeywordStems } = require("../dist/pairs/index.js");
+  assert.ok(isRelevantPairPhrase("узи тюмень платно", "узи платно Тюмень", "Тюмень"));
+  const templates = [
+    "стоматология", "имплантация зубов", "виниры цена", "детский стоматолог", "протезирование зубов", "брекеты цена", "удаление зуба мудрости", "лечение кариеса цена",
+    "частная клиника", "платный терапевт", "узи платно", "сдать анализы", "гинеколог платно", "кардиолог приём", "медосмотр для работы", "вызов врача на дом",
+    "автосервис", "ремонт двигателя", "замена масла", "шиномонтаж", "диагностика автомобиля", "кузовной ремонт", "ремонт ходовой", "автоэлектрик",
+  ];
+  for (const t of templates) assert.ok(pairKeywordStems(`${t} Тюмень`, "Тюмень").length > 0, t);
+});
+
+test("isRelevantPairPhrase: фразы спроса с вертикальным термином принимаются, мусор с одним городом — нет", () => {
+  const { isRelevantPairPhrase } = require("../dist/pairs/index.js");
+  assert.ok(isRelevantPairPhrase("стоматология тюмень цены", "стоматология Тюмень", "Тюмень"));
+  assert.ok(isRelevantPairPhrase("имплантация зубов тюмень под ключ", "имплантация зубов Тюмень", "Тюмень"));
+  assert.ok(isRelevantPairPhrase("сколько стоит вылечить кариес", "лечение кариеса цена Тюмень", "Тюмень"));
+  assert.ok(isRelevantPairPhrase("стоматолог детский тюмень", "детский стоматолог Тюмень", "Тюмень"));
+  assert.equal(isRelevantPairPhrase("сколько стоит проезд в тюмени", "стоматология Тюмень", "Тюмень"), false);
+  assert.equal(isRelevantPairPhrase("мфк тюмень", "стоматология Тюмень", "Тюмень"), false);
+  assert.equal(isRelevantPairPhrase("цена на бензин тюмень", "виниры цена Тюмень", "Тюмень"), false);
+});
+
 test("isPairDemandStatus: перечень как в миграции 027", () => {
   for (const s of ["queued", "running", "filled", "empty"]) assert.ok(isPairDemandStatus(s));
   assert.equal(isPairDemandStatus("done"), false);

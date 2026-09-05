@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { buildPairReturnPath, decideOnDemandOutcome, isLocalVerticalId } from "shared";
+import { buildPairReturnPath, decideOnDemandOutcome, isLocalVerticalId, isRelevantPairPhrase } from "shared";
 import { supabase } from "../supabase.js";
 import { fetchWordstat } from "../services/wordstat.js";
 import { fetchPAA } from "../services/serpapi.js";
@@ -27,6 +27,9 @@ const WORDSTAT_REQUEST_DELAY_MS = Number(
   process.env.WORDSTAT_REQUEST_DELAY_MS || 250,
 );
 const OTP_SEND_DELAY_MS = Number(process.env.PAIR_NOTIFY_DELAY_MS || 1500);
+// G-018b (решение 2026-09-05): спрос локальной пары — фразы Wordstat без вопросных
+// слов, порог частотности ниже экспертного (город меньше страны).
+const PAIR_WORDSTAT_MIN_VOLUME = Number(process.env.PAIR_WORDSTAT_MIN_VOLUME || 300);
 
 function buildWordstatQueries(keyword: string): string[] {
   const normalized = keyword.trim();
@@ -181,11 +184,17 @@ export async function handleCollectDemand(payload: Record<string, unknown>): Pro
     };
 
     for (const keyword of keywords) {
-      // Wordstat
-      for (const wordstatQuery of buildWordstatQueries(keyword)) {
+      // Wordstat. Пара (on_demand): только базовый ключ, фразы спроса без
+      // вопросных слов, релевантность по вертикальному термину — вопросная
+      // форма («как стоматология Тюмень») в Wordstat пуста (канарейка 2026-09-05).
+      const wordstatQueries = onDemand ? [keyword] : buildWordstatQueries(keyword);
+      for (const wordstatQuery of wordstatQueries) {
         try {
-          const results = await fetchWordstat(wordstatQuery);
+          const results = onDemand
+            ? await fetchWordstat(wordstatQuery, { questionsOnly: false, minVolume: PAIR_WORDSTAT_MIN_VOLUME })
+            : await fetchWordstat(wordstatQuery);
           for (const r of results) {
+            if (onDemand && pairCity && !isRelevantPairPhrase(r.query, keyword, pairCity)) continue;
             rememberQuestion(r.query, "wordstat", r.volume);
           }
         } catch (err) {

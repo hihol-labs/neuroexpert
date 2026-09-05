@@ -158,6 +158,48 @@ export function decideOnDemandOutcome(input: { mode: CollectDemandMode; question
   return { demandStatus: filled ? "filled" : "empty", notify: filled, enqueueFindGaps: false };
 }
 
+/** Слова seed-ключа, не несущие вертикального смысла (не считаются термином). */
+const PAIR_GENERIC_WORDS = new Set([
+  "цена", "цены", "стоимость", "платно", "платный", "приём", "прием", "вызов", "дом",
+  "для", "работы", "сдать", "услуги", "недорого", "рядом", "адрес", "отзывы",
+]);
+export const PAIR_STEM_LENGTH = 5;
+
+/**
+ * Основы значимых слов seed-ключа пары (без города и generic-слов):
+ * «имплантация зубов Тюмень» → ["импла", "зубов"]. Основа = первые 5 букв
+ * в нижнем регистре, чтобы ловить словоформы («стоматолог»/«стоматология»).
+ */
+export function pairKeywordStems(keyword: string, city: string): string[] {
+  const cityWords = new Set(
+    (normalizeCity(city) ?? city).toLowerCase().split(/[\s-]+/).filter(Boolean),
+  );
+  return Array.from(
+    new Set(
+      keyword
+        .toLowerCase()
+        .replace(/ё/g, "е")
+        .split(/[\s-]+/)
+        // ≥ 3 букв: «узи» — полноценный термин вертикали (шаблон «узи платно {город}»).
+        .filter((w) => w.length >= 3 && !cityWords.has(w) && !PAIR_GENERIC_WORDS.has(w))
+        .map((w) => w.slice(0, PAIR_STEM_LENGTH)),
+    ),
+  );
+}
+
+/**
+ * Релевантность фразы спроса Wordstat для пары (решение владельца 2026-09-05):
+ * фраза принимается, если содержит основу хотя бы одного вертикального термина
+ * seed-ключа. Город не обязателен (Wordstat уже отдаёт региональную выдачу),
+ * но один город без термина («сколько стоит проезд в тюмени») — мусор.
+ */
+export function isRelevantPairPhrase(phrase: string, keyword: string, city: string): boolean {
+  const stems = pairKeywordStems(keyword, city);
+  if (stems.length === 0) return false;
+  const words = phrase.toLowerCase().replace(/ё/g, "е").split(/[\s-]+/).filter(Boolean);
+  return words.some((w) => stems.some((stem) => w.startsWith(stem)));
+}
+
 /** Путь возврата по письму «данные готовы»: форма с prefill вертикали и города. */
 export function buildPairReturnPath(vertical: LocalVerticalId, city: string): string {
   const params = new URLSearchParams({ vertical, city });

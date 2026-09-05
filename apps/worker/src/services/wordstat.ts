@@ -38,7 +38,20 @@ interface XmlRiverWordstatResponse {
   };
 }
 
-export async function fetchWordstat(keyword: string): Promise<WordstatResult[]> {
+export interface WordstatOptions {
+  /** Оставлять только вопросоподобные фразы (по умолчанию — да, режим экспертных ниш). */
+  questionsOnly?: boolean;
+  /** Порог частотности; по умолчанию WORDSTAT_MIN_VOLUME. */
+  minVolume?: number;
+}
+
+/**
+ * G-018b (решение владельца 2026-09-05): для локальных пар «вертикаль × город»
+ * спрос в Wordstat живёт в форме фраз без вопросных слов («имплантация зубов
+ * тюмень»), поэтому on_demand-сбор вызывает с { questionsOnly: false } и
+ * фильтрует релевантность сам (shared pairs/isRelevantPairPhrase).
+ */
+export async function fetchWordstat(keyword: string, options: WordstatOptions = {}): Promise<WordstatResult[]> {
   if (!XMLRIVER_USER || !XMLRIVER_KEY) {
     console.warn("[wordstat] XMLRIVER_USER/KEY not set, returning empty");
     return [];
@@ -62,18 +75,18 @@ export async function fetchWordstat(keyword: string): Promise<WordstatResult[]> 
   }
 
   const body = await res.text();
-  return parseWordstatBody(body);
+  return parseWordstatBody(body, options);
 }
 
-function parseWordstatBody(body: string): WordstatResult[] {
+function parseWordstatBody(body: string, options: WordstatOptions = {}): WordstatResult[] {
   try {
-    return parseWordstatJson(JSON.parse(body) as XmlRiverWordstatResponse);
+    return parseWordstatJson(JSON.parse(body) as XmlRiverWordstatResponse, options);
   } catch {
-    return parseWordstatXml(body);
+    return parseWordstatXml(body, options);
   }
 }
 
-function parseWordstatJson(payload: XmlRiverWordstatResponse): WordstatResult[] {
+function parseWordstatJson(payload: XmlRiverWordstatResponse, options: WordstatOptions = {}): WordstatResult[] {
   const items = [
     ...(payload.popular ?? []),
     ...(payload.associations ?? []),
@@ -92,10 +105,11 @@ function parseWordstatJson(payload: XmlRiverWordstatResponse): WordstatResult[] 
         query: String(item.phrase || item.text).trim().toLowerCase(),
         volume: parseWordstatNumber(item.number ?? item.value ?? 0),
       })),
+    options,
   );
 }
 
-function parseWordstatXml(xml: string): WordstatResult[] {
+function parseWordstatXml(xml: string, options: WordstatOptions = {}): WordstatResult[] {
   const results: WordstatResult[] = [];
 
   const keywordPattern =
@@ -118,16 +132,18 @@ function parseWordstatXml(xml: string): WordstatResult[] {
     }
   }
 
-  return normalizeResults(results);
+  return normalizeResults(results, options);
 }
 
-function normalizeResults(results: WordstatResult[]): WordstatResult[] {
+function normalizeResults(results: WordstatResult[], options: WordstatOptions = {}): WordstatResult[] {
+  const questionsOnly = options.questionsOnly ?? true;
+  const minVolume = options.minVolume ?? MIN_VOLUME;
   const byQuery = new Map<string, number>();
   for (const result of results) {
     if (
       !result.query ||
-      result.volume < MIN_VOLUME ||
-      !isQuestion(result.query)
+      result.volume < minVolume ||
+      (questionsOnly && !isQuestion(result.query))
     ) {
       continue;
     }
