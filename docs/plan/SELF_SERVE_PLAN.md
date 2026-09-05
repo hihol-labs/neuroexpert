@@ -367,7 +367,14 @@ question_id), `service_orders` — ручная лид-форма с опера�
 
 ## Юнит G-018b — on-demand пара «вертикаль × город» (план утверждён 2026-09-04)
 
-> Статус: **ACTIVE** (утверждён владельцем 2026-09-04, все шесть решений приняты как рекомендовано), tier high. Task-контракт:
+> Статус: **VERIFIED 2026-09-05** (ОТК: `verify-selfserve-path.mjs --stage=pair` exit 0 против прода
+> через проброс; канарейка 4 на проде: `POST /api/orders {vertical:dental, city:Тюмень}` → 202
+> collecting → job `72cf49c6` on_demand → 74 фразы спроса → `filled` → письмо-ссылка ожидающему
+> (07:52Z) → повторный POST 200, заказ `7b4dfc7b` pending с confirmation_url тестовой кассы; `find_gaps`
+> не ставился, health `local_pairs {filled:1, active:0}`; регрессии order/preflight/funnel/payment-path
+> exit 0). Выкачено dark: `6f9f111` + `9e2d25c` (фикс воронки) + `469c3b8` (фразы спроса Wordstat —
+> решение владельца 2026-09-05, scope расширен на `services/wordstat.ts`). Утверждён владельцем
+> 2026-09-04, все шесть решений приняты как рекомендовано, tier high. Task-контракт:
 > `.itd-memory/contracts/G-018b.md`. Входы: спецификация вертикалей v1 (§2, §4, §5, §6),
 > контракт Audit Start v1 §6 «данные раньше денег» (pre-flight уже в `POST /api/orders`),
 > `apps/worker/src/jobs/collect-demand.ts`, cron `003_cron_schedules.sql`.
