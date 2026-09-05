@@ -508,7 +508,7 @@ question_text`) и **всегда** ставит `find_gaps`, который с�
 
 ## Юнит G-019 — автономная выдача артефакта Audit Start (план утверждён, 2026-09-05)
 
-> Статус: **ACTIVE** (владелец: «утверждаю», 2026-09-05), tier high. Task-контракт:
+> Статус: **VERIFIED 2026-09-05** (ОТК: `verify-selfserve-path.mjs --stage=delivery` exit 0 против прода через проброс; выкачено dark `561d067`; канарейка А — заказ `83a0bdfe` paid → delivered за 55 с, degraded, 10 gaps, письмо; возврат по SLA `a02880f7` → refunded; свидетельства в CURRENT_PLAN.md), tier high. Task-контракт:
 > `.itd-memory/contracts/G-019.md`. Входы: контракт Audit Start v1 §2 (report schema по
 > фактическому продюсеру `/api/audit`), §3 provenance, §4 degraded mode (≥ 2 платформы и
 > ≥ 8 из 10 вопросов), §5 SLA (p95 15 мин, жёсткая граница 60 мин), §6 refund (полный провал →
