@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { timingSafeEqual } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const maxDuration = 60;
@@ -27,6 +28,7 @@ function isRateLimited(ip: string): boolean {
 // ============================================================
 
 interface GapMarkers {
+  method: string;
   has_expert_name: boolean;
   has_specific_examples: boolean;
   has_source_link: boolean;
@@ -42,16 +44,22 @@ interface PlatformResult {
 }
 
 interface AuditGap {
+  collected_at_source?: "question" | "pair_batch";
+  source_question_id?: string;
+  collected_at?: string;
+  monthly_volume?: number | null;
   id: string;
   question: string;
   search_intent: string;
   avg_gap_score: number;
-  estimated_monthly_volume: number;
+  estimated_monthly_volume: number | null;
   platforms: Array<{
     platform: string;
     ai_response: string;
     gap_score: number;
-    markers: Omit<GapMarkers, "gap_score" | "weakness">;
+    status: "answered";
+    method: string;
+    markers: Omit<GapMarkers, "gap_score" | "weakness" | "method">;
     weakness: string;
   }>;
 }
@@ -74,9 +82,12 @@ async function createProxiedFetch(): Promise<FetchFn | undefined> {
 // ============================================================
 
 interface GeneratedQuestion {
+  collected_at_source: "question" | "pair_batch";
+  source_question_id: string;
+  collected_at: string;
   question: string;
   search_intent: string;
-  monthly_volume?: number;
+  monthly_volume: number | null;
 }
 
 // ============================================================
@@ -122,7 +133,10 @@ async function analyzeWithOpenAI(
       { role: "user", content: buildAnalysisUserPrompt(question, aiResponse) },
     ],
   });
-  return JSON.parse(r.choices[0]?.message?.content || "{}") as GapMarkers;
+  const parsed = JSON.parse(r.choices[0]?.message?.content || "{}") as GapMarkers;
+  const values = [parsed.has_expert_name, parsed.has_specific_examples, parsed.has_source_link, parsed.has_specific_numbers];
+  if (values.some(v => typeof v !== "boolean") || typeof parsed.weakness !== "string" || !parsed.weakness.trim()) throw new Error("Invalid analyzer response");
+  return { ...parsed, gap_score: Math.round(values.filter(v => !v).length * 2.5), method: process.env.OPENAI_MODEL_BULK || "gpt-4o-mini" };
 }
 
 function analyzeResponseHeuristically(aiResponse: string): GapMarkers {
@@ -141,6 +155,7 @@ function analyzeResponseHeuristically(aiResponse: string): GapMarkers {
   ].filter((value) => !value).length;
 
   return {
+    method: "heuristic",
     has_expert_name: hasExpertName,
     has_specific_examples: hasSpecificExamples,
     has_source_link: hasSourceLink,
@@ -370,11 +385,13 @@ function isUsefulAuditQuestion(question: string): boolean {
 async function fetchWordstatQuestions(
   nicheId: string,
   count: number,
+  paid: boolean,
+  pairCollectedAt: string | null,
 ): Promise<GeneratedQuestion[]> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("questions")
-    .select("question_text, monthly_volume")
+    .select("id, question_text, monthly_volume, collected_at")
     .eq("niche_id", nicheId)
     .eq("source", "wordstat")
     .eq("is_active", true)
@@ -386,6 +403,8 @@ async function fetchWordstatQuestions(
   }
 
   const rows = (data ?? []) as unknown as Array<{
+    id: string;
+    collected_at: string;
     question_text: string | null;
     monthly_volume: number | null;
   }>;
@@ -393,12 +412,17 @@ async function fetchWordstatQuestions(
   return rows
     .filter(
       (row) =>
-        row.question_text && isUsefulAuditQuestion(row.question_text),
+        row.question_text && (paid ? row.question_text.trim().length > 0 : isUsefulAuditQuestion(row.question_text)),
     )
     .map((row) => ({
+      source_question_id: row.id,
+      // G-018b recorded batch completion on niches; do not pretend that date
+      // came from an individual question row. Legacy unknown provenance fails closed.
+      collected_at: row.collected_at || pairCollectedAt || "",
+      collected_at_source: row.collected_at ? "question" as const : "pair_batch" as const,
       question: row.question_text as string,
       search_intent: inferSearchIntent(row.question_text as string),
-      monthly_volume: (row.monthly_volume as number | null) ?? undefined,
+      monthly_volume: row.monthly_volume,
     }))
     .slice(0, count);
 }
@@ -408,6 +432,7 @@ function toAuditGap(
   idx: number,
   platforms: PlatformResult[],
   idPrefix: string,
+  paid: boolean,
 ): AuditGap {
   const avgGapScore =
     platforms.length > 0
@@ -419,12 +444,18 @@ function toAuditGap(
 
   return {
     id: `${idPrefix}-${idx}`,
+    source_question_id: q.source_question_id,
+    collected_at: q.collected_at,
+    collected_at_source: q.collected_at_source,
+    monthly_volume: q.monthly_volume,
     question: q.question,
     search_intent: q.search_intent,
     avg_gap_score: avgGapScore,
-    estimated_monthly_volume: getEstimatedVolume(q),
+    estimated_monthly_volume: paid ? q.monthly_volume : getEstimatedVolume(q),
     platforms: platforms.map((p) => ({
       platform: p.platform,
+      status: "answered",
+      method: p.markers.method,
       ai_response: p.ai_response,
       gap_score: p.markers.gap_score,
       markers: {
@@ -441,7 +472,7 @@ function toAuditGap(
 function sortGaps(gaps: AuditGap[]): AuditGap[] {
   return gaps.sort(
     (a, b) =>
-      b.estimated_monthly_volume - a.estimated_monthly_volume ||
+      (b.estimated_monthly_volume ?? 0) - (a.estimated_monthly_volume ?? 0) ||
       b.avg_gap_score - a.avg_gap_score,
   );
 }
@@ -456,13 +487,6 @@ export async function POST(request: NextRequest) {
     request.headers.get("x-real-ip") ||
     "unknown";
 
-  if (isRateLimited(ip)) {
-    return NextResponse.json(
-      { error: "Слишком много запросов. Подождите минуту." },
-      { status: 429 },
-    );
-  }
-
   let body: { niche_id?: string; type?: string };
   try {
     body = await request.json();
@@ -470,7 +494,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
+  if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({error:"Invalid JSON"},{status:400});
   const { niche_id, type = "free" } = body;
+  if (type !== "free" && type !== "paid") return NextResponse.json({error:"Invalid audit type"},{status:400});
+  const token = process.env.AUDIT_INTERNAL_TOKEN;
+  const supplied = request.headers.get("x-audit-internal") || "";
+  const internal = Boolean(token && supplied && Buffer.byteLength(token) === Buffer.byteLength(supplied) && timingSafeEqual(Buffer.from(token), Buffer.from(supplied)));
+  if (type === "paid" && !internal) return NextResponse.json({error:"Unauthorized"},{status:401});
+  if (!internal && isRateLimited(ip)) return NextResponse.json({error:"Слишком много запросов. Подождите минуту."},{status:429});
+  const paid = type === "paid" && internal;
+  const ranAt = new Date().toISOString();
 
   if (!niche_id) {
     return NextResponse.json({ error: "niche_id is required" }, { status: 400 });
@@ -479,12 +512,13 @@ export async function POST(request: NextRequest) {
   // спецификация вертикалей v1: множество пар открытое, хардкод разъезжается).
   const { data: nicheData } = await createAdminClient()
     .from("niches")
-    .select("name, is_active")
+    .select("name, is_active, vertical, demand_status, demand_collected_at")
     .eq("id", niche_id)
     .maybeSingle();
   // Сгенерированные типы Database не знают is_active у niches — явная форма.
-  const nicheRow = nicheData as { name: string; is_active: boolean } | null;
-  if (!nicheRow || !nicheRow.is_active) {
+  const nicheRow = nicheData as { name: string; is_active: boolean; vertical: string | null; demand_status: string | null; demand_collected_at: string | null } | null;
+  const readyLocal = paid && nicheRow?.vertical && nicheRow.demand_status === "filled";
+  if (!nicheRow || (!nicheRow.is_active && !readyLocal)) {
     return NextResponse.json({ error: "Ниша не найдена" }, { status: 404 });
   }
 
@@ -495,7 +529,7 @@ export async function POST(request: NextRequest) {
 
   let questions: GeneratedQuestion[] = [];
   try {
-    questions = await fetchWordstatQuestions(niche_id, questionCount);
+    questions = await fetchWordstatQuestions(niche_id, questionCount, paid, nicheRow.vertical && nicheRow.demand_status === "filled" ? nicheRow.demand_collected_at : null);
   } catch (err) {
     console.error("[audit] Failed to load Wordstat questions:", err);
     return NextResponse.json(
@@ -504,7 +538,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (questions.length === 0) {
+  if (questions.length === 0 || (paid && questions.length !== 10)) {
     return NextResponse.json(
       {
         error:
@@ -563,7 +597,7 @@ export async function POST(request: NextRequest) {
       );
 
       const platforms = [...parallelResults, gigaChatResults[idx]].filter(
-        Boolean,
+        p => p && p.ai_response.trim(),
       ) as PlatformResult[];
 
       return toAuditGap(
@@ -571,6 +605,7 @@ export async function POST(request: NextRequest) {
         idx,
         platforms,
         "wordstat",
+        paid,
       );
     }),
   );
@@ -590,6 +625,15 @@ export async function POST(request: NextRequest) {
   sortGaps(gaps);
 
   return NextResponse.json({
+    schema_version: 1,
+    ran_at: ranAt,
+    analyzer_model: (() => { const methods = new Set(gaps.flatMap(g => g.platforms.map(p => p.method))); return methods.size === 1 ? [...methods][0] : "mixed"; })(),
+    platforms_tried: [
+      ...(process.env.OPENAI_API_KEY ? ["ChatGPT"] : []),
+      ...(process.env.PERPLEXITY_API_KEY ? ["Perplexity"] : []),
+      ...(process.env.YANDEX_API_KEY && process.env.YANDEX_FOLDER_ID ? ["Яндекс.GPT"] : []),
+      ...(process.env.GIGACHAT_CLIENT_ID && process.env.GIGACHAT_CLIENT_SECRET ? ["GigaChat"] : []),
+    ],
     niche: nicheName,
     type,
     source: "wordstat",

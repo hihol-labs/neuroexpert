@@ -304,6 +304,8 @@ export async function POST(request: NextRequest) {
       city,
       email,
       status: "pending",
+      payment_shop_id: credentials.shopId,
+      payment_test: mode === "dark",
     })
     .select("id")
     .single();
@@ -320,7 +322,7 @@ export async function POST(request: NextRequest) {
     metadata: buildPackagePaymentMetadata({ package: pkg.id, orderId: order.id, userId: owner.ownerId }),
   };
 
-  let payment: { id?: string; confirmation?: { confirmation_url?: string } } | null = null;
+  let payment: { id?: string; test?: boolean; confirmation?: { confirmation_url?: string } } | null = null;
   let failure: string | null = null;
   try {
     const res = await fetch("https://api.yookassa.ru/v3/payments", {
@@ -339,7 +341,7 @@ export async function POST(request: NextRequest) {
     failure = `yukassa transport: ${err instanceof Error ? err.message : String(err)}`;
   }
 
-  if (failure || !payment?.id || !payment.confirmation?.confirmation_url) {
+  if (failure || !payment?.id || !payment.confirmation?.confirmation_url || payment.test !== (mode === "dark")) {
     const reason = failure ?? "yukassa: ответ без id/confirmation_url";
     console.error("[orders] payment creation failed:", reason);
     await admin
@@ -349,10 +351,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Не удалось создать платёж. Деньги не списаны." }, { status: 502 });
   }
 
-  await admin
+  const { error: savePaymentError } = await admin
     .from("package_orders")
     .update({ yukassa_payment_id: payment.id, confirmation_url: payment.confirmation.confirmation_url })
     .eq("id", order.id);
+  if (savePaymentError) return NextResponse.json({error:"Платёж создан, подтверждение заказа задерживается."},{status:503});
 
   return NextResponse.json({
     ok: true,

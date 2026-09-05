@@ -1,4 +1,5 @@
 import { supabase } from "./supabase.js";
+import { handleRunAudit, sweepAuditDelivery } from "./jobs/run-audit.js";
 import { handleCollectDemand } from "./jobs/collect-demand.js";
 import { handleFindGaps } from "./jobs/find-gaps.js";
 import { handleExpandQuery } from "./jobs/expand-query.js";
@@ -36,10 +37,11 @@ const LLM_JOB_TYPES = new Set([
   "track_citations",
 ]);
 
-type JobHandler = (payload: Record<string, unknown>) => Promise<unknown>;
+type JobHandler = (payload: Record<string, unknown>, context?: {attempts:number;maxAttempts:number;jobId:string}) => Promise<unknown>;
 
 // Все обработчики — реальная логика
 const handlers: Record<string, JobHandler> = {
+  run_audit: handleRunAudit,
   collect_demand: handleCollectDemand,
   find_gaps: handleFindGaps,
   expand_query: handleExpandQuery,
@@ -132,7 +134,7 @@ async function processJob(job: Record<string, unknown>): Promise<void> {
   }
 
   try {
-    const result = await handler(payload);
+    const result = await handler(payload, {attempts,maxAttempts:(job.max_attempts as number)??MAX_RETRIES,jobId});
     await supabase.from("jobs").update({ status: "completed", result: result as Record<string, unknown>, completed_at: new Date().toISOString() }).eq("id", jobId);
     console.log(`[worker] ${jobType} (${jobId}) completed`);
   } catch (err) {
@@ -196,6 +198,16 @@ function calculateBackoffMs(attempts: number): number {
 }
 
 async function main(): Promise<void> {
+  // Independent timer: a slow audit request cannot delay SLA/refund processing.
+  let sweeping = false;
+  const sweep = async () => {
+    if(sweeping)return;
+    sweeping=true;
+    try {await sweepAuditDelivery();} catch(e) {console.error("[audit-delivery] sweep failed", e instanceof Error ? e.message : String(e));}
+    finally {sweeping=false;}
+  };
+  void sweep();
+  setInterval(()=>{void sweep();},5*60*1000);
   console.log("[worker] Starting...");
   console.log(`[worker] ${Object.keys(handlers).length} handlers: ${Object.keys(handlers).join(", ")}`);
   console.log(`[worker] Poll interval: ${POLL_INTERVAL}ms`);

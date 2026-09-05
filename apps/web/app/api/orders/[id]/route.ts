@@ -35,7 +35,7 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
   const admin = createAdminClient();
   const { data: order } = await admin
     .from("package_orders")
-    .select("id, owner_id, package, amount_rub, niche_id, city, status, job_id, paid_at, refunded_at, created_at, confirmation_url")
+    .select("id, owner_id, package, amount_rub, niche_id, city, status, job_id, paid_at, refunded_at, created_at, confirmation_url, report, report_mode, delivered_at, refund_status")
     .eq("id", orderId)
     .maybeSingle();
 
@@ -50,6 +50,10 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
     niche_id: order.niche_id,
     city: order.city,
     status: order.status,
+    report: order.report,
+    report_mode: order.report_mode,
+    delivered_at: order.delivered_at,
+    refund_status: order.refund_status,
     audit_queued: Boolean(order.job_id),
     paid_at: order.paid_at,
     refunded_at: order.refunded_at,

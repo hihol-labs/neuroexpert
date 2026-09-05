@@ -13,7 +13,7 @@
  * экспертам (другой контур).
  */
 
-export type PackageOrderStatus = "pending" | "paid" | "failed" | "refunded";
+export type PackageOrderStatus = "pending" | "paid" | "delivered" | "failed" | "refunded";
 export type PackageOrderEvent = "payment.succeeded" | "payment.canceled" | "refund.succeeded";
 
 export type PackageOrderTransition =
@@ -29,7 +29,7 @@ const TARGET: Record<PackageOrderEvent, PackageOrderStatus> = {
 const ALLOWED_FROM: Record<PackageOrderEvent, PackageOrderStatus[]> = {
   "payment.succeeded": ["pending"],
   "payment.canceled": ["pending"],
-  "refund.succeeded": ["paid"],
+  "refund.succeeded": ["paid", "delivered", "failed"],
 };
 
 export function transition(current: PackageOrderStatus, event: PackageOrderEvent): PackageOrderTransition {

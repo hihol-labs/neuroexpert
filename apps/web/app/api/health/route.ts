@@ -121,8 +121,19 @@ export async function GET() {
     process.env.SMTP_ADMIN_EMAIL,
   );
 
+  const deliveryCounts = await Promise.all([
+    supabase.from("package_orders").select("id",{count:"exact",head:true}).eq("status","paid"),
+    supabase.from("package_orders").select("id",{count:"exact",head:true}).eq("status","delivered"),
+    supabase.from("package_orders").select("id",{count:"exact",head:true}).eq("status","failed").not("paid_at","is",null),
+    supabase.from("package_orders").select("id",{count:"exact",head:true}).eq("status","refunded"),
+    supabase.from("package_orders").select("id",{count:"exact",head:true}).eq("status","paid").lte("sla_deadline_at",new Date().toISOString()),
+  ]);
+  const deliveryHealthy = deliveryCounts.every(r=>!r.error && r.count !== null);
+  const auditDelivery = Object.fromEntries(["paid_waiting","delivered","failed","refunded","sla_breached"].map((name,i)=>[name,deliveryCounts[i].error ? null : deliveryCounts[i].count]));
+
   return NextResponse.json({
-    status: authHealth === "ok" ? "ok" : "degraded",
+    status: authHealth === "ok" && deliveryHealthy ? "ok" : "degraded",
+    audit_delivery: auditDelivery,
     pages_published: count ?? 0,
     auth: {
       status: authHealth,

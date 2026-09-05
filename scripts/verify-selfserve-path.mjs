@@ -73,7 +73,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const KNOWN = new Set(["--stage", "--base-url", "--fixture-dir", "--checkout", "--repo-root", "--repo-only"]);
-const STAGES = ["order", "pair"];
+const STAGES = ["order", "pair", "delivery"];
 const argv = process.argv.slice(2);
 const opts = { stage: null, baseUrl: null, fixtureDir: null, checkout: "dark", repoRoot: null, repoOnly: false };
 for (let i = 0; i < argv.length; i += 1) {
@@ -250,7 +250,22 @@ function repoPair() {
   ], "шаг 6 плана G-018b: форма из трёх вертикалей + город + email, экран collecting");
 }
 
-if (opts.stage === "order") repoOrder(); else repoPair();
+// G-019 static surface checks. Behavioral correctness is additionally tested against
+// shared functions, a real Postgres migration and injected worker dependencies.
+function repoDelivery() {
+  const groups = {
+    migration: [["packages/supabase/migrations/028_audit_delivery.sql", ["package_orders_job_requires_paid", "complete_package_audit", "fail_package_audit", "sla_deadline_at", "payment_test", "notification_sent_at", "refund_id"]]],
+    shared: [["packages/shared/src/delivery/index.ts", ["decideDeliveryMode", "buildReportSnapshot", "isSlaBreached", "decideRefund", "unavailable"]]],
+    "audit-route": [["apps/web/app/api/audit/route.ts", ["AUDIT_INTERNAL_TOKEN", "x-audit-internal", "source_question_id", "collected_at", "platforms_tried", "analyzer_model"]]],
+    worker: [["apps/worker/src/jobs/run-audit.ts", ["handleRunAudit"]], ["apps/worker/src/services/audit-delivery.ts", ["complete_package_audit", "fail_package_audit", "api.yookassa.ru/v3", "refund-", "notification_sent_at", "signInWithOtp"]], ["apps/worker/src/index.ts", ["run_audit: handleRunAudit", "sweepAuditDelivery"]]],
+    "orders-page": [["apps/web/app/orders/[id]/page.tsx", ["data-order-report", "delivered", "owner_id !== user.id"]], ["apps/web/app/api/orders/[id]/route.ts", ["report: order.report", "owner_id !== user.id"]]],
+    health: [["apps/web/app/api/health/route.ts", ["audit_delivery", "paid_waiting", "sla_breached", "refunded"]]],
+  };
+  for (const [name, files] of Object.entries(groups)) {
+    requireGroup(name, files.map(([path, needles]) => [path, needles.map(n => [n, n])]), "реализовать утверждённый контракт delivery G-019");
+  }
+}
+if (opts.stage === "order") repoOrder(); else if (opts.stage === "pair") repoPair(); else repoDelivery();
 
 // ============================================================ ЖИВОЙ
 const transport = [];
@@ -357,8 +372,19 @@ async function livePair() {
   }
 }
 
+async function liveDelivery() {
+  const health = await getJson("/api/health", "health.json");
+  for (const k of ["paid_waiting", "delivered", "failed", "refunded", "sla_breached"]) {
+    const n = health?.audit_delivery?.[k];
+    if (!Number.isInteger(n) || n < 0) finding("/api/health", `audit_delivery.${k} отсутствует или неверен`, "вернуть достоверные счётчики, ошибку БД не заменять нулём");
+  }
+  const paid = await getStatus("/api/audit", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ type: "paid" }) }, "audit-paid.json");
+  if (paid !== 401) finding("/api/audit", `paid без токена: HTTP ${paid}`, "отказать 401 до запуска движка");
+  const owner = await getStatus("/api/orders/00000000-0000-4000-8000-000000000001", { method: "GET", redirect: "manual" }, "orders-get.json");
+  if (owner !== 401) finding("/api/orders/[id]", `без сессии: HTTP ${owner}`, "owner-only API требует 401");
+}
 if (!opts.repoOnly) {
-  try { await (opts.stage === "order" ? liveOrder() : livePair()); } catch (e) { transport.push(e instanceof Error ? e.message : String(e)); }
+  try { await (opts.stage === "order" ? liveOrder() : opts.stage === "pair" ? livePair() : liveDelivery()); } catch (e) { transport.push(e instanceof Error ? e.message : String(e)); }
 }
 
 if (findings.length > 0) {

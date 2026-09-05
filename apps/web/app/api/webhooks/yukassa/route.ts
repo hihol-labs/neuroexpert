@@ -108,15 +108,16 @@ async function handlePackagePaymentSucceeded(
     return;
   }
   if (t.changed) {
-    await admin
+    const {error} = await admin
       .from("package_orders")
       .update({ status: "paid", paid_at: new Date().toISOString(), yukassa_payment_id: paymentId })
       .eq("id", orderId)
       .eq("status", "pending");
+    if(error)throw new Error("Package payment database update failed");
   }
 
   if (mayEnqueueAuditJob("paid", order.job_id as string | null)) {
-    const { data: job } = await admin
+    const { data: job, error: jobError } = await admin
       .from("jobs")
       .insert({
         type: "run_audit",
@@ -125,13 +126,16 @@ async function handlePackagePaymentSucceeded(
       })
       .select("id")
       .single();
+    if(jobError)throw new Error("Package audit job insert failed");
     if (job?.id) {
-      const { data: claimed } = await admin
+      const { data: claimed, error: claimError } = await admin
         .from("package_orders")
         .update({ job_id: job.id })
         .eq("id", orderId)
+        .eq("status", "paid")
         .is("job_id", null)
         .select("id");
+      if(claimError)throw new Error("Package audit job attach failed");
       if (!claimed || claimed.length === 0) {
         // Параллельный повтор webhook успел раньше — наш job лишний.
         await admin.from("jobs").delete().eq("id", job.id);
@@ -164,12 +168,14 @@ async function handlePackageTerminalEvent(
   admin: Admin,
   paymentId: string,
   event: "payment.canceled" | "refund.succeeded",
+  refundId?: string,
 ): Promise<boolean> {
-  const { data: order } = await admin
+  const { data: order, error: readError } = await admin
     .from("package_orders")
     .select("id, status")
     .eq("yukassa_payment_id", paymentId)
     .maybeSingle();
+  if(readError)throw new Error("Package terminal lookup failed");
   if (!order) return false;
   const t = transition(order.status as PackageOrderStatus, event);
   if (!t.ok) {
@@ -178,9 +184,10 @@ async function handlePackageTerminalEvent(
   }
   if (t.changed) {
     const patch = event === "refund.succeeded"
-      ? { status: "refunded", refunded_at: new Date().toISOString() }
+      ? { status: "refunded", refunded_at: new Date().toISOString(), ...(refundId ? {refund_id:refundId}: {}) }
       : { status: "failed", failure_reason: "payment.canceled" };
-    await admin.from("package_orders").update(patch).eq("id", order.id).eq("status", order.status);
+    const {error} = await admin.from("package_orders").update(patch).eq("id", order.id).eq("status", order.status);
+    if(error)throw new Error("Package terminal update failed");
   }
   return true;
 }
@@ -289,7 +296,7 @@ export async function POST(request: NextRequest) {
         : (object.id as string));
       const status = event === "refund.succeeded" ? "refunded" : "failed";
 
-      const handledPackage = await handlePackageTerminalEvent(admin, paymentId, event);
+      const handledPackage = await handlePackageTerminalEvent(admin, paymentId, event, event === "refund.succeeded" ? String(object.id) : undefined);
       if (!handledPackage) {
         await admin
           .from("payments")
@@ -309,6 +316,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[yukassa] Webhook error:", err);
-    return NextResponse.json({ ok: true }); // Always 200 to avoid retries
+    return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 });
   }
 }
