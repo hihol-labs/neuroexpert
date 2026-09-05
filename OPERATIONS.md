@@ -172,6 +172,16 @@ Pixel Tools `PIXEL_TOOLS_API_KEY`, GptFox `GPTFOX_API_KEY`, Яндекс.Мет�
 
 ---
 
+## 8b. Magic-link redirect allow-list (GoTrue)
+
+`ADDITIONAL_REDIRECT_URLS` в `.env` → `GOTRUE_URI_ALLOW_LIST`. Любая ссылка из письма
+(`emailRedirectTo`) обязана матчиться шаблоном, иначе GoTrue после входа молча редиректит на
+`GOTRUE_SITE_URL` (главную) — инцидент 2026-09-05 (AUTH-1). Обязательный состав:
+`https://neuroexpertise.ru/auth/callback`, `…/auth/callback?next=/dashboard`,
+`…/auth/callback?next=/orders/*` (письма оплаты и готовности отчёта),
+`…/auth/callback?next=/order/audit-start*` (письмо «данные готовы» по паре). После правки —
+`up -d --force-recreate supabase-auth` (restart env не перечитывает).
+
 ## 9. ЮKassa runbook
 
 - **Тестовая карта:** `5555 5555 5555 4444` (любой будущий срок, любой CVC).
