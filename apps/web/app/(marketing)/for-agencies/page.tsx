@@ -1,5 +1,6 @@
 "use client";
 
+import { reachGoal } from "@/lib/analytics";
 import Link from "next/link";
 import { useState } from "react";
 import { ArrowRight, Check, Code2, Database, Radio } from "lucide-react";
@@ -85,6 +86,7 @@ function AgencyControlPlane() {
     try {
       const response = await fetch("/api/agency-leads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, agency, contact, plan, message }) });
       if (!response.ok) { const data = await response.json().catch(() => ({})); throw new Error(data.error || "Не удалось отправить заявку"); }
+      reachGoal("contact_agency_submit", { plan });
       setDone(true);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Ошибка отправки"); } finally { setSubmitting(false); }
   }

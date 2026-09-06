@@ -1,5 +1,6 @@
 "use client";
 
+import { reachGoal } from "@/lib/analytics";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
@@ -60,6 +61,7 @@ export default function ScanPage() {
       }
 
       const data = await response.json();
+      reachGoal("lead_scan_submit");
       router.push(`/scan/${data.slug}`);
     } catch {
       setError("Сеть не ответила. Попробуйте ещё раз.");

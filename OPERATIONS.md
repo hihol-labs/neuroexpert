@@ -209,6 +209,35 @@ empty` ставит новый `collect_demand`, если `demand_collected_at` 
 пара переводится `empty → queued`, ожидающему шлётся письмо при `filled`. Без отметки времени
 повтор не ставится (ручной сброс оператором, как раньше).
 
+## 8c. Яндекс.Метрика (G-012, 2026-09-06)
+
+- **Id счётчика:** `NEXT_PUBLIC_YANDEX_METRIKA_ID` в `.env`. Значение **запекается при сборке**
+  образа web (`docker/web.Dockerfile` ARG/ENV, `build.args` в compose) — после изменения нужен
+  `docker compose … build web` и `up -d --force-recreate web`, а не только restart. Пусто —
+  счётчика в образе нет (dev/dark). Единственное место чтения в коде — `apps/web/lib/analytics.ts`;
+  компонент `apps/web/components/yandex-metrika.tsx` подключён в корневом layout (все маршруты),
+  рендерит `<span data-ym-id>` и `<noscript>`-пиксель — по ним оракул `scripts/verify-analytics.mjs`
+  проверяет каждый публичный маршрут (`--base-url … --ym-id <id>`).
+- **Настройки:** clickmap, trackLinks, accurateTrackBounce, trackHash; **webvisor выключен**
+  (решение владельца 2026-09-06: формы содержат email, privacy §1/§4 обещает обезличенные
+  метрики). `hit` отправляется при клиентской навигации App Router.
+- **Цели (тип «JavaScript-событие», идентификатор = имя):** `lead_scan_submit` (/scan — проверка
+  видимости отправлена), `lead_audit_submit` (/audit — бесплатная карта спроса собрана),
+  `order_form_submit` (форма заказа Audit Start отправлена; параметр `vertical`),
+  `order_checkout_redirect` (заказ создан, переход в ЮKassa), `order_pair_collecting` (пара
+  «вертикаль × город» ещё собирается, 202; параметры `vertical`, `status`), `order_paid`
+  (страница `/orders/[id]` со статусом paid/delivered, один раз на заказ; параметры `package`,
+  `status`), `contact_agency_submit` (/for-agencies; параметр `plan`), `cta_order_click` (клик по
+  любой ссылке на `/order/audit-start`; параметр `from`). PII в параметры не передаётся.
+- **Создание счётчика/целей/сегмента через API:** `python3 .itd-memory/tools/metrika.py
+  create|goals|segment --token <OAuth>` (Management API, токен с правом `metrika:write`;
+  получить: https://oauth.yandex.ru → приложение с доступом «Метрика» → токен). Сохранённый
+  отчёт создаётся только в интерфейсе.
+- **AI-сегмент (AEO_PLAN §5):** сегмент «AI-трафик» по рефереру, regex:
+  `chatgpt\.com|chat\.openai\.com|openai\.com|perplexity\.ai|deepseek\.com|gemini\.google\.com|bard\.google\.com|claude\.ai|copilot\.microsoft\.com|you\.com|phind\.com|mistral\.ai|character\.ai`
+  (условие «Источник → Реферер соответствует регулярному выражению»); сохранённый отчёт
+  «Источники, сводка» с этим сегментом — хранится в Метрике под именем «AI-трафик».
+
 ## 9. ЮKassa runbook
 
 - **Тестовая карта:** `5555 5555 5555 4444` (любой будущий срок, любой CVC).

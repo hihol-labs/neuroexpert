@@ -3,7 +3,7 @@
   "purpose": "Executable verification contract for the active unit.",
   "unitId": "G-012",
   "createdAt": "2026-09-05",
-  "note": "G-019: план и уточнения утверждены владельцем 2026-09-05. Реализация producer-first; receipt exact candidate и живые канарейки обязательны. Order/pair остаются регрессиями.",
+  "note": "G-012: план утверждён владельцем 2026-09-06 (webvisor off, 8 целей, счётчик через Management API). Реализация producer-first; оракул verify-analytics.mjs — repo-only по умолчанию, живой контур через --base-url/ANALYTICS_URL с --ym-id; сегмент и сохранённый отчёт в Метрике — manual_evidence.",
   "commandSchema": {
     "requiredFields": [
       "id",
@@ -26,7 +26,7 @@
       "timeoutSeconds": 600,
       "expectedOutput": "exit 0",
       "passFailParser": "exit_code_zero",
-      "note": "НЕ СОЗДАН — оракул стадии delivery (GOAL.json G-019.verificationCommand), пишется первым шагом плана G-019 (producer-first). История оракула pair, теперь регрессия g018b-selfserve-pair: создан 2026-09-04 (шаг 1 плана G-018b): на HEAD шага 1 exit 1 ровно с 6 групповыми находками (migration/shared/api-orders/api-health/worker/ui), гасятся шагами 2-6. Слой РЕПО (--repo-only): миграция 027, shared pairs/*, ветка vertical в POST /api/orders с порядком pre-flight → 202 → package_orders, health local_pairs, worker on_demand без find_gaps, UI вертикали + data-pair-status, cron 003 не изменён. Живой слой (--base-url, с прод-сервера): /order/audit-start 404 dark, POST {} 404/400, health.local_pairs числа и active=0 (обход SELFSERVE_PAIRS_ACTIVATED=1), POST {vertical:nope} с канареечным заголовком → 400. Мутационный тест: +11 репо и +4 живых регрессии (scripts/tests/selfserve-path.test.mjs, 40 проверок)."
+      "note": "СОЗДАН 2026-09-06 (шаг 1 плана G-012). Слой РЕПО: id из env только в apps/web/lib/analytics.ts, YM_GOALS (8 целей), компонент yandex-metrika.tsx (tag.js, webvisor:false, data-ym-id, ymHit на смену маршрута, cta_order_click, noscript), <YandexMetrika/> в корневом layout без inline-сниппета, цели в продюсерах (scan, audit-client, order-form ×3, for-agencies, orders/[id] OrderPaidGoal), ARG/ENV в web.Dockerfile, build arg в compose, .env.example, OPERATIONS §8c с regex AI-сегмента. Живой контур: 17 публичных маршрутов → 200, data-ym-id единый и равен --ym-id, noscript-пиксель. Мутационный тест scripts/tests/analytics.test.mjs: 27 проверок."
     }
   ],
   "regressionCommands": [
@@ -109,6 +109,43 @@
       "expectedOutput": "ВСЕ ПРОВЕРКИ ПРОШЛИ",
       "passFailParser": "stdout_contains",
       "note": "Регрессия G-018 (verified 2026-09-04): Мутационный тест оракула G-018: 10 репо-регрессий + 6 живых (dark), режим live, usage. Защита от тавтологии."
+    }
+  ],
+  "regressions": [
+    {
+      "id": "g018-selfserve-order",
+      "command": "node scripts/verify-selfserve-path.mjs --stage=order --repo-only",
+      "timeoutSeconds": 300,
+      "expectedOutput": "exit 0",
+      "passFailParser": "exit_code_zero"
+    },
+    {
+      "id": "g018b-selfserve-pair",
+      "command": "node scripts/verify-selfserve-path.mjs --stage=pair --repo-only",
+      "timeoutSeconds": 300,
+      "expectedOutput": "exit 0",
+      "passFailParser": "exit_code_zero"
+    },
+    {
+      "id": "g019-selfserve-delivery",
+      "command": "node scripts/verify-selfserve-path.mjs --stage=delivery --repo-only",
+      "timeoutSeconds": 300,
+      "expectedOutput": "exit 0",
+      "passFailParser": "exit_code_zero"
+    },
+    {
+      "id": "af0-preflight",
+      "command": "node scripts/verify-preflight.mjs --repo-only",
+      "timeoutSeconds": 300,
+      "expectedOutput": "exit 0",
+      "passFailParser": "exit_code_zero"
+    },
+    {
+      "id": "strategy-docs",
+      "command": "python3 scripts/verify-strategy-docs.py",
+      "timeoutSeconds": 120,
+      "expectedOutput": "exit 0",
+      "passFailParser": "exit_code_zero"
     }
   ]
 }

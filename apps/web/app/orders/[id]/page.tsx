@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/nav";
 import { DetailsForm } from "./details-form";
 import { StatusRefresh } from "./status-refresh";
+import { OrderPaidGoal } from "./order-paid-goal";
 import { buildReportSnapshot } from "shared";
 
 /**
@@ -62,6 +63,7 @@ export default async function OrderStatusPage({ params }: { params: { id: string
       <MarketingHeader />
       <main>
         <StatusRefresh active={["pending","paid"].includes(order.status) || (order.status === "failed" && Boolean(order.paid_at))} />
+        <OrderPaidGoal orderId={order.id} status={String(order.status)} pkg={String(order.package)} />
         <section className="dm-hero" data-order-status={order.status}>
           <p className="sr-eyebrow"><span /> Аудит Старт · {nicheName}, {order.city}</p>
           <h1>{text.title}</h1>

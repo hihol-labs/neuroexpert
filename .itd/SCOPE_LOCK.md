@@ -2,12 +2,21 @@
 
 ## Current Task
 
-- **G-012** — снова единственный активный юнит (GOAL.json, tier low), **стадия ПЛАНИРОВАНИЯ**:
-  Яндекс.Метрика на всех публичных маршрутах с целями на шаги воронки. До утверждённого
-  владельцем плана кодовые правки `apps/**` и `packages/**` ЗАПРЕЩЕНЫ — разрешены
-  план-документы, `.itd*`, BACKLOG, OPERATIONS. Операционные юниты 2026-09-06 (SEC-1,
-  OPS-DEBT-1) закрыты; открытые операционные тикеты — BACKLOG (SEC-2…SEC-5, OPS-2, DEMAND-4,
-  OPS-1 Tailscale) — берутся только по решению владельца.
+- **G-012** — единственный активный юнит (GOAL.json, tier low), **стадия РЕАЛИЗАЦИИ** (план
+  утверждён владельцем 2026-09-06: «утверждаю, webvisor выключить, цели все 8, счётчик создай
+  сам и получи id»; контракт `.itd-memory/contracts/G-012.md`, решения — DECISIONS 2026-09-06).
+  Разрешены: `scripts/verify-analytics.mjs` (новый) + `scripts/tests/analytics.test.mjs` (новый);
+  `apps/web/lib/analytics.ts` (новый), `apps/web/components/yandex-metrika.tsx` (новый),
+  `apps/web/app/layout.tsx` (замена inline-сниппета на компонент), продюсеры целей:
+  `apps/web/app/(marketing)/scan/page.tsx`, `apps/web/app/(marketing)/audit/audit-client.tsx`,
+  `apps/web/app/(marketing)/order/audit-start/order-form.tsx`, `apps/web/app/(marketing)/for-agencies/page.tsx`,
+  `apps/web/app/orders/[id]/page.tsx` (+ новый клиентский `order-paid-goal.tsx`); сборка/конфиг:
+  `docker/web.Dockerfile`, `docker/docker-compose.prod.yml` (только build args), `.env.example`,
+  `OPERATIONS.md` (раздел «Яндекс.Метрика»); `.itd/VERIFICATION_CONTRACT.json` (команда g012),
+  `.itd*`, BACKLOG, CURRENT_PLAN, документы плана. Инструмент вне репо: `.itd-memory/tools/metrika.py`.
+  Запрещены: цены, платёжный код (`/api/orders`, webhook, worker), `llm/*`, миграции, кабинет,
+  webvisor, PII в параметрах целей, Plausible.
+  Операционные тикеты (SEC-2…SEC-5, OPS-2, DEMAND-4, OPS-1) — только по решению владельца.
 
 Предыдущий: **OPS-DEBT-1 — VERIFIED 2026-09-06** (коммиты `7278d02` + `6e4e77f`; full-чекеры
 PASSED; `ops-debt-1-fix-adjudication.json`; выкачено `.deploy-sha=6e4e77f`; health `providers`

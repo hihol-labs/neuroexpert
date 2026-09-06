@@ -1,5 +1,6 @@
 "use client";
 
+import { reachGoal } from "@/lib/analytics";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { ArrowRight, Check, ChevronDown, Minus, Radio, RotateCcw } from "lucide-react";
@@ -95,6 +96,7 @@ export function AuditClient({ auditStartHref }: { auditStartHref: string }) {
       }
 
       const data = await response.json();
+      reachGoal("lead_audit_submit");
       setGaps(data.gaps);
       setStep("results");
       requestAnimationFrame(() => resultHeadingRef.current?.focus());

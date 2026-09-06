@@ -1,5 +1,6 @@
 "use client";
 
+import { reachGoal } from "@/lib/analytics";
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
@@ -39,6 +40,8 @@ export function OrderForm({
       city: String(form.get("city") || ""),
       email: String(form.get("email") || ""),
     };
+    // Цели Метрики (G-012): без PII — только вертикаль и исход.
+    reachGoal("order_form_submit", { vertical: body.vertical });
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
@@ -51,10 +54,12 @@ export function OrderForm({
         status?: string;
       };
       if (res.ok && data.confirmation_url) {
+        reachGoal("order_checkout_redirect", { vertical: body.vertical });
         window.location.assign(data.confirmation_url);
         return;
       }
       if (res.status === 202 && (data.status === "collecting" || data.status === "empty")) {
+        reachGoal("order_pair_collecting", { vertical: body.vertical, status: data.status });
         setPair({ status: data.status, city: body.city.trim(), email: body.email.trim(), message: data.error || "" });
         return;
       }
