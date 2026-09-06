@@ -63,12 +63,12 @@ const repoRoot = repoRootArg
 const baseUrl = (baseUrlArg || process.env.ANALYTICS_URL || process.env.CANONICAL_URL || "").replace(/\/+$/, "");
 const expectedYmId = (ymIdArg || process.env.YM_ID || process.env.NEXT_PUBLIC_YANDEX_METRIKA_ID || "").trim();
 
+// Команда юнита в GOAL.json — `node scripts/verify-analytics.mjs` без флагов: без живого
+// адреса (ANALYTICS_URL / CANONICAL_URL) оракул проверяет слой репо; живой контур
+// включается, когда ОТК запускает его через проброс с заданным URL.
 if (!repoOnly && !fixtureDir && !baseUrl) {
-  console.error(
-    "usage: нужен живой контур (--base-url / ANALYTICS_URL / CANONICAL_URL), "
-    + "--fixture-dir для оффлайн-фикстур или явный --repo-only",
-  );
-  process.exit(2);
+  repoOnly = true;
+  console.error("note: живой адрес не задан (--base-url / ANALYTICS_URL / CANONICAL_URL) — проверяется только слой репо");
 }
 if (expectedYmId && !/^\d{5,}$/.test(expectedYmId)) {
   console.error("usage: --ym-id должен быть числовым id счётчика");

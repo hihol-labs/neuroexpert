@@ -78,6 +78,13 @@ try {
   const green = join(work, "green"); writeTree(green, FILES);
   const fx = join(work, "fx"); writeFixtures(fx);
   expect("позитив: repo-only", run(["--repo-only", "--repo-root", green]).code, 0, "");
+  // Команда юнита без флагов и без живого адреса — слой репо, не usage.
+  expect("позитив: без флагов = repo-only (команда юнита)", run(["--repo-root", green], { ANALYTICS_URL: "", CANONICAL_URL: "" }).code, 0, "");
+  {
+    const d = join(work, "repo-noflags-bad"); writeTree(d, { ...FILES, "apps/web/app/layout.tsx": "<Providers />\n" });
+    const r = run(["--repo-root", d], { ANALYTICS_URL: "", CANONICAL_URL: "" });
+    expect("без флагов на красном репо -> exit 1", r.code, 1, r.out);
+  }
   expect("позитив: фикстуры + ожидаемый id", run(["--repo-root", green, "--fixture-dir", fx, "--ym-id", YM]).code, 0, "");
   expect("позитив: фикстуры без ожидаемого id", run(["--repo-root", green, "--fixture-dir", fx]).code, 0, "");
 
