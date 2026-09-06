@@ -1,9 +1,9 @@
 {
   "version": 1,
   "purpose": "Executable verification contract for the active unit.",
-  "unitId": "G-012",
-  "createdAt": "2026-09-05",
-  "note": "G-012: план утверждён владельцем 2026-09-06 (webvisor off, 8 целей, счётчик через Management API). Реализация producer-first; оракул verify-analytics.mjs — repo-only по умолчанию, живой контур через --base-url/ANALYTICS_URL с --ym-id; сегмент и сохранённый отчёт в Метрике — manual_evidence.",
+  "unitId": "G-013",
+  "createdAt": "2026-09-06",
+  "note": "G-013: активирован 2026-09-06 после verified G-012 в стадии ПЛАНИРОВАНИЯ — код запрещён до утверждённого плана. Оракул verify-proof-layer.mjs НЕ СОЗДАН, пишется первым шагом плана (producer-first). Analytics/order/pair/delivery/preflight/strategy остаются регрессиями.",
   "commandSchema": {
     "requiredFields": [
       "id",
@@ -21,12 +21,12 @@
   },
   "commands": [
     {
-      "id": "g012-analytics",
-      "command": "node scripts/verify-analytics.mjs",
+      "id": "g013-proof-layer",
+      "command": "node scripts/verify-proof-layer.mjs",
       "timeoutSeconds": 600,
       "expectedOutput": "exit 0",
       "passFailParser": "exit_code_zero",
-      "note": "СОЗДАН 2026-09-06 (шаг 1 плана G-012). Слой РЕПО: id из env только в apps/web/lib/analytics.ts, YM_GOALS (8 целей), компонент yandex-metrika.tsx (tag.js, webvisor:false, data-ym-id, ymHit на смену маршрута, cta_order_click, noscript), <YandexMetrika/> в корневом layout без inline-сниппета, цели в продюсерах (scan, audit-client, order-form ×3, for-agencies, orders/[id] OrderPaidGoal), ARG/ENV в web.Dockerfile, build arg в compose, .env.example, OPERATIONS §8c с regex AI-сегмента. Живой контур: 17 публичных маршрутов → 200, data-ym-id единый и равен --ym-id, noscript-пиксель. Мутационный тест scripts/tests/analytics.test.mjs: 27 проверок."
+      "note": "НЕ СОЗДАН — оракул юнита G-013 (GOAL.json G-013.verificationCommand), пишется первым шагом плана."
     }
   ],
   "regressionCommands": [
@@ -112,6 +112,13 @@
     }
   ],
   "regressions": [
+    {
+      "id": "g012-analytics",
+      "command": "node scripts/verify-analytics.mjs",
+      "timeoutSeconds": 300,
+      "expectedOutput": "exit 0",
+      "passFailParser": "exit_code_zero"
+    },
     {
       "id": "g018-selfserve-order",
       "command": "node scripts/verify-selfserve-path.mjs --stage=order --repo-only",
