@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+import { ProofStrip } from "./proof-strip";
 
 /**
  * Блок оффера маркетингового маршрута (юнит G-010b).
@@ -40,7 +41,11 @@ const DEFAULT_NOTE =
 export function OfferBlock({ artifact, price, term, cta, note }: OfferProps) {
   const external = /^https?:|^tel:|^mailto:/.test(cta.href);
 
+  // ProofStrip (G-013) — сосед секции оффера, не внутри: оракул --check-offer требует
+  // ровно один data-offer-cta внутри data-offer, а цепочка «пример → лид-магнит → заказ»
+  // живёт рядом на всех 9 маршрутах.
   return (
+    <>
     <section className="sr-offer" data-offer aria-labelledby="sr-offer-title">
       <div className="sr-offer-head">
         <p className="sr-eyebrow"><span /> Что вы получаете</p>
@@ -77,5 +82,7 @@ export function OfferBlock({ artifact, price, term, cta, note }: OfferProps) {
         <p className="sr-offer-note">{note ?? DEFAULT_NOTE}</p>
       </div>
     </section>
+    <ProofStrip />
+    </>
   );
 }

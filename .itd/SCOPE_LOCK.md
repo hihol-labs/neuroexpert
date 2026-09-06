@@ -4,9 +4,26 @@
 
 - **G-013** (активирован 2026-09-06 после verified G-012, tier medium): Proof-слой (фаза B) —
   публичный «пример отчёта» доступен с лендингов (структура отчёта v2 по AEO_PLAN §2), единая
-  CTA-цепочка «лид-магнит → аудит → оплата» на всех 9 маршрутах, задел под кейсы (шаблон с
-  числом до/после). **Стадия: ПЛАНИРОВАНИЕ.** До утверждённого владельцем плана кодовые правки
-  `apps/**` и `packages/**` ЗАПРЕЩЕНЫ — разрешены план-документы, `.itd*`, BACKLOG, OPERATIONS.
+  CTA-цепочка «лид-магнит → аудит → оплата» на всех 9 маршрутах, задел под кейсы.
+  **Стадия: РЕАЛИЗАЦИЯ** (план утверждён владельцем 2026-09-06 с пятью решениями — DECISIONS
+  2026-09-06, контракт `.itd-memory/contracts/G-013.md`).
+  Разрешены: `scripts/verify-proof-layer.mjs` (новый) + `scripts/tests/proof-layer.test.mjs`
+  (новый), `scripts/export-example-report.mjs` (новый, read-only к БД); `apps/web/content/
+  example-report.json` (новый, фикстура реального отчёта без идентификаторов), `apps/web/content/
+  cases.ts` (новый); `apps/web/components/report/report-view.tsx` (новый — рендер, вынесенный из
+  страницы заказа), `apps/web/components/marketing/proof-strip.tsx` (новый);
+  `apps/web/components/marketing/checkout-context.tsx` (новый) и `apps/web/app/(marketing)/layout.tsx` (провайдер ссылки заказа + force-dynamic — ссылка checkout не запекается в сборку, класс ошибки хотфикса 109be20; расширение scope 2026-09-06 по находке реализации);
+  `apps/web/app/orders/[id]/page.tsx` (только замена inline-рендера на ReportView, доступ и
+  поведение прежние); `apps/web/app/(marketing)/audit/example/page.tsx` (новый);
+  9 маркетинговых страниц (`page.tsx` главной, for-business, for-experts, for-agencies,
+  how-it-works, launch, pricing, scan, audit/audit-client.tsx) — только подключение ProofStrip и
+  замена захардкоженного `/launch?package=audit_start` на `auditStartHref()` в how-it-works и
+  for-business; `apps/web/middleware.ts` (только `/audit/example` в PUBLIC_ROUTES),
+  `apps/web/lib/sitemap-xml.ts` (только новый маршрут); `.itd/VERIFICATION_CONTRACT.json`,
+  `.itd*`, BACKLOG, CURRENT_PLAN, OPERATIONS, документы плана.
+  Запрещены: продюсер отчёта (`packages/shared/src/delivery/**`, worker, `/api/audit`),
+  платёжный код, цены, миграции, `llm/*`, выдуманные цифры/кейсы, оффер-блоки других SKU
+  (`/launch`, `/for-experts`, `/for-agencies`).
   Операционные тикеты (SEC-2…SEC-5, OPS-2, DEMAND-4, OPS-1) — только по решению владельца.
 
 Предыдущий юнит: **G-012 — VERIFIED 2026-09-06** (ОТК exit 0: `Analytics verification passed for

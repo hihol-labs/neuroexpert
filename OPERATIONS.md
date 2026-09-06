@@ -245,6 +245,24 @@ empty` ставит новый `collect_demand`, если `demand_collected_at` 
   интерфейсе: Отчёты → Источники, сводка → выбрать сегмент «AI-трафик» → «Сохранить отчёт»
   с именем «AI-трафик».
 
+## 8d. Пример отчёта и proof-слой (G-013, 2026-09-06)
+
+- **`/audit/example`** — публичный индексируемый пример отчёта Audit Start. Данные —
+  `apps/web/content/example-report.json`: реальный снапшот (`{meta, report}`), собранный
+  `scripts/export-example-report.mjs` через продюсер `packages/shared` (`buildReportSnapshot`,
+  режим считает `decideDeliveryMode`); без идентификаторов заказа/владельца/email. Обновить:
+  `node scripts/export-example-report.mjs --from-json <ответ /api/audit type=paid> --pair "…"
+  --source-note "…"` либо `--order <uuid>` (service role в env). Рендер общий с `/orders/[id]` —
+  `components/report/report-view.tsx` (структура v2 поверх данных v1; разделы без данных помечены
+  «появится в отчёте v2»).
+- **CTA-цепочка:** `ProofStrip` (пример → бесплатная карта спроса → заказ) рендерится из
+  `OfferBlock` на 9 маршрутах; ссылка заказа приходит из `(marketing)/layout.tsx` через контекст
+  (`auditStartHref()` на каждый запрос, группа `force-dynamic`) — флаг `SELF_SERVE_CHECKOUT`
+  не запекается в сборку. Оракул: `node scripts/verify-proof-layer.mjs [--base-url … --checkout live]`.
+- **Кейсы:** `apps/web/content/cases.ts` (`CaseStudy`: пара, период, метрика, до, после, источник);
+  пока массив пуст — страница показывает пустое состояние без цифр. Первый кейс добавляется
+  только с двумя реальными замерами тем же корпусом вопросов.
+
 ## 9. ЮKassa runbook
 
 - **Тестовая карта:** `5555 5555 5555 4444` (любой будущий срок, любой CVC).

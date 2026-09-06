@@ -3,7 +3,7 @@
   "purpose": "Executable verification contract for the active unit.",
   "unitId": "G-013",
   "createdAt": "2026-09-06",
-  "note": "G-013: активирован 2026-09-06 после verified G-012 в стадии ПЛАНИРОВАНИЯ — код запрещён до утверждённого плана. Оракул verify-proof-layer.mjs НЕ СОЗДАН, пишется первым шагом плана (producer-first). Analytics/order/pair/delivery/preflight/strategy остаются регрессиями.",
+  "note": "G-013: план утверждён владельцем 2026-09-06 (реальный отчёт канарейки, /audit/example индексируемый, CTA how-it-works/for-business → заказ, разделы v2 как структура с пометкой, блок кейсов показывать). Оракул verify-proof-layer.mjs — repo-only по умолчанию, живой контур через --base-url/PROOF_URL/CANONICAL_URL с --checkout.",
   "commandSchema": {
     "requiredFields": [
       "id",
@@ -26,7 +26,7 @@
       "timeoutSeconds": 600,
       "expectedOutput": "exit 0",
       "passFailParser": "exit_code_zero",
-      "note": "НЕ СОЗДАН — оракул юнита G-013 (GOAL.json G-013.verificationCommand), пишется первым шагом плана."
+      "note": "СОЗДАН 2026-09-06 (шаг 1 плана G-013). Слой РЕПО: фикстура apps/web/content/example-report.json (реальный снапшот через buildReportSnapshot, режим decideDeliveryMode, без идентификаторов), общий ReportView с 7 секциями структуры v2 и пометками v2-placeholder, страница заказа без inline-рендера, /audit/example (ReportView, дата/режим/дисклеймер, OfferBlock, кейсы), ProofStrip из OfferBlock (example/lead/order через контекст checkout), layout marketing force-dynamic + провайдер, CTA how-it-works/for-business через auditStartHref, middleware/sitemap, cases.ts. Живой контур: /audit/example 200 с маркерами и 7 секциями, 9 маршрутов с data-proof-link example/lead/order (единый href заказа; --checkout live → /order/audit-start). Мутационный тест scripts/tests/proof-layer.test.mjs: 36 проверок."
     }
   ],
   "regressionCommands": [

@@ -5,6 +5,7 @@ import { BusinessLeadForm } from "@/components/marketing/business-lead-form";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/nav";
 import { generateServiceSchema } from "@/lib/schema-org";
 import { OfferBlock } from "@/components/marketing/offer";
+import { auditStartHref } from "@/lib/checkout";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://neuroexpertise.ru";
 const schema = generateServiceSchema({
@@ -56,7 +57,7 @@ export default function ForBusinessPage() {
           artifact="Карта спроса с приоритетами, план работ и пакеты сопровождения"
           price="от 7 900 ₽"
           term="3–7 дней / 30 дней"
-          cta={{ href: "/launch?package=audit_start", label: "Заказать карту спроса" }}
+          cta={{ href: auditStartHref(), label: "Заказать карту спроса" }}
         />
         <IndustryRail />
         <RouteSection />

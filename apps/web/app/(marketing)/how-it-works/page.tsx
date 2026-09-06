@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight, Check, Minus } from "lucide-react";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/nav";
 import { SystemProtocol } from "@/components/marketing/system-protocol";
+import { auditStartHref } from "@/lib/checkout";
 import { OfferBlock } from "@/components/marketing/offer";
 
 export const metadata: Metadata = {
@@ -40,7 +41,7 @@ export default function HowItWorksPage() {
           artifact="Карта спроса с приоритетами, план работ и пакеты сопровождения"
           price="от 7 900 ₽"
           term="3–7 дней / 30 дней"
-          cta={{ href: "/launch?package=audit_start", label: "Заказать карту спроса" }}
+          cta={{ href: auditStartHref(), label: "Заказать карту спроса" }}
         />
         <ArchitectureSection />
         <GuardrailSection />

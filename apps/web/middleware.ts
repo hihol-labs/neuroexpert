@@ -4,6 +4,8 @@ import { NextResponse, type NextRequest } from "next/server";
 const PUBLIC_ROUTES = [
   "/",
   "/audit",
+  // G-013: публичный «пример отчёта» (proof-слой) — индексируемая страница.
+  "/audit/example",
   "/pricing",
   "/for-experts",
   "/for-business",

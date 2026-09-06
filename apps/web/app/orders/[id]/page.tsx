@@ -7,6 +7,7 @@ import { MarketingFooter, MarketingHeader } from "@/components/marketing/nav";
 import { DetailsForm } from "./details-form";
 import { StatusRefresh } from "./status-refresh";
 import { OrderPaidGoal } from "./order-paid-goal";
+import { ReportView } from "@/components/report/report-view";
 import { buildReportSnapshot } from "shared";
 
 /**
@@ -76,21 +77,12 @@ export default async function OrderStatusPage({ params }: { params: { id: string
           )}
         </section>
         {order.status === "paid" && <DetailsForm orderId={order.id} initial={details} />}
-        {report && <section data-order-report="audit_start" style={{maxWidth:960,margin:"0 auto",padding:"24px 20px 80px"}}>
-          <h2>Спрос и ответы AI-платформ</h2>
-          <p>Замер: {new Date(report.ran_at).toLocaleString("ru-RU")} · {order.report_mode === "degraded" ? "Часть источников недоступна" : "Все подключённые платформы ответили"}</p>
-          <p>Вопросы расположены по частотности Wordstat. Более высокий gap-score означает больше отсутствующих структурных маркеров; это не оценка точности ответа.</p>
-          {report.gaps.map((gap,i)=><article key={gap.source_question_id} style={{marginTop:32,padding:24,border:"1px solid rgba(255,255,255,.15)",borderRadius:16}}>
-            <h3>{i+1}. {gap.question}</h3>
-            <p>Wordstat: {gap.monthly_volume === null ? "частотность неизвестна" : `${gap.monthly_volume.toLocaleString("ru-RU")} запросов/мес.`} · сбор {new Date(gap.collected_at).toLocaleDateString("ru-RU")}</p>
-            {gap.platforms.map(p=><details key={p.platform} style={{marginTop:16}}>
-              <summary>{p.platform} · {p.status === "unavailable" ? "Источник недоступен" : `gap-score ${p.gap_score}/10`}</summary>
-              {p.status === "answered" && <><p style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{p.ai_response}</p><p>{p.weakness}</p><small>Анализ: {p.method === "heuristic" ? "эвристические правила" : p.method}</small></>}
-            </details>)}
-          </article>)}
-          <h2 style={{marginTop:40}}>Как использовать результат</h2>
-          <p>Начните с частых вопросов, где в ответах не хватает источников и конкретных примеров. Подготовьте материалы с проверяемыми фактами и собственными кейсами. Этот замер фиксирует ответы на указанную дату и не гарантирует будущих упоминаний.</p>
-        </section>}
+        {/* G-013: тот же рендер, что публичный пример /audit/example — расхождений «показали/выдали» нет. */}
+        {report && (
+          <section data-order-report="audit_start">
+            <ReportView report={report} mode={typeof order.report_mode === "string" ? order.report_mode : null} />
+          </section>
+        )}
       </main>
       <MarketingFooter />
     </div>
