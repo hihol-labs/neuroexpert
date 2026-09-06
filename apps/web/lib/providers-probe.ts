@@ -28,9 +28,26 @@ function result(state: ProviderProbe["state"], detail: string | null = null): Pr
   return { state, detail, checked_at: new Date().toISOString() };
 }
 
-async function httpProbe(url: string, init: RequestInit): Promise<ProviderProbe> {
+type FetchFn = typeof globalThis.fetch;
+
+/**
+ * OpenAI/Perplexity с сервера в РФ доступны только через прокси — тот же
+ * OPENAI_PROXY_URL, что использует /api/audit (иначе проба видит 403
+ * unsupported_country_region_territory при живом ChatGPT в отчётах — канарейка 2026-09-06).
+ */
+async function proxiedFetch(): Promise<FetchFn> {
+  const proxyUrl = process.env.OPENAI_PROXY_URL;
+  if (!proxyUrl) return fetch;
+  const { ProxyAgent } = await import("undici");
+  const dispatcher = new ProxyAgent(proxyUrl);
+  return (url, init) =>
+    // @ts-expect-error undici dispatcher type
+    fetch(url, { ...init, dispatcher });
+}
+
+async function httpProbe(url: string, init: RequestInit, doFetch: FetchFn = fetch): Promise<ProviderProbe> {
   try {
-    const res = await fetch(url, { ...init, redirect: "error", cache: "no-store", signal: AbortSignal.timeout(PROBE_TIMEOUT_MS) });
+    const res = await doFetch(url, { ...init, redirect: "error", cache: "no-store", signal: AbortSignal.timeout(PROBE_TIMEOUT_MS) });
     const text = res.ok ? "" : await res.text().catch(() => "");
     const c = classifyHttpProbe(res.status, text);
     return result(c.state, c.detail);
@@ -63,8 +80,8 @@ async function probeWordstat(): Promise<ProviderProbe> {
 async function probeOpenAI(): Promise<ProviderProbe> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) return result("no_key");
-  // Список моделей — аутентифицированный вызов без расхода токенов.
-  return httpProbe("https://api.openai.com/v1/models", { method: "GET", headers: { Authorization: `Bearer ${key}` } });
+  // Список моделей — аутентифицированный вызов без расхода токенов; через прокси, как /api/audit.
+  return httpProbe("https://api.openai.com/v1/models", { method: "GET", headers: { Authorization: `Bearer ${key}` } }, await proxiedFetch());
 }
 
 async function probePerplexity(): Promise<ProviderProbe> {
@@ -74,7 +91,7 @@ async function probePerplexity(): Promise<ProviderProbe> {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
     body: JSON.stringify({ model: "sonar", max_tokens: 1, messages: [{ role: "user", content: "ping" }] }),
-  });
+  }, await proxiedFetch());
 }
 
 async function probeYandexGPT(): Promise<ProviderProbe> {
