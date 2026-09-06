@@ -2,17 +2,22 @@
 
 ## Current Task
 
-- **OPS-DEBT-1** (операционный юнит, утверждён владельцем 2026-09-06, tier medium; G-012
-  остаётся в стадии планирования, WIP=1): DEMAND-3 — проба провайдеров в `/api/health`
-  (Wordstat/XMLRIVER, YandexGPT, OpenAI, GigaChat; состояния `ok|no_key|forbidden|no_balance|error`,
-  кеш 10 мин, `degraded` при Wordstat≠ok или LLM<2); DEMAND-1 — `decidePairPreflight`
-  разрешает повторный сбор для `empty`-пары, если `demand_collected_at` старше
-  `PAIR_RECOLLECT_DAYS`=7. Контракт `.itd-memory/contracts/OPS-DEBT-1.md`.
-  Разрешены: `apps/web/app/api/health/route.ts`, `apps/web/lib/providers-probe.ts` (новый),
-  `packages/shared/src/orders/preflight.ts` (только экспорт порога), `packages/shared/src/pairs/**`
-  + `tests/pairs.test.cjs`, `apps/web/app/api/orders/route.ts` (передача `demand_collected_at`),
-  `scripts/verify-preflight.mjs` + его мутационный тест, документы, `.itd*`, BACKLOG.
-  Запрещены: провайдерный слой `llm/*`, платёжный код, цены, миграции, `SELF_SERVE_CHECKOUT`.
+- **G-012** — снова единственный активный юнит (GOAL.json, tier low), **стадия ПЛАНИРОВАНИЯ**:
+  Яндекс.Метрика на всех публичных маршрутах с целями на шаги воронки. До утверждённого
+  владельцем плана кодовые правки `apps/**` и `packages/**` ЗАПРЕЩЕНЫ — разрешены
+  план-документы, `.itd*`, BACKLOG, OPERATIONS. Операционные юниты 2026-09-06 (SEC-1,
+  OPS-DEBT-1) закрыты; открытые операционные тикеты — BACKLOG (SEC-2…SEC-5, OPS-2, DEMAND-4,
+  OPS-1 Tailscale) — берутся только по решению владельца.
+
+Предыдущий: **OPS-DEBT-1 — VERIFIED 2026-09-06** (коммиты `7278d02` + `6e4e77f`; full-чекеры
+PASSED; `ops-debt-1-fix-adjudication.json`; выкачено `.deploy-sha=6e4e77f`; health `providers`
+на проде: wordstat/openai/yandexgpt/gigachat ok, perplexity no_key; канарейка повторного сбора
+DEMAND-1 зелёная — `.itd-memory/contracts/OPS-DEBT-1.md`). Его scope сохранён как история:
+  DEMAND-3 — проба провайдеров в `/api/health` (состояния `ok|no_key|forbidden|no_balance|empty|
+  error|skipped`, кеш 10 мин, `degraded` при Wordstat≠ok или LLM<2); DEMAND-1 — повторный сбор
+  для `empty`-пары при `demand_collected_at` старше `PAIR_RECOLLECT_DAYS`=7; файлы: health route,
+  `apps/web/lib/providers-probe.ts`, `packages/shared/src/providers/**`, `pairs/index.ts`,
+  orders route (claim `empty → queued`), `verify-preflight.mjs` + мутационный тест, OPERATIONS §8b.
 
 Предыдущий: **SEC-1 — VERIFIED 2026-09-06** (коммит `2756623`; full-чекер PASSED;
 `sec1-ch-adjudication.json`; выкачено `.deploy-sha=2756623`; живые оракулы ALL_GREEN;
