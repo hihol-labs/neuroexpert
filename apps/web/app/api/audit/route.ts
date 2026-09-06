@@ -2,26 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { timingSafeEqual } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { DailyBudget, SlidingWindowLimiter, clientIpFromHeaders, parseLimitEnv } from "shared";
 
 export const maxDuration = 60;
 
-// Rate limiter: 2 requests per minute per IP
-const rateLimitMap = new Map<string, number[]>();
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const windowMs = 60_000;
-  const maxRequests = 2;
-
-  const timestamps = rateLimitMap.get(ip) || [];
-  const recent = timestamps.filter((t) => now - t < windowMs);
-
-  if (recent.length >= maxRequests) return true;
-
-  recent.push(now);
-  rateLimitMap.set(ip, recent);
-  return false;
-}
+// SEC-1: бесплатный аудит — 2 запроса в минуту на IP (bounded-лимитер, память не
+// растёт от подделки X-Forwarded-For) + глобальный суточный бюджет LLM-вызовов
+// (AUDIT_FREE_DAILY_BUDGET, по умолчанию 100/сутки UTC). Внутренний paid-контур
+// с AUDIT_INTERNAL_TOKEN лимитами не ограничивается.
+const FREE_IP_LIMITER = new SlidingWindowLimiter({ limit: 2, windowMs: 60_000 });
+const FREE_DAILY_BUDGET = new DailyBudget(parseLimitEnv(process.env.AUDIT_FREE_DAILY_BUDGET, 100));
 
 // ============================================================
 // Types
@@ -482,10 +472,7 @@ function sortGaps(gaps: AuditGap[]): AuditGap[] {
 // ============================================================
 
 export async function POST(request: NextRequest) {
-  const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip") ||
-    "unknown";
+  const ip = clientIpFromHeaders((name) => request.headers.get(name));
 
   let body: { niche_id?: string; type?: string };
   try {
@@ -501,7 +488,17 @@ export async function POST(request: NextRequest) {
   const supplied = request.headers.get("x-audit-internal") || "";
   const internal = Boolean(token && supplied && Buffer.byteLength(token) === Buffer.byteLength(supplied) && timingSafeEqual(Buffer.from(token), Buffer.from(supplied)));
   if (type === "paid" && !internal) return NextResponse.json({error:"Unauthorized"},{status:401});
-  if (!internal && isRateLimited(ip)) return NextResponse.json({error:"Слишком много запросов. Подождите минуту."},{status:429});
+  if (!internal) {
+    const byIp = FREE_IP_LIMITER.consume(ip);
+    if (!byIp.allowed) {
+      return NextResponse.json({ error: "Слишком много запросов. Подождите минуту." }, { status: 429, headers: { "Retry-After": String(Math.ceil(byIp.retryAfterMs / 1000)) } });
+    }
+    const budget = FREE_DAILY_BUDGET.consume();
+    if (!budget.allowed) {
+      console.warn(`[audit] free daily budget exhausted: ${budget.used}/${budget.limit} (${budget.day})`);
+      return NextResponse.json({ error: "Лимит бесплатных аудитов на сегодня исчерпан. Попробуйте завтра." }, { status: 429, headers: { "Retry-After": "3600" } });
+    }
+  }
   const paid = type === "paid" && internal;
   const ranAt = new Date().toISOString();
 

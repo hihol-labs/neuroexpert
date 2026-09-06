@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mayEnqueueAuditJob, parsePackageMetadata, transition, type PackageOrderStatus } from "shared";
+import {
+  assessExpertPayment,
+  assessPackagePayment,
+  assessPackageRefund,
+  mayEnqueueAuditJob,
+  parsePackageMetadata,
+  selectShopForOrder,
+  transition,
+  type KassaShop,
+  type PackageOrderStatus,
+  type ReconcileOrder,
+} from "shared";
 import { createClient } from "@supabase/supabase-js";
+import { KassaUnavailableError, fetchKassaPayment, fetchKassaRefund, kassaShops } from "@/lib/yukassa-verify";
 
 const WEBHOOK_SECRET = process.env.YUKASSA_WEBHOOK_SECRET || "";
 
@@ -66,6 +78,30 @@ function appUrl(): string {
 }
 
 /**
+ * SEC-1: IP-allowlist и секрет в URL — первый рубеж; источник истины — API кассы.
+ * Любая смена состояния заказа (paid / failed / refunded) делается только после
+ * перечитывания платежа (и возврата) из ЮKassa по магазину заказа и сравнения
+ * с заказом (`assessPackagePayment` / `assessPackageRefund`). Подделанное тело
+ * уведомления, прошедшее allowlist (например, через X-Forwarded-For), ничего
+ * не меняет. Недоступность API кассы → 503, касса повторит уведомление.
+ */
+const PACKAGE_ORDER_FIELDS = "id, owner_id, email, package, amount_rub, niche_id, city, status, job_id, yukassa_payment_id, payment_test, payment_shop_id";
+
+type PackageOrderRow = ReconcileOrder & {
+  email: string;
+  niche_id: string;
+  city: string;
+  status: string;
+  job_id: string | null;
+};
+
+function shopForOrder(order: ReconcileOrder, context: string): KassaShop | null {
+  const shop = selectShopForOrder(order, kassaShops());
+  if (!shop) console.error(`[yukassa] ${context}: shop for order ${order.id} is not configured — event ignored`);
+  return shop;
+}
+
+/**
  * Пакетный заказ оплачен (G-018). Инварианты: статус меняется только через
  * машину состояний; job аудита ставится ровно один раз (guard `job_id IS NULL`
  * на UPDATE — параллельный повтор webhook не создаст второй job); письмо со
@@ -76,13 +112,13 @@ async function handlePackagePaymentSucceeded(
   admin: Admin,
   orderId: string,
   paymentId: string,
-  amount: { value: string; currency: string },
 ): Promise<void> {
-  const { data: order } = await admin
+  const { data } = await admin
     .from("package_orders")
-    .select("id, owner_id, email, package, amount_rub, niche_id, city, status, job_id, yukassa_payment_id")
+    .select(PACKAGE_ORDER_FIELDS)
     .eq("id", orderId)
     .maybeSingle();
+  const order = data as PackageOrderRow | null;
   if (!order) {
     console.error(`[yukassa] package order ${orderId} not found for payment ${paymentId}`);
     return;
@@ -91,14 +127,14 @@ async function handlePackagePaymentSucceeded(
     console.error(`[yukassa] payment ${paymentId} does not match order ${orderId} (${order.yukassa_payment_id})`);
     return;
   }
-  const paidRub = Math.round(parseFloat(amount.value));
-  if (paidRub !== order.amount_rub || amount.currency !== "RUB") {
-    console.error(`[yukassa] amount mismatch for order ${orderId}: got ${amount.value} ${amount.currency}, expected ${order.amount_rub} RUB`);
-    await admin
-      .from("package_orders")
-      .update({ status: "failed", failure_reason: `amount mismatch: ${amount.value} ${amount.currency}`, yukassa_payment_id: paymentId })
-      .eq("id", orderId)
-      .eq("status", "pending");
+
+  // Сверка с API кассы: id, статус succeeded, режим магазина, сумма пакета, metadata заказа.
+  const shop = shopForOrder(order, "payment.succeeded");
+  if (!shop) return;
+  const verified = await fetchKassaPayment(shop, paymentId);
+  const check = assessPackagePayment(order, verified, { status: "succeeded", shop });
+  if (!check.ok) {
+    console.warn(`[yukassa] payment.succeeded for order ${orderId} rejected by kassa reconciliation: ${check.reason}`);
     return;
   }
 
@@ -108,15 +144,15 @@ async function handlePackagePaymentSucceeded(
     return;
   }
   if (t.changed) {
-    const {error} = await admin
+    const { error } = await admin
       .from("package_orders")
       .update({ status: "paid", paid_at: new Date().toISOString(), yukassa_payment_id: paymentId })
       .eq("id", orderId)
       .eq("status", "pending");
-    if(error)throw new Error("Package payment database update failed");
+    if (error) throw new Error("Package payment database update failed");
   }
 
-  if (mayEnqueueAuditJob("paid", order.job_id as string | null)) {
+  if (mayEnqueueAuditJob("paid", order.job_id)) {
     const { data: job, error: jobError } = await admin
       .from("jobs")
       .insert({
@@ -126,7 +162,7 @@ async function handlePackagePaymentSucceeded(
       })
       .select("id")
       .single();
-    if(jobError)throw new Error("Package audit job insert failed");
+    if (jobError) throw new Error("Package audit job insert failed");
     if (job?.id) {
       const { data: claimed, error: claimError } = await admin
         .from("package_orders")
@@ -135,7 +171,7 @@ async function handlePackagePaymentSucceeded(
         .eq("status", "paid")
         .is("job_id", null)
         .select("id");
-      if(claimError)throw new Error("Package audit job attach failed");
+      if (claimError) throw new Error("Package audit job attach failed");
       if (!claimed || claimed.length === 0) {
         // Параллельный повтор webhook успел раньше — наш job лишний.
         await admin.from("jobs").delete().eq("id", job.id);
@@ -153,7 +189,7 @@ async function handlePackagePaymentSucceeded(
         auth: { autoRefreshToken: false, persistSession: false },
       });
       const { error } = await anon.auth.signInWithOtp({
-        email: order.email as string,
+        email: order.email,
         options: { emailRedirectTo: `${appUrl()}/auth/callback?next=/orders/${orderId}`, shouldCreateUser: false },
       });
       if (error) console.error(`[yukassa] status email for order ${orderId} failed:`, error.message);
@@ -163,20 +199,36 @@ async function handlePackagePaymentSucceeded(
   }
 }
 
-/** payment.canceled / refund.succeeded для пакетного заказа; true — если заказ найден и обработан. */
+/**
+ * payment.canceled / refund.succeeded для пакетного заказа; true — если заказ найден
+ * (событие относится к пакетному контуру), независимо от того, изменил ли он статус.
+ */
 async function handlePackageTerminalEvent(
   admin: Admin,
   paymentId: string,
   event: "payment.canceled" | "refund.succeeded",
   refundId?: string,
 ): Promise<boolean> {
-  const { data: order, error: readError } = await admin
+  const { data, error: readError } = await admin
     .from("package_orders")
-    .select("id, status")
+    .select(PACKAGE_ORDER_FIELDS)
     .eq("yukassa_payment_id", paymentId)
     .maybeSingle();
-  if(readError)throw new Error("Package terminal lookup failed");
+  if (readError) throw new Error("Package terminal lookup failed");
+  const order = data as PackageOrderRow | null;
   if (!order) return false;
+
+  const shop = shopForOrder(order, event);
+  if (!shop) return true;
+  const payment = await fetchKassaPayment(shop, paymentId);
+  const check = event === "refund.succeeded"
+    ? assessPackageRefund(order, refundId ? await fetchKassaRefund(shop, refundId) : null, payment, shop)
+    : assessPackagePayment(order, payment, { status: "canceled", shop });
+  if (!check.ok) {
+    console.warn(`[yukassa] ${event} for order ${order.id} rejected by kassa reconciliation: ${check.reason}`);
+    return true;
+  }
+
   const t = transition(order.status as PackageOrderStatus, event);
   if (!t.ok) {
     console.error(`[yukassa] order ${order.id}: ${t.error}`);
@@ -184,12 +236,19 @@ async function handlePackageTerminalEvent(
   }
   if (t.changed) {
     const patch = event === "refund.succeeded"
-      ? { status: "refunded", refunded_at: new Date().toISOString(), ...(refundId ? {refund_id:refundId}: {}) }
+      ? { status: "refunded", refunded_at: new Date().toISOString(), ...(refundId ? { refund_id: refundId } : {}) }
       : { status: "failed", failure_reason: "payment.canceled" };
-    const {error} = await admin.from("package_orders").update(patch).eq("id", order.id).eq("status", order.status);
-    if(error)throw new Error("Package terminal update failed");
+    const { error } = await admin.from("package_orders").update(patch).eq("id", order.id).eq("status", order.status);
+    if (error) throw new Error("Package terminal update failed");
   }
   return true;
+}
+
+/** Legacy-контур экспертов: платёж перечитывается из боевого магазина. */
+function liveShop(context: string): KassaShop | null {
+  const shop = kassaShops().find((s) => !s.test) ?? null;
+  if (!shop) console.error(`[yukassa] ${context}: live shop is not configured — event ignored`);
+  return shop;
 }
 
 export async function POST(request: NextRequest) {
@@ -217,7 +276,7 @@ export async function POST(request: NextRequest) {
     const event = body.event as string;
     const object = body.object as Record<string, unknown>;
 
-    if (!event || !object) {
+    if (!event || !object || typeof object.id !== "string") {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
 
@@ -231,14 +290,13 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: true });
       }
 
-      const paymentId = object.id as string;
-      const amount = object.amount as { value: string; currency: string };
+      const paymentId = object.id;
       const metadata = (object.metadata ?? {}) as Record<string, string>;
 
       // Пакетный заказ (G-018): отдельный контур, expert_id не нужен.
       const packageMeta = parsePackageMetadata(metadata);
       if (packageMeta) {
-        await handlePackagePaymentSucceeded(admin, packageMeta.order_id, paymentId, amount);
+        await handlePackagePaymentSucceeded(admin, packageMeta.order_id, paymentId);
         return NextResponse.json({ ok: true });
       }
 
@@ -250,32 +308,43 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: true });
       }
 
+      // 3) Сверка с API кассы: сохраняем только то, что касса подтверждает.
+      const shop = liveShop("payment.succeeded");
+      if (!shop) return NextResponse.json({ ok: true });
+      const verified = await fetchKassaPayment(shop, paymentId);
+      const check = assessExpertPayment(verified, { paymentId, expertId, status: "succeeded" });
+      if (!check.ok || !verified?.amount) {
+        console.warn(`[yukassa] payment.succeeded ${paymentId} rejected by kassa reconciliation: ${check.ok ? "amount missing" : check.reason}`);
+        return NextResponse.json({ ok: true });
+      }
+      const verifiedMetadata = (verified.metadata ?? {}) as Record<string, string>;
+
       // Save payment
       await admin.from("payments").upsert({
         expert_id: expertId,
         type: paymentType,
-        amount: Math.round(parseFloat(amount.value)),
-        currency: amount.currency,
+        amount: Math.round(parseFloat(verified.amount.value)),
+        currency: verified.amount.currency,
         status: "succeeded",
         yukassa_payment_id: paymentId,
-        description: metadata.description || `${paymentType} payment`,
-        metadata,
+        description: verifiedMetadata.description || `${paymentType} payment`,
+        metadata: verifiedMetadata,
       }, { onConflict: "yukassa_payment_id" });
 
       // Update subscription if applicable
-      if (paymentType === "subscription" && metadata.tier) {
+      if (paymentType === "subscription" && verifiedMetadata.tier) {
         const expiresAt = new Date();
         expiresAt.setMonth(expiresAt.getMonth() + 1);
 
         await admin
           .from("profiles")
           .update({
-            subscription_tier: metadata.tier,
+            subscription_tier: verifiedMetadata.tier,
             subscription_expires_at: expiresAt.toISOString(),
           })
           .eq("id", expertId);
 
-        console.log(`[yukassa] Subscription updated: ${expertId} → ${metadata.tier}`);
+        console.log(`[yukassa] Subscription updated: ${expertId} → ${verifiedMetadata.tier}`);
       }
 
       // Save payment method for recurring
@@ -291,17 +360,39 @@ export async function POST(request: NextRequest) {
     if (event === "payment.canceled" || event === "refund.succeeded") {
       // refund.succeeded несёт объект возврата: платёж — в payment_id; для
       // payment.canceled объект — сам платёж.
-      const paymentId = (event === "refund.succeeded"
-        ? (object.payment_id as string | undefined) ?? (object.id as string)
-        : (object.id as string));
+      const refundId = event === "refund.succeeded" ? object.id : undefined;
+      const paymentId = event === "refund.succeeded"
+        ? (typeof object.payment_id === "string" ? object.payment_id : object.id)
+        : object.id;
       const status = event === "refund.succeeded" ? "refunded" : "failed";
 
-      const handledPackage = await handlePackageTerminalEvent(admin, paymentId, event, event === "refund.succeeded" ? String(object.id) : undefined);
+      const handledPackage = await handlePackageTerminalEvent(admin, paymentId, event, refundId);
       if (!handledPackage) {
-        await admin
+        const { data: legacy } = await admin
           .from("payments")
-          .update({ status })
-          .eq("yukassa_payment_id", paymentId);
+          .select("expert_id")
+          .eq("yukassa_payment_id", paymentId)
+          .maybeSingle();
+        const expertId = legacy?.expert_id as string | undefined;
+        const shop = expertId ? liveShop(event) : null;
+        if (expertId && shop) {
+          const payment = await fetchKassaPayment(shop, paymentId);
+          const check = event === "refund.succeeded"
+            ? (async () => {
+                const base = assessExpertPayment(payment, { paymentId, expertId, status: "succeeded" });
+                if (!base.ok) return base;
+                const refund = refundId ? await fetchKassaRefund(shop, refundId) : null;
+                if (!refund || refund.status !== "succeeded" || refund.payment_id !== paymentId) return { ok: false as const, reason: "refund not confirmed by kassa" };
+                return { ok: true as const };
+              })()
+            : Promise.resolve(assessExpertPayment(payment, { paymentId, expertId, status: "canceled" }));
+          const verdict = await check;
+          if (verdict.ok) {
+            await admin.from("payments").update({ status }).eq("yukassa_payment_id", paymentId);
+          } else {
+            console.warn(`[yukassa] ${event} ${paymentId} rejected by kassa reconciliation: ${verdict.reason}`);
+          }
+        }
       }
     }
 
@@ -315,6 +406,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
+    if (err instanceof KassaUnavailableError) {
+      // Касса недоступна для сверки — не решаем вслепую; 503 заставит ЮKassa повторить.
+      console.error("[yukassa] Webhook deferred, kassa API unavailable:", err.message);
+      return NextResponse.json({ error: "Verification unavailable" }, { status: 503 });
+    }
     console.error("[yukassa] Webhook error:", err);
     return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 });
   }

@@ -182,6 +182,18 @@ Pixel Tools `PIXEL_TOOLS_API_KEY`, GptFox `GPTFOX_API_KEY`, Яндекс.Мет�
 `…/auth/callback?next=/order/audit-start*` (письмо «данные готовы» по паре). После правки —
 `up -d --force-recreate supabase-auth` (restart env не перечитывает).
 
+**Лимиты писем (SEC-1, 2026-09-06).** `GOTRUE_SMTP_MAX_FREQUENCY` (default `15s`) — минимальная
+пауза между письмами на один адрес; `GOTRUE_RATE_LIMIT_EMAIL_SENT` (default `60`) — часовой
+бюджет писем GoTrue. Оба переопределяются в `.env`. Письма «оплачено» (webhook) и «отчёт
+готов» (worker) идут тем же каналом: при отказе по частоте worker повторит уведомление по
+`notification_next_attempt_at`, webhook письмо не повторяет (ссылка на статус доступна с
+возврата из кассы). Смежные лимиты web (in-memory, один контейнер): `ORDERS_RATE_LIMIT_IP`
+(5 заказов / 10 мин на IP), `ORDERS_RATE_LIMIT_EMAIL` (3 / час на email),
+`AUDIT_FREE_DAILY_BUDGET` (100 бесплатных аудитов / сутки UTC); канарейка с
+`x-selfserve-canary` и внутренний `type=paid` лимитами не ограничены. Webhook кассы меняет
+статус заказа только после сверки платежа/возврата через API ЮKassa; при недоступности API —
+503, касса повторяет уведомление сама.
+
 ## 9. ЮKassa runbook
 
 - **Тестовая карта:** `5555 5555 5555 4444` (любой будущий срок, любой CVC).

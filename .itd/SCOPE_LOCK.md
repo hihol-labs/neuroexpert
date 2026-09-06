@@ -2,6 +2,28 @@
 
 ## Current Task
 
+- **SEC-1** (операционный юнит, утверждён владельцем 2026-09-06, tier high; G-012 остаётся
+  в стадии планирования, WIP=1 — следующий OPS-DEBT-1 только после verified SEC-1):
+  закрытие пяти Important security-audit AF-1 — сверка webhook ЮKassa с API кассы,
+  rate-limit `POST /api/orders`, bounded-лимитер + дневной бюджет `/api/audit` free,
+  лимиты писем GoTrue. Контракт `.itd-memory/contracts/SEC-1.md`.
+  Разрешены: `apps/web/app/api/webhooks/yukassa/route.ts`, `apps/web/app/api/orders/route.ts`
+  (только вставка лимита после валидации), `apps/web/app/api/audit/route.ts` (только
+  лимитер/бюджет), `apps/web/lib/yukassa-verify.ts` (новый), `packages/shared/src/orders/reconcile.ts`
+  (новый) + `orders/index.ts`, `packages/shared/src/security/**` (новый) + `src/index.ts`,
+  `packages/shared/tests/{reconcile,rate-limit}.test.cjs`, `docker/docker-compose*.yml`
+  (только GoTrue env), `scripts/verify-selfserve-path.mjs` + `scripts/tests/selfserve-path.test.mjs`
+  (требование сверки в repo-стадии order), OPERATIONS.md §8b, `.itd*`, BACKLOG, CURRENT_PLAN.
+  Запрещены: цены, `llm/*`, миграции, worker, состояние заказов вне сверки, ротация ключей.
+
+Следующий в очереди (утверждён 2026-09-06, ждёт verified SEC-1): **OPS-DEBT-1** — DEMAND-3
+проба провайдеров в `/api/health`, DEMAND-1 авто-повтор сбора для `empty`-пар
+(`.itd-memory/contracts/OPS-DEBT-1.md`).
+
+Публикация: ветка `codex/self-serve-audit-start` (Draft PR #8, guarded push через
+`itd pr create`; прямой push в зарегистрированный репозиторий заблокирован хуком ITD —
+штатно). Ветка `codex/plan-north-star-marketing-contract` локально та же история.
+
 - **G-012** (активирован 2026-09-05 после verified G-019, tier low): Яндекс.Метрика подключена
   на все публичные маршруты с целями на шаги воронки (лид-магнит, заявка, контакт).
   **Стадия: ПЛАНИРОВАНИЕ.** Последовательность ADR-003 AF-0 → G-018 → G-019 закрыта; порядок

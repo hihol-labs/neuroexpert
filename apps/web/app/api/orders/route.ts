@@ -13,8 +13,32 @@ import {
   isPairDemandStatus,
   normalizeCity,
   PREFLIGHT_MIN_PLATFORMS,
+  SlidingWindowLimiter,
+  clientIpFromHeaders,
+  parseLimitEnv,
 } from "shared";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+
+// SEC-1: лимиты на создание заказов — по IP и по email (заказ создаёт аккаунт по
+// чужому email, заказ в кассе и пару «вертикаль × город» с расходом XMLRIVER/LLM).
+// In-memory с ограничением ключей; канарейка с валидным заголовком не лимитируется.
+const ORDERS_IP_LIMITER = new SlidingWindowLimiter({
+  limit: Math.max(1, parseLimitEnv(process.env.ORDERS_RATE_LIMIT_IP, 5)),
+  windowMs: 10 * 60_000,
+});
+const ORDERS_EMAIL_LIMITER = new SlidingWindowLimiter({
+  limit: Math.max(1, parseLimitEnv(process.env.ORDERS_RATE_LIMIT_EMAIL, 3)),
+  windowMs: 60 * 60_000,
+});
+
+function ordersRateLimited(request: NextRequest, email: string): { retryAfterMs: number } | null {
+  const ip = clientIpFromHeaders((name) => request.headers.get(name));
+  const byIp = ORDERS_IP_LIMITER.consume(`ip:${ip}`);
+  if (!byIp.allowed) return { retryAfterMs: byIp.retryAfterMs };
+  const byEmail = ORDERS_EMAIL_LIMITER.consume(`email:${email}`);
+  if (!byEmail.allowed) return { retryAfterMs: byEmail.retryAfterMs };
+  return null;
+}
 
 // Нетипизированный service_role клиент — как в webhook и service-orders:
 // сгенерированные типы Database не покрывают новые таблицы полностью.
@@ -145,6 +169,17 @@ export async function POST(request: NextRequest) {
   }
   if (rawCity.length < 2 || rawCity.length > 80) return NextResponse.json({ error: "Укажите город." }, { status: 400 });
   if (!EMAIL_RE.test(email)) return NextResponse.json({ error: "Укажите корректный email." }, { status: 400 });
+
+  // Лимит — после валидации (мусорные запросы не тратят квоту) и до любых записей.
+  if (!canaryAllowed(request)) {
+    const limited = ordersRateLimited(request, email);
+    if (limited) {
+      return NextResponse.json(
+        { error: "Слишком много заявок. Попробуйте позже.", reason: "rate_limit" },
+        { status: 429, headers: { "Retry-After": String(Math.ceil(limited.retryAfterMs / 1000)) } },
+      );
+    }
+  }
 
   const admin = createAdminClient();
   const configuredPlatforms = countConfiguredPlatforms(process.env);

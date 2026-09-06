@@ -18,3 +18,4 @@ export * from "./demand-to-revenue.js";
 // "undici" (node-only, pulls in node:crypto) which breaks client-side webpack builds.
 // Import it via deep path from server-only code: `import { tgFetch } from "shared/dist/http/telegram-fetch.js"`.
 export * from "./delivery/index.js";
+export * from "./security/index.js";

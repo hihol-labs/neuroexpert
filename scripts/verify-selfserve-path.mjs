@@ -148,6 +148,7 @@ function repoOrder() {
     ["\"Idempotence-Key\"", "Idempotence-Key на платёж"],
     ["status: 404", "dark-гейт 404"],
     ["api.yookassa.ru/v3/payments", "создание платежа ЮKassa"],
+    ["SlidingWindowLimiter", "rate-limit заказов (SEC-1)"],
   ], "POST /api/orders по контракту §6: pre-flight → пользователь → заказ → платёж");
 
   requireContains("apps/web/app/api/orders/[id]/route.ts", [
@@ -160,7 +161,9 @@ function repoOrder() {
     ["mayEnqueueAuditJob(", "идемпотентная постановка job"],
     ["type: \"run_audit\"", "job run_audit"],
     [".is(\"job_id\", null)", "guard job_id IS NULL"],
-  ], "webhook: paid + run_audit ровно один раз");
+    ["assessPackagePayment(", "сверка платежа с API кассы до смены статуса (SEC-1)"],
+    ["assessPackageRefund(", "сверка возврата с API кассы (SEC-1)"],
+  ], "webhook: paid + run_audit ровно один раз; статус меняется только после сверки с API кассы");
 
   requireContains("apps/web/lib/checkout.ts", [["SELF_SERVE_CHECKOUT", "серверный флаг checkout"]],
     "включение checkout — одной серверной переменной, атомарно");

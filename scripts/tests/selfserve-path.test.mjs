@@ -25,10 +25,10 @@ const FILES = {
     "CREATE TABLE IF NOT EXISTS public.package_orders (\n  yukassa_payment_id  TEXT UNIQUE,\n  CONSTRAINT package_orders_job_requires_paid CHECK (true)\n);\nCHECK (type IN ('expand_query','run_audit'));\n",
   "packages/shared/src/orders/packages.ts": "export const PACKAGE_REGISTRY = Object.freeze({ audit_start: { amountRub: 7900 } });\n",
   "apps/web/app/api/orders/route.ts":
-    "const d = decidePreflight({});\nheaders: { \"Idempotence-Key\": `package-${id}` }\nreturn NextResponse.json({}, { status: 404 });\nfetch(\"https://api.yookassa.ru/v3/payments\")\n",
+    "const d = decidePreflight({});\nheaders: { \"Idempotence-Key\": `package-${id}` }\nreturn NextResponse.json({}, { status: 404 });\nfetch(\"https://api.yookassa.ru/v3/payments\")\nconst l = new SlidingWindowLimiter({});\n",
   "apps/web/app/api/orders/[id]/route.ts": "const { data: { user } } = await supabase.auth.getUser();\nif (!order || order.owner_id !== user.id) {}\n",
   "apps/web/app/api/webhooks/yukassa/route.ts":
-    "const m = parsePackageMetadata(metadata);\nif (mayEnqueueAuditJob(\"paid\", null)) {}\n.insert({ type: \"run_audit\" })\n.is(\"job_id\", null)\n",
+    "const m = parsePackageMetadata(metadata);\nif (mayEnqueueAuditJob(\"paid\", null)) {}\n.insert({ type: \"run_audit\" })\n.is(\"job_id\", null)\nconst c = assessPackagePayment(order, p, {});\nconst r = assessPackageRefund(order, rf, p, s);\n",
   "apps/web/lib/checkout.ts": "export function checkoutLive() { return process.env.SELF_SERVE_CHECKOUT === \"live\"; }\n",
   "apps/web/app/(marketing)/pricing/page.tsx": "<PricingContent auditStartHref={auditStartHref()} />\n",
   "apps/web/app/(marketing)/audit/page.tsx": "<AuditClient auditStartHref={auditStartHref()} />\n",
@@ -123,6 +123,9 @@ try {
     ["orders: pre-flight убран", { "apps/web/app/api/orders/route.ts": FILES["apps/web/app/api/orders/route.ts"].replace("decidePreflight(", "noPreflight(") }],
     ["orders/[id]: owner-гейт убран", { "apps/web/app/api/orders/[id]/route.ts": "const x = 1;\n" }],
     ["webhook: guard job_id IS NULL убран", { "apps/web/app/api/webhooks/yukassa/route.ts": FILES["apps/web/app/api/webhooks/yukassa/route.ts"].replace(".is(\"job_id\", null)", "") }],
+    ["webhook: сверка платежа с API кассы убрана (SEC-1)", { "apps/web/app/api/webhooks/yukassa/route.ts": FILES["apps/web/app/api/webhooks/yukassa/route.ts"].replace("assessPackagePayment(", "trustBody(") }],
+    ["webhook: сверка возврата с API кассы убрана (SEC-1)", { "apps/web/app/api/webhooks/yukassa/route.ts": FILES["apps/web/app/api/webhooks/yukassa/route.ts"].replace("assessPackageRefund(", "trustRefund(") }],
+    ["orders: rate-limit заказов убран (SEC-1)", { "apps/web/app/api/orders/route.ts": FILES["apps/web/app/api/orders/route.ts"].replace("SlidingWindowLimiter", "NoLimiter") }],
     ["/audit: хардкод NICHE_NAMES вернулся", { "apps/web/app/api/audit/route.ts": "const NICHE_NAMES = {};\n" }],
     ["оферта: пункт авто-возврата удалён", { "apps/web/app/(marketing)/terms/page.tsx": "<p>возврат по заявлению</p>\n" }],
     ["CTA /pricing не подключён к флагу", { "apps/web/app/(marketing)/pricing/page.tsx": "<PricingContent />\n" }],

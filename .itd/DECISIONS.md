@@ -513,6 +513,30 @@ refund.succeeded). Тестовый магазин остаётся в `.env` д
 Ограничение: цены заморожены до `AF-1-COMM` (3-5 внешних оплат); первую боевую
 оплату делает владелец как свидетельство AF-1.
 
+## 2026-09-06 — утверждены SEC-1, OPS-DEBT-1, push и PAY-4
+
+Владелец: «утверждаю SEC-1 и OPS-DEBT-1, push и PAY-4 — go».
+
+Какое: (1) SEC-1 — закрыть пять Important security-audit AF-1 (сверка webhook с API
+кассы по payment_id/refund_id до смены статуса; rate-limit `POST /api/orders` по IP и
+email; bounded-лимитер + дневной бюджет бесплатного `/api/audit`; лимиты писем GoTrue
+`GOTRUE_SMTP_MAX_FREQUENCY=15s`, `GOTRUE_RATE_LIMIT_EMAIL_SENT=60`); (2) OPS-DEBT-1 —
+DEMAND-3 (проба провайдеров в health, кеш 10 мин) и DEMAND-1 (авто-повтор сбора для
+`empty`-пар не чаще раза в `PAIR_RECOLLECT_DAYS`=7) — после verified SEC-1; (3) push
+кода на GitHub; (4) PAY-4 — `.itd/` версионируется (`ecb6c31`), `.itd-memory/` остаётся
+локальным.
+
+Как выполнен push: репозиторий `hihol-labs/neuroexpert` зарегистрирован в локальном
+реестре ITD gate (профиль local-submission/local-review, квитанция committed-head
+`pay4-publish-adjudication.json`, tier low для docs-коммита); `gh pr view` по имени
+ветки `codex/plan-north-star-marketing-contract` возвращает смерженный PR #7, поэтому
+guarded push сделан под новой веткой **`codex/self-serve-audit-start`** (тот же HEAD
+`ecb6c31`, Draft PR #8 к main). Push-транспорт — HTTPS через `gh` (pushInsteadOf).
+
+Отвергнуто: прямой `git push` в обход хука (нарушает ITD gate); отключение хуков.
+Ограничение: ротация секретного ключа кассы остаётся за владельцем (рекомендация —
+до первой внешней оплаты); цены не меняются.
+
 ## 2026-09-05 — утверждён G-019
 
 Владелец: «утверждаю». Утверждены семь шагов, шесть решений и уточнения плана SELF_SERVE_PLAN G-019: внутренняя API delivery, durable письмо/возврат, CAS финализации, SLA от оплаты, фиксированный магазин, честный provenance, свежая тестовая канарейка. Разрешены реализация, локальная проверка и предусмотренная планом dark-выкатка с тестовой кассой. Публичный checkout остаётся dark.
