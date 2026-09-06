@@ -311,6 +311,20 @@ function checkHealthPayload(health) {
     finding("/api/health", `последний expand_query completed, но subqueries=${last.subqueries ?? "null"}`,
       "пустой fan-out — не успех: провайдер вернул ноль подзапросов");
   }
+  // DEMAND-3 (OPS-DEBT-1): живость провайдеров, а не наличие ключей. Пустой баланс
+  // XMLRIVER и заблокированное облако Yandex проходили тихо (2026-09-05) — health
+  // обязан отдавать блок providers и не деградировать по нему.
+  const providers = health.providers;
+  const summary = health.providers_summary;
+  if (!providers || typeof providers !== "object" || !summary || typeof summary !== "object") {
+    finding("/api/health", "блок providers / providers_summary отсутствует",
+      "health обязан пробовать Wordstat и LLM-платформы (DEMAND-3) и отдавать состояния ok|no_key|forbidden|no_balance|empty|error");
+  } else if (summary.degraded === true) {
+    const reasons = Array.isArray(summary.reasons) ? summary.reasons.join("; ") : "";
+    const wordstat = providers.wordstat?.state ?? "missing";
+    finding("/api/health", `providers degraded (${reasons || `wordstat ${wordstat}, llm_ok ${summary.llm_ok}`})`,
+      "пополнить баланс XMLRIVER / разблокировать биллинг облака / проверить ключи — сбор спроса и замер не выполнятся штатно");
+  }
 }
 
 async function checkWebhookRoute() {

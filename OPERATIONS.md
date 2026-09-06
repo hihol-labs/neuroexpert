@@ -194,6 +194,21 @@ Pixel Tools `PIXEL_TOOLS_API_KEY`, GptFox `GPTFOX_API_KEY`, Яндекс.Мет�
 статус заказа только после сверки платежа/возврата через API ЮKassa; при недоступности API —
 503, касса повторяет уведомление сама.
 
+**Проба провайдеров в health (DEMAND-3, 2026-09-06).** `/api/health` отдаёт блок `providers`
+(`wordstat`, `openai`, `yandexgpt`, `gigachat`, `perplexity` → `ok | no_key | forbidden |
+no_balance | empty | error | skipped` + `detail`) и `providers_summary` (`llm_ok`, `llm_required`=2,
+`wordstat_ok`, `degraded`, `reasons`). Пробы лёгкие (Wordstat — одно общее слово, OpenAI —
+список моделей, GigaChat — только OAuth-токен, YandexGPT/Perplexity — 1 токен), кеш 10 минут на
+процесс web. `status: degraded`, если Wordstat не `ok` (пустой баланс XMLRIVER → `no_balance`
+или `empty`) или живых LLM меньше 2 (блокировка облака Yandex по биллингу → `no_balance`/`forbidden`).
+Оракул `verify-preflight.mjs` читает этот блок и краснеет на degraded. Отключить пробу (dev):
+`PROVIDERS_PROBE=off` → все `skipped`, health не деградирует.
+
+**Повторный сбор пары после `empty` (DEMAND-1).** `POST /api/orders` по паре в `demand_status =
+empty` ставит новый `collect_demand`, если `demand_collected_at` старше `PAIR_RECOLLECT_DAYS` (7):
+пара переводится `empty → queued`, ожидающему шлётся письмо при `filled`. Без отметки времени
+повтор не ставится (ручной сброс оператором, как раньше).
+
 ## 9. ЮKassa runbook
 
 - **Тестовая карта:** `5555 5555 5555 4444` (любой будущий срок, любой CVC).

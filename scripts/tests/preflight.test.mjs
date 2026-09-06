@@ -73,6 +73,15 @@ const GREEN_HEALTH = {
     by_type: { expand_query: { pending: 0, processing: 0, completed: 3, failed: 0 } },
     last_expand_query: { status: "completed", subqueries: 4, error: null, completed_at: "2026-09-01T12:00:00Z" },
   },
+  // DEMAND-3: проба провайдеров (форма — packages/shared/src/providers/probe.ts).
+  providers: {
+    wordstat: { state: "ok", detail: null, checked_at: "2026-09-06T12:00:00Z" },
+    openai: { state: "ok", detail: null, checked_at: "2026-09-06T12:00:00Z" },
+    yandexgpt: { state: "ok", detail: null, checked_at: "2026-09-06T12:00:00Z" },
+    gigachat: { state: "ok", detail: null, checked_at: "2026-09-06T12:00:00Z" },
+    perplexity: { state: "no_key", detail: null, checked_at: "2026-09-06T12:00:00Z" },
+  },
+  providers_summary: { llm_ok: 3, llm_required: 2, wordstat_ok: true, degraded: false, reasons: [], cached: false },
 };
 
 const boundaryBlock = (sku) =>
@@ -177,6 +186,23 @@ try {
         health: {
           ...GREEN_HEALTH,
           worker: { ...GREEN_HEALTH.worker, last_expand_query: null },
+        },
+      }, []],
+    ["health: блок providers отсутствует (DEMAND-3)",
+      {}, { health: { ...GREEN_HEALTH, providers: undefined, providers_summary: undefined } }, []],
+    ["health: providers degraded — Wordstat no_balance",
+      {}, {
+        health: {
+          ...GREEN_HEALTH,
+          providers: { ...GREEN_HEALTH.providers, wordstat: { state: "no_balance", detail: "Недостаточно средств", checked_at: "2026-09-06T12:00:00Z" } },
+          providers_summary: { llm_ok: 3, llm_required: 2, wordstat_ok: false, degraded: true, reasons: ["wordstat no_balance"], cached: false },
+        },
+      }, []],
+    ["health: providers degraded — живых LLM меньше порога",
+      {}, {
+        health: {
+          ...GREEN_HEALTH,
+          providers_summary: { llm_ok: 1, llm_required: 2, wordstat_ok: true, degraded: true, reasons: ["llm ok 1 < 2"], cached: true },
         },
       }, []],
     ["webhook: маршрут отсутствует (404)", {}, { webhookStatus: 404 }, []],

@@ -108,34 +108,65 @@ export function expandSeedTemplates(templates: readonly string[], city: string):
 
 export type PairPreflightDecision =
   | { status: "ready" }
-  | { status: "collecting"; enqueue: boolean; message: string }
-  | { status: "empty"; enqueue: false; message: string };
+  | { status: "collecting"; enqueue: boolean; recollect: boolean; message: string }
+  | { status: "empty"; enqueue: false; recollect: false; message: string };
 
 export interface PairPreflightSignals {
   /** Активных questions по паре (после возможного сбора). */
   questionCount: number;
   /** niches.demand_status пары; null — сбор ещё не ставился. */
   demandStatus: PairDemandStatus | null;
+  /** niches.demand_collected_at — когда завершился последний сбор (для повтора после empty). */
+  demandCollectedAt?: string | null;
+  /** Текущее время (мс) — инъекция для тестов. */
+  now?: number;
+}
+
+/**
+ * DEMAND-1: после честного `empty` повторный сбор разрешается не чаще раза в
+ * PAIR_RECOLLECT_DAYS — новый интерес к паре запускает свежий замер, когда
+ * источник (баланс XMLRIVER, регион, шаблоны) мог измениться; расход ограничен.
+ */
+export const PAIR_RECOLLECT_DAYS = 7;
+
+export function isPairRecollectDue(demandCollectedAt: string | null | undefined, now: number = Date.now()): boolean {
+  // Без отметки времени давность неизвестна — повтор НЕ ставим (консервативно по расходу
+  // XMLRIVER); worker всегда пишет demand_collected_at при finalize, остальное — ручной сброс.
+  if (!demandCollectedAt) return false;
+  const at = Date.parse(demandCollectedAt);
+  if (!Number.isFinite(at)) return false;
+  return now - at >= PAIR_RECOLLECT_DAYS * 24 * 60 * 60 * 1000;
 }
 
 /**
  * Pre-flight по паре (§2 спецификации): оплата открывается только при
  * наполнении ≥ PAIR_MIN_QUESTIONS. Иначе — «готовим замер» и постановка
  * сбора ровно один раз (enqueue только когда сбор ещё не ставился); после
- * честного «empty» повторная постановка не делается.
+ * честного «empty» повторная постановка делается не чаще раза в
+ * PAIR_RECOLLECT_DAYS (`recollect: true` — маршрут переводит empty → queued).
  */
 export function decidePairPreflight(signals: PairPreflightSignals): PairPreflightDecision {
   if (signals.questionCount >= PAIR_MIN_QUESTIONS) return { status: "ready" };
   if (signals.demandStatus === "empty") {
+    if (isPairRecollectDue(signals.demandCollectedAt, signals.now)) {
+      return {
+        status: "collecting",
+        enqueue: true,
+        recollect: true,
+        message: "Готовим повторный замер по вашему городу — оставьте email, пришлём письмо, когда данные будут собраны. Оплата пока не открыта.",
+      };
+    }
     return {
       status: "empty",
       enqueue: false,
+      recollect: false,
       message: "По этому городу в источниках спроса не нашлось достаточно вопросов. Замер не продаём — оплата не открыта.",
     };
   }
   return {
     status: "collecting",
     enqueue: signals.demandStatus === null,
+    recollect: false,
     message: "Готовим замер по вашему городу — оставьте email, пришлём письмо, когда данные будут собраны. Оплата пока не открыта.",
   };
 }

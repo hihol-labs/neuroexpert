@@ -104,16 +104,17 @@ function appUrl(): string {
 async function loadPair(
   admin: ReturnType<typeof createAdminClient>,
   pairId: string,
-): Promise<{ name: string; demandStatus: "queued" | "running" | "filled" | "empty" | null } | null> {
+): Promise<{ name: string; demandStatus: "queued" | "running" | "filled" | "empty" | null; demandCollectedAt: string | null } | null> {
   const { data } = await admin
     .from("niches")
-    .select("id, name, demand_status")
+    .select("id, name, demand_status, demand_collected_at")
     .eq("id", pairId)
     .maybeSingle();
   if (!data) return null;
   return {
     name: String(data.name),
     demandStatus: isPairDemandStatus(data.demand_status) ? data.demand_status : null,
+    demandCollectedAt: typeof data.demand_collected_at === "string" ? data.demand_collected_at : null,
   };
 }
 
@@ -234,9 +235,12 @@ export async function POST(request: NextRequest) {
       .select("id", { count: "exact", head: true })
       .eq("niche_id", pairId)
       .eq("is_active", true);
+    // DEMAND-1: после `empty` старше PAIR_RECOLLECT_DAYS решение вернёт recollect —
+    // сбор ставится заново (claim переводит empty → queued, а не null → queued).
     const pairDecision = decidePairPreflight({
       questionCount: pairQuestions ?? 0,
       demandStatus: pair.demandStatus,
+      demandCollectedAt: pair.demandCollectedAt,
     });
     if (pairDecision.status !== "ready") {
       if (pairDecision.status === "collecting") {
@@ -248,12 +252,14 @@ export async function POST(request: NextRequest) {
         if (pairDecision.enqueue) {
           // Сбор ставится один раз: demand_status фиксируется ДО job, чтобы гонка
           // не породила второй collect_demand по той же паре.
-          const { data: claimed } = await admin
+          const claimQuery = admin
             .from("niches")
             .update({ demand_status: "queued" })
-            .eq("id", pairId)
-            .is("demand_status", null)
-            .select("id");
+            .eq("id", pairId);
+          const { data: claimed } = await (pairDecision.recollect
+            ? claimQuery.eq("demand_status", "empty")
+            : claimQuery.is("demand_status", null)
+          ).select("id");
           if (claimed && claimed.length > 0) {
             // Второй рубеж против дублей: worker сбрасывает demand_status в null при
             // исключении, а его же retry-job по паре может ещё висеть в очереди —
@@ -274,7 +280,7 @@ export async function POST(request: NextRequest) {
                 });
             if (jobError) {
               console.error("[orders] collect_demand enqueue failed:", jobError.message);
-              await admin.from("niches").update({ demand_status: null }).eq("id", pairId);
+              await admin.from("niches").update({ demand_status: pairDecision.recollect ? "empty" : null }).eq("id", pairId);
               return NextResponse.json({ error: "Не удалось запустить сбор данных по городу. Попробуйте позже." }, { status: 500 });
             }
           }

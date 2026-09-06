@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getProvidersReport } from "@/lib/providers-probe";
 
 export const dynamic = "force-dynamic";
 
@@ -131,8 +132,15 @@ export async function GET() {
   const deliveryHealthy = deliveryCounts.every(r=>!r.error && r.count !== null);
   const auditDelivery = Object.fromEntries(["paid_waiting","delivered","failed","refunded","sla_breached"].map((name,i)=>[name,deliveryCounts[i].error ? null : deliveryCounts[i].count]));
 
+  // DEMAND-3: живость провайдеров (Wordstat + LLM), а не только наличие ключей —
+  // пустой баланс XMLRIVER и блокировка облака Yandex проходили тихо (2026-09-05).
+  // Кеш 10 минут; PROVIDERS_PROBE=off даёт `skipped` без деградации.
+  const providers = await getProvidersReport();
+
   return NextResponse.json({
-    status: authHealth === "ok" && deliveryHealthy ? "ok" : "degraded",
+    status: authHealth === "ok" && deliveryHealthy && !providers.summary.degraded ? "ok" : "degraded",
+    providers: providers.report,
+    providers_summary: { ...providers.summary, cached: providers.cached },
     audit_delivery: auditDelivery,
     pages_published: count ?? 0,
     auth: {
