@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "purpose": "Executable verification contract for the active unit.",
+  "unitId": "G-012",
+  "createdAt": "2026-09-05",
+  "note": "G-019: план и уточнения утверждены владельцем 2026-09-05. Реализация producer-first; receipt exact candidate и живые канарейки обязательны. Order/pair остаются регрессиями.",
+  "commandSchema": {
+    "requiredFields": [
+      "id",
+      "command",
+      "timeoutSeconds",
+      "expectedOutput",
+      "passFailParser"
+    ],
+    "allowedPassFailParsers": [
+      "exit_code_zero",
+      "stdout_contains",
+      "json_field_equals",
+      "manual_evidence"
+    ]
+  },
+  "commands": [
+    {
+      "id": "g012-analytics",
+      "command": "node scripts/verify-analytics.mjs",
+      "timeoutSeconds": 600,
+      "expectedOutput": "exit 0",
+      "passFailParser": "exit_code_zero",
+      "note": "НЕ СОЗДАН — оракул стадии delivery (GOAL.json G-019.verificationCommand), пишется первым шагом плана G-019 (producer-first). История оракула pair, теперь регрессия g018b-selfserve-pair: создан 2026-09-04 (шаг 1 плана G-018b): на HEAD шага 1 exit 1 ровно с 6 групповыми находками (migration/shared/api-orders/api-health/worker/ui), гасятся шагами 2-6. Слой РЕПО (--repo-only): миграция 027, shared pairs/*, ветка vertical в POST /api/orders с порядком pre-flight → 202 → package_orders, health local_pairs, worker on_demand без find_gaps, UI вертикали + data-pair-status, cron 003 не изменён. Живой слой (--base-url, с прод-сервера): /order/audit-start 404 dark, POST {} 404/400, health.local_pairs числа и active=0 (обход SELFSERVE_PAIRS_ACTIVATED=1), POST {vertical:nope} с канареечным заголовком → 400. Мутационный тест: +11 репо и +4 живых регрессии (scripts/tests/selfserve-path.test.mjs, 40 проверок)."
+    }
+  ],
+  "regressionCommands": [
+    {
+      "id": "g019-selfserve-delivery",
+      "command": "node scripts/verify-selfserve-path.mjs --stage=delivery",
+      "timeoutSeconds": 600,
+      "expectedOutput": "exit 0",
+      "passFailParser": "exit_code_zero",
+      "note": "Регрессия G-019 (verified 2026-09-05): слой РЕПО — миграция 028 (delivered, report/report_mode/sla_deadline_at/refund_id, RPC complete/fail), shared delivery/*, /api/audit type paid только с AUDIT_INTERNAL_TOKEN, worker run_audit + SLA-свип + возврат, /orders/[id] отчёт владельцу, health audit_delivery; живой слой через SELFSERVE_URL (проброс 13100->3100) + SELFSERVE_CANARY_TOKEN. Sealed-команда ОТК G-019 (без --base-url — URL из env). Exit 0/1/2/3."
+    },
+    {
+      "id": "g018b-selfserve-pair",
+      "command": "node scripts/verify-selfserve-path.mjs --stage=pair --base-url https://neuroexpertise.ru",
+      "timeoutSeconds": 600,
+      "expectedOutput": "exit 0",
+      "passFailParser": "exit_code_zero",
+      "note": "Регрессия G-018b (verified 2026-09-05): слой РЕПО — миграция 027 (local_verticals 3x8, niches.city/vertical/demand_status, CHECK niches_local_pair_shape, триггер born_inactive, pair_requests), shared pairs/*, ветка vertical в POST /api/orders (202 до pre-flight, платёж только при ready), health local_pairs, worker on_demand без find_gaps, UI вертикалей; живой слой (--base-url или SELFSERVE_URL; штатно локально через проброс 13100->3100 с SELFSERVE_CANARY_TOKEN — на сервере node не в PATH для non-interactive sh): health.local_pairs с active=0, POST {vertical:nope} под канареечным заголовком -> 400, /order/audit-start 404 (dark). Exit 0/1/2/3."
+    },
+    {
+      "id": "funnel-regression",
+      "command": "node scripts/verify-funnel.mjs --check-offer",
+      "timeoutSeconds": 600,
+      "expectedOutput": "exit 0",
+      "passFailParser": "exit_code_zero",
+      "note": "Регрессия G-010/G-010b: воронка и блоки оффера на 9 маршрутах."
+    },
+    {
+      "id": "payment-path-regression",
+      "command": "node scripts/verify-payment-path.mjs",
+      "timeoutSeconds": 600,
+      "expectedOutput": "exit 0",
+      "passFailParser": "exit_code_zero",
+      "note": "Регрессия G-011: шаг оплаты, документы, разметка демо-цифр."
+    },
+    {
+      "id": "af0-strategy-docs-oracle",
+      "command": "python3 scripts/verify-strategy-docs.py",
+      "timeoutSeconds": 300,
+      "expectedOutput": "СТРАТЕГИЧЕСКИЙ ПАКЕТ: PASSED",
+      "passFailParser": "stdout_contains",
+      "note": "Регрессия AF-0 (verified 2026-09-02): Согласованность ADR-003 / плана v5 / BACKLOG / SELF_SERVE_PLAN и леджера GOAL/STATE/SCOPE_LOCK. Чувствительность подтверждена мутационным прогоном: 6/6 внесённых регрессий пойманы."
+    },
+    {
+      "id": "af0-strategy-docs-mutation-test",
+      "command": "python3 scripts/tests/strategy-docs.test.py",
+      "timeoutSeconds": 300,
+      "expectedOutput": "ВСЕ ПРОВЕРКИ ПРОШЛИ",
+      "passFailParser": "stdout_contains",
+      "note": "Регрессия AF-0 (verified 2026-09-02): Мутационный тест оракула: 7 заведомых регрессий, на каждой оракул обязан покраснеть. Защищает от оракула-тавтологии."
+    },
+    {
+      "id": "af0-preflight",
+      "command": "node scripts/verify-preflight.mjs --base-url https://neuroexpertise.ru",
+      "timeoutSeconds": 600,
+      "expectedOutput": "exit 0",
+      "passFailParser": "exit_code_zero",
+      "note": "Регрессия AF-0 (verified 2026-09-02): Создан 2026-08-31. Слой РЕПО: контракт Audit Start v1 (6 секций + нормативные маркеры), решение по 754 ([x] выбран archive), SALES_LOG.md с валидной последней записью (фаза C; режим --check-sales-today — для pre-commit hook C3). Живой слой (нужен CANONICAL_URL/PREFLIGHT_URL или --base-url, штатный прогон с прод-сервера): canary magic-link/SMTP и expand_query по /api/health, canary кассы (POST /api/webhooks/yukassa -> 4xx, не 404), блоки data-automation-boundary на /pricing (3 SKU) и /audit. Exit: 0/1/2/3 (3 = транспорт, не находка). Оффлайн-фикстуры: --fixture-dir; граница: оракул не мутирует прод и не дергает LLM."
+    },
+    {
+      "id": "af0-preflight-mutation-test",
+      "command": "node scripts/tests/preflight.test.mjs",
+      "timeoutSeconds": 300,
+      "expectedOutput": "ВСЕ ПРОВЕРКИ ПРОШЛИ",
+      "passFailParser": "stdout_contains",
+      "note": "Регрессия AF-0 (verified 2026-09-02): Мутационный тест оракула preflight: 12 заведомых регрессий (репо + фикстуры живого контура), на каждой оракул обязан покраснеть; плюс usage- и repo-only-контракт. Защищает от оракула-тавтологии."
+    },
+    {
+      "id": "g018-selfserve-order",
+      "command": "node scripts/verify-selfserve-path.mjs --stage=order --checkout live --base-url https://neuroexpertise.ru",
+      "timeoutSeconds": 600,
+      "expectedOutput": "exit 0",
+      "passFailParser": "exit_code_zero",
+      "note": "Регрессия G-018 (verified 2026-09-04): Создан 2026-09-03 (шаг 7 плана G-018). Слой РЕПО: миграция 026 (package_orders, run_audit, UNIQUE payment_id, инвариант job только у paid), реестр 7 900 заморожен, POST /api/orders (pre-flight, Idempotence-Key, dark-гейт), GET owner-only, webhook (parsePackageMetadata, mayEnqueueAuditJob, guard job_id IS NULL), флаг checkout на /pricing и /audit, NICHE_NAMES удалён, оферта авто-возврат. Живой слой (--base-url/SELFSERVE_URL/CANONICAL_URL, штатно с прод-сервера): CTA по режиму, /order/audit-start 404 (dark), POST /api/orders 404/400 без 500, GET без сессии 401, webhook 4xx, /terms маркер. --checkout live — после решения владельца (AF-1). Exit 0/1/2/3."
+    },
+    {
+      "id": "g018-selfserve-mutation-test",
+      "command": "node scripts/tests/selfserve-path.test.mjs",
+      "timeoutSeconds": 300,
+      "expectedOutput": "ВСЕ ПРОВЕРКИ ПРОШЛИ",
+      "passFailParser": "stdout_contains",
+      "note": "Регрессия G-018 (verified 2026-09-04): Мутационный тест оракула G-018: 10 репо-регрессий + 6 живых (dark), режим live, usage. Защита от тавтологии."
+    }
+  ]
+}
