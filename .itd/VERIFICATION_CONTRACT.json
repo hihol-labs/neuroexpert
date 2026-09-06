@@ -1,9 +1,9 @@
 {
   "version": 1,
   "purpose": "Executable verification contract for the active unit.",
-  "unitId": "G-014",
+  "unitId": "R-01",
   "createdAt": "2026-09-06",
-  "note": "G-014: активирован 2026-09-06 после verified G-013 в стадии ПЛАНИРОВАНИЯ — код запрещён до утверждённого плана. Оракул юнита пишется первым шагом плана (producer-first). Proof-layer/analytics/order/pair/delivery/preflight/strategy остаются регрессиями.",
+  "note": "R-01: активирован 2026-09-06 после утверждения ADR-004 (readiness gate 2026-10-15). Tier high (деньги). Оракул --stage=reconcile пишется первым; регрессии — прежние + strategy-docs.",
   "commandSchema": {
     "requiredFields": [
       "id",
@@ -21,12 +21,12 @@
   },
   "commands": [
     {
-      "id": "g014-unit",
-      "command": "bash scripts/test-sales-log-hook.sh",
+      "id": "r01-unit",
+      "command": "node scripts/verify-selfserve-path.mjs --stage=reconcile",
       "timeoutSeconds": 600,
       "expectedOutput": "exit 0",
       "passFailParser": "exit_code_zero",
-      "note": "НЕ СОЗДАН/НЕ ПРОВЕРЕН — оракул юнита G-014 (GOAL.json G-014.verificationCommand), пишется первым шагом плана."
+      "note": "НЕ СОЗДАН — стадия reconcile добавляется в verify-selfserve-path.mjs первым шагом юнита."
     }
   ],
   "regressionCommands": [
