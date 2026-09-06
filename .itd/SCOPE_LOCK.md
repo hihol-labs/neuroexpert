@@ -2,23 +2,27 @@
 
 ## Current Task
 
-- **SEC-1** (операционный юнит, утверждён владельцем 2026-09-06, tier high; G-012 остаётся
-  в стадии планирования, WIP=1 — следующий OPS-DEBT-1 только после verified SEC-1):
+- **OPS-DEBT-1** (операционный юнит, утверждён владельцем 2026-09-06, tier medium; G-012
+  остаётся в стадии планирования, WIP=1): DEMAND-3 — проба провайдеров в `/api/health`
+  (Wordstat/XMLRIVER, YandexGPT, OpenAI, GigaChat; состояния `ok|no_key|forbidden|no_balance|error`,
+  кеш 10 мин, `degraded` при Wordstat≠ok или LLM<2); DEMAND-1 — `decidePairPreflight`
+  разрешает повторный сбор для `empty`-пары, если `demand_collected_at` старше
+  `PAIR_RECOLLECT_DAYS`=7. Контракт `.itd-memory/contracts/OPS-DEBT-1.md`.
+  Разрешены: `apps/web/app/api/health/route.ts`, `apps/web/lib/providers-probe.ts` (новый),
+  `packages/shared/src/orders/preflight.ts` (только экспорт порога), `packages/shared/src/pairs/**`
+  + `tests/pairs.test.cjs`, `apps/web/app/api/orders/route.ts` (передача `demand_collected_at`),
+  `scripts/verify-preflight.mjs` + его мутационный тест, документы, `.itd*`, BACKLOG.
+  Запрещены: провайдерный слой `llm/*`, платёжный код, цены, миграции, `SELF_SERVE_CHECKOUT`.
+
+Предыдущий: **SEC-1 — VERIFIED 2026-09-06** (коммит `2756623`; full-чекер PASSED;
+`sec1-ch-adjudication.json`; выкачено `.deploy-sha=2756623`; живые оракулы ALL_GREEN;
+канарейки лимитов и поддельного webhook зелёные — `.itd-memory/contracts/SEC-1.md`).
+Его scope сохранён как история:
   закрытие пяти Important security-audit AF-1 — сверка webhook ЮKassa с API кассы,
   rate-limit `POST /api/orders`, bounded-лимитер + дневной бюджет `/api/audit` free,
-  лимиты писем GoTrue. Контракт `.itd-memory/contracts/SEC-1.md`.
-  Разрешены: `apps/web/app/api/webhooks/yukassa/route.ts`, `apps/web/app/api/orders/route.ts`
-  (только вставка лимита после валидации), `apps/web/app/api/audit/route.ts` (только
-  лимитер/бюджет), `apps/web/lib/yukassa-verify.ts` (новый), `packages/shared/src/orders/reconcile.ts`
-  (новый) + `orders/index.ts`, `packages/shared/src/security/**` (новый) + `src/index.ts`,
-  `packages/shared/tests/{reconcile,rate-limit}.test.cjs`, `docker/docker-compose*.yml`
-  (только GoTrue env), `scripts/verify-selfserve-path.mjs` + `scripts/tests/selfserve-path.test.mjs`
-  (требование сверки в repo-стадии order), OPERATIONS.md §8b, `.itd*`, BACKLOG, CURRENT_PLAN.
-  Запрещены: цены, `llm/*`, миграции, worker, состояние заказов вне сверки, ротация ключей.
-
-Следующий в очереди (утверждён 2026-09-06, ждёт verified SEC-1): **OPS-DEBT-1** — DEMAND-3
-проба провайдеров в `/api/health`, DEMAND-1 авто-повтор сбора для `empty`-пар
-(`.itd-memory/contracts/OPS-DEBT-1.md`).
+  лимиты писем GoTrue; файлы: webhook/orders/audit routes, `apps/web/lib/yukassa-verify.ts`,
+  `packages/shared/src/orders/reconcile.ts`, `packages/shared/src/security/**`, тесты,
+  compose (GoTrue env), оракул + мутационный тест, OPERATIONS §8b.
 
 Публикация: ветка `codex/self-serve-audit-start` (Draft PR #8, guarded push через
 `itd pr create`; прямой push в зарегистрированный репозиторий заблокирован хуком ITD —
