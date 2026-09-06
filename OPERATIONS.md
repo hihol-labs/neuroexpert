@@ -229,14 +229,21 @@ empty` ставит новый `collect_demand`, если `demand_collected_at` 
   (страница `/orders/[id]` со статусом paid/delivered, один раз на заказ; параметры `package`,
   `status`), `contact_agency_submit` (/for-agencies; параметр `plan`), `cta_order_click` (клик по
   любой ссылке на `/order/audit-start`; параметр `from`). PII в параметры не передаётся.
-- **Создание счётчика/целей/сегмента через API:** `python3 .itd-memory/tools/metrika.py
-  create|goals|segment --token <OAuth>` (Management API, токен с правом `metrika:write`;
-  получить: https://oauth.yandex.ru → приложение с доступом «Метрика» → токен). Сохранённый
-  отчёт создаётся только в интерфейсе.
-- **AI-сегмент (AEO_PLAN §5):** сегмент «AI-трафик» по рефереру, regex:
-  `chatgpt\.com|chat\.openai\.com|openai\.com|perplexity\.ai|deepseek\.com|gemini\.google\.com|bard\.google\.com|claude\.ai|copilot\.microsoft\.com|you\.com|phind\.com|mistral\.ai|character\.ai`
-  (условие «Источник → Реферер соответствует регулярному выражению»); сохранённый отчёт
-  «Источники, сводка» с этим сегментом — хранится в Метрике под именем «AI-трафик».
+- **Счётчик 112328031** («НейроЭксперт (neuroexpertise.ru)», создан 2026-09-06 через Management
+  API, webvisor выключен). Восемь целей созданы там же (тип «JavaScript-событие», идентификатор =
+  имя). Скрипт: `https_proxy=http://127.0.0.1:8899 python3 .itd-memory/tools/metrika.py
+  create|goals|segment|status --counter 112328031` (токен в `.itd-memory/tools/metrika.token`, вне
+  git, право `metrika:write`; получить: https://oauth.yandex.ru → приложение «для доступа к API»
+  с доступом «Метрика» → `authorize?response_type=token&client_id=…`). Сохранённый отчёт API не
+  создаёт — только интерфейс.
+- **AI-сегмент (AEO_PLAN §5):** сегмент «AI-трафик» (id 1008090187) по рефереру. Регулярное
+  выражение в API сегментации отклоняется (код 4003), поэтому фильтр — «Реферер содержит» через
+  OR по хостам: chatgpt.com, chat.openai.com, openai.com, perplexity.ai, deepseek.com,
+  gemini.google.com, bard.google.com, claude.ai, copilot.microsoft.com, you.com, phind.com,
+  mistral.ai, character.ai (тот же список, что regex `chatgpt\.com|…|character\.ai` для ручной
+  настройки в интерфейсе). Сохранённый отчёт «Источники, сводка» с этим сегментом создаётся в
+  интерфейсе: Отчёты → Источники, сводка → выбрать сегмент «AI-трафик» → «Сохранить отчёт»
+  с именем «AI-трафик».
 
 ## 9. ЮKassa runbook
 

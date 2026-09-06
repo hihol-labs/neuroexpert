@@ -2,21 +2,23 @@
 
 ## Current Task
 
-- **G-012** — единственный активный юнит (GOAL.json, tier low), **стадия РЕАЛИЗАЦИИ** (план
-  утверждён владельцем 2026-09-06: «утверждаю, webvisor выключить, цели все 8, счётчик создай
-  сам и получи id»; контракт `.itd-memory/contracts/G-012.md`, решения — DECISIONS 2026-09-06).
-  Разрешены: `scripts/verify-analytics.mjs` (новый) + `scripts/tests/analytics.test.mjs` (новый);
-  `apps/web/lib/analytics.ts` (новый), `apps/web/components/yandex-metrika.tsx` (новый),
-  `apps/web/app/layout.tsx` (замена inline-сниппета на компонент), продюсеры целей:
-  `apps/web/app/(marketing)/scan/page.tsx`, `apps/web/app/(marketing)/audit/audit-client.tsx`,
-  `apps/web/app/(marketing)/order/audit-start/order-form.tsx`, `apps/web/app/(marketing)/for-agencies/page.tsx`,
-  `apps/web/app/orders/[id]/page.tsx` (+ новый клиентский `order-paid-goal.tsx`); сборка/конфиг:
-  `docker/web.Dockerfile`, `docker/docker-compose.prod.yml` (только build args), `.env.example`,
-  `OPERATIONS.md` (раздел «Яндекс.Метрика»); `.itd/VERIFICATION_CONTRACT.json` (команда g012),
-  `.itd*`, BACKLOG, CURRENT_PLAN, документы плана. Инструмент вне репо: `.itd-memory/tools/metrika.py`.
-  Запрещены: цены, платёжный код (`/api/orders`, webhook, worker), `llm/*`, миграции, кабинет,
-  webvisor, PII в параметрах целей, Plausible.
+- **G-013** (активирован 2026-09-06 после verified G-012, tier medium): Proof-слой (фаза B) —
+  публичный «пример отчёта» доступен с лендингов (структура отчёта v2 по AEO_PLAN §2), единая
+  CTA-цепочка «лид-магнит → аудит → оплата» на всех 9 маршрутах, задел под кейсы (шаблон с
+  числом до/после). **Стадия: ПЛАНИРОВАНИЕ.** До утверждённого владельцем плана кодовые правки
+  `apps/**` и `packages/**` ЗАПРЕЩЕНЫ — разрешены план-документы, `.itd*`, BACKLOG, OPERATIONS.
   Операционные тикеты (SEC-2…SEC-5, OPS-2, DEMAND-4, OPS-1) — только по решению владельца.
+
+Предыдущий юнит: **G-012 — VERIFIED 2026-09-06** (ОТК exit 0: `Analytics verification passed for
+http://127.0.0.1:13100 (ym-id 112328031)`; коммиты `9f50e93`, `57f9c0a`; full-чекер r2 PASSED;
+`g012-high-adjudication.json`; `.deploy-sha=57f9c0a`, образ web пересобран с id; счётчик
+112328031, 8 целей, сегмент «AI-трафик» созданы через Management API — контракт
+`.itd-memory/contracts/G-012.md`). Его scope сохранён как история: оракул
+`scripts/verify-analytics.mjs` + мутационный тест; `apps/web/lib/analytics.ts`,
+`apps/web/components/yandex-metrika.tsx`, `apps/web/app/layout.tsx`, продюсеры целей (scan,
+audit-client, order-form, for-agencies, `orders/[id]` + `order-paid-goal.tsx`); web.Dockerfile,
+compose build args, `.env.example`, OPERATIONS §8c. Запрещалось: цены, платёжный код, `llm/*`,
+миграции, кабинет, webvisor, PII в параметрах целей, Plausible.
 
 Предыдущий: **OPS-DEBT-1 — VERIFIED 2026-09-06** (коммиты `7278d02` + `6e4e77f`; full-чекеры
 PASSED; `ops-debt-1-fix-adjudication.json`; выкачено `.deploy-sha=6e4e77f`; health `providers`
