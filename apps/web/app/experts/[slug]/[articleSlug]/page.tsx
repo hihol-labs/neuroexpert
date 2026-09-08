@@ -117,14 +117,12 @@ const getArticleData = cache(async (expertSlug: string, articleSlug: string) => 
     .eq("expert_id", expert.id)
     .eq("is_cited", true);
 
-  // R-05: bucket voice приватный — плеер получает подписанный URL (service role). TTL 24 ч > окна
-  // ISR-ревалидации (3600 с), чтобы закэшированная страница не отдавала протухшую ссылку.
+  // R-05: bucket voice приватный. В ISR-страницу запекается СТАБИЛЬНАЯ ссылка /api/audio/<voice_id>,
+  // а подписанный URL создаётся роутом в момент запроса (302) - иначе подпись протухала бы в
+  // закэшированной странице редко посещаемой статьи.
   const voice = article.voice_recordings as unknown as { file_path: string; mime_type: string | null } | null;
-  let audioUrl: string | null = null;
-  if (voice?.file_path) {
-    const { data: signed } = await supabase.storage.from("voice").createSignedUrl(voice.file_path, 86400);
-    audioUrl = signed?.signedUrl ?? null;
-  }
+  const voiceId = (article as { voice_id?: string | null }).voice_id ?? null;
+  const audioUrl = voice?.file_path && voiceId ? `/api/audio/${voiceId}` : null;
 
   return {
     expert, article, related: related ?? [], relatedQuestions, otherExperts,
@@ -344,7 +342,7 @@ export default async function ArticlePage({ params }: Props) {
         {(() => {
           const voice = article.voice_recordings as unknown as { file_path: string; mime_type: string | null } | null;
           // file_path хранится с префиксом "voice/..." (historic upload path) внутри bucket voice;
-          // R-05: bucket приватный, ссылка подписана в getArticleData (нет файла/подписи — плеер не показываем).
+          // R-05: bucket приватный, плеер идёт через /api/audio/<voice_id> (подпись в момент запроса).
           if (!voice?.file_path || !audioUrl) return null;
           return (
             <div className="bg-gray-50 rounded-xl p-4 mb-8">

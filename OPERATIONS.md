@@ -380,8 +380,10 @@ empty` ставит новый `collect_demand`, если `demand_collected_at` 
   join cron.job j using (jobid) order by d.start_time desc limit 20;`.
 - **Bucket `voice`** — приватный (031: `storage.buckets` ON CONFLICT → `public = false`); чтение и
   запись только service role (бот, `/api/voice`, worker `transcribe`). Плеер на странице статьи и
-  `audio_url` в `/api/v1/answers` отдают **подписанные** ссылки (`createSignedUrl`, TTL 24 ч —
-  больше окна ISR 3600 с; потребителям API ссылку дольше суток не кэшировать). Бот и web обязаны загрузить
+  `audio_url` в `/api/v1/answers` ведут на **стабильный** `/api/audio/<voice_id>`: роут в момент
+  запроса подписывает ссылку (`createSignedUrl`, TTL 1 ч) и делает 302, отдаёт только аудио
+  опубликованных статей (черновики — 404). Подпись не запекается в ISR-страницу и не протухает в
+  кэше; потребители API могут кэшировать `audio_url`. Бот и web обязаны загрузить
   аудио ДО записи `voice_recordings`; ошибка upload — бот отвечает «Не удалось сохранить запись»,
   web отдаёт 500 `Failed to store audio` (раньше best effort: запись без файла).
 - **Health:** `cron {extension, jobs {name: {schedule, active, last_status, last_run_at}}}` и

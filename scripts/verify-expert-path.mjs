@@ -112,10 +112,19 @@ function checkInfraRepo() {
     "{ error: \"Failed to store audio\" }, { status: 500 }",
   ]]], "в /api/voice проверять результат storage.upload: при ошибке вернуть 500 {error:\"Failed to store audio\"} до создания voice_recordings");
 
-  // Читатели bucket voice: приватный bucket => только подписанные URL, публичных ссылок не остаётся.
+  // Читатели bucket voice: приватный bucket => стабильная ссылка /api/audio/<voice_id> (подпись в момент
+  // запроса, 302, только опубликованные статьи); публичных ссылок и «запечённых» подписей не остаётся.
   const READERS = ["apps/web/app/experts/[slug]/[articleSlug]/page.tsx", "apps/web/app/api/v1/answers/route.ts"];
-  requireGroup("readers", READERS.map((rel) => [rel, ["createSignedUrl("]]),
-    "плеер статьи и /api/v1/answers обязаны подписывать ссылку на аудио через service role (createSignedUrl), а не строить public URL");
+  requireGroup("readers", [
+    ...READERS.map((rel) => [rel, ["/api/audio/"]]),
+    ["apps/web/app/api/audio/[id]/route.ts", ["createSignedUrl(", "\"published\"", "NextResponse.redirect(", "voice_id"]],
+  ], "плеер статьи и /api/v1/answers ведут на /api/audio/<voice_id>; роут подписывает ссылку service role в момент запроса (createSignedUrl), отдаёт только опубликованные статьи и делает 302");
+  for (const rel of READERS) {
+    const text = readRepoFile(rel);
+    if (text !== null && text.includes("createSignedUrl(")) {
+      finding("[infra:readers]", `${rel}: подписанный URL запекается в ответ/ISR-страницу (createSignedUrl в читателе)`, "подписывать только в /api/audio/[id] в момент запроса - в ISR-HTML подпись протухает");
+    }
+  }
   for (const rel of READERS) {
     const text = readRepoFile(rel);
     if (text !== null && text.includes("/storage/v1/object/public/voice/")) {

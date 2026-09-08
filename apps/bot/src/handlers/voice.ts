@@ -20,7 +20,7 @@ export function registerVoiceHandler(bot: Bot): void {
       return;
     }
 
-    await ctx.reply("Получил голосовое сообщение. Расшифровываю...");
+    await ctx.reply("Получил голосовое сообщение. Сохраняю и расшифровываю...");
 
     const voice = ctx.message.voice;
     const file = await ctx.getFile();
