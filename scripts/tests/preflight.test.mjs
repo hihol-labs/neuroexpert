@@ -285,6 +285,7 @@ try {
     "packages/shared/src/ops/alerts.ts": ALERT_FILES["packages/shared/src/ops/alerts.ts"] + "const MORE = [\"order_paid\"]; // Аудит Старт: оплата получена - выбить чек в Мой налог\n",
     "apps/web/app/api/webhooks/yukassa/route.ts": "import { notifyOperator } from \"@/lib/operator-alerts\";\nif (t.changed) { void notifyOperator(\"order_paid\", orderId, {}); }\n",
     "apps/worker/src/services/payment-reconcile.ts": ALERT_FILES["apps/worker/src/services/payment-reconcile.ts"] + "if (t.changed) { void deps.notifyOperator?.(\"order_paid\", order.id, {}); }\n",
+    "apps/web/app/api/orders/route.ts": "const shopMode = canaryAllowed(request) ? \"dark\" : mode;\n",
   };
   {
     const repo = join(work, "paid-green"); const fx = join(work, "paid-fx");
@@ -304,6 +305,7 @@ try {
     ["webhook: алерт не через адаптер @/lib/operator-alerts", { "apps/web/app/api/webhooks/yukassa/route.ts": PF["apps/web/app/api/webhooks/yukassa/route.ts"].replace("@/lib/operator-alerts", "@/lib/telegram") }],
     ["сверка: markPaid не алертит", { "apps/worker/src/services/payment-reconcile.ts": PF["apps/worker/src/services/payment-reconcile.ts"].replace("notifyOperator?.(\"order_paid\"", "log(\"order_paid\"") }],
     ["сверка: файл отсутствует", { "apps/worker/src/services/payment-reconcile.ts": null }],
+    ["orders: канарейка при live идёт в боевой магазин (инцидент 2026-09-08)", { "apps/web/app/api/orders/route.ts": "const shopMode = mode;\n" }],
   ];
   paidMutations.forEach(([label, ov], i) => {
     const repo = join(work, `paid-m${i}`); const fx = join(work, `paid-fx-m${i}`);

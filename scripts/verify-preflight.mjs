@@ -449,6 +449,8 @@ function checkPaidAlertRepo() {
     ["packages/shared/src/ops/alerts.ts", ["\"order_paid\"", "Мой налог"]],
     ["apps/web/app/api/webhooks/yukassa/route.ts", ["@/lib/operator-alerts", "notifyOperator(\"order_paid\""]],
     ["apps/worker/src/services/payment-reconcile.ts", ["notifyOperator?.(\"order_paid\""]],
+    // Канарейка оплаты без реальных денег: под канареечным заголовком магазин всегда тестовый.
+    ["apps/web/app/api/orders/route.ts", ["canaryAllowed(request) ? \"dark\" : mode"]],
   ];
   const missing = [];
   for (const [rel, needles] of files) {

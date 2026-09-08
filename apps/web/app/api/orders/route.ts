@@ -63,6 +63,9 @@ function createAdminClient() {
  * Dark launch: пока SELF_SERVE_CHECKOUT !== "live", маршрут отвечает 404 всем,
  * кроме канарейки с секретным заголовком; в dark-режиме используется ТЕСТОВЫЙ
  * магазин ЮKassa (YUKASSA_TEST_*), реальные ключи — только в live.
+ * Канарейка (R-04b, 2026-09-08): под секретным заголовком заказ идёт в ТЕСТОВЫЙ
+ * магазин при любом режиме checkout, включая live (payment_test=true в БД и в
+ * ответе) — боевой магазин только для настоящих клиентов.
  *
  * G-018b — on-demand пара «вертикаль × город» (спецификация вертикалей v1 §2):
  * тело `{vertical, city, email}` → вертикаль из local_verticals → ensure-pair
@@ -145,6 +148,10 @@ export async function POST(request: NextRequest) {
   if (mode === "dark" && !canaryAllowed(request)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+  // R-04b канарейка: под канареечным заголовком заказ ВСЕГДА уходит в тестовый магазин ЮKassa
+  // (тестовая карта, без реальных денег) даже при live-checkout; боевой магазин - только для
+  // настоящих клиентов. Инцидент 2026-09-08: канареечный заказ ушёл в боевой магазин.
+  const shopMode: CheckoutMode = canaryAllowed(request) ? "dark" : mode;
 
   let body: Record<string, unknown>;
   try {
@@ -323,7 +330,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: decision.message, reason: decision.reason }, { status: 503 });
   }
 
-  const credentials = yukassaCredentials(mode);
+  const credentials = yukassaCredentials(shopMode);
   if (!credentials) {
     // Не брать деньги, если касса не настроена: честный 503, а не 500 после записи.
     return NextResponse.json({ error: "Оплата временно недоступна.", reason: "payments" }, { status: 503 });
@@ -346,7 +353,7 @@ export async function POST(request: NextRequest) {
       email,
       status: "pending",
       payment_shop_id: credentials.shopId,
-      payment_test: mode === "dark",
+      payment_test: shopMode === "dark",
     })
     .select("id")
     .single();
@@ -382,7 +389,7 @@ export async function POST(request: NextRequest) {
     failure = `yukassa transport: ${err instanceof Error ? err.message : String(err)}`;
   }
 
-  if (failure || !payment?.id || !payment.confirmation?.confirmation_url || payment.test !== (mode === "dark")) {
+  if (failure || !payment?.id || !payment.confirmation?.confirmation_url || payment.test !== (shopMode === "dark")) {
     const reason = failure ?? "yukassa: ответ без id/confirmation_url";
     console.error("[orders] payment creation failed:", reason);
     await admin
@@ -404,5 +411,6 @@ export async function POST(request: NextRequest) {
     amount_rub: pkg.amountRub,
     confirmation_url: payment.confirmation.confirmation_url,
     mode,
+    payment_test: shopMode === "dark",
   });
 }
