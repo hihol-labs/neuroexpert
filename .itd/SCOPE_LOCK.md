@@ -2,7 +2,20 @@
 
 ## Current Task
 
-- **R-04 — BLOCKED 2026-09-08** (активирован после verified R-03, tier **high**): чек
+- **R-05** (активирован 2026-09-08 после blocked R-04, tier medium): Хранилище и cron экспертов —
+  миграция создаёт private bucket `voice` с политикой; бот заливает аудио в Storage; upload в
+  `/api/voice` обязателен (ошибка → 500, не «принято»); health проверяет `cron.job`
+  (weekly-demand, generate-orders) и последний запуск; оракул
+  `node scripts/verify-expert-path.mjs --stage=infra` пишется первым. **Стадия: ПЛАНИРОВАНИЕ** —
+  контракт `.itd-memory/contracts/R-05.md` (ещё не написан; диагноз по коду — первый шаг).
+  Разрешены (после плана): `scripts/verify-expert-path.mjs` (+ тест), миграция 031 (bucket
+  `voice` + политика), `apps/bot/*` (заливка аудио), `apps/web/app/api/voice/route.ts`
+  (обязательный upload), `apps/web/app/api/health/route.ts` (cron.job), OPERATIONS, `.itd*`,
+  BACKLOG, CURRENT_PLAN, READINESS_PLAN. Запрещены: цены, реестр пакетов, checkout-флаг, касса,
+  Business-контур (R-01..R-03 — только регрессии). Операционные тикеты — по решению владельца;
+  R-04' (алерт `order_paid`) — только после решения владельца, отдельным юнитом.
+
+Предыдущий юнит: **R-04 — BLOCKED 2026-09-08** (активирован после verified R-03, tier **high**): чек
   самозанятого через `receipt` ЮKassa невозможен — ЮKassa прекратила сервисы для самозанятых с
   29.12.2025 (changelog 2025-12-23), `GET /v3/me`: `fiscalization_enabled=false` у обоих магазинов.
   Леджер: `--block` с причиной; чек — ручное исключение (ADR-004). **Кода нет и не будет до решения

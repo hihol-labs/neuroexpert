@@ -1,9 +1,9 @@
 {
   "version": 1,
   "purpose": "Executable verification contract for the active unit.",
-  "unitId": "R-04",
+  "unitId": "R-05",
   "createdAt": "2026-09-08",
-  "note": "node scripts/verify-payment-path.mjs --check-receipt — НЕ СОЗДАН, оракул пишется первым; блокер — «Мой налог» в ЛК ЮKassa (владелец)",
+  "note": "node scripts/verify-expert-path.mjs --stage=infra — НЕ СОЗДАН, оракул пишется первым",
   "commandSchema": {
     "requiredFields": [
       "id",
@@ -21,8 +21,8 @@
   },
   "commands": [
     {
-      "id": "r-04-unit",
-      "command": "node scripts/verify-payment-path.mjs --check-receipt",
+      "id": "r-05-unit",
+      "command": "node scripts/verify-expert-path.mjs --stage=infra",
       "timeoutSeconds": 600,
       "expectedOutput": "exit 0",
       "passFailParser": "exit_code_zero",
