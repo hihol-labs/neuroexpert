@@ -11,10 +11,15 @@
   **Стадия: ВЫКАЧЕНО, ЖДЁТ КАНАРЕЙКУ** (2026-09-08): коммит `46b021a`, targeted r1→r3 (два Minor
   исправлены) и full-чекер committed head PASSED, review-кеш `r04b-gr-adjudication.json`, гейт
   `r04b-ch-adjudication.json` ALLOWED, `.deploy-sha=46b021a` (web+worker, миграций нет), live-оракулы
-  ALL_GREEN, ОТК-квитанция `r04b-otk-adjudication.json` (точная команда живьём, exit 0). L3: канареечный
-  заказ тестового магазина `39402498-40ad-4700-8528-9729754e8064` ждёт оплаты владельцем тестовой
-  картой → `r04b-canary.py observe` (алерт `order_paid:<id>` в админ-чате с «тест: да», count=1) →
-  `itd_goal_verify.py R-04b` → verified. Контракт `.itd-memory/contracts/R-04b.md`. Разрешены:
+  ALL_GREEN, ОТК-квитанция `r04b-otk-adjudication.json` (точная команда живьём, exit 0).
+  **Инцидент канарейки:** заказ `39402498…` ушёл в боевой магазин (при live-checkout заголовок
+  обходил только 404) — отменён без списания. Фикс `560f4d9` + `211c14c` + `2b77741`: под
+  канареечным заголовком магазин всегда тестовый (`shopMode`), оракул `--check-paid-alert` покрывает
+  все точки выбора магазина (49 мутаций), full-чекер PASSED, `.deploy-sha=2b77741`. L3: канареечный
+  заказ **тестового** магазина `70c3c6aa-142f-4fda-8f86-7ea8f981e699` (`payment_test=true`, сверено по
+  БД) ждёт оплаты владельцем тестовой картой → `r04b-canary.py observe` (алерт `order_paid:<id>` в
+  админ-чате с «тест: да», count=1) → `itd_goal_verify.py R-04b` → verified. Контракт
+  `.itd-memory/contracts/R-04b.md`. Разрешены:
   `scripts/verify-preflight.mjs` (+ `scripts/tests/preflight.test.mjs`), shared `ops/alerts.ts`
   (новый kind), `apps/web/app/api/webhooks/yukassa/route.ts` (только вызов алерта внутри
   `if (t.changed)` paid-ветки), `apps/worker/src/services/payment-reconcile.ts` (алерт в markPaid),
