@@ -2,6 +2,23 @@
 
 ## Current Task
 
+- **R-05** (активирован 2026-09-08 после verified R-04b, tier medium): Хранилище и cron экспертов —
+  миграция создаёт private bucket `voice` с политикой; бот заливает аудио в Storage; upload в
+  `/api/voice` обязателен (ошибка → 500, не «принято»); health проверяет `cron.job`
+  (weekly-demand, generate-orders) и последний запуск; оракул
+  `node scripts/verify-expert-path.mjs --stage=infra` пишется первым. **Стадия: ПЛАНИРОВАНИЕ** —
+  контракт `.itd-memory/contracts/R-05.md` (ещё не написан; диагноз по коду — первый шаг).
+  Разрешены (после плана): `scripts/verify-expert-path.mjs` (+ тест), миграция 031 (bucket `voice`
+  + политика), `apps/bot/*` (заливка аудио), `apps/web/app/api/voice/route.ts` (обязательный
+  upload), `apps/web/app/api/health/route.ts` (cron.job), OPERATIONS, `.itd*`, BACKLOG,
+  CURRENT_PLAN, READINESS_PLAN. Запрещены: цены, реестр пакетов, checkout-флаг, касса,
+  Business-контур (R-01..R-04b — только регрессии). Операционные тикеты — по решению владельца.
+
+Предыдущий юнит: **R-04b — VERIFIED 2026-09-08** (ОТК exit 0 через проброс: «Preflight verification
+passed for http://127.0.0.1:13100» с `--check-paid-alert`, квитанция `r04b-otk-adjudication-3.json`;
+канарейка `70c3c6aa` — владелец оплатил тестовой картой, алерт в админ-чате, `operator_alerts`
+count=1, `paid → delivered` за 62 с). Ниже — история юнита.
+
 - **R-04b** (= R-04'; вставлен и активирован 2026-09-08 по решению владельца «вариант (а), делай
   R-04' и дальше R-05»; tier medium): триггер чека самозанятого — при переходе заказа Audit Start
   в `paid` (webhook и сверка R-01) оператор получает алерт `order_paid` в админ-чат (сумма, email
