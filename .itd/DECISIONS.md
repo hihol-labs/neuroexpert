@@ -662,3 +662,22 @@ claim-then-send по `*_email_sent_at` (guard IS NULL до отправки, res
 (смешивает «касса отклонила» и «не оплатил»); ожидание списка платежей кассы; Resend (ключа нет).
 Ограничение: канарейка «потерянный webhook» на live без реального платежа невозможна — evidence
 юнит-тесты + канарейка pending-заказа и логи сверки; чек самозанятого — R-04.
+
+## 2026-09-08 — R-02: дизайн алертов оператору (в рамках утверждённого плана ADR-004)
+
+Какое: (1) единый канал `notifyOperator(kind, id, fields)` в shared (`ops/alerts.ts` реестр 10 видов +
+`ops/notify-operator.ts` с инъекцией claim/send), адаптеры worker/web поверх RPC и `tgFetch`; (2)
+дедупликация в БД (таблица `operator_alerts`, миграция 030, RPC `claim_operator_alert`: INSERT ON
+CONFLICT DO NOTHING → SELECT FOR UPDATE), окно 1 ч, квоты 6 ч — не in-memory (реплики/рестарты);
+(3) инвариант «алерт никогда не ломает основной путь»: notifier не бросает, вызовы в свипе/сверке/
+processJob/service-orders — fire-and-forget; (4) SLA-провал в run() идёт под тем же ключом
+`sla_breached:<id>`, что и в свипе (гонка → одно сообщение), причина провала в exception-пути
+честная (`audit_sla_breached` vs `audit_attempts_exhausted`); (5) канареечный `test_simulated_failure`
+не алертится ни в run(), ни в refund(); (6) health `alerts {last_sent_at, sent_24h (уникальные ключи),
+failed_24h}`; watcher health в worker раз в 15 мин.
+
+Почему: один канал и один реестр проще поддерживать, чем россыпь tgFetch в роутах; дедуп в БД
+переживает рестарты и общий для web/worker; fire-and-forget — таймаут Telegram (20 с × 100 заказов)
+растягивал бы свип и ответ клиенту. Отвергнуто: Redis/очередь алертов (лишняя инфраструктура),
+e-mail оператору, алерты на каждый canceled без денег (шум).
+Ограничение: отказ самой БД/RPC в health не виден — только в логе `[alerts] … claim failed`.
