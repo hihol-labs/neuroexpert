@@ -28,7 +28,7 @@
 
 Источник — инвентаризации по коду 2026-09-06 (Business 24 разрыва, Experts 21, из них 8 сломанных шагов). Полная таблица «разрыв → юнит», оракулы и календарь — `docs/plan/READINESS_PLAN.md`; статусы — `GOAL.json`.
 
-- [ ] **R-01** Сверка и провалы платежей: job `reconcile_payments` (ЮKassa ↔ orders, 48 ч), `pending` → `expired` через 24 ч, письмо при `failed`/`refunded`, `decideRefund()` подключён. Оракул `verify-selfserve-path.mjs --stage=reconcile`. (B-AUTO-2/3/7/22)
+- [x] **R-01 — VERIFIED 2026-09-08:** сверка pending/expired-заказов с кассой каждые 15 мин (`worker/services/payment-reconcile.ts`: потерянный webhook → `paid` + job через `ensure_package_audit_job` + письмо-ссылка; `canceled` → `failed`), статус `expired` (миграция 029, оплата после протухания принимается), письма о провале/возврате через SMTP worker'а (nodemailer, шаблоны в git, claim-then-send), `decideRefund()` подключён, health `expired`/`pending_stale`. Коммит `f640f3b`, выкачено (`.deploy-sha=f640f3b`, 029 применена), ОТК exit 0 через проброс, канарейки ALL_GREEN (лог `[reconcile] scanned=1 kept=1`, SMTP verify OK). Оракул `verify-selfserve-path.mjs --stage=reconcile`. (B-AUTO-2/3/7/22)
 - [ ] **R-02** Алерты оператору в `TELEGRAM_ADMIN_CHAT_ID`: failed/refund/SLA/quota/health/service-order, дедупликация 1 ч. (B-AUTO-8/11/23)
 - [ ] **R-03** Данные клиента в движок, автоактивация пары при `paid`, один почтовый транспорт, уборка мёртвых job-типов. (B-AUTO-4/5/9/21)
 - [ ] **R-04** Чек самозанятого через `receipt` ЮKassa; «Мой налог» подключает владелец в ЛК кассы, иначе `blocked`. (B-AUTO-6)

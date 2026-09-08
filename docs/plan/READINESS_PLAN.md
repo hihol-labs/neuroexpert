@@ -75,7 +75,9 @@ Tier по методологии: high — деньги/auth/прод-данны
 
 ### Блок R-A — Business Audit Start: замкнутый контур (≈5 дней, до 2026-09-12)
 
-- **R-01 · Сверка и провалы платежей** (high, M+S+S). Job `reconcile_payments` каждые 15 мин:
+- **R-01 · Сверка и провалы платежей — VERIFIED 2026-09-08** (коммит `f640f3b`, выкачено, ОТК exit 0,
+  канарейки ALL_GREEN; сверка реализована «от нас» — GET платежа по каждому pending/expired, а не
+  список кассы; job через RPC `ensure_package_audit_job`). Исходный план (high, M+S+S). Job `reconcile_payments` каждые 15 мин:
   список платежей кассы за 48 ч ↔ `orders` (succeeded без `paid` → paid + job; canceled →
   canceled); `pending` старше 24 ч → `expired`; письмо клиенту при `failed`/`refunded`
   (шаблон в git); `decideRefund()` подключён. Оракул: `verify-selfserve-path.mjs
