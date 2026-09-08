@@ -90,7 +90,8 @@ async function probePerplexity(): Promise<ProviderProbe> {
   return httpProbe("https://api.perplexity.ai/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-    body: JSON.stringify({ model: "sonar", max_tokens: 1, messages: [{ role: "user", content: "ping" }] }),
+    // Perplexity отвергает max_tokens < 16 (HTTP 400 «max_tokens must be at least 16»), обнаружено 2026-09-08 при подключении ключа.
+    body: JSON.stringify({ model: "sonar", max_tokens: 16, messages: [{ role: "user", content: "ping" }] }),
   }, await proxiedFetch());
 }
 
