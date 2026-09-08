@@ -119,7 +119,8 @@ export function createAuditDelivery(deps: DeliveryDependencies) {
         ...(result.status==="succeeded"?{status:"refunded",refunded_at:iso(),refund_next_attempt_at:null}:{}),
       }).eq("id",order.id).eq("status","failed").eq("refund_attempts",attempt));
       // R-02: оператор видит каждый подтверждённый возврат (деньги ушли клиенту).
-      if(result.status==="succeeded")void deps.notifyOperator?.("order_refunded",order.id,{заказ:order.id,сумма:order.amount_rub,причина:order.failure_reason??null,refund:result.id});
+      // Канареечный провал (test_simulated_failure, только тестовый магазин) не алертится и на возврате.
+      if(result.status==="succeeded"&&order.failure_reason!=="test_simulated_failure")void deps.notifyOperator?.("order_refunded",order.id,{заказ:order.id,сумма:order.amount_rub,причина:order.failure_reason??null,refund:result.id});
     } catch(e) {await effectError(order,"refund",attempt,e);}
   }
   async function run(payload:Record<string,unknown>,context:DeliveryJobContext={attempts:1,maxAttempts:3}) {

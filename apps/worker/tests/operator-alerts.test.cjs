@@ -58,6 +58,20 @@ test('delivery: SLA истёк во время попытки (exception-пут�
  assert.equal(t.rows[0].failure_reason,'audit_sla_breached');assert.deepEqual(alerts.map(a=>a[0]),['sla_breached']);
 });
 
+test('delivery: канарейка simulate=fail на тестовом магазине -> провал и возврат без ЕДИНОГО алерта',async()=>{
+ const alerts=[];const NOW0=Date.parse('2026-09-08T10:30:00Z');
+ const paid={id:ID,owner_id:OWNER,email:'c@x',package:'audit_start',niche_id:'n',job_id:'job-1',status:'paid',amount_rub:7900,paid_at:'2026-09-08T10:00:00Z',sla_deadline_at:'2026-09-08T11:00:00Z',
+  yukassa_payment_id:'pay-1',payment_test:true,payment_shop_id:'test-shop',payment_verified_at:null,report:null,refund_id:null,refund_status:'not_required',refund_attempts:0,refund_next_attempt_at:null,notification_status:'not_required',notification_attempts:0,notification_next_attempt_at:null,failure_reason:null};
+ const t=table([paid]);
+ const admin={from(){return t.q()},async rpc(name,args){const r=t.rows[0];if(name==='fail_package_audit'&&r.status==='paid')Object.assign(r,{status:'failed',failure_reason:args.p_reason,refund_status:'pending',refund_next_attempt_at:new Date(NOW0).toISOString()});return {data:true,error:null}}};
+ const http=async(url,init={})=>{const p=new URL(String(url)).pathname;
+  if(p.startsWith('/v3/payments/'))return json({id:'pay-1',status:'succeeded',test:true,amount:{value:'7900.00',currency:'RUB'},recipient:{account_id:'test-shop'},metadata:{order_id:ID,user_id:OWNER,type:'package',package:'audit_start'}});
+  if(p==='/v3/refunds')return json({id:'refund-1',status:'succeeded',payment_id:'pay-1',amount:{value:'7900.00',currency:'RUB'}});return json({},500)};
+ const svc=createAuditDelivery({admin,fetch:http,now:()=>NOW0,env:{YUKASSA_TEST_SHOP_ID:'test-shop',YUKASSA_TEST_SECRET_KEY:'k',AUDIT_INTERNAL_TOKEN:'t'},sendReady:async()=>{},notifyOperator:async(k,i)=>{alerts.push([k,i]);return 'sent'}});
+ await svc.run({order_id:ID,simulate:'fail'},{attempts:1,maxAttempts:3,jobId:'job-1'});
+ assert.equal(t.rows[0].failure_reason,'test_simulated_failure');assert.equal(t.rows[0].status,'refunded');assert.deepEqual(alerts,[]);
+});
+
 test('delivery: ошибка SMTP при письме клиенту -> email_failed; без notifyOperator ничего не падает',async()=>{
  const refunded={id:'r1',email:'c@x',status:'refunded',paid_at:'2026-09-08T08:00:00Z',amount_rub:7900,refund_status:'succeeded',notification_status:'not_required',created_at:'2026-09-08T07:00:00Z'};
  const t=table([refunded]);const alerts=[];
