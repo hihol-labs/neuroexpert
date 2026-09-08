@@ -1,9 +1,9 @@
 {
   "version": 1,
   "purpose": "Executable verification contract for the active unit.",
-  "unitId": "R-05",
+  "unitId": "R-04b",
   "createdAt": "2026-09-08",
-  "note": "node scripts/verify-expert-path.mjs --stage=infra — НЕ СОЗДАН, оракул пишется первым",
+  "note": "node scripts/verify-preflight.mjs --check-paid-alert — НЕ СОЗДАН, пишется первым",
   "commandSchema": {
     "requiredFields": [
       "id",
@@ -21,8 +21,8 @@
   },
   "commands": [
     {
-      "id": "r-05-unit",
-      "command": "node scripts/verify-expert-path.mjs --stage=infra",
+      "id": "r-04b-unit",
+      "command": "node scripts/verify-preflight.mjs --check-paid-alert",
       "timeoutSeconds": 600,
       "expectedOutput": "exit 0",
       "passFailParser": "exit_code_zero",

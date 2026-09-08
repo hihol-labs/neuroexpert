@@ -2,7 +2,21 @@
 
 ## Current Task
 
-- **R-05** (активирован 2026-09-08 после blocked R-04, tier medium): Хранилище и cron экспертов —
+- **R-04b** (= R-04'; вставлен и активирован 2026-09-08 по решению владельца «вариант (а), делай
+  R-04' и дальше R-05»; tier medium): триггер чека самозанятого — при переходе заказа Audit Start
+  в `paid` (webhook и сверка R-01) оператор получает алерт `order_paid` в админ-чат (сумма, email
+  клиента, id и ссылка на заказ, напоминание выбить чек в «Мой налог»); дедуп по заказу (ключ
+  `order_paid:<id>`, гонка webhook/сверка → одно сообщение); алерт не ломает оплату
+  (fire-and-forget). Оракул `node scripts/verify-preflight.mjs --check-paid-alert` пишется первым.
+  **Стадия: ПЛАНИРОВАНИЕ → оракул** — контракт `.itd-memory/contracts/R-04b.md`. Разрешены:
+  `scripts/verify-preflight.mjs` (+ `scripts/tests/preflight.test.mjs`), shared `ops/alerts.ts`
+  (новый kind), `apps/web/app/api/webhooks/yukassa/route.ts` (только вызов алерта внутри
+  `if (t.changed)` paid-ветки), `apps/worker/src/services/payment-reconcile.ts` (алерт в markPaid),
+  тесты shared/worker, OPERATIONS §9b, `.itd*`, BACKLOG, CURRENT_PLAN, READINESS_PLAN. Запрещены:
+  цены, реестр пакетов, checkout-флаг, касса (`receipt` — R-04 blocked), экспертный контур.
+  R-05 возвращён в `pending` (ручной фоллбэк; кода по нему не было) — следующий после R-04b.
+
+Ранее активированный (2026-09-08, без кода): **R-05** (tier medium): Хранилище и cron экспертов —
   миграция создаёт private bucket `voice` с политикой; бот заливает аудио в Storage; upload в
   `/api/voice` обязателен (ошибка → 500, не «принято»); health проверяет `cron.job`
   (weekly-demand, generate-orders) и последний запуск; оракул
