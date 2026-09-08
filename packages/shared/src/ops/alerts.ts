@@ -15,11 +15,13 @@ export type OperatorAlertKind =
   | "quota_exhausted"
   | "rate_limited"
   | "health_degraded"
-  | "service_order";
+  | "service_order"
+  | "order_paid";
 
 export const OPERATOR_ALERT_KINDS: readonly OperatorAlertKind[] = [
   "order_failed", "order_refunded", "sla_breached", "email_failed", "reconcile_mismatch",
   "reconcile_errors", "quota_exhausted", "rate_limited", "health_degraded", "service_order",
+  "order_paid",
 ];
 
 export const DEFAULT_ALERT_DEDUP_SECONDS = 3600;
@@ -43,6 +45,9 @@ const TITLES: Record<OperatorAlertKind, string> = {
   rate_limited: "Провайдер: лимит запросов, job остановлен",
   health_degraded: "Health: degraded",
   service_order: "Новая заявка Launch Start / Managed Lite",
+  // R-04' (R-04b): ЮKassa чеки самозанятых не формирует (сервис закрыт 29.12.2025) - чек выбивает
+  // оператор вручную по этому алерту; ключ order_paid:<id> - webhook и сверка дают одно сообщение.
+  order_paid: "Аудит Старт: оплата получена - выбить чек в Мой налог",
 };
 
 export function alertDedupSeconds(kind: OperatorAlertKind): number {

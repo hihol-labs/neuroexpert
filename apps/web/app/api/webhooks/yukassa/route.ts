@@ -13,6 +13,7 @@ import {
 } from "shared";
 import { activateLocalPair } from "shared";
 import { createClient } from "@supabase/supabase-js";
+import { notifyOperator } from "@/lib/operator-alerts";
 import { KassaUnavailableError, fetchKassaPayment, fetchKassaRefund, kassaShops } from "@/lib/yukassa-verify";
 
 const WEBHOOK_SECRET = process.env.YUKASSA_WEBHOOK_SECRET || "";
@@ -156,6 +157,17 @@ async function handlePackagePaymentSucceeded(
     // переходе в paid — повтор webhook не делает лишний UPDATE); ошибка активации не ломает оплату.
     try { await activateLocalPair(admin, order.niche_id); }
     catch (err) { console.error(`[yukassa] pair activation for order ${orderId} failed:`, err instanceof Error ? err.message : err); }
+    // R-04' (R-04b): триггер ручного чека самозанятого - ЮKassa чеки самозанятых не формирует.
+    // Только при реальном переходе в paid; fire-and-forget, оплату не задерживает и не ломает.
+    try {
+      void notifyOperator("order_paid", orderId, {
+        заказ: orderId, сумма: `${order.amount_rub} руб`, email: order.email, пакет: order.package,
+        ссылка: `${appUrl()}/orders/${orderId}`, тест: order.payment_test ? "да (тестовый магазин, чек не нужен)" : "",
+      });
+    } catch (err) {
+      // Ленивая инициализация адаптера может бросить синхронно (env) - оплату это не касается.
+      console.error(`[yukassa] order_paid alert for order ${orderId} failed:`, err instanceof Error ? err.message : err);
+    }
   }
 
   if (mayEnqueueAuditJob("paid", order.job_id)) {

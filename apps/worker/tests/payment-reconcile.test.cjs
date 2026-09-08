@@ -27,7 +27,9 @@ function harness(rows,options={}){
  async function http(url,init={}){const u=new URL(String(url));const shop=Buffer.from(init.headers.Authorization.slice(6),'base64').toString().split(':')[0];
   const id=decodeURIComponent(u.pathname.split('/').pop());h.kassaCalls.push({shop,id});
   const entry=h.kassa[id];if(entry==='boom')return json({},503);if(!entry||entry.shop!==shop)return json({},404);return json(entry.payment)}
+ h.alerts=[]; // R-04b: алерт order_paid при переходе в paid (триггер ручного чека самозанятого)
  h.service=createPaymentReconcile({admin,fetch:http,now:()=>h.now,log:l=>h.log.push(l),sendStatusLink:async(email,id)=>{if(options.linkFails)throw new Error('smtp down');h.links.push(id)},
+  notifyOperator:async(kind,id,fields)=>{if(options.alertFails)throw new Error('tg down');h.alerts.push({kind,id,fields})},
   env:{YUKASSA_TEST_SHOP_ID:'test-shop',YUKASSA_TEST_SECRET_KEY:'t',YUKASSA_SHOP_ID:'live-shop',YUKASSA_SECRET_KEY:'l',...(options.env||{})}});
  return h;}
 
@@ -132,4 +134,26 @@ test('свип: параллельные свипы (две реплики) от
 test('свип без транспорта писем: письма пропускаются, свип не падает',async()=>{
  const h=deliveryHarness([{id:'r1',email:'c@x',status:'refunded',paid_at:'x',amount_rub:7900,refund_status:'succeeded',notification_status:'not_required',created_at:'2026-09-08T07:00:00Z'}],{noMailer:true});
  await h.service.sweep();assert.equal(h.mails.length,0);
+});
+
+// ===== R-04' (R-04b): алерт order_paid при переходе в paid через сверку =====
+test('R-04b: mark_paid шлёт алерт order_paid с суммой, email и ссылкой на заказ (боевой магазин без пометки тест)',async()=>{
+ const o=order();const h=harness([o],{kassa:{'pay-1':{shop:'live-shop',payment:payment(o)}},env:{NEXT_PUBLIC_APP_URL:'https://neuroexpertise.ru/'}});
+ await h.service.run();
+ assert.equal(h.alerts.length,1);const a=h.alerts[0];assert.equal(a.kind,'order_paid');assert.equal(a.id,o.id);
+ assert.equal(a.fields['заказ'],o.id);assert.equal(a.fields['сумма'],`${o.amount_rub} руб`);assert.equal(a.fields['email'],o.email);assert.equal(a.fields['пакет'],'audit_start');
+ assert.deepEqual(Object.keys(a.fields).sort(),['email','заказ','пакет','ссылка','сумма','тест'].sort(),'без лишних полей (PII/ids)');
+ assert.equal(a.fields['ссылка'],`https://neuroexpertise.ru/orders/${o.id}`);assert.equal(a.fields['тест'],'');
+});
+
+test('R-04b: оплата в тестовом магазине помечена «тест», чек не нужен',async()=>{
+ const o=order({payment_shop_id:'test-shop',payment_test:true});const h=harness([o],{kassa:{'pay-1':{shop:'test-shop',payment:payment(o,{test:true})}}});
+ await h.service.run();assert.equal(h.alerts.length,1);assert.match(h.alerts[0].fields['тест'],/^да/);
+});
+
+test('R-04b: keep/expire/failed не алертят order_paid; падение алерта не ломает paid',async()=>{
+ const pending=order({id:'o-keep'});const hk=harness([pending],{kassa:{'pay-1':{shop:'live-shop',payment:{...payment(pending),status:'pending'}}}});
+ await hk.service.run();assert.equal(hk.alerts.filter(a=>a.kind==='order_paid').length,0);
+ const o=order();const h=harness([o],{kassa:{'pay-1':{shop:'live-shop',payment:payment(o)}},alertFails:true});
+ const s=await h.service.run();assert.equal(s.paid,1);assert.equal(h.rows[0].status,'paid');assert.equal(h.alerts.length,0);
 });

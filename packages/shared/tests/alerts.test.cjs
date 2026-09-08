@@ -12,8 +12,18 @@ test("ключ: вид + безопасный id; без id — только в�
 test("дедуп: 1 час по умолчанию, квоты 6 часов; все виды в реестре", () => {
   assert.equal(alertDedupSeconds("order_failed"), 3600);
   assert.equal(alertDedupSeconds("quota_exhausted"), 6 * 3600);
-  assert.ok(OPERATOR_ALERT_KINDS.length >= 10);
+  assert.ok(OPERATOR_ALERT_KINDS.length >= 11);
   assert.ok(isOperatorAlertKind("health_degraded")); assert.ok(!isOperatorAlertKind("nope"));
+});
+
+test("R-04b: order_paid в реестре, дедуп по заказу 1 час, текст напоминает про чек в Мой налог", () => {
+  assert.ok(isOperatorAlertKind("order_paid"));
+  assert.equal(alertDedupSeconds("order_paid"), 3600);
+  assert.equal(alertKey("order_paid", "ord-1"), "order_paid:ord-1");
+  const t = formatOperatorAlert("order_paid", { заказ: "ord-1", сумма: "7900 руб", email: "c@x.ru", ссылка: "https://neuroexpertise.ru/orders/ord-1", тест: "" });
+  assert.match(t, /^\[NeuroExpert\] Аудит Старт: оплата получена - выбить чек в Мой налог\n/);
+  assert.match(t, /сумма: 7900 руб\nemail: c@x.ru\nссылка: https:\/\/neuroexpertise.ru\/orders\/ord-1$/);
+  assert.ok(!/тест:/.test(t));
 });
 
 test("текст: заголовок + поля, пустые пропускаются, без переносов внутри значения, лимит 3500", () => {

@@ -314,7 +314,11 @@ empty` ставит новый `collect_demand`, если `demand_collected_at` 
   но не соответствует заказу — решение оператора), `reconcile_errors` (ошибки прохода сверки),
   `quota_exhausted:<jobType>` (6 ч), `rate_limited:<jobType>`, `health_degraded` (watcher worker'а
   раз в 15 мин читает `/api/health` по `AUDIT_INTERNAL_URL`), `service_order:<id>` (заявка Launch
-  Start / Managed Lite). Окно по умолчанию — 1 час на ключ.
+  Start / Managed Lite), `order_paid:<order>` (R-04', 2026-09-08: оплата Audit Start получена —
+  сумма, email, пакет, ссылка на заказ; **оператор выбивает чек самозанятого в «Мой налог»
+  вручную** — ЮKassa закрыла сервис чеков самозанятых 29.12.2025; шлётся из webhook и из сверки
+  под одним ключом, заказы тестового магазина помечены «тест: да», чек по ним не нужен). Окно по
+  умолчанию — 1 час на ключ.
 - **Дедупликация в БД:** таблица `operator_alerts` (миграция 030), RPC `claim_operator_alert`
   (true = отправить; повтор в окне только увеличивает `count`), `record_operator_alert_error`
   (ошибка отправки → `last_error`, `last_sent_at` снимается, следующий повод отправит снова).

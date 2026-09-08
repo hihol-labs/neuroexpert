@@ -65,6 +65,7 @@ const KNOWN_FLAGS = new Set([
   "--repo-only",
   "--check-sales-today",
   "--check-alerts",
+  "--check-paid-alert",
 ]);
 
 const argv = process.argv.slice(2);
@@ -74,6 +75,7 @@ let repoRootArg = null;
 let repoOnly = false;
 let checkSalesToday = false;
 let checkAlerts = false; // R-02: алерты оператору (репо + health.alerts)
+let checkPaidAlert = false; // R-04' (R-04b): алерт order_paid при оплате — триггер ручного чека самозанятого
 
 for (let i = 0; i < argv.length; i += 1) {
   const flag = argv[i];
@@ -87,6 +89,8 @@ for (let i = 0; i < argv.length; i += 1) {
   if (flag === "--repo-only") { repoOnly = true; continue; }
   if (flag === "--check-sales-today") { checkSalesToday = true; continue; }
   if (flag === "--check-alerts") { checkAlerts = true; continue; }
+  // Триггер чека без канала алертов бессмыслен: --check-paid-alert включает и контракт R-02.
+  if (flag === "--check-paid-alert") { checkPaidAlert = true; checkAlerts = true; continue; }
 }
 
 if (fixtureDir && baseUrlArg) {
@@ -434,6 +438,27 @@ function checkAlertsRepo() {
   }
 }
 
+/**
+ * R-04' (R-04b): триггер чека самозанятого. ЮKassa чеки самозанятых не формирует (сервис закрыт
+ * 29.12.2025), поэтому при переходе заказа в paid оператор обязан получить алерт order_paid из обоих
+ * мест перехода — webhook payment.succeeded и сверка R-01 (markPaid). Needles — литералы вызовов,
+ * чтобы «алерт в логе» или «алерт другого вида» не проходили.
+ */
+function checkPaidAlertRepo() {
+  const files = [
+    ["packages/shared/src/ops/alerts.ts", ["\"order_paid\"", "Мой налог"]],
+    ["apps/web/app/api/webhooks/yukassa/route.ts", ["@/lib/operator-alerts", "notifyOperator(\"order_paid\""]],
+    ["apps/worker/src/services/payment-reconcile.ts", ["notifyOperator?.(\"order_paid\""]],
+  ];
+  const missing = [];
+  for (const [rel, needles] of files) {
+    const text = readRepoFile(rel);
+    if (text === null) { missing.push(`${rel}: файл отсутствует`); continue; }
+    for (const n of needles) if (!text.includes(n)) missing.push(`${rel}: нет «${n}»`);
+  }
+  if (missing.length > 0) finding("[paid-alert]", missing.join("; "), "реализовать контракт R-04b (.itd-memory/contracts/R-04b.md): алерт order_paid в webhook и сверке");
+}
+
 /** R-02 живой слой: health.alerts — last_sent_at (строка ISO или null), sent_24h/failed_24h целые >= 0. */
 function checkAlertsHealth(health) {
   const a = health?.alerts;
@@ -450,6 +475,7 @@ checkContractSection();
 check754Decision();
 checkSalesLog();
 if (checkAlerts) checkAlertsRepo();
+if (checkPaidAlert) checkPaidAlertRepo();
 
 if (!repoOnly) {
   try {

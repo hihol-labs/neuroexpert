@@ -279,6 +279,39 @@ try {
     const r = runOracle(repo, fx, ["--check-alerts"]); expect(`alerts мутация live: ${label}`, r.code, 1, r.out);
   });
 
+  // ===== R-04' (R-04b) --check-paid-alert: алерт order_paid при оплате (триггер ручного чека) =====
+  const PAID_FILES = {
+    ...ALERT_FILES,
+    "packages/shared/src/ops/alerts.ts": ALERT_FILES["packages/shared/src/ops/alerts.ts"] + "const MORE = [\"order_paid\"]; // Аудит Старт: оплата получена - выбить чек в Мой налог\n",
+    "apps/web/app/api/webhooks/yukassa/route.ts": "import { notifyOperator } from \"@/lib/operator-alerts\";\nif (t.changed) { void notifyOperator(\"order_paid\", orderId, {}); }\n",
+    "apps/worker/src/services/payment-reconcile.ts": ALERT_FILES["apps/worker/src/services/payment-reconcile.ts"] + "if (t.changed) { void deps.notifyOperator?.(\"order_paid\", order.id, {}); }\n",
+  };
+  {
+    const repo = join(work, "paid-green"); const fx = join(work, "paid-fx");
+    writeRepo(repo, { files: PAID_FILES }); writeFixtures(fx, { health: ALERT_HEALTH });
+    const r = runOracle(repo, fx, ["--check-paid-alert"]); expect("paid-alert: позитив", r.code, 0, r.out);
+    const r2 = runOracle(repo, fx, ["--check-alerts"]); expect("paid-alert: --check-alerts не требует order_paid (обратная совместимость)", r2.code, 0, r2.out);
+    const base = join(work, "paid-base"); const fxb = join(work, "paid-fx-base");
+    writeRepo(base, { files: ALERT_FILES }); writeFixtures(fxb, { health: ALERT_HEALTH });
+    const r3 = runOracle(base, fxb, ["--check-paid-alert"]); expect("paid-alert: канал R-02 без order_paid -> exit 1", r3.code, 1, r3.out);
+    expect("paid-alert: находка помечена [paid-alert]", /\[paid-alert\]/.test(r3.out), true, r3.out);
+  }
+  const PF = PAID_FILES;
+  const paidMutations = [
+    ["shared: kind order_paid не в реестре", { "packages/shared/src/ops/alerts.ts": PF["packages/shared/src/ops/alerts.ts"].replace("\"order_paid\"", "\"order_done\"") }],
+    ["shared: заголовок не напоминает про Мой налог", { "packages/shared/src/ops/alerts.ts": PF["packages/shared/src/ops/alerts.ts"].replace("Мой налог", "чек") }],
+    ["webhook: оплата не алертит (только лог)", { "apps/web/app/api/webhooks/yukassa/route.ts": PF["apps/web/app/api/webhooks/yukassa/route.ts"].replace("notifyOperator(\"order_paid\"", "console.log(\"order_paid\"") }],
+    ["webhook: алерт не через адаптер @/lib/operator-alerts", { "apps/web/app/api/webhooks/yukassa/route.ts": PF["apps/web/app/api/webhooks/yukassa/route.ts"].replace("@/lib/operator-alerts", "@/lib/telegram") }],
+    ["сверка: markPaid не алертит", { "apps/worker/src/services/payment-reconcile.ts": PF["apps/worker/src/services/payment-reconcile.ts"].replace("notifyOperator?.(\"order_paid\"", "log(\"order_paid\"") }],
+    ["сверка: файл отсутствует", { "apps/worker/src/services/payment-reconcile.ts": null }],
+  ];
+  paidMutations.forEach(([label, ov], i) => {
+    const repo = join(work, `paid-m${i}`); const fx = join(work, `paid-fx-m${i}`);
+    const files = { ...PAID_FILES }; for (const [k, v] of Object.entries(ov)) { if (v === null) delete files[k]; else files[k] = v; }
+    writeRepo(repo, { files }); writeFixtures(fx, { health: ALERT_HEALTH });
+    const r = runOracle(repo, fx, ["--check-paid-alert"]); expect(`paid-alert мутация: ${label}`, r.code, 1, r.out);
+  });
+
   // Приоритет «находки > транспорт»: repo-находка не маскируется exit 3
   // (находка ревью 2026-08-31). Мёртвый URL, ретраи и таймаут минимальны.
   function runOracleLive(repoRoot, extraFlags = []) {

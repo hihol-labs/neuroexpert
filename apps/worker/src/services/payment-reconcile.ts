@@ -40,6 +40,8 @@ export function createPaymentReconcile(deps: ReconcileDependencies) {
   const log = deps.log ?? ((line: string) => console.log(line));
   const iso = () => new Date(now()).toISOString();
   const expireAfterMs = Math.max(1, Number(env.PACKAGE_ORDER_EXPIRE_MINUTES || 1440)) * 60000;
+  // Та же цепочка, что appUrl() в web (webhook/orders): NEXT_PUBLIC_APP_URL -> APP_URL -> прод.
+  const appUrl = (env.NEXT_PUBLIC_APP_URL || env.APP_URL || "https://neuroexpertise.ru").replace(/\/+$/, "");
   const checked = <T>(result: { data: T; error: { message: string } | null }): T => {
     if (result.error) throw new Error(`reconcile database: ${result.error.message}`);
     return result.data;
@@ -65,6 +67,14 @@ export function createPaymentReconcile(deps: ReconcileDependencies) {
       checked(await admin.from("package_orders")
         .update({ status: "paid", paid_at: iso(), yukassa_payment_id: payment.id, payment_test: shop.test, payment_shop_id: shop.id, reconciled_at: iso() })
         .eq("id", order.id).in("status", ["pending", "expired"]));
+    }
+    if (t.changed) {
+      // R-04' (R-04b): триггер ручного чека самозанятого (ЮKassa чеки самозанятых не формирует);
+      // тот же ключ order_paid:<id>, что в webhook, - гонка даёт одно сообщение. Fire-and-forget.
+      Promise.resolve().then(() => deps.notifyOperator?.("order_paid", order.id, {
+        заказ: order.id, сумма: `${order.amount_rub} руб`, email: order.email, пакет: order.package,
+        ссылка: `${appUrl}/orders/${order.id}`, тест: shop.test ? "да (тестовый магазин, чек не нужен)" : "",
+      })).catch((e) => log(`[reconcile] order_paid alert for ${order.id} failed: ${e instanceof Error ? e.message : String(e)}`));
     }
     if (mayEnqueueAuditJob("paid", order.job_id)) checked(await admin.rpc("ensure_package_audit_job", { p_order_id: order.id }));
     // R-03: оплаченная локальная пара попадает в еженедельный сбор спроса (idempotent, ошибка не ломает оплату).
