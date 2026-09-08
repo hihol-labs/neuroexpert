@@ -104,6 +104,11 @@ Tier по методологии: high — деньги/auth/прод-данны
   суммой, email клиента и id заказа как триггер ручной регистрации дохода в «Мой налог» (S, kind
   `order_paid` в канале R-02, оракул `verify-preflight.mjs --check-alerts`); (б) пропуск к R-05.
   Закрывает B-AUTO-6 только частично (триггер автоматический, чек ручной).
+  **Решение владельца 2026-09-08: вариант (а)** — юнит **R-04' (id `R-04b`)** вставлен после R-04 и
+  активирован (tier medium, S): kind `order_paid` в реестре алертов R-02; вызовы в webhook
+  (`payment.succeeded`, внутри `t.changed`) и в сверке (`markPaid`); поля — сумма, email клиента,
+  id заказа, ссылка `/orders/<id>`, напоминание «выбить чек в «Мой налог»»; дедуп `order_paid:<id>`.
+  Оракул: `verify-preflight.mjs --check-paid-alert` (+ мутации в `preflight.test.mjs`).
 
 ### Блок R-B — Experts: self-service E2E (≈16 дней, 2026-09-14 → 2026-10-05)
 
