@@ -6,13 +6,18 @@
   миграция создаёт private bucket `voice` с политикой; бот заливает аудио в Storage; upload в
   `/api/voice` обязателен (ошибка → 500, не «принято»); health проверяет `cron.job`
   (weekly-demand, generate-orders) и последний запуск; оракул
-  `node scripts/verify-expert-path.mjs --stage=infra` пишется первым. **Стадия: ПЛАНИРОВАНИЕ** —
-  контракт `.itd-memory/contracts/R-05.md` (ещё не написан; диагноз по коду — первый шаг).
-  Разрешены (после плана): `scripts/verify-expert-path.mjs` (+ тест), миграция 031 (bucket `voice`
-  + политика), `apps/bot/*` (заливка аудио), `apps/web/app/api/voice/route.ts` (обязательный
-  upload), `apps/web/app/api/health/route.ts` (cron.job), OPERATIONS, `.itd*`, BACKLOG,
-  CURRENT_PLAN, READINESS_PLAN. Запрещены: цены, реестр пакетов, checkout-флаг, касса,
-  Business-контур (R-01..R-04b — только регрессии). Операционные тикеты — по решению владельца.
+  `node scripts/verify-expert-path.mjs --stage=infra` пишется первым. **Стадия: ПЛАНИРОВАНИЕ →
+  оракул** — контракт `.itd-memory/contracts/R-05.md` (диагноз 2026-09-08: pg_cron на проде НЕ
+  установлен — `cron.job` нет, миграции 003/008 в леджере, но расписания не созданы; bucket `voice`
+  существует вручную и ПУБЛИЧНЫЙ, 0 объектов; бот аудио в Storage не заливает; web upload
+  best-effort). Разрешены: `scripts/verify-expert-path.mjs` (+ `scripts/tests/expert-path.test.mjs`),
+  миграция 031 (`CREATE EXTENSION pg_cron`, `weekly-demand`/`weekly-generate-orders`, bucket `voice`
+  private, RPC `cron_status()`), `apps/bot/src/handlers/voice.ts` (обязательная заливка),
+  `apps/web/app/api/voice/route.ts` (upload error → 500), `apps/web/app/api/health/route.ts`
+  (блок cron/storage), OPERATIONS §10, `.itd*`, BACKLOG, CURRENT_PLAN, READINESS_PLAN. Запрещены:
+  цены, реестр пакетов, checkout-флаг, касса, Business-контур (R-01..R-04b — только регрессии),
+  остальные cron-расписания 003 (citations/serp/trust/sitemap/freshness — R-08/R-11). Операционные
+  тикеты — по решению владельца.
 
 Предыдущий юнит: **R-04b — VERIFIED 2026-09-08** (ОТК exit 0 через проброс: «Preflight verification
 passed for http://127.0.0.1:13100» с `--check-paid-alert`, квитанция `r04b-otk-adjudication-3.json`;
