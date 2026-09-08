@@ -104,7 +104,8 @@ export function createPaymentReconcile(deps: ReconcileDependencies) {
           if (d.reason.startsWith("succeeded but")) {
             log(`[reconcile] ${order.id}: payment succeeded but identity mismatch (${d.reason}); needs operator`);
             // R-02: деньги списаны, но платёж не соответствует заказу — решение только оператора.
-            await deps.notifyOperator?.("reconcile_mismatch", order.id, { заказ: order.id, платеж: order.yukassa_payment_id, причина: d.reason, сумма_заказа: order.amount_rub });
+            // fire-and-forget: notifier не бросает, а ожидание таймаута Telegram на каждом заказе растянуло бы проход.
+            void deps.notifyOperator?.("reconcile_mismatch", order.id, { заказ: order.id, платеж: order.yukassa_payment_id, причина: d.reason, сумма_заказа: order.amount_rub });
           }
         }
       } catch (e) {

@@ -95,8 +95,9 @@ export async function POST(request: NextRequest) {
         { status: 500 },
       );
     }
-    // R-02: заявка Launch Start / Managed Lite — алерт оператору (B-AUTO-11); дедуп по id, ответ клиенту не зависит.
-    await notifyOperator("service_order", data.id, {
+    // R-02: заявка Launch Start / Managed Lite — алерт оператору (B-AUTO-11); дедуп по id. Не ждём:
+    // ответ клиенту не должен зависеть от Telegram/прокси (таймаут до 20 с); notifier не бросает.
+    void notifyOperator("service_order", data.id, {
       id: data.id, пакет: body.package_type || "launch_30d", имя: body.name, контакт: body.contact,
       email: body.email || null, ниша: body.niche || null, сайт: body.website || null,
     });

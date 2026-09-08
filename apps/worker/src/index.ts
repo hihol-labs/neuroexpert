@@ -253,7 +253,13 @@ async function main(): Promise<void> {
   void reconcile();
   setInterval(()=>{void reconcile();},15 * 60 * 1000);
   // R-02: watcher health (degraded -> алерт оператору), первый прогон через минуту после старта.
-  const health = async () => { try { await watchHealth(); } catch (e) { console.error("[alerts] health watcher failed", e instanceof Error ? e.message : String(e)); } };
+  let watching = false; // reentrancy-guard, как у sweep/reconcile
+  const health = async () => {
+    if (watching) return;
+    watching = true;
+    try { await watchHealth(); } catch (e) { console.error("[alerts] health watcher failed", e instanceof Error ? e.message : String(e)); }
+    finally { watching = false; }
+  };
   setTimeout(()=>{void health();}, 60 * 1000);
   setInterval(()=>{void health();},15 * 60 * 1000);
   console.log("[worker] Starting...");

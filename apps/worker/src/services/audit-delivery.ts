@@ -166,7 +166,9 @@ export function createAuditDelivery(deps: DeliveryDependencies) {
   }
   async function sweep() {
     const due=checked(await admin.from("package_orders").select("id").eq("status","paid").lte("sla_deadline_at",iso()).limit(100));
-    for(const row of due??[]){await fail(row.id,"audit_sla_breached",true);await deps.notifyOperator?.("sla_breached",row.id,{заказ:row.id,причина:"audit_sla_breached (60 минут)"});}
+    // Алерты в свипе — fire-and-forget: notifyOperator никогда не бросает, а ожидание до 100 таймаутов
+    // Telegram (20 с каждый) растянуло бы свип и задержало возвраты/письма того же прохода.
+    for(const row of due??[]){await fail(row.id,"audit_sla_breached",true);void deps.notifyOperator?.("sla_breached",row.id,{заказ:row.id,причина:"audit_sla_breached (60 минут)"});}
     const orphaned=checked(await admin.from("package_orders").select("id").eq("status","paid").is("job_id",null).limit(100));
     for(const row of orphaned??[])checked(await admin.rpc("ensure_package_audit_job",{p_order_id:row.id}));
     // Separate limits prevent a slow/broken refund queue starving ready emails.
@@ -207,7 +209,7 @@ export function createAuditDelivery(deps: DeliveryDependencies) {
       } catch(e) {
         const msg=(e instanceof Error?e.message:String(e)).slice(0,500);
         checked(await admin.from("package_orders").update({[sentCol]:null,[errCol]:msg}).eq("id",order.id));
-        await deps.notifyOperator?.("email_failed",`${order.id}:${kind}`,{заказ:order.id,письмо:kind,ошибка:msg});
+        void deps.notifyOperator?.("email_failed",`${order.id}:${kind}`,{заказ:order.id,письмо:kind,ошибка:msg});
       }
     }
   }
