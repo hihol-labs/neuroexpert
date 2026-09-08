@@ -165,7 +165,8 @@ export function createAuditDelivery(deps: DeliveryDependencies) {
     // R-02: провал оплаченного замера — алерт оператору (возврат при этом уже запущен автоматически).
     // SLA-провал идёт под тем же ключом sla_breached:<id>, что и в свипе: гонка run()/sweep() даёт
     // ровно одно сообщение (дедуп в БД), а не два разных алерта на одно событие.
-    if(final&&final.status==="failed"&&order.status==="paid"){
+    // Канареечный провал (simulate=fail, только тестовый магазин) оператору не нужен — шум в боевом чате.
+    if(final&&final.status==="failed"&&order.status==="paid"&&final.failure_reason!=="test_simulated_failure"){
       const fields={заказ:order.id,причина:final.failure_reason??null,сумма:order.amount_rub,возврат:final.refund_status};
       if(final.failure_reason==="audit_sla_breached")void deps.notifyOperator?.("sla_breached",order.id,fields);
       else void deps.notifyOperator?.("order_failed",order.id,fields);

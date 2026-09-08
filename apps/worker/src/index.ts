@@ -153,10 +153,11 @@ async function processJob(job: Record<string, unknown>): Promise<void> {
     } else {
       // R-02: тихий провал job по квоте/биллингу или лимиту провайдера — алерт оператору (B-AUTO-23).
       const n = errorMessage.toLowerCase();
+      // fire-and-forget: notifier не бросает; ожидание таймаута Telegram не должно задерживать подбор следующей job.
       if (LLM_JOB_TYPES.has(jobType) && (n.includes("insufficient_quota") || n.includes("quota") || n.includes("billing"))) {
-        await notifyOperator("quota_exhausted", jobType, { job: jobType, id: jobId, ошибка: errorMessage.slice(0, 300) });
+        void notifyOperator("quota_exhausted", jobType, { job: jobType, id: jobId, ошибка: errorMessage.slice(0, 300) });
       } else if (LLM_JOB_TYPES.has(jobType) && (n.includes("429") || n.includes("rate limit") || n.includes("too many requests"))) {
-        await notifyOperator("rate_limited", jobType, { job: jobType, id: jobId, попыток: attempts, ошибка: errorMessage.slice(0, 300) });
+        void notifyOperator("rate_limited", jobType, { job: jobType, id: jobId, попыток: attempts, ошибка: errorMessage.slice(0, 300) });
       }
     }
   }
