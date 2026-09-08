@@ -1,15 +1,18 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { buildReportSnapshot, decideDeliveryMode, isSlaBreached } from "shared";
+import { buildReportSnapshot, decideDeliveryMode, decideRefund, isSlaBreached } from "shared";
+import { failedPaidEmail, refundedEmail, type MailContent } from "../emails/package-order.js";
 
 type Env = Record<string, string | undefined>;
 export interface DeliveryJobContext { attempts: number; maxAttempts: number; jobId?: string }
 type Order = {
-  id:string; owner_id:string; email:string; package:string; niche_id:string; job_id:string|null;
+  id:string; owner_id:string; email:string; package:string; niche_id:string; city?:string|null; job_id:string|null;
   status:string; paid_at:string; amount_rub:number; yukassa_payment_id:string;
   payment_test:boolean|null; payment_shop_id:string|null; payment_verified_at:string|null;
   report:unknown; refund_id:string|null; refund_status:string; notification_status:string;
   notification_attempts:number; notification_next_attempt_at:string|null;
   refund_attempts:number; refund_next_attempt_at:string|null;
+  failure_email_sent_at?:string|null; refund_email_sent_at?:string|null;
+  niches?:{name?:string}|null;
 };
 type Shop = {id:string; key:string; test:boolean};
 type Payment = {id:string; status:string; test:boolean; amount:{value:string;currency:string}; metadata:Record<string,string>; recipient?:{account_id:string}};
@@ -17,6 +20,8 @@ type Refund = {id:string; status:string; payment_id:string; amount:{value:string
 export interface DeliveryDependencies {
   admin: SupabaseClient;
   sendReady: (email:string, orderId:string) => Promise<void>;
+  /** R-01: письма о провале/возврате через SMTP worker'а; без него свип их пропускает. */
+  sendMail?: (message:{to:string}&MailContent) => Promise<void>;
   fetch?: typeof fetch;
   env?: Env;
   now?: () => number;
@@ -135,7 +140,12 @@ export function createAuditDelivery(deps: DeliveryDependencies) {
           if(!response.ok)throw new Error(`Audit engine HTTP ${response.status}`);
           const raw:unknown=await response.json();
           const mode=decideDeliveryMode(raw);
-          if(mode==="failed")await fail(order.id,"audit_below_delivery_threshold");
+          // R-01: решение «провал -> возврат» — из shared (decideRefund), не зашито здесь.
+          // Причина сохраняет прежнюю семантику: контентный провал (mode=failed) всегда
+          // audit_below_delivery_threshold, даже у границы SLA; SLA-провал — только если SLA реально
+          // истёк (guard p_only_if_sla_breached), как раньше делал complete_package_audit.
+          const sla=isSlaBreached(order.paid_at,now());
+          if(decideRefund(mode,sla))await fail(order.id,mode==="failed"?"audit_below_delivery_threshold":"audit_sla_breached",mode!=="failed");
           else checked(await admin.rpc("complete_package_audit",{p_order_id:order.id,p_report:buildReportSnapshot(raw),p_mode:mode}));
         }
       }
@@ -161,6 +171,34 @@ export function createAuditDelivery(deps: DeliveryDependencies) {
       const budgetEnd=now()+120000;
       for(let offset=0;offset<(rows??[]).length&&now()<budgetEnd;offset+=5) {
         await Promise.all((rows??[]).slice(offset,offset+5).map(row=>kind==="notification"?notify(row as Order):refund(row as Order)));
+      }
+    }
+    await clientMail("failure");
+    await clientMail("refund");
+  }
+  /**
+   * R-01: письма клиенту о провале (failed при списанной оплате) и о возврате (refunded).
+   * Идемпотентность — колонки *_email_sent_at (миграция 029); ошибка SMTP пишется в
+   * *_email_last_error и повторяется на следующем свипе, возвраты от неё не зависят.
+   */
+  async function clientMail(kind:"failure"|"refund") {
+    if(!deps.sendMail)return;
+    const sentCol=`${kind}_email_sent_at`, errCol=`${kind}_email_last_error`;
+    const rows=checked(await admin.from("package_orders").select("*, niches(name)")
+      .eq("status",kind==="failure"?"failed":"refunded").is(sentCol,null).order("created_at").limit(5)) as Order[]|null;
+    for(const order of rows??[]) {
+      if(kind==="failure"&&!order.paid_at)continue; // провал оплаты без списания — письмо не нужно
+      const app=(env.NEXT_PUBLIC_APP_URL||env.APP_URL||"https://neuroexpertise.ru").replace(/\/$/,"");
+      const input={orderId:order.id,amountRub:order.amount_rub,statusUrl:`${app}/orders/${order.id}`,nicheName:order.niches?.name,city:order.city??undefined};
+      // Claim-then-send: отметка ставится ДО отправки (guard IS NULL), чтобы параллельный свип
+      // (вторая реплика worker'а) не отправил письмо дважды; при ошибке SMTP отметка снимается
+      // и письмо повторяется на следующем свипе.
+      const claimed=checked(await admin.from("package_orders").update({[sentCol]:iso(),[errCol]:null}).eq("id",order.id).is(sentCol,null).select("id")) as {id:string}[]|null;
+      if(!claimed||claimed.length===0)continue;
+      try {
+        await deps.sendMail({to:order.email,...(kind==="failure"?failedPaidEmail(input):refundedEmail(input))});
+      } catch(e) {
+        checked(await admin.from("package_orders").update({[sentCol]:null,[errCol]:(e instanceof Error?e.message:String(e)).slice(0,500)}).eq("id",order.id));
       }
     }
   }

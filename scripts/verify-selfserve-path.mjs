@@ -73,7 +73,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const KNOWN = new Set(["--stage", "--base-url", "--fixture-dir", "--checkout", "--repo-root", "--repo-only"]);
-const STAGES = ["order", "pair", "delivery"];
+const STAGES = ["order", "pair", "delivery", "reconcile"];
 const argv = process.argv.slice(2);
 const opts = { stage: null, baseUrl: null, fixtureDir: null, checkout: "dark", repoRoot: null, repoOnly: false };
 for (let i = 0; i < argv.length; i += 1) {
@@ -88,7 +88,7 @@ for (let i = 0; i < argv.length; i += 1) {
   else if (flag === "--repo-root") opts.repoRoot = value();
   else if (flag === "--repo-only") opts.repoOnly = true;
 }
-if (!STAGES.includes(opts.stage)) { console.error(`usage: --stage=${STAGES.join("|")} (delivery — юнит G-019)`); process.exit(2); }
+if (!STAGES.includes(opts.stage)) { console.error(`usage: --stage=${STAGES.join("|")} (delivery — юнит G-019, reconcile — юнит R-01)`); process.exit(2); }
 if (!["dark", "live"].includes(opts.checkout)) { console.error("usage: --checkout dark|live"); process.exit(2); }
 if (opts.fixtureDir && opts.baseUrl) { console.error("usage: --fixture-dir и --base-url взаимоисключающи"); process.exit(2); }
 
@@ -268,7 +268,49 @@ function repoDelivery() {
     requireGroup(name, files.map(([path, needles]) => [path, needles.map(n => [n, n])]), "реализовать утверждённый контракт delivery G-019");
   }
 }
-if (opts.stage === "order") repoOrder(); else if (opts.stage === "pair") repoPair(); else repoDelivery();
+// ============================================================ РЕПО: reconcile (R-01)
+/**
+ * R-01 «Сверка и провалы платежей» (ADR-004): потерянный webhook добирается сверкой с кассой,
+ * pending протухает в expired (обратимо для payment.succeeded), клиент получает письмо о
+ * провале/возврате, decideRefund() — единственный источник решения о возврате.
+ * Каждая группа = один шаг контракта .itd-memory/contracts/R-01.md = одна находка.
+ */
+function repoReconcile() {
+  const groups = {
+    migration: [["packages/supabase/migrations/029_package_orders_reconcile.sql", [
+      ["'expired'", "статус expired в CHECK"], ["expired_at", "колонка expired_at"],
+      ["failure_email_sent_at", "колонка failure_email_sent_at"], ["refund_email_sent_at", "колонка refund_email_sent_at"],
+      ["package_orders_status_check", "пересоздание CHECK статусов"]]]],
+    "shared-state": [["packages/shared/src/orders/state.ts", [
+      ["\"expired\"", "статус expired"], ["\"order.expired\"", "событие order.expired"],
+      ["\"payment.succeeded\": [\"pending\", \"expired\"]", "payment.succeeded разрешён из expired"]]]],
+    "shared-reconcile": [["packages/shared/src/orders/reconcile.ts", [
+      ["export function decidePendingOrder", "decidePendingOrder"], ["\"expire\"", "решение expire"],
+      ["\"mark_paid\"", "решение mark_paid"], ["\"mark_failed\"", "решение mark_failed"], ["expireAfterMs", "окно протухания параметром"]]]],
+    worker: [
+      ["apps/worker/src/services/payment-reconcile.ts", [
+        ["decidePendingOrder", "решение из shared"], ["payments/${", "GET /v3/payments/{id}"], ["\"expired\"", "запись expired"],
+        ["assessPackagePayment", "сверка идентичности платежа"], ["mayEnqueueAuditJob", "job только по guard"], ["ensure_package_audit_job", "job через атомарный RPC (нет дубля при гонке с webhook)"],
+        ["order.expired", "оплата после expired"], ["PACKAGE_ORDER_EXPIRE_MINUTES", "окно из env"]]],
+      ["apps/worker/src/services/mailer.ts", [["nodemailer", "SMTP-транспорт"], ["SMTP_HOST", "SMTP env"]]],
+      ["apps/worker/src/emails/package-order.ts", [
+        ["failedPaidEmail", "письмо о провале"], ["refundedEmail", "письмо о возврате"], ["автоматически", "возврат автоматический"]]],
+      ["apps/worker/src/services/audit-delivery.ts", [
+        ["decideRefund(", "decideRefund подключён"], ["failure_email_sent_at", "идемпотентность письма провала"],
+        ["refund_email_sent_at", "идемпотентность письма возврата"]]],
+      ["apps/worker/src/index.ts", [["reconcilePayments", "сверка в worker"], ["15 * 60 * 1000", "таймер 15 минут"]]],
+    ],
+    web: [
+      ["apps/web/app/api/webhooks/yukassa/route.ts", [[".in(\"status\", [\"pending\", \"expired\"])", "webhook: paid из pending|expired"]]],
+      ["apps/web/app/orders/[id]/page.tsx", [["expired:", "текст статуса expired"], ["Деньги не списаны", "expired: деньги не списаны"]]],
+      ["apps/web/app/api/health/route.ts", [["\"expired\"", "health.audit_delivery.expired"], ["pending_stale", "health.audit_delivery.pending_stale"]]],
+    ],
+  };
+  for (const [name, files] of Object.entries(groups)) {
+    requireGroup(name, files.map(([path, needles]) => [path, needles]), "реализовать контракт R-01 (.itd-memory/contracts/R-01.md)");
+  }
+}
+if (opts.stage === "order") repoOrder(); else if (opts.stage === "pair") repoPair(); else if (opts.stage === "reconcile") repoReconcile(); else repoDelivery();
 
 // ============================================================ ЖИВОЙ
 const transport = [];
@@ -386,8 +428,22 @@ async function liveDelivery() {
   const owner = await getStatus("/api/orders/00000000-0000-4000-8000-000000000001", { method: "GET", redirect: "manual" }, "orders-get.json");
   if (owner !== 401) finding("/api/orders/[id]", `без сессии: HTTP ${owner}`, "owner-only API требует 401");
 }
+/**
+ * R-01 живой слой: health отдаёт счётчики expired и pending_stale (pending старше окна);
+ * pending_stale === 0 — единственное дешёвое доказательство, что сверка реально крутится.
+ * Кассу и заказы оракул не мутирует.
+ */
+async function liveReconcile() {
+  const health = await getJson("/api/health", "health.json");
+  for (const k of ["expired", "pending_stale", "paid_waiting", "failed", "refunded"]) {
+    const n = health?.audit_delivery?.[k];
+    if (!Number.isInteger(n) || n < 0) finding("/api/health", `audit_delivery.${k} отсутствует или неверен`, "вернуть достоверные счётчики, включая expired и pending_stale");
+  }
+  const stale = health?.audit_delivery?.pending_stale;
+  if (Number.isInteger(stale) && stale > 0) finding("/api/health", `pending_stale=${stale}: pending-заказы старше окна не сверены и не протухли`, "проверить таймер reconcilePayments в worker (15 мин) и его *_last_error");
+}
 if (!opts.repoOnly) {
-  try { await (opts.stage === "order" ? liveOrder() : opts.stage === "pair" ? livePair() : liveDelivery()); } catch (e) { transport.push(e instanceof Error ? e.message : String(e)); }
+  try { await (opts.stage === "order" ? liveOrder() : opts.stage === "pair" ? livePair() : opts.stage === "reconcile" ? liveReconcile() : liveDelivery()); } catch (e) { transport.push(e instanceof Error ? e.message : String(e)); }
 }
 
 if (findings.length > 0) {

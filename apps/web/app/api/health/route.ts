@@ -128,9 +128,14 @@ export async function GET() {
     supabase.from("package_orders").select("id",{count:"exact",head:true}).eq("status","failed").not("paid_at","is",null),
     supabase.from("package_orders").select("id",{count:"exact",head:true}).eq("status","refunded"),
     supabase.from("package_orders").select("id",{count:"exact",head:true}).eq("status","paid").lte("sla_deadline_at",new Date().toISOString()),
+    // R-01: брошенные корзины и «залипшие» pending. pending_stale > 0 = сверка worker'а не крутится
+    // (окно протухания + 30 минут запаса на таймер 15 минут).
+    supabase.from("package_orders").select("id",{count:"exact",head:true}).eq("status","expired"),
+    supabase.from("package_orders").select("id",{count:"exact",head:true}).eq("status","pending")
+      .lt("created_at",new Date(Date.now()-(Number(process.env.PACKAGE_ORDER_EXPIRE_MINUTES||1440)+30)*60000).toISOString()),
   ]);
   const deliveryHealthy = deliveryCounts.every(r=>!r.error && r.count !== null);
-  const auditDelivery = Object.fromEntries(["paid_waiting","delivered","failed","refunded","sla_breached"].map((name,i)=>[name,deliveryCounts[i].error ? null : deliveryCounts[i].count]));
+  const auditDelivery = Object.fromEntries(["paid_waiting","delivered","failed","refunded","sla_breached","expired","pending_stale"].map((name,i)=>[name,deliveryCounts[i].error ? null : deliveryCounts[i].count]));
 
   // DEMAND-3: живость провайдеров (Wordstat + LLM), а не только наличие ключей —
   // пустой баланс XMLRIVER и блокировка облака Yandex проходили тихо (2026-09-05).

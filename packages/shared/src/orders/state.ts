@@ -3,6 +3,12 @@
  *
  *   pending --payment.succeeded--> paid --refund.succeeded--> refunded
  *   pending --payment.canceled---> failed
+ *   pending --order.expired------> expired --payment.succeeded--> paid   (R-01)
+ *
+ * `expired` (R-01, ADR-004) — брошенная корзина: платёж не подтверждён кассой дольше
+ * окна протухания. Статус НЕ терминален для денег: если клиент оплатил по старой
+ * ссылке, `payment.succeeded` переводит expired → paid и запускает отчёт — деньги
+ * никогда не остаются без результата.
  *
  * Повтор события, уже приведшего к целевому статусу, — идемпотентный no-op
  * (`changed: false`), а не ошибка: ЮKassa может доставить webhook повторно.
@@ -13,8 +19,8 @@
  * экспертам (другой контур).
  */
 
-export type PackageOrderStatus = "pending" | "paid" | "delivered" | "failed" | "refunded";
-export type PackageOrderEvent = "payment.succeeded" | "payment.canceled" | "refund.succeeded";
+export type PackageOrderStatus = "pending" | "paid" | "delivered" | "failed" | "refunded" | "expired";
+export type PackageOrderEvent = "payment.succeeded" | "payment.canceled" | "refund.succeeded" | "order.expired";
 
 export type PackageOrderTransition =
   | { ok: true; next: PackageOrderStatus; changed: boolean }
@@ -24,12 +30,14 @@ const TARGET: Record<PackageOrderEvent, PackageOrderStatus> = {
   "payment.succeeded": "paid",
   "payment.canceled": "failed",
   "refund.succeeded": "refunded",
+  "order.expired": "expired",
 };
 
 const ALLOWED_FROM: Record<PackageOrderEvent, PackageOrderStatus[]> = {
-  "payment.succeeded": ["pending"],
-  "payment.canceled": ["pending"],
+  "payment.succeeded": ["pending", "expired"],
+  "payment.canceled": ["pending", "expired"],
   "refund.succeeded": ["paid", "delivered", "failed"],
+  "order.expired": ["pending"],
 };
 
 export function transition(current: PackageOrderStatus, event: PackageOrderEvent): PackageOrderTransition {

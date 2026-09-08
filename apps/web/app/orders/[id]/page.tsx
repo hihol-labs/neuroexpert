@@ -28,6 +28,8 @@ const STATUS_TEXT: Record<string, { title: string; body: string }> = {
   delivered: { title: "Отчёт готов", body: "Ниже сохранён результат замера. При повторном просмотре ответы и оценки остаются прежними." },
   failed: { title: "Платёж не прошёл", body: "Деньги не списаны. Можно оформить заказ заново." },
   refunded: { title: "Возврат выполнен", body: "Касса подтвердила возврат. Срок зачисления зависит от вашего банка." },
+  // R-01: брошенная корзина. Оплата по старой ссылке всё равно принимается (expired -> paid).
+  expired: { title: "Заказ закрыт без оплаты", body: "Платёж не был подтверждён кассой в течение суток. Деньги не списаны. Можно оформить заказ заново." },
 };
 
 function getAdmin() {
@@ -72,7 +74,7 @@ export default async function OrderStatusPage({ params }: { params: { id: string
           {order.status === "pending" && order.confirmation_url && (
             <p className="dm-pay-note"><a href={order.confirmation_url}>Перейти к оплате {order.amount_rub.toLocaleString("ru-RU")} ₽</a></p>
           )}
-          {order.status === "failed" && !order.paid_at && (
+          {((order.status === "failed" && !order.paid_at) || order.status === "expired") && (
             <p className="dm-pay-note"><Link href="/pricing">Посмотреть пакеты</Link></p>
           )}
         </section>

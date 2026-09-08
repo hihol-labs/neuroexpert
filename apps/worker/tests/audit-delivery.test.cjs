@@ -11,7 +11,8 @@ function harness(options={}){
   select(){return q},update(v){patch=v;return q},eq(k,v){filters.push(r=>r[k]===v);return q},is(k,v){return q.eq(k,v)},in(k,v){filters.push(r=>v.includes(r[k]));return q},lte(k,v){filters.push(r=>r[k]!=null&&r[k]<=v);return q},order(){return q},limit(){return q},maybeSingle(){single=true;return q},
   then(resolve,reject){const matches=filters.every(f=>f(h.row));if(matches&&patch)Object.assign(h.row,clone(patch));const rows=matches?[clone(h.row)]:[];return Promise.resolve({data:single?rows[0]||null:rows,error:null}).then(resolve,reject)}
  };return q}
- const admin={from(table){assert.equal(table,'package_orders');return query()},async rpc(name,args){assert.equal(args.p_order_id,ID);
+ h.rpcCalls=[];
+ const admin={from(table){assert.equal(table,'package_orders');return query()},async rpc(name,args){assert.equal(args.p_order_id,ID);h.rpcCalls.push({name,args});
   if(name==='ensure_package_audit_job'){h.row.job_id='recovered-job';return {data:'recovered-job',error:null}}
   if(name==='complete_package_audit'){
    if(options.commitError)return {data:null,error:{message:'commit rejected'}};
@@ -37,3 +38,16 @@ test('concurrent runs commit once and claim one mail',async()=>{const h=harness(
 test('SLA sweep beats late engine without report or mail',async()=>{const h=harness({engine:async state=>{state.now+=3600000;await state.service.sweep();return json(report())}});await h.run();assert.equal(h.row.status,'refunded');assert.equal(h.row.report,null);assert.equal(h.mails.length,0);assert.equal(h.refunds.length,1)});
 test('database commit error cannot send ready notification',async()=>{const h=harness({commitError:true});await assert.rejects(h.run(),/audit database: commit rejected/);assert.equal(h.row.status,'paid');assert.equal(h.row.report,null);assert.equal(h.mails.length,0);assert.equal(h.refunds.length,0)});
 test('sweep recovers paid order without attached job before SLA',async()=>{const h=harness({row:{job_id:null}});await h.service.sweep();assert.equal(h.row.job_id,'recovered-job');assert.equal(h.row.status,'paid');assert.equal(h.engineCalls.length,0);assert.equal(h.refunds.length,0)});
+// R-01: decideRefund подключён без смены причин провала (Important full-чекера r3).
+test('content failure below threshold fails with audit_below_delivery_threshold (no SLA guard) and refunds',async()=>{
+ const failed=report();failed.gaps.forEach(g=>{g.platforms=g.platforms.map(p=>({platform:p.platform,status:'unavailable'}));g.avg_gap_score=null;});
+ const h=harness({engine:()=>json(failed)});const r=await h.run();
+ const fail=h.rpcCalls.find(c=>c.name==='fail_package_audit');assert.ok(fail,'fail_package_audit called');
+ assert.equal(fail.args.p_reason,'audit_below_delivery_threshold');assert.equal(fail.args.p_only_if_sla_breached,false);
+ assert.ok(['failed','refunded'].includes(r.status),r.status);assert.ok(['pending','submitted','succeeded'].includes(h.row.refund_status),'refund queued');assert.equal(h.rpcCalls.filter(c=>c.name==='complete_package_audit').length,0);
+});
+test('late engine past SLA fails with audit_sla_breached guarded by p_only_if_sla_breached',async()=>{
+ const h=harness({engine:async state=>{state.now+=3600000;return json(report())}});await h.run();
+ const fail=h.rpcCalls.find(c=>c.name==='fail_package_audit');assert.ok(fail);
+ assert.equal(fail.args.p_reason,'audit_sla_breached');assert.equal(fail.args.p_only_if_sla_breached,true);assert.equal(h.row.status,'refunded');
+});

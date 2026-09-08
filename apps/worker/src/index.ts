@@ -1,5 +1,5 @@
 import { supabase } from "./supabase.js";
-import { handleRunAudit, sweepAuditDelivery } from "./jobs/run-audit.js";
+import { handleRunAudit, sweepAuditDelivery, reconcilePayments } from "./jobs/run-audit.js";
 import { handleCollectDemand } from "./jobs/collect-demand.js";
 import { handleFindGaps } from "./jobs/find-gaps.js";
 import { handleExpandQuery } from "./jobs/expand-query.js";
@@ -208,6 +208,17 @@ async function main(): Promise<void> {
   };
   void sweep();
   setInterval(()=>{void sweep();},5*60*1000);
+  // R-01: сверка платежей с кассой — потерянный webhook и брошенные корзины (каждые 15 минут).
+  let reconciling = false;
+  const reconcile = async () => {
+    if(reconciling)return;
+    reconciling=true;
+    try {const s=await reconcilePayments(); if(s.scanned>0)console.log(`[reconcile] scanned=${s.scanned} paid=${s.paid} failed=${s.failed} expired=${s.expired} kept=${s.kept} errors=${s.errors}`);}
+    catch(e) {console.error("[reconcile] run failed", e instanceof Error ? e.message : String(e));}
+    finally {reconciling=false;}
+  };
+  void reconcile();
+  setInterval(()=>{void reconcile();},15 * 60 * 1000);
   console.log("[worker] Starting...");
   console.log(`[worker] ${Object.keys(handlers).length} handlers: ${Object.keys(handlers).join(", ")}`);
   console.log(`[worker] Poll interval: ${POLL_INTERVAL}ms`);

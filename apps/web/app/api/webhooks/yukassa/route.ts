@@ -148,7 +148,8 @@ async function handlePackagePaymentSucceeded(
       .from("package_orders")
       .update({ status: "paid", paid_at: new Date().toISOString(), yukassa_payment_id: paymentId })
       .eq("id", orderId)
-      .eq("status", "pending");
+      // R-01: оплата по старой ссылке после протухания (expired) тоже принимается.
+      .in("status", ["pending", "expired"]);
     if (error) throw new Error("Package payment database update failed");
   }
 

@@ -118,6 +118,49 @@ export function assessPackageRefund(
   return { ok: true };
 }
 
+/**
+ * R-01 (ADR-004): решение сверки по одному pending/expired-заказу.
+ *
+ * Источник правды — платёж в кассе (`GET /v3/payments/{id}`), а не webhook:
+ *   succeeded + идентичность платежа подтверждена → `mark_paid` (тот же путь, что webhook);
+ *   canceled                                       → `mark_failed` (денег нет);
+ *   succeeded, но идентичность не сошлась          → `keep` + reason (алерт, руками не чинить);
+ *   иначе pending-заказ старше окна                → `expire` (брошенная корзина);
+ *   иначе                                          → `keep`.
+ * Заказ без `yukassa_payment_id` (платёж в кассе так и не создан) протухает по тому же окну.
+ * `expired`-заказ повторно сверяется: оплата после протухания всё равно `mark_paid`.
+ */
+export type PendingOrderDecision =
+  | { action: "mark_paid" }
+  | { action: "mark_failed"; reason: string }
+  | { action: "expire" }
+  | { action: "keep"; reason: string };
+
+export interface PendingOrderInput extends ReconcileOrder {
+  status: "pending" | "expired";
+  created_at: string;
+}
+
+export function decidePendingOrder(
+  order: PendingOrderInput,
+  payment: KassaPayment | null,
+  opts: { now: number; expireAfterMs: number; shop: KassaShop | null },
+): PendingOrderDecision {
+  const created = Date.parse(order.created_at);
+  const stale = Number.isFinite(created) && opts.now - created >= opts.expireAfterMs;
+  if (order.yukassa_payment_id && opts.shop && payment) {
+    if (payment.status === "succeeded") {
+      const check = assessPackagePayment(order, payment, { status: "succeeded", shop: opts.shop });
+      return check.ok ? { action: "mark_paid" } : { action: "keep", reason: `succeeded but ${check.reason}` };
+    }
+    if (payment.status === "canceled") return { action: "mark_failed", reason: "payment.canceled" };
+  } else if (order.yukassa_payment_id && !opts.shop) {
+    return { action: "keep", reason: "payment shop unavailable" };
+  }
+  if (order.status === "pending" && stale) return { action: "expire" };
+  return { action: "keep", reason: order.status === "expired" ? "expired, payment not succeeded" : "within expire window" };
+}
+
 /** Legacy-контур экспертов: платёж принадлежит эксперту из уведомления и в ожидаемом статусе. */
 export function assessExpertPayment(
   payment: KassaPayment | null,

@@ -197,7 +197,72 @@ try {
     expect(`pair мутация live: ${label}`, r.code, 1, r.out);
   });
 
-  { const r = run(["--stage=delivery"]); expect("usage: --stage=delivery не поддерживается -> exit 2", r.code, 2, r.out); }
+  // ===== стадия reconcile (R-01): зелёное фикстурное репо контракта =====
+  const FILES_RECON = {
+    "packages/supabase/migrations/029_package_orders_reconcile.sql":
+      "ALTER TABLE public.package_orders DROP CONSTRAINT package_orders_status_check;\nALTER TABLE public.package_orders ADD CONSTRAINT package_orders_status_check CHECK (status IN ('pending','paid','delivered','failed','refunded','expired'));\nADD COLUMN expired_at timestamptz, ADD COLUMN failure_email_sent_at timestamptz, ADD COLUMN refund_email_sent_at timestamptz;\n",
+    "packages/shared/src/orders/state.ts":
+      "export type PackageOrderStatus = \"pending\" | \"paid\" | \"expired\";\nexport type PackageOrderEvent = \"payment.succeeded\" | \"order.expired\";\nconst ALLOWED = { \"payment.succeeded\": [\"pending\", \"expired\"], \"order.expired\": [\"pending\"] };\n",
+    "packages/shared/src/orders/reconcile.ts":
+      "export function decidePendingOrder(input, opts = { expireAfterMs: 0 }) { return { action: \"keep\" }; }\n// actions: \"mark_paid\" | \"mark_failed\" | \"expire\" | \"keep\"\n",
+    "apps/worker/src/services/payment-reconcile.ts":
+      "const d = decidePendingOrder(order, payment, { now, expireAfterMs: Number(env.PACKAGE_ORDER_EXPIRE_MINUTES || 1440) * 60000 });\nconst p = await kass(shop, `payments/${encodeURIComponent(order.yukassa_payment_id)}`);\nconst check = assessPackagePayment(order, p, { status: \"succeeded\", shop });\nif (mayEnqueueAuditJob(\"paid\", order.job_id)) { await admin.rpc(\"ensure_package_audit_job\", { p_order_id: order.id }); }\nupdate({ status: \"expired\" })\n// order.expired: оплата после протухания всё равно принимается\n",
+    "apps/worker/src/services/mailer.ts": "import nodemailer from \"nodemailer\";\nconst host = process.env.SMTP_HOST;\n",
+    "apps/worker/src/emails/package-order.ts": "export function failedPaidEmail() { return { subject: \"x\", text: \"возврат запущен автоматически\" }; }\nexport function refundedEmail() {}\n",
+    "apps/worker/src/services/audit-delivery.ts":
+      "if (decideRefund(mode, isSlaBreached(order.paid_at, now()))) await fail(order.id, \"audit_below_delivery_threshold\");\n.is(\"failure_email_sent_at\", null)\n.is(\"refund_email_sent_at\", null)\n",
+    "apps/worker/src/index.ts": "setInterval(() => { void reconcilePayments(); }, 15 * 60 * 1000);\n",
+    "apps/web/app/api/webhooks/yukassa/route.ts": ".in(\"status\", [\"pending\", \"expired\"])\n",
+    "apps/web/app/orders/[id]/page.tsx": "expired: { title: \"Заказ закрыт\", body: \"Деньги не списаны\" },\n",
+    "apps/web/app/api/health/route.ts": "const names = [\"paid_waiting\", \"delivered\", \"failed\", \"refunded\", \"sla_breached\", \"expired\", \"pending_stale\"];\n",
+  };
+  const RECON_FX = { "health.json": '{"status":"ok","audit_delivery":{"paid_waiting":0,"delivered":3,"failed":1,"refunded":1,"sla_breached":0,"expired":2,"pending_stale":0}}' };
+  const reconGreen = join(work, "recon-green"); writeTree(reconGreen, FILES_RECON);
+  const reconFx = join(work, "recon-fx"); writeFx(reconFx, RECON_FX);
+  { const r = run(["--stage=reconcile", "--repo-root", reconGreen, "--fixture-dir", reconFx]); expect("reconcile: позитив", r.code, 0, r.out); }
+  { const r = run(["--stage=reconcile", "--repo-root", reconGreen, "--repo-only"]); expect("reconcile: --repo-only на зелёном репо", r.code, 0, r.out); }
+  {
+    // Красный HEAD до реализации: ни одного файла R-01 — ровно 5 групповых находок (шаги контракта).
+    const bare = join(work, "recon-bare"); writeTree(bare, {});
+    const r = run(["--stage=reconcile", "--repo-root", bare, "--repo-only"]);
+    expect("reconcile: пустое репо -> exit 1", r.code, 1, r.out);
+    const m = /(\d+) finding\(s\)/.exec(r.out);
+    expect("reconcile: пустое репо даёт ровно 5 групповых находок", m ? Number(m[1]) : -1, 5, r.out);
+  }
+  const RC = FILES_RECON;
+  const reconRepoMutations = [
+    ["миграция: статус expired не добавлен в CHECK", { "packages/supabase/migrations/029_package_orders_reconcile.sql": RC["packages/supabase/migrations/029_package_orders_reconcile.sql"].replace("'expired'", "'closed'") }],
+    ["миграция: нет идемпотентности писем (колонки *_email_sent_at)", { "packages/supabase/migrations/029_package_orders_reconcile.sql": RC["packages/supabase/migrations/029_package_orders_reconcile.sql"].replace("failure_email_sent_at", "x").replace("refund_email_sent_at", "y") }],
+    ["state: payment.succeeded запрещён из expired (деньги после протухания теряются)", { "packages/shared/src/orders/state.ts": RC["packages/shared/src/orders/state.ts"].replace("[\"pending\", \"expired\"]", "[\"pending\"]") }],
+    ["shared: решение о протухании не параметризовано окном", { "packages/shared/src/orders/reconcile.ts": RC["packages/shared/src/orders/reconcile.ts"].replace("expireAfterMs", "hours") }],
+    ["worker: сверка без проверки идентичности платежа (assessPackagePayment)", { "apps/worker/src/services/payment-reconcile.ts": RC["apps/worker/src/services/payment-reconcile.ts"].replace("assessPackagePayment", "trustPayment") }],
+    ["worker: job ставится не через ensure_package_audit_job (дубль при гонке с webhook)", { "apps/worker/src/services/payment-reconcile.ts": RC["apps/worker/src/services/payment-reconcile.ts"].replace("ensure_package_audit_job", "insert_job") }],
+    ["worker: окно протухания захардкожено (нет PACKAGE_ORDER_EXPIRE_MINUTES)", { "apps/worker/src/services/payment-reconcile.ts": RC["apps/worker/src/services/payment-reconcile.ts"].replace("PACKAGE_ORDER_EXPIRE_MINUTES", "1440") }],
+    ["worker: decideRefund не подключён", { "apps/worker/src/services/audit-delivery.ts": RC["apps/worker/src/services/audit-delivery.ts"].replace("decideRefund(", "mode === \"failed\" || (") }],
+    ["worker: письмо о провале без идемпотентности", { "apps/worker/src/services/audit-delivery.ts": RC["apps/worker/src/services/audit-delivery.ts"].replace("failure_email_sent_at", "sent") }],
+    ["worker: письмо о возврате не обещает автоматический возврат", { "apps/worker/src/emails/package-order.ts": RC["apps/worker/src/emails/package-order.ts"].replace("автоматически", "по заявлению") }],
+    ["worker: таймер сверки не 15 минут", { "apps/worker/src/index.ts": "setInterval(() => { void reconcilePayments(); }, 24 * 60 * 60 * 1000);\n" }],
+    ["webhook: оплата после expired отвергается", { "apps/web/app/api/webhooks/yukassa/route.ts": ".eq(\"status\", \"pending\")\n" }],
+    ["orders/[id]: текст expired отсутствует", { "apps/web/app/orders/[id]/page.tsx": "pending: { title: \"x\" },\n" }],
+    ["health: счётчик pending_stale удалён", { "apps/web/app/api/health/route.ts": RC["apps/web/app/api/health/route.ts"].replace("\"pending_stale\"", "") }],
+  ];
+  reconRepoMutations.forEach(([label, ov], i) => {
+    const d = join(work, `recon-m${i}`); writeTree(d, { ...FILES_RECON, ...ov });
+    const r = run(["--stage=reconcile", "--repo-root", d, "--fixture-dir", reconFx]);
+    expect(`reconcile мутация репо: ${label}`, r.code, 1, r.out);
+  });
+  const reconLiveMutations = [
+    ["health: pending_stale > 0 (сверка не крутится)", { "health.json": '{"audit_delivery":{"paid_waiting":0,"delivered":3,"failed":1,"refunded":1,"sla_breached":0,"expired":2,"pending_stale":3}}' }],
+    ["health: счётчика expired нет", { "health.json": '{"audit_delivery":{"paid_waiting":0,"delivered":3,"failed":1,"refunded":1,"sla_breached":0,"pending_stale":0}}' }],
+    ["health: блок audit_delivery отсутствует", { "health.json": '{"status":"ok"}' }],
+  ];
+  reconLiveMutations.forEach(([label, ov], i) => {
+    const d = join(work, `recon-fx-m${i}`); writeFx(d, { ...RECON_FX, ...ov });
+    const r = run(["--stage=reconcile", "--repo-root", reconGreen, "--fixture-dir", d]);
+    expect(`reconcile мутация live: ${label}`, r.code, 1, r.out);
+  });
+
+  { const r = run(["--stage=delivery"]); expect("usage: --stage=delivery без URL -> exit 2", r.code, 2, r.out); }
   { const r = run(["--stage=order", "--repo-root", green, "--repo-only"]); expect("--repo-only на зелёном репо", r.code, 0, r.out); }
 } finally {
   rmSync(work, { recursive: true, force: true });

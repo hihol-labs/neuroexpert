@@ -272,6 +272,37 @@ empty` ставит новый `collect_demand`, если `demand_collected_at` 
 - **Split-payment (marketplace):** `YUKASSA_MARKETPLACE=true` → `transfers[]` с автокомиссией по тарифу (оплата консультации клиентом).
 - **B2B lifecycle:** ручная оплата/счёт для пилотов через `service_orders` (`invoice_sent`/`paid`/`refunded`/`cancelled`, сумма, пакет, payment_id, receipt_status).
 
+### 9a. Audit Start: сверка платежей, брошенные корзины, письма о провале (R-01, 2026-09-08)
+
+- **Сверка (worker, каждые 15 мин, `[reconcile]` в логе):** все `package_orders` в `pending`/`expired`
+  (limit 100, старые первыми) сверяются с кассой `GET /v3/payments/{id}` в магазине заказа.
+  `succeeded` + идентичность (сумма 7 900, metadata заказа/владельца, режим магазина) → `paid` +
+  job через `ensure_package_audit_job` (без дубля при гонке с webhook) + письмо-ссылка. Это
+  добирает **потерянный webhook**. `canceled` → `failed` без `paid_at`. Ошибка транспорта кассы —
+  заказ пропускается до следующего прохода. Касса не мутируется.
+- **Брошенная корзина:** `pending` старше `PACKAGE_ORDER_EXPIRE_MINUTES` (1440) → `expired`
+  (`expired_at`). Оплата по старой ссылке после протухания **принимается** (`expired → paid`,
+  и webhook, и сверка) — деньги никогда не остаются без отчёта. `/orders/[id]` показывает
+  «Заказ закрыт без оплаты. Деньги не списаны».
+- **Письма о провале и возврате (SMTP worker'а):** транспорт `nodemailer` через те же
+  `SMTP_HOST/PORT/USER/PASS`, отправитель `SMTP_ADMIN_EMAIL`; шаблоны в git
+  `apps/worker/src/emails/package-order.ts`. `failed` с `paid_at` → «замер не выполнен, возврат
+  запущен автоматически»; `refunded` → «возврат выполнен». Идемпотентность —
+  `failure_email_sent_at`/`refund_email_sent_at`; ошибка SMTP → `*_email_last_error`, повтор на
+  следующем свипе (5 мин), возвраты от писем не зависят.
+- **Health:** `audit_delivery.expired`, `audit_delivery.pending_stale` (pending старше окна + 30
+  мин). `pending_stale > 0` = сверка не крутится → смотреть лог worker `[reconcile] run failed`.
+- **Диагностика руками не нужна:** если клиент пишет «оплатил, а заказ висит» — через ≤15 мин
+  сверка сама переведёт заказ; если `succeeded but … mismatch` в логе — платёж не соответствует
+  заказу (сумма/metadata), решение оператора (R-02 добавит алерт).
+- **Порядок выкатки (обязательный):** сначала миграция 029 (бэкап `package_orders`+`jobs` →
+  `psql` → строка в `neuroexpert_migrations` → `NOTIFY pgrst`), затем пересборка и пересоздание
+  worker и web. Новый worker на старой схеме денег не теряет, но и не сверяет: все записи сверки
+  (`reconciled_at`, `expired_at`, `*_email_sent_at`) упираются в отсутствующие колонки → `errors`
+  в summary `[reconcile]` и `*_last_error`; заказ остаётся в прежнем статусе, webhook-путь работает
+  как раньше. Поэтому 029 — строго первым шагом. Старый worker на новой схеме безвреден.
+- **Оракул:** `node scripts/verify-selfserve-path.mjs --stage=reconcile [--repo-only|--base-url]`.
+
 ---
 
 ## 10. Регулярные процедуры (playbooks)
