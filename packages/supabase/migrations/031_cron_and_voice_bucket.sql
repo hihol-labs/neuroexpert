@@ -21,6 +21,22 @@ BEGIN
   END IF;
 END $$;
 
+-- 0b. Роль-плейсхолдер supabase_admin. Образ supabase/postgres (supautils) после CREATE EXTENSION
+--     выполняет extension-custom-scripts/pg_cron/after-create.sql ОТ ИМЕНИ supabase_admin
+--     (supautils.privileged_extensions_superuser) через pg_read_file. На self-hosted БД, поднятой под
+--     postgres, роли нет -> CREATE EXTENSION падал (прод 2026-09-08: «role supabase_admin does not
+--     exist», затем «permission denied for function pg_read_file» у не-суперпользователя).
+--     SUPERUSER - иначе pg_read_file запрещён; NOLOGIN и без пароля - подключиться нельзя.
+--     Сознательно только IF NOT EXISTS без ALTER ROLE ... NOLOGIN: на настоящем Supabase эта роль -
+--     рабочая login-роль платформы, и «самолечение» NOLOGIN сломало бы такую среду; на нашей БД
+--     дрейф роли контролируется не миграцией, а health/runbook (OPERATIONS §9d).
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'supabase_admin') THEN
+    CREATE ROLE supabase_admin SUPERUSER NOLOGIN;
+  END IF;
+END $$;
+
 -- 1. pg_cron (в supabase/postgres предзагружен в shared_preload_libraries, но CREATE EXTENSION не делался).
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 

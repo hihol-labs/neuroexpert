@@ -86,6 +86,8 @@ function checkInfraRepo() {
     // Guard: cron.database_name = current_database(), иначе задания регистрируются и не исполняются.
     "current_setting('cron.database_name'",
     "RAISE EXCEPTION",
+    // Роль-плейсхолдер для after-create скрипта supautils (без неё CREATE EXTENSION падает на self-hosted).
+    "CREATE ROLE supabase_admin SUPERUSER NOLOGIN",
     "CREATE EXTENSION IF NOT EXISTS pg_cron",
     "cron.unschedule(",
     "cron.schedule('weekly-demand'",

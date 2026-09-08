@@ -88,7 +88,7 @@
 
 - [ ] **`scripts/deploy.sh` мёртв без fresh deploy** — починить или удалить (см. §3).
 - [ ] **CSP eval-блок** — на главной ошибка `Content Security Policy ... blocks 'eval'`. Найти источник CSP-заголовка (next.config.js / middleware), ослабить.
-- [ ] **Перенос pgcrypto / supabase_admin role** — `CREATE EXTENSION pgcrypto` падает (`role "supabase_admin" does not exist`). На функционал не влияет, полезно для админ-задач.
+- [x] **Перенос pgcrypto / supabase_admin role** — закрыто миграцией 031 (R-05, 2026-09-08): причина та же, что у `pg_cron` — supautils выполняет after-create скрипт от имени `supabase_admin`; 031 заводит роль-плейсхолдер `SUPERUSER NOLOGIN`, после неё `CREATE EXTENSION pgcrypto` ставится штатно (см. §9d).
 
 ---
 
@@ -392,7 +392,12 @@ empty` ставит новый `collect_demand`, если `demand_collected_at` 
   `EXPERT_URL`/`SELFSERVE_URL`), мутации `scripts/tests/expert-path.test.mjs`.
 - **Runbook «pg_cron не установлен»:** `select extname from pg_extension where extname='pg_cron'`
   пусто → применить 031 через `tools/migrate.py apply 031_cron_and_voice_bucket.sql`; после —
-  health `cron.extension=true`, оба job `active`.
+  health `cron.extension=true`, оба job `active`. Ловушка образа `supabase/postgres` на self-hosted:
+  `supautils` после `CREATE EXTENSION pg_cron` выполняет `extension-custom-scripts/pg_cron/after-create.sql`
+  от имени `supabase_admin` (`privileged_extensions_superuser`) через `pg_read_file`; на нашей БД
+  (bootstrap под `postgres`) роли не было → «role supabase_admin does not exist». Миграция 031
+  заводит роль-плейсхолдер `supabase_admin SUPERUSER NOLOGIN` (без пароля, вход невозможен) —
+  не удалять: без неё не установится ни одно privileged-расширение из списка supautils.
 
 ## 10. Регулярные процедуры (playbooks)
 
