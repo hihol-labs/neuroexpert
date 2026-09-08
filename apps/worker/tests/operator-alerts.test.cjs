@@ -34,6 +34,17 @@ test('delivery: SLA-свип и провал оплаченного замера
  await svc2.sweep();assert.deepEqual(alerts2,['sla_breached']);
 });
 
+test('delivery: SLA-провал внутри run() идёт под ключом sla_breached (тот же, что у свипа) — один алерт на событие',async()=>{
+ const alerts=[];const LATE=Date.parse('2026-09-08T12:30:00Z');
+ const paid={id:ID,owner_id:OWNER,email:'c@x',package:'audit_start',niche_id:'n',job_id:'job-1',status:'paid',amount_rub:7900,paid_at:'2026-09-08T10:00:00Z',sla_deadline_at:'2026-09-08T11:00:00Z',
+  yukassa_payment_id:'pay-1',payment_test:true,payment_shop_id:'test-shop',payment_verified_at:null,report:null,refund_id:null,refund_status:'not_required',refund_attempts:0,refund_next_attempt_at:null,notification_status:'not_required',notification_attempts:0,notification_next_attempt_at:null,failure_reason:null};
+ const t=table([paid]);
+ const admin={from(){return t.q()},async rpc(name,args){const r=t.rows[0];if(name==='fail_package_audit'&&r.status==='paid'&&(!args.p_only_if_sla_breached||LATE>=Date.parse(r.sla_deadline_at)))Object.assign(r,{status:'failed',failure_reason:args.p_reason,refund_status:'pending'});return {data:true,error:null}}};
+ const svc=createAuditDelivery({admin,fetch:async()=>json({},500),now:()=>LATE,env:{},sendReady:async()=>{},notifyOperator:async(k,i)=>{alerts.push([k,i]);return 'sent'}});
+ await svc.run({order_id:ID},{attempts:1,maxAttempts:3,jobId:'job-1'});
+ assert.deepEqual(alerts,[['sla_breached',ID]]);assert.equal(t.rows[0].failure_reason,'audit_sla_breached');
+});
+
 test('delivery: ошибка SMTP при письме клиенту -> email_failed; без notifyOperator ничего не падает',async()=>{
  const refunded={id:'r1',email:'c@x',status:'refunded',paid_at:'2026-09-08T08:00:00Z',amount_rub:7900,refund_status:'succeeded',notification_status:'not_required',created_at:'2026-09-08T07:00:00Z'};
  const t=table([refunded]);const alerts=[];

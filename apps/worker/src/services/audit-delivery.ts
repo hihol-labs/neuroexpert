@@ -119,7 +119,7 @@ export function createAuditDelivery(deps: DeliveryDependencies) {
         ...(result.status==="succeeded"?{status:"refunded",refunded_at:iso(),refund_next_attempt_at:null}:{}),
       }).eq("id",order.id).eq("status","failed").eq("refund_attempts",attempt));
       // R-02: оператор видит каждый подтверждённый возврат (деньги ушли клиенту).
-      if(result.status==="succeeded")await deps.notifyOperator?.("order_refunded",order.id,{заказ:order.id,сумма:order.amount_rub,причина:order.failure_reason??null,refund:result.id});
+      if(result.status==="succeeded")void deps.notifyOperator?.("order_refunded",order.id,{заказ:order.id,сумма:order.amount_rub,причина:order.failure_reason??null,refund:result.id});
     } catch(e) {await effectError(order,"refund",attempt,e);}
   }
   async function run(payload:Record<string,unknown>,context:DeliveryJobContext={attempts:1,maxAttempts:3}) {
@@ -160,7 +160,12 @@ export function createAuditDelivery(deps: DeliveryDependencies) {
     }
     const final=await load(order.id);
     // R-02: провал оплаченного замера — алерт оператору (возврат при этом уже запущен автоматически).
-    if(final&&final.status==="failed"&&order.status==="paid")await deps.notifyOperator?.("order_failed",order.id,{заказ:order.id,причина:final.failure_reason??null,сумма:order.amount_rub,возврат:final.refund_status});
+    // SLA-провал идёт под тем же ключом sla_breached:<id>, что и в свипе: гонка run()/sweep() даёт
+    // ровно одно сообщение (дедуп в БД), а не два разных алерта на одно событие.
+    if(final&&final.status==="failed"&&order.status==="paid"){
+      const kind=final.failure_reason==="audit_sla_breached"?"sla_breached":"order_failed";
+      void deps.notifyOperator?.(kind,order.id,{заказ:order.id,причина:final.failure_reason??null,сумма:order.amount_rub,возврат:final.refund_status});
+    }
     if(final){await notify(final);await refund(final);}
     return {status:final?.status??"missing"};
   }
