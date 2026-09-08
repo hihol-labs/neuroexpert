@@ -156,7 +156,7 @@
 |---|---|---|
 | **OpenAI** | `OPENAI_API_KEY`, `OPENAI_PROXY_URL` (прокси, только в env!) | ~$20/мес |
 | **Anthropic Claude** | `ANTHROPIC_API_KEY` | ~$10/мес |
-| **Perplexity** | `PERPLEXITY_API_KEY` | ~$5/мес |
+| **Perplexity** | `PERPLEXITY_API_KEY` — **поставлен на прод 2026-09-08** (оплачен владельцем; ключ в `.env`, бэкап `.env.bak-perplexity-20260908`; сканер отвечает Perplexity live, проба health требует `max_tokens >= 16`) | ~$5/мес |
 | **YandexGPT** | `YANDEX_API_KEY`, `YANDEX_FOLDER_ID` | грант 4000₽/60дн |
 | **GigaChat** | `GIGACHAT_CLIENT_ID`, `GIGACHAT_CLIENT_SECRET` | бесплатный лимит |
 | **PageSpeed** | `PAGESPEED_API_KEY` | бесплатно 25k/день |
