@@ -41,7 +41,6 @@ export async function GET(request: NextRequest) {
 
   const admin = getAdmin();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://neuroexpertise.ru";
-  const storageUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   let query = admin
     .from("content_packages")
@@ -78,7 +77,9 @@ export async function GET(request: NextRequest) {
 
   const { data: packages, count } = await query;
 
-  const results = (packages ?? []).map((pkg) => {
+  // R-05: bucket voice приватный — audio_url подписывается service role на 24 ч (потребителю API
+  // ссылку не кэшировать дольше; поле остаётся null без записи или при ошибке подписи).
+  const results = await Promise.all((packages ?? []).map(async (pkg) => {
     const expert = pkg.profiles as unknown as {
       id: string;
       full_name: string;
@@ -138,11 +139,11 @@ export async function GET(request: NextRequest) {
         },
       },
       expert_quotes: pkg.expert_quotes,
-      audio_url: (() => {
+      audio_url: await (async () => {
         const voice = pkg.voice_recordings as unknown as { file_path: string } | null;
-        return voice?.file_path && storageUrl
-          ? `${storageUrl}/storage/v1/object/public/voice/${voice.file_path}`
-          : null;
+        if (!voice?.file_path) return null;
+        const { data: signed } = await admin.storage.from("voice").createSignedUrl(voice.file_path, 86400);
+        return signed?.signedUrl ?? null;
       })(),
       published_at: pkg.published_at,
       license: {
@@ -151,7 +152,7 @@ export async function GET(request: NextRequest) {
         attribution_format: `Источник: ${expert.full_name}, НейроЭксперт (${appUrl}/experts/${expert.slug}/${pkg.slug})`,
       },
     };
-  });
+  }));
 
   return NextResponse.json({
     data: results,

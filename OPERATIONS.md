@@ -367,6 +367,31 @@ empty` ставит новый `collect_demand`, если `demand_collected_at` 
 
 ---
 
+### 9d. Хранилище и cron экспертов (R-05, 2026-09-08)
+
+- **pg_cron.** Диагноз 2026-09-08: расширение на проде никогда не создавалось (`cron.job` не
+  существовало), хотя миграции 003/008 числились в леджере — расписания Business-контура
+  `weekly-demand` (collect_demand по активным нишам, пн 03:00 UTC) и `weekly-generate-orders`
+  (generate_orders, пн 04:00 UTC) не запускались. Миграция 031 создаёт расширение и оба расписания
+  идемпотентно (`cron.unschedule` одноимённых + `cron.schedule`). Остальные расписания 003
+  (citations/serp/trust/sitemap/freshness) сознательно не включены — R-08/R-11.
+  Смотреть руками: `select jobname, schedule, active from cron.job;` и последние запуски
+  `select j.jobname, d.status, d.start_time, left(d.return_message,120) from cron.job_run_details d
+  join cron.job j using (jobid) order by d.start_time desc limit 20;`.
+- **Bucket `voice`** — приватный (031: `storage.buckets` ON CONFLICT → `public = false`); чтение и
+  запись только service role (бот, `/api/voice`, worker `transcribe`). Плеер на странице статьи и
+  `audio_url` в `/api/v1/answers` отдают **подписанные** ссылки (`createSignedUrl`, TTL 24 ч —
+  больше окна ISR 3600 с; потребителям API ссылку дольше суток не кэшировать). Бот и web обязаны загрузить
+  аудио ДО записи `voice_recordings`; ошибка upload — бот отвечает «Не удалось сохранить запись»,
+  web отдаёт 500 `Failed to store audio` (раньше best effort: запись без файла).
+- **Health:** `cron {extension, jobs {name: {schedule, active, last_status, last_run_at}}}` и
+  `storage {voice_bucket: private|public|missing}` через RPC `infra_status()` (SECURITY DEFINER,
+  только service_role). Оракул: `node scripts/verify-expert-path.mjs --stage=infra` (живьём —
+  `EXPERT_URL`/`SELFSERVE_URL`), мутации `scripts/tests/expert-path.test.mjs`.
+- **Runbook «pg_cron не установлен»:** `select extname from pg_extension where extname='pg_cron'`
+  пусто → применить 031 через `tools/migrate.py apply 031_cron_and_voice_bucket.sql`; после —
+  health `cron.extension=true`, оба job `active`.
+
 ## 10. Регулярные процедуры (playbooks)
 
 ### Проверка AI-цитирования

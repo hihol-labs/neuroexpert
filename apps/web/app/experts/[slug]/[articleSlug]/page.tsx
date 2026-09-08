@@ -117,9 +117,18 @@ const getArticleData = cache(async (expertSlug: string, articleSlug: string) => 
     .eq("expert_id", expert.id)
     .eq("is_cited", true);
 
+  // R-05: bucket voice приватный — плеер получает подписанный URL (service role). TTL 24 ч > окна
+  // ISR-ревалидации (3600 с), чтобы закэшированная страница не отдавала протухшую ссылку.
+  const voice = article.voice_recordings as unknown as { file_path: string; mime_type: string | null } | null;
+  let audioUrl: string | null = null;
+  if (voice?.file_path) {
+    const { data: signed } = await supabase.storage.from("voice").createSignedUrl(voice.file_path, 86400);
+    audioUrl = signed?.signedUrl ?? null;
+  }
+
   return {
     expert, article, related: related ?? [], relatedQuestions, otherExperts,
-    niche, pubCount: pubCount ?? 0, reviews: reviews ?? [], citationCount: citationCount ?? 0,
+    niche, pubCount: pubCount ?? 0, reviews: reviews ?? [], citationCount: citationCount ?? 0, audioUrl,
   };
 });
 
@@ -193,7 +202,7 @@ export default async function ArticlePage({ params }: Props) {
   const data = await getArticleData(params.slug, params.articleSlug);
   if (!data) notFound();
 
-  const { expert, article, related, relatedQuestions, otherExperts, niche, pubCount, reviews, citationCount } = data;
+  const { expert, article, related, relatedQuestions, otherExperts, niche, pubCount, reviews, citationCount, audioUrl } = data;
   const questionText = (article.questions as unknown as { question_text: string } | null)?.question_text ?? article.title;
   const faqItems = (article.format_faq as Array<{ question: string; answer: string }>) ?? [];
   const tldr = extractTldr(article.format_seo_article ?? "");
@@ -334,10 +343,9 @@ export default async function ArticlePage({ params }: Props) {
         {/* Audio player */}
         {(() => {
           const voice = article.voice_recordings as unknown as { file_path: string; mime_type: string | null } | null;
-          if (!voice?.file_path) return null;
-          // file_path hrанится с префиксом "voice/..." (historic upload path),
-          // bucket тоже "voice" → URL: .../object/public/voice/voice/uuid/ts.webm
-          const audioUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/voice/${voice.file_path}`;
+          // file_path хранится с префиксом "voice/..." (historic upload path) внутри bucket voice;
+          // R-05: bucket приватный, ссылка подписана в getArticleData (нет файла/подписи — плеер не показываем).
+          if (!voice?.file_path || !audioUrl) return null;
           return (
             <div className="bg-gray-50 rounded-xl p-4 mb-8">
               <p className="text-sm font-medium text-gray-700 mb-2">Послушать оригинальный ответ эксперта</p>

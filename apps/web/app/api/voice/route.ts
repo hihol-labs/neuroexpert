@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
@@ -38,15 +39,23 @@ export async function POST(request: NextRequest) {
     }
 
     const buffer = Buffer.from(await audioFile.arrayBuffer());
-    const filePath = `voice/${profile.id}/${Date.now()}.webm`;
+    // Суффикс от коллизий в одну миллисекунду при upsert:false (двойной submit / ретрай).
+    const filePath = `voice/${profile.id}/${Date.now()}-${randomUUID().slice(0, 8)}.webm`;
 
-    // Сохраняем в Supabase Storage (best effort)
-    await admin.storage
+    // R-05: файл обязателен - transcribe читает его из bucket voice по file_path. Ошибка upload ->
+    // 500 до создания voice_recordings (раньше best effort: запись без файла и «Запись принята»).
+    // Браузер шлёт "audio/webm;codecs=opus" - в Storage и в voice_recordings кладём чистый тип.
+    const contentType = (audioFile.type || "audio/webm").split(";")[0].trim() || "audio/webm";
+    const { error: uploadError } = await admin.storage
       .from("voice")
       .upload(filePath, buffer, {
-        contentType: audioFile.type || "audio/webm",
+        contentType,
         upsert: false,
       });
+    if (uploadError) {
+      console.error("[voice/route] Upload error:", uploadError.message);
+      return NextResponse.json({ error: "Failed to store audio" }, { status: 500 });
+    }
 
     // Находим принятый заказ
     const { data: acceptedOrder } = await admin
@@ -72,7 +81,7 @@ export async function POST(request: NextRequest) {
         file_size: buffer.length,
         duration_seconds: durationSeconds,
         source: "web" as const,
-        mime_type: audioFile.type || "audio/webm",
+        mime_type: contentType,
         transcription_status: "pending",
       })
       .select("id")

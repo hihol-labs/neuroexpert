@@ -23,6 +23,9 @@ commands = [
     ['node', 'scripts/tests/preflight.test.mjs'],
     ['node', 'scripts/verify-preflight.mjs', '--repo-only', '--check-alerts'],
     ['node', 'scripts/verify-preflight.mjs', '--repo-only', '--check-paid-alert'],
+    ['node', 'scripts/tests/expert-path.test.mjs'],
+    ['node', 'scripts/verify-expert-path.mjs', '--stage=infra', '--repo-only'],
+    ['pnpm', '--filter', 'bot', 'build'],
     ['node', 'scripts/verify-selfserve-path.mjs', '--stage=delivery', '--check-details', '--repo-only'],
     ['pnpm', '--filter', 'web', 'exec', 'tsc', '--noEmit'],
 ]

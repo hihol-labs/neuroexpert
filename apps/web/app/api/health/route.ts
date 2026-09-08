@@ -156,8 +156,18 @@ export async function GET() {
     ...(lastAlert.error ? { error: String(lastAlert.error.message).slice(0, 120) } : {}),
   };
 
+  // R-05: pg_cron (расписания weekly-demand / weekly-generate-orders) и bucket voice через RPC
+  // infra_status (миграция 031; PostgREST не видит схемы cron и storage). До миграции — null-блоки,
+  // health не падает и статус не деградирует (решение по degraded — за владельцем).
+  const infra = await supabase.rpc("infra_status");
+  const infraData = (infra.error ? null : infra.data) as { cron?: unknown; storage?: { voice_bucket?: string | null } } | null;
+  const cron = infraData?.cron ?? null;
+  const storage = infraData?.storage ?? { voice_bucket: null, ...(infra.error ? { error: String(infra.error.message).slice(0, 120) } : {}) };
+
   return NextResponse.json({
     alerts: alerts,
+    cron: cron,
+    storage: storage,
     status: authHealth === "ok" && deliveryHealthy && !providers.summary.degraded ? "ok" : "degraded",
     providers: providers.report,
     providers_summary: { ...providers.summary, cached: providers.cached },

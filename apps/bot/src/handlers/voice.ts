@@ -1,4 +1,5 @@
 import type { Bot } from "grammy";
+import { randomUUID } from "node:crypto";
 import { supabase } from "../supabase";
 import { getSTT } from "shared";
 import { tgFetch } from "shared/http/telegram-fetch";
@@ -43,8 +44,20 @@ export function registerVoiceHandler(bot: Bot): void {
       .limit(1)
       .single();
 
+    // R-05: аудио обязано лечь в Storage ДО записи voice_recordings - transcribe читает файл по
+    // file_path из bucket voice; без файла запись в БД указывала бы в пустоту (E-AUTO-6).
+    // Суффикс от коллизий в одну миллисекунду (ретрай апдейта / два инстанса бота) при upsert:false.
+    const filePath = `voice/${profile.id}/${Date.now()}-${randomUUID().slice(0, 8)}.ogg`;
+    const { error: uploadError } = await supabase.storage
+      .from("voice")
+      .upload(filePath, audioBuffer, { contentType: "audio/ogg", upsert: false });
+    if (uploadError) {
+      console.error("[voice] Upload error:", uploadError);
+      await ctx.reply("Не удалось сохранить запись, попробуйте еще раз.");
+      return;
+    }
+
     // Сохраняем запись в БД
-    const filePath = `voice/${profile.id}/${Date.now()}.ogg`;
     const { data: recording, error: insertError } = await supabase
       .from("voice_recordings")
       .insert({
