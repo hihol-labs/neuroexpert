@@ -155,7 +155,10 @@ export function createAuditDelivery(deps: DeliveryDependencies) {
         }
       }
     } catch(e) {
-      if(context.attempts>=context.maxAttempts||isSlaBreached(order.paid_at,now()))await fail(order.id,"audit_attempts_exhausted");
+      // Причина провала честная: SLA истёк во время попытки — audit_sla_breached (guard p_only_if_sla_breached),
+      // иначе исчерпаны попытки. От причины зависит ключ алерта (sla_breached vs order_failed) — R-02.
+      const slaNow=isSlaBreached(order.paid_at,now());
+      if(context.attempts>=context.maxAttempts||slaNow)await fail(order.id,slaNow?"audit_sla_breached":"audit_attempts_exhausted",slaNow);
       else throw e;
     }
     const final=await load(order.id);

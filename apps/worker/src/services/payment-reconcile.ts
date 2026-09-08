@@ -114,7 +114,7 @@ export function createPaymentReconcile(deps: ReconcileDependencies) {
       }
     }
     // R-02: ошибки прохода (касса/БД) — один алерт в час, чтобы тихий отказ сверки не остался незамеченным.
-    if (s.errors > 0) await deps.notifyOperator?.("reconcile_errors", null, { ошибок: s.errors, просмотрено: s.scanned, paid: s.paid, expired: s.expired });
+    if (s.errors > 0) void deps.notifyOperator?.("reconcile_errors", null, { ошибок: s.errors, просмотрено: s.scanned, paid: s.paid, expired: s.expired });
     return s;
   }
   return { run };
