@@ -8,7 +8,13 @@
   клиента, id и ссылка на заказ, напоминание выбить чек в «Мой налог»); дедуп по заказу (ключ
   `order_paid:<id>`, гонка webhook/сверка → одно сообщение); алерт не ломает оплату
   (fire-and-forget). Оракул `node scripts/verify-preflight.mjs --check-paid-alert` пишется первым.
-  **Стадия: ПЛАНИРОВАНИЕ → оракул** — контракт `.itd-memory/contracts/R-04b.md`. Разрешены:
+  **Стадия: ВЫКАЧЕНО, ЖДЁТ КАНАРЕЙКУ** (2026-09-08): коммит `46b021a`, targeted r1→r3 (два Minor
+  исправлены) и full-чекер committed head PASSED, review-кеш `r04b-gr-adjudication.json`, гейт
+  `r04b-ch-adjudication.json` ALLOWED, `.deploy-sha=46b021a` (web+worker, миграций нет), live-оракулы
+  ALL_GREEN, ОТК-квитанция `r04b-otk-adjudication.json` (точная команда живьём, exit 0). L3: канареечный
+  заказ тестового магазина `39402498-40ad-4700-8528-9729754e8064` ждёт оплаты владельцем тестовой
+  картой → `r04b-canary.py observe` (алерт `order_paid:<id>` в админ-чате с «тест: да», count=1) →
+  `itd_goal_verify.py R-04b` → verified. Контракт `.itd-memory/contracts/R-04b.md`. Разрешены:
   `scripts/verify-preflight.mjs` (+ `scripts/tests/preflight.test.mjs`), shared `ops/alerts.ts`
   (новый kind), `apps/web/app/api/webhooks/yukassa/route.ts` (только вызов алерта внутри
   `if (t.changed)` paid-ветки), `apps/worker/src/services/payment-reconcile.ts` (алерт в markPaid),
