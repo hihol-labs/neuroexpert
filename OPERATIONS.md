@@ -329,6 +329,10 @@ empty` ставит новый `collect_demand`, если `demand_collected_at` 
   с инъекцией claim/send), адаптеры `apps/worker/src/services/operator-alerts.ts` и
   `apps/web/lib/operator-alerts.ts`. Точки вызова: `audit-delivery.ts`, `payment-reconcile.ts`,
   worker `index.ts` (квоты, watcher), `api/service-orders`.
+- **Исключение — канарейки:** провал с причиной `test_simulated_failure` (payload `simulate=fail`,
+  возможен только в тестовом магазине ЮKassa) не алертится ни как `order_failed`/`sla_breached`, ни
+  как `order_refunded` — канареечные прогоны не шумят в боевом чате. Все прочие провалы/возвраты
+  тестового магазина алертятся как боевые (по дизайну: канал один).
 - **Оракул:** `node scripts/verify-preflight.mjs --check-alerts [--repo-only|--base-url]`.
 
 ---
