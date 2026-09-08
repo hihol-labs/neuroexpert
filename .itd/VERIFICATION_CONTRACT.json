@@ -1,9 +1,9 @@
 {
   "version": 1,
   "purpose": "Executable verification contract for the active unit.",
-  "unitId": "R-03",
+  "unitId": "R-04",
   "createdAt": "2026-09-08",
-  "note": "R-03: активирован 2026-09-08 после verified R-02. Tier medium. Оракул --stage=delivery --check-details пишется первым; регрессии — прежние + alerts.",
+  "note": "node scripts/verify-payment-path.mjs --check-receipt — НЕ СОЗДАН, оракул пишется первым; блокер — «Мой налог» в ЛК ЮKassa (владелец)",
   "commandSchema": {
     "requiredFields": [
       "id",
@@ -21,8 +21,8 @@
   },
   "commands": [
     {
-      "id": "r-03-unit",
-      "command": "node scripts/verify-selfserve-path.mjs --stage=delivery --check-details",
+      "id": "r-04-unit",
+      "command": "node scripts/verify-payment-path.mjs --check-receipt",
       "timeoutSeconds": 600,
       "expectedOutput": "exit 0",
       "passFailParser": "exit_code_zero",
@@ -171,6 +171,13 @@
     {
       "id": "r02-preflight-alerts",
       "command": "node scripts/verify-preflight.mjs --repo-only --check-alerts",
+      "timeoutSeconds": 300,
+      "expectedOutput": "exit 0",
+      "passFailParser": "exit_code_zero"
+    },
+    {
+      "id": "r03-selfserve-details",
+      "command": "node scripts/verify-selfserve-path.mjs --stage=delivery --check-details --repo-only",
       "timeoutSeconds": 300,
       "expectedOutput": "exit 0",
       "passFailParser": "exit_code_zero"

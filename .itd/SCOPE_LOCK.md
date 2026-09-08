@@ -2,24 +2,35 @@
 
 ## Current Task
 
-- **R-03** (активирован 2026-09-08 после verified R-02, tier medium): Данные клиента и уборка —
-  `details` заказа (сайт, конкуренты, заметки) попадают в промпт движка; пара активируется в
-  weekly-demand при `paid`; один почтовый транспорт (Resend удалить или включить по ключу);
-  нерегистрируемые job-типы удалены из реестра worker; оракул
-  `node scripts/verify-selfserve-path.mjs --stage=delivery --check-details` пишется первым.
-  **Стадия: ПЛАНИРОВАНИЕ** — контракт `.itd-memory/contracts/R-03.md`; код после короткого плана
-  (владелец: «делай все сам»). Разрешены (после плана): `scripts/verify-selfserve-path.mjs`
-  (+ тест), `apps/web/app/api/audit/route.ts` (только передача details в промпт), worker
-  `audit-delivery.ts` (передача details), `apps/web/app/api/webhooks/yukassa/route.ts` и
-  `payment-reconcile.ts` (активация пары при paid), `apps/worker/src/services/resend.ts` и
-  `index.ts` (реестр job-типов), миграция при необходимости, `.itd*`, BACKLOG, CURRENT_PLAN,
-  OPERATIONS, READINESS_PLAN. Запрещены: цены, реестр пакетов, checkout-флаг, `llm/*` (кроме
-  промпта аудита), экспертный контур.
+- **R-04** (активирован 2026-09-08 после verified R-03, tier **high** — деньги и 54-ФЗ): Чек
+  самозанятого — при создании платежа Audit Start (`POST /api/orders`) в ЮKassa передаётся
+  `receipt` (customer.email, одна позиция «Аудит Старт» 7 900 ₽, НПД/без НДС), касса формирует
+  чек в «Мой налог»; оракул `node scripts/verify-payment-path.mjs --check-receipt` пишется
+  первым. **Стадия: ПЛАНИРОВАНИЕ** — контракт `.itd-memory/contracts/R-04.md`.
+  **Блокер владельца:** подключить «Мой налог» к магазину в ЛК ЮKassa; без подключения юнит
+  переводится в `blocked`, чек остаётся ручным исключением (ADR-004). Разрешены (после плана):
+  `scripts/verify-payment-path.mjs` (+ тест), `apps/web/app/api/orders/route.ts` (только блок
+  `receipt` в теле платежа), shared `orders/*` (сборка receipt), `payment-reconcile`/webhook
+  (фиксация статуса чека при необходимости), миграция при необходимости, `.itd*`, BACKLOG,
+  CURRENT_PLAN, OPERATIONS, READINESS_PLAN. Запрещены: цены, реестр пакетов, checkout-флаг,
+  ключи кассы (SEC-2 — владелец), экспертный контур, `pay-consultation`/`subscribe` (за гейтом).
   Операционные тикеты (SEC-2…SEC-5, OPS-2, DEMAND-4, OPS-1) — только по решению владельца.
-  Хотфикс **SCAN-1** (GigaChat в `/api/scan`, BACKLOG) — отдельным коммитом после R-03 или
-  внутри окна R-03 по решению владельца.
+  Хотфикс **SCAN-1** (GigaChat в `/api/scan`, BACKLOG) — отдельным коммитом по решению владельца.
 
-Предыдущий юнит: **R-02 — VERIFIED 2026-09-08** (ОТК exit 0 через проброс: «Preflight verification
+Предыдущий юнит: **R-03 — VERIFIED 2026-09-08** (ОТК exit 0 через проброс: «Self-serve delivery
+stage verification passed for http://127.0.0.1:13100» с `--check-details`; коммит `7a12ab4`;
+targeted r1 → находка Important (prompt-injection через details) → редизайн: текст клиента в LLM
+не передаётся, детерминированная пометка `clientMentions`; targeted r2 + full committed-head
+PASSED (Minor: substring-поиск hostname без границ слова — информационная пометка); квитанции
+`r03-gr-adjudication.json` (review-кеш), `r03-ch-adjudication.json` (pre-deploy гейт),
+`r03-otk-adjudication.json` (ОТК); `.deploy-sha=7a12ab4`, миграций нет; worker 24 handlers без
+`track_geo_services`; live-оракулы ALL_GREEN). Scope сохранён как история: worker `audit-delivery.ts`
+(details в теле), web `api/audit/route.ts` (`sanitizeDetails`, `clientMentions`,
+`annotateClientMentions`), shared `orders/pair-activation.ts` + вызовы в webhook и
+`payment-reconcile`, `send-email-digest` через `createMailer` (bcc), удалены `services/resend.ts`,
+`jobs/track-geo-services.ts`, `RESEND_API_KEY`; оракул `--check-details` + 14 мутаций; OPERATIONS §9c.
+
+Предыдущий: **R-02 — VERIFIED 2026-09-08** (ОТК exit 0 через проброс: «Preflight verification
 passed for http://127.0.0.1:13100» с `--check-alerts`; коммиты `e67bc8a`, `af898fb`, `2805086`,
 `54476d2`, `b872579`, `0f1483c`, `78b107e`, `5f644ab`; targeted r2 + full r7 PASSED (семь раундов:
 гонка INSERT в claim, await алертов, гонка sweep/run по SLA, exception-путь причины, канареечный
