@@ -285,7 +285,7 @@ try {
     "packages/shared/src/ops/alerts.ts": ALERT_FILES["packages/shared/src/ops/alerts.ts"] + "const MORE = [\"order_paid\"]; // Аудит Старт: оплата получена - выбить чек в Мой налог\n",
     "apps/web/app/api/webhooks/yukassa/route.ts": "import { notifyOperator } from \"@/lib/operator-alerts\";\nif (t.changed) { void notifyOperator(\"order_paid\", orderId, {}); }\n",
     "apps/worker/src/services/payment-reconcile.ts": ALERT_FILES["apps/worker/src/services/payment-reconcile.ts"] + "if (t.changed) { void deps.notifyOperator?.(\"order_paid\", order.id, {}); }\n",
-    "apps/web/app/api/orders/route.ts": "const shopMode = canaryAllowed(request) ? \"dark\" : mode;\n",
+    "apps/web/app/api/orders/route.ts": "const shopMode = canary ? \"dark\" : mode;\nconst credentials = yukassaCredentials(shopMode);\ninsert({\n      payment_shop_id: credentials.shopId,\n      payment_test: shopMode === \"dark\",\n    });\nif (payment.test !== (shopMode === \"dark\")) fail();\nreturn json({\n    mode,\n    payment_test: shopMode === \"dark\",\n  });\n",
   };
   {
     const repo = join(work, "paid-green"); const fx = join(work, "paid-fx");
@@ -305,7 +305,11 @@ try {
     ["webhook: алерт не через адаптер @/lib/operator-alerts", { "apps/web/app/api/webhooks/yukassa/route.ts": PF["apps/web/app/api/webhooks/yukassa/route.ts"].replace("@/lib/operator-alerts", "@/lib/telegram") }],
     ["сверка: markPaid не алертит", { "apps/worker/src/services/payment-reconcile.ts": PF["apps/worker/src/services/payment-reconcile.ts"].replace("notifyOperator?.(\"order_paid\"", "log(\"order_paid\"") }],
     ["сверка: файл отсутствует", { "apps/worker/src/services/payment-reconcile.ts": null }],
-    ["orders: канарейка при live идёт в боевой магазин (инцидент 2026-09-08)", { "apps/web/app/api/orders/route.ts": "const shopMode = mode;\n" }],
+    ["orders: канарейка при live идёт в боевой магазин (инцидент 2026-09-08)", { "apps/web/app/api/orders/route.ts": PF["apps/web/app/api/orders/route.ts"].replace("? \"dark\" : mode", "? mode : mode") }],
+    ["orders: объявление есть, но ключи кассы берутся по mode (частичный откат)", { "apps/web/app/api/orders/route.ts": PF["apps/web/app/api/orders/route.ts"].replace("yukassaCredentials(shopMode)", "yukassaCredentials(mode)") }],
+    ["orders: payment_test заказа (INSERT) пишется по mode, ответ роута не изменён", { "apps/web/app/api/orders/route.ts": PF["apps/web/app/api/orders/route.ts"].replace("      payment_test: shopMode === \"dark\",", "      payment_test: mode === \"dark\",") }],
+    ["orders: проверка payment.test ответа кассы по mode", { "apps/web/app/api/orders/route.ts": PF["apps/web/app/api/orders/route.ts"].replace("payment.test !== (shopMode", "payment.test !== (mode") }],
+    ["orders: payment_test в JSON-ответе по mode, INSERT не изменён (канарейка получит ложное true/false)", { "apps/web/app/api/orders/route.ts": PF["apps/web/app/api/orders/route.ts"].replace("    mode,\n    payment_test: shopMode", "    mode,\n    payment_test: mode") }],
   ];
   paidMutations.forEach(([label, ov], i) => {
     const repo = join(work, `paid-m${i}`); const fx = join(work, `paid-fx-m${i}`);

@@ -145,13 +145,14 @@ async function resolveOwnerId(
 
 export async function POST(request: NextRequest) {
   const mode = checkoutMode();
-  if (mode === "dark" && !canaryAllowed(request)) {
+  const canary = canaryAllowed(request);
+  if (mode === "dark" && !canary) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   // R-04b канарейка: под канареечным заголовком заказ ВСЕГДА уходит в тестовый магазин ЮKassa
   // (тестовая карта, без реальных денег) даже при live-checkout; боевой магазин - только для
   // настоящих клиентов. Инцидент 2026-09-08: канареечный заказ ушёл в боевой магазин.
-  const shopMode: CheckoutMode = canaryAllowed(request) ? "dark" : mode;
+  const shopMode: CheckoutMode = canary ? "dark" : mode;
 
   let body: Record<string, unknown>;
   try {
@@ -179,7 +180,7 @@ export async function POST(request: NextRequest) {
   if (!EMAIL_RE.test(email)) return NextResponse.json({ error: "Укажите корректный email." }, { status: 400 });
 
   // Лимит — после валидации (мусорные запросы не тратят квоту) и до любых записей.
-  if (!canaryAllowed(request)) {
+  if (!canary) {
     const limited = ordersRateLimited(request, email);
     if (limited) {
       return NextResponse.json(

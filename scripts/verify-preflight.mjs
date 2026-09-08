@@ -450,7 +450,16 @@ function checkPaidAlertRepo() {
     ["apps/web/app/api/webhooks/yukassa/route.ts", ["@/lib/operator-alerts", "notifyOperator(\"order_paid\""]],
     ["apps/worker/src/services/payment-reconcile.ts", ["notifyOperator?.(\"order_paid\""]],
     // Канарейка оплаты без реальных денег: под канареечным заголовком магазин всегда тестовый.
-    ["apps/web/app/api/orders/route.ts", ["canaryAllowed(request) ? \"dark\" : mode"]],
+    // Needles на объявление И на все точки использования: откат одной точки (инцидент 2026-09-08 -
+    // yukassaCredentials(mode) при сохранённом объявлении) обязан краснить оракул.
+    ["apps/web/app/api/orders/route.ts", [
+      "? \"dark\" : mode", "yukassaCredentials(shopMode)",
+      // Двухстрочный needle: та же строка есть и в JSON-ответе роута, а откатить могут только INSERT.
+      "payment_shop_id: credentials.shopId,\n      payment_test: shopMode === \"dark\",",
+      "payment.test !== (shopMode === \"dark\")",
+      // JSON-ответ роута (канарейка r04b-canary.py отказывается выдавать ссылку без payment_test=true).
+      "mode,\n    payment_test: shopMode === \"dark\",",
+    ]],
   ];
   const missing = [];
   for (const [rel, needles] of files) {
