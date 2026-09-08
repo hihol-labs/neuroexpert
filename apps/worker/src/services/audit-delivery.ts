@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { buildReportSnapshot, decideDeliveryMode, decideRefund, isSlaBreached } from "shared";
+import { buildReportSnapshot, decideDeliveryMode, decideRefund, isSlaBreached, type NotifyOperator } from "shared";
 import { failedPaidEmail, refundedEmail, type MailContent } from "../emails/package-order.js";
 
 type Env = Record<string, string | undefined>;
@@ -12,6 +12,7 @@ type Order = {
   notification_attempts:number; notification_next_attempt_at:string|null;
   refund_attempts:number; refund_next_attempt_at:string|null;
   failure_email_sent_at?:string|null; refund_email_sent_at?:string|null;
+  failure_reason?:string|null;
   niches?:{name?:string}|null;
 };
 type Shop = {id:string; key:string; test:boolean};
@@ -22,6 +23,8 @@ export interface DeliveryDependencies {
   sendReady: (email:string, orderId:string) => Promise<void>;
   /** R-01: письма о провале/возврате через SMTP worker'а; без него свип их пропускает. */
   sendMail?: (message:{to:string}&MailContent) => Promise<void>;
+  /** R-02: алерты оператору (никогда не бросает); без него — тишина, как раньше. */
+  notifyOperator?: NotifyOperator;
   fetch?: typeof fetch;
   env?: Env;
   now?: () => number;
@@ -115,6 +118,8 @@ export function createAuditDelivery(deps: DeliveryDependencies) {
         refund_status:result.status==="succeeded"?"succeeded":"submitted",refund_last_error:null,
         ...(result.status==="succeeded"?{status:"refunded",refunded_at:iso(),refund_next_attempt_at:null}:{}),
       }).eq("id",order.id).eq("status","failed").eq("refund_attempts",attempt));
+      // R-02: оператор видит каждый подтверждённый возврат (деньги ушли клиенту).
+      if(result.status==="succeeded")await deps.notifyOperator?.("order_refunded",order.id,{заказ:order.id,сумма:order.amount_rub,причина:order.failure_reason??null,refund:result.id});
     } catch(e) {await effectError(order,"refund",attempt,e);}
   }
   async function run(payload:Record<string,unknown>,context:DeliveryJobContext={attempts:1,maxAttempts:3}) {
@@ -154,12 +159,14 @@ export function createAuditDelivery(deps: DeliveryDependencies) {
       else throw e;
     }
     const final=await load(order.id);
+    // R-02: провал оплаченного замера — алерт оператору (возврат при этом уже запущен автоматически).
+    if(final&&final.status==="failed"&&order.status==="paid")await deps.notifyOperator?.("order_failed",order.id,{заказ:order.id,причина:final.failure_reason??null,сумма:order.amount_rub,возврат:final.refund_status});
     if(final){await notify(final);await refund(final);}
     return {status:final?.status??"missing"};
   }
   async function sweep() {
     const due=checked(await admin.from("package_orders").select("id").eq("status","paid").lte("sla_deadline_at",iso()).limit(100));
-    for(const row of due??[])await fail(row.id,"audit_sla_breached",true);
+    for(const row of due??[]){await fail(row.id,"audit_sla_breached",true);await deps.notifyOperator?.("sla_breached",row.id,{заказ:row.id,причина:"audit_sla_breached (60 минут)"});}
     const orphaned=checked(await admin.from("package_orders").select("id").eq("status","paid").is("job_id",null).limit(100));
     for(const row of orphaned??[])checked(await admin.rpc("ensure_package_audit_job",{p_order_id:row.id}));
     // Separate limits prevent a slow/broken refund queue starving ready emails.
@@ -198,7 +205,9 @@ export function createAuditDelivery(deps: DeliveryDependencies) {
       try {
         await deps.sendMail({to:order.email,...(kind==="failure"?failedPaidEmail(input):refundedEmail(input))});
       } catch(e) {
-        checked(await admin.from("package_orders").update({[sentCol]:null,[errCol]:(e instanceof Error?e.message:String(e)).slice(0,500)}).eq("id",order.id));
+        const msg=(e instanceof Error?e.message:String(e)).slice(0,500);
+        checked(await admin.from("package_orders").update({[sentCol]:null,[errCol]:msg}).eq("id",order.id));
+        await deps.notifyOperator?.("email_failed",`${order.id}:${kind}`,{заказ:order.id,письмо:kind,ошибка:msg});
       }
     }
   }

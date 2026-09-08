@@ -95,7 +95,13 @@ ${boundaryBlock("managed-lite")}
 
 const GREEN_AUDIT = `<html><body>${boundaryBlock("audit-start")}</body></html>`;
 
-function writeRepo(root, { contract = GREEN_CONTRACT, plan = GREEN_PLAN, sales = GREEN_SALES } = {}) {
+function writeRepo(root, { contract = GREEN_CONTRACT, plan = GREEN_PLAN, sales = GREEN_SALES, files = {} } = {}) {
+  // files: произвольные файлы репо (R-02 --check-alerts); null — не создавать.
+  for (const [rel, body] of Object.entries(files)) {
+    if (body === null) continue;
+    mkdirSync(dirname(join(root, rel)), { recursive: true });
+    writeFileSync(join(root, rel), body);
+  }
   mkdirSync(join(root, "docs", "plan"), { recursive: true });
   writeFileSync(join(root, "docs", "plan", "SELF_SERVE_PLAN.md"), contract);
   writeFileSync(join(root, "CURRENT_PLAN.md"), plan);
@@ -220,6 +226,57 @@ try {
     writeFixtures(fx, fxOv);
     const { code, out } = runOracle(repo, fx, extraFlags);
     expect(`мутация: ${label}`, code, 1, out);
+  });
+
+  // ===== R-02 --check-alerts: зелёное фикстурное репо контракта алертов =====
+  const ALERT_FILES = {
+    "packages/supabase/migrations/030_operator_alerts.sql": "CREATE TABLE public.operator_alerts (key text primary key, last_sent_at timestamptz);\nCREATE FUNCTION public.claim_operator_alert(p_key text, p_kind text, p_message text, p_dedup_seconds integer) RETURNS boolean;\nCREATE FUNCTION public.record_operator_alert_error(p_key text, p_error text) RETURNS void;\n",
+    "packages/shared/src/ops/alerts.ts": "export function formatOperatorAlert() {}\nexport function alertDedupSeconds() {}\nconst KINDS = [\"health_degraded\", \"service_order\", \"quota_exhausted\"];\n",
+    "packages/shared/src/ops/notify-operator.ts": "export function createOperatorNotifier(deps) { return async () => { const ok = await deps.claim(); if (!ok) return \"deduped\"; deps.recordError; } }\n",
+    "apps/worker/src/services/operator-alerts.ts": "import { tgFetch } from \"shared/http/telegram-fetch\";\nimport { createOperatorNotifier } from \"shared\";\nadmin.rpc(\"claim_operator_alert\", {});\nprocess.env.TELEGRAM_ADMIN_CHAT_ID;\n",
+    "apps/worker/src/services/audit-delivery.ts": "await deps.notifyOperator?.(\"order_failed\", id, {});\nawait deps.notifyOperator?.(\"order_refunded\", id, {});\nawait deps.notifyOperator?.(\"sla_breached\", id, {});\nawait deps.notifyOperator?.(\"email_failed\", id, {});\n",
+    "apps/worker/src/services/payment-reconcile.ts": "await deps.notifyOperator?.(\"reconcile_mismatch\", id, {});\nawait deps.notifyOperator?.(\"reconcile_errors\", null, {});\n",
+    "apps/worker/src/index.ts": "await notifyOperator(\"quota_exhausted\", jobType, {});\nawait notifyOperator(\"health_degraded\", null, {});\nfetch(new URL(\"/api/health\", base));\n",
+    "apps/web/lib/operator-alerts.ts": "admin.rpc(\"claim_operator_alert\", {});\ncreateOperatorNotifier({});\n",
+    "apps/web/app/api/service-orders/route.ts": "await notifyOperator(\"service_order\", data.id, {});\n",
+    "apps/web/app/api/health/route.ts": "supabase.from(\"operator_alerts\");\nreturn NextResponse.json({ alerts: { last_sent_at, sent_24h, failed_24h } });\n",
+  };
+  const ALERT_HEALTH = { ...GREEN_HEALTH, alerts: { last_sent_at: "2026-09-08T10:00:00Z", sent_24h: 2, failed_24h: 0 } };
+  {
+    const repo = join(work, "alerts-green"); const fx = join(work, "alerts-fx");
+    writeRepo(repo, { files: ALERT_FILES }); writeFixtures(fx, { health: ALERT_HEALTH });
+    const r = runOracle(repo, fx, ["--check-alerts"]); expect("alerts: позитив", r.code, 0, r.out);
+    const r2 = runOracle(repo, fx, []); expect("без --check-alerts зелёное репо без файлов алертов не требуется", r2.code, 0, r2.out);
+    const bare = join(work, "alerts-bare"); writeRepo(bare); const fxb = join(work, "alerts-fx-bare"); writeFixtures(fxb, { health: { ...GREEN_HEALTH, alerts: { last_sent_at: null, sent_24h: 0, failed_24h: 0 } } });
+    const r3 = runOracle(bare, fxb, ["--check-alerts"]); expect("alerts: пустое репо -> exit 1", r3.code, 1, r3.out);
+    const m = /(\d+) finding\(s\)/.exec(r3.out); expect("alerts: пустое репо даёт ровно 4 групповых находки", m ? Number(m[1]) : -1, 4, r3.out);
+  }
+  const AF = ALERT_FILES;
+  const alertMutations = [
+    ["миграция: нет RPC дедупликации claim_operator_alert", { "packages/supabase/migrations/030_operator_alerts.sql": AF["packages/supabase/migrations/030_operator_alerts.sql"].replace("claim_operator_alert", "insert_alert") }],
+    ["shared: notifier не дедуплицирует (нет deduped)", { "packages/shared/src/ops/notify-operator.ts": AF["packages/shared/src/ops/notify-operator.ts"].replace("\"deduped\"", "\"sent\"") }],
+    ["worker: провал заказа не алертит", { "apps/worker/src/services/audit-delivery.ts": AF["apps/worker/src/services/audit-delivery.ts"].replace("notifyOperator?.(\"order_failed\"", "log(\"order_failed\"") }],
+    ["worker: сверка не алертит о mismatch", { "apps/worker/src/services/payment-reconcile.ts": AF["apps/worker/src/services/payment-reconcile.ts"].replace("notifyOperator?.(\"reconcile_mismatch\"", "log(\"reconcile_mismatch\"") }],
+    ["worker: квоты не алертят", { "apps/worker/src/index.ts": AF["apps/worker/src/index.ts"].replace("notifyOperator(\"quota_exhausted\"", "console.error(\"quota\"") }],
+    ["worker: watcher health не читает /api/health", { "apps/worker/src/index.ts": AF["apps/worker/src/index.ts"].replace("/api/health", "/api/ping") }],
+    ["worker: адаптер шлёт не через tgFetch (прокси)", { "apps/worker/src/services/operator-alerts.ts": AF["apps/worker/src/services/operator-alerts.ts"].replace("tgFetch", "fetch") }],
+    ["web: заявка service-orders не алертит (B-AUTO-11)", { "apps/web/app/api/service-orders/route.ts": "return NextResponse.json({ ok: true });\n" }],
+    ["web: health без блока alerts", { "apps/web/app/api/health/route.ts": "return NextResponse.json({});\n" }],
+  ];
+  alertMutations.forEach(([label, ov], i) => {
+    const repo = join(work, `alerts-m${i}`); const fx = join(work, `alerts-fx-m${i}`);
+    writeRepo(repo, { files: { ...ALERT_FILES, ...ov } }); writeFixtures(fx, { health: ALERT_HEALTH });
+    const r = runOracle(repo, fx, ["--check-alerts"]); expect(`alerts мутация репо: ${label}`, r.code, 1, r.out);
+  });
+  const alertLiveMutations = [
+    ["health: alerts.sent_24h не число (миграция 030 не применена)", { ...GREEN_HEALTH, alerts: { last_sent_at: null, sent_24h: null, failed_24h: null } }],
+    ["health: alerts.last_sent_at мусор", { ...GREEN_HEALTH, alerts: { last_sent_at: "вчера", sent_24h: 1, failed_24h: 0 } }],
+    ["health: блока alerts нет", { ...GREEN_HEALTH }],
+  ];
+  alertLiveMutations.forEach(([label, health], i) => {
+    const repo = join(work, `alerts-lm${i}`); const fx = join(work, `alerts-lfx-m${i}`);
+    writeRepo(repo, { files: ALERT_FILES }); writeFixtures(fx, { health });
+    const r = runOracle(repo, fx, ["--check-alerts"]); expect(`alerts мутация live: ${label}`, r.code, 1, r.out);
   });
 
   // Приоритет «находки > транспорт»: repo-находка не маскируется exit 3

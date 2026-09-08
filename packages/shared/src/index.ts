@@ -20,3 +20,4 @@ export * from "./demand-to-revenue.js";
 export * from "./delivery/index.js";
 export * from "./security/index.js";
 export * from "./providers/index.js";
+export * from "./ops/index.js";

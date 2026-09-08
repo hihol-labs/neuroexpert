@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   decidePendingOrder, kassaShopsFromEnv, selectShopForOrder, assessPackagePayment, transition, mayEnqueueAuditJob,
-  type KassaPayment, type KassaShop, type PackageOrderStatus,
+  type KassaPayment, type KassaShop, type PackageOrderStatus, type NotifyOperator,
 } from "shared";
 
 /**
@@ -30,6 +30,8 @@ export interface ReconcileDependencies {
   env?: Env;
   now?: () => number;
   log?: (line: string) => void;
+  /** R-02: алерты оператору (identity mismatch, ошибки прохода); никогда не бросает. */
+  notifyOperator?: NotifyOperator;
 }
 export interface ReconcileSummary { scanned: number; paid: number; failed: number; expired: number; kept: number; errors: number }
 
@@ -99,13 +101,19 @@ export function createPaymentReconcile(deps: ReconcileDependencies) {
         } else {
           s.kept += 1;
           // order.expired: оплата после протухания принимается на следующем проходе — см. decidePendingOrder.
-          if (d.reason.startsWith("succeeded but")) log(`[reconcile] ${order.id}: payment succeeded but identity mismatch (${d.reason}); needs operator`);
+          if (d.reason.startsWith("succeeded but")) {
+            log(`[reconcile] ${order.id}: payment succeeded but identity mismatch (${d.reason}); needs operator`);
+            // R-02: деньги списаны, но платёж не соответствует заказу — решение только оператора.
+            await deps.notifyOperator?.("reconcile_mismatch", order.id, { заказ: order.id, платеж: order.yukassa_payment_id, причина: d.reason, сумма_заказа: order.amount_rub });
+          }
         }
       } catch (e) {
         s.errors += 1;
         log(`[reconcile] ${order.id}: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
+    // R-02: ошибки прохода (касса/БД) — один алерт в час, чтобы тихий отказ сверки не остался незамеченным.
+    if (s.errors > 0) await deps.notifyOperator?.("reconcile_errors", null, { ошибок: s.errors, просмотрено: s.scanned, paid: s.paid, expired: s.expired });
     return s;
   }
   return { run };

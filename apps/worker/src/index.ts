@@ -1,5 +1,5 @@
 import { supabase } from "./supabase.js";
-import { handleRunAudit, sweepAuditDelivery, reconcilePayments } from "./jobs/run-audit.js";
+import { handleRunAudit, sweepAuditDelivery, reconcilePayments, notifyOperator } from "./jobs/run-audit.js";
 import { handleCollectDemand } from "./jobs/collect-demand.js";
 import { handleFindGaps } from "./jobs/find-gaps.js";
 import { handleExpandQuery } from "./jobs/expand-query.js";
@@ -150,8 +150,41 @@ async function processJob(job: Record<string, unknown>): Promise<void> {
     }).eq("id", jobId);
     if (retryPlan.shouldRetry) {
       console.log(`[worker] ${jobType} (${jobId}) will retry (${attempts}/${maxAttempts}) at ${retryPlan.scheduledAt}`);
+    } else {
+      // R-02: тихий провал job по квоте/биллингу или лимиту провайдера — алерт оператору (B-AUTO-23).
+      const n = errorMessage.toLowerCase();
+      if (LLM_JOB_TYPES.has(jobType) && (n.includes("insufficient_quota") || n.includes("quota") || n.includes("billing"))) {
+        await notifyOperator("quota_exhausted", jobType, { job: jobType, id: jobId, ошибка: errorMessage.slice(0, 300) });
+      } else if (LLM_JOB_TYPES.has(jobType) && (n.includes("429") || n.includes("rate limit") || n.includes("too many requests"))) {
+        await notifyOperator("rate_limited", jobType, { job: jobType, id: jobId, попыток: attempts, ошибка: errorMessage.slice(0, 300) });
+      }
     }
   }
+}
+
+/**
+ * R-02: watcher health — раз в 15 минут читает /api/health web'а (внутренний URL) и при
+ * status !== "ok" шлёт алерт health_degraded с кратким составом (дедуп 1 час в БД).
+ */
+async function watchHealth(): Promise<void> {
+  const base = process.env.AUDIT_INTERNAL_URL || "http://web:3000";
+  let payload: Record<string, unknown> | null = null;
+  try {
+    const res = await fetch(new URL("/api/health", base), { signal: AbortSignal.timeout(30000) });
+    payload = (await res.json()) as Record<string, unknown>;
+  } catch (e) {
+    await notifyOperator("health_degraded", null, { причина: `health недоступен: ${e instanceof Error ? e.message : String(e)}` });
+    return;
+  }
+  if (payload?.status === "ok") return;
+  const auth = (payload?.auth as { status?: string } | undefined)?.status;
+  const summary = payload?.providers_summary as { reasons?: string[] } | undefined;
+  const delivery = payload?.audit_delivery as Record<string, unknown> | undefined;
+  await notifyOperator("health_degraded", null, {
+    status: String(payload?.status ?? "unknown"), auth: auth ?? null,
+    providers: summary?.reasons?.join("; ") ?? null,
+    sla_breached: (delivery?.sla_breached as number | undefined) ?? null, pending_stale: (delivery?.pending_stale as number | undefined) ?? null,
+  });
 }
 
 function getRetryPlan(
@@ -219,6 +252,10 @@ async function main(): Promise<void> {
   };
   void reconcile();
   setInterval(()=>{void reconcile();},15 * 60 * 1000);
+  // R-02: watcher health (degraded -> алерт оператору), первый прогон через минуту после старта.
+  const health = async () => { try { await watchHealth(); } catch (e) { console.error("[alerts] health watcher failed", e instanceof Error ? e.message : String(e)); } };
+  setTimeout(()=>{void health();}, 60 * 1000);
+  setInterval(()=>{void health();},15 * 60 * 1000);
   console.log("[worker] Starting...");
   console.log(`[worker] ${Object.keys(handlers).length} handlers: ${Object.keys(handlers).join(", ")}`);
   console.log(`[worker] Poll interval: ${POLL_INTERVAL}ms`);

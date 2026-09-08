@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { notifyOperator } from "@/lib/operator-alerts";
 
 function getAdmin() {
   return createSupabaseClient(
@@ -94,6 +95,11 @@ export async function POST(request: NextRequest) {
         { status: 500 },
       );
     }
+    // R-02: заявка Launch Start / Managed Lite — алерт оператору (B-AUTO-11); дедуп по id, ответ клиенту не зависит.
+    await notifyOperator("service_order", data.id, {
+      id: data.id, пакет: body.package_type || "launch_30d", имя: body.name, контакт: body.contact,
+      email: body.email || null, ниша: body.niche || null, сайт: body.website || null,
+    });
     return orderSuccessResponse(request, data.id);
   } catch (err) {
     console.error("[service-orders] Error:", err);

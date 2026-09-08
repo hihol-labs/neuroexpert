@@ -142,7 +142,22 @@ export async function GET() {
   // Кеш 10 минут; PROVIDERS_PROBE=off даёт `skipped` без деградации.
   const providers = await getProvidersReport();
 
+  // R-02: алерты оператору (таблица operator_alerts, миграция 030). До миграции — null-поля, health не падает.
+  const dayAgo = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+  const [lastAlert, sentAlerts, failedAlerts] = await Promise.all([
+    supabase.from("operator_alerts").select("last_sent_at").not("last_sent_at", "is", null).order("last_sent_at", { ascending: false }).limit(1),
+    supabase.from("operator_alerts").select("key", { count: "exact", head: true }).gte("last_sent_at", dayAgo),
+    supabase.from("operator_alerts").select("key", { count: "exact", head: true }).not("last_error", "is", null).gte("updated_at", dayAgo),
+  ]);
+  const alerts = {
+    last_sent_at: lastAlert.error ? null : ((lastAlert.data?.[0] as { last_sent_at?: string } | undefined)?.last_sent_at ?? null),
+    sent_24h: sentAlerts.error ? null : sentAlerts.count,
+    failed_24h: failedAlerts.error ? null : failedAlerts.count,
+    ...(lastAlert.error ? { error: String(lastAlert.error.message).slice(0, 120) } : {}),
+  };
+
   return NextResponse.json({
+    alerts: alerts,
     status: authHealth === "ok" && deliveryHealthy && !providers.summary.degraded ? "ok" : "degraded",
     providers: providers.report,
     providers_summary: { ...providers.summary, cached: providers.cached },

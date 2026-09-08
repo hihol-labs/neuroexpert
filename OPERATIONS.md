@@ -303,6 +303,34 @@ empty` ставит новый `collect_demand`, если `demand_collected_at` 
   как раньше. Поэтому 029 — строго первым шагом. Старый worker на новой схеме безвреден.
 - **Оракул:** `node scripts/verify-selfserve-path.mjs --stage=reconcile [--repo-only|--base-url]`.
 
+### 9b. Алерты оператору (R-02, 2026-09-08)
+
+- **Канал:** Telegram админ-чат `TELEGRAM_ADMIN_CHAT_ID` через бота `TELEGRAM_BOT_TOKEN` и прокси
+  `TG_PROXY_URL` (или `OPENAI_PROXY_URL`). Без токена/чата канал выключен: вызовы дают `skipped`,
+  основной путь не страдает. Алерт **никогда** не бросает исключение.
+- **Виды (ключ дедупликации → окно):** `order_failed:<order>` (замер не выполнен, возврат
+  запущен), `order_refunded:<order>` (касса подтвердила возврат), `sla_breached:<order>`,
+  `email_failed:<order>:<failure|refund>` (SMTP), `reconcile_mismatch:<order>` (платёж succeeded,
+  но не соответствует заказу — решение оператора), `reconcile_errors` (ошибки прохода сверки),
+  `quota_exhausted:<jobType>` (6 ч), `rate_limited:<jobType>`, `health_degraded` (watcher worker'а
+  раз в 15 мин читает `/api/health` по `AUDIT_INTERNAL_URL`), `service_order:<id>` (заявка Launch
+  Start / Managed Lite). Окно по умолчанию — 1 час на ключ.
+- **Дедупликация в БД:** таблица `operator_alerts` (миграция 030), RPC `claim_operator_alert`
+  (true = отправить; повтор в окне только увеличивает `count`), `record_operator_alert_error`
+  (ошибка отправки → `last_error`, `last_sent_at` снимается, следующий повод отправит снова).
+  Смотреть руками: `select key, count, last_sent_at, last_error from operator_alerts order by
+  updated_at desc limit 30`.
+- **Health:** `alerts: { last_sent_at, sent_24h, failed_24h }` — `sent_24h` считает **уникальные
+  ключи**, отправленные за 24 ч (повторы в окне дедупа не считаются), `failed_24h` — ключи с ошибкой
+  отправки в Telegram; `failed_24h > 0` = Telegram/прокси не доставляет — проверить `TG_PROXY_URL` и
+  токен. Отказ самой БД/RPC (claim) в health не виден — он попадает в лог worker/web как
+  `[alerts] <key>: claim failed`.
+- **Код:** shared `ops/alerts.ts` (реестр, текст), `ops/notify-operator.ts` (`createOperatorNotifier`
+  с инъекцией claim/send), адаптеры `apps/worker/src/services/operator-alerts.ts` и
+  `apps/web/lib/operator-alerts.ts`. Точки вызова: `audit-delivery.ts`, `payment-reconcile.ts`,
+  worker `index.ts` (квоты, watcher), `api/service-orders`.
+- **Оракул:** `node scripts/verify-preflight.mjs --check-alerts [--repo-only|--base-url]`.
+
 ---
 
 ## 10. Регулярные процедуры (playbooks)

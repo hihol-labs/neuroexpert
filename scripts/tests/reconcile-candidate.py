@@ -18,8 +18,10 @@ with tarfile.open(archive) as tar:
 commands = [
     ['pnpm', '--filter', 'shared', 'test'],
     ['pnpm', '--filter', 'worker', 'build'],
-    ['node', '--test', 'apps/worker/tests/audit-delivery.test.cjs', 'apps/worker/tests/payment-reconcile.test.cjs'],
+    ['node', '--test', 'apps/worker/tests/audit-delivery.test.cjs', 'apps/worker/tests/payment-reconcile.test.cjs', 'apps/worker/tests/operator-alerts.test.cjs'],
     ['node', 'scripts/tests/selfserve-path.test.mjs'],
+    ['node', 'scripts/tests/preflight.test.mjs'],
+    ['node', 'scripts/verify-preflight.mjs', '--repo-only', '--check-alerts'],
     ['pnpm', '--filter', 'web', 'exec', 'tsc', '--noEmit'],
 ]
 for stage in ['order', 'pair', 'delivery', 'reconcile']:

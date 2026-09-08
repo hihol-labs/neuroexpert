@@ -64,6 +64,7 @@ const KNOWN_FLAGS = new Set([
   "--repo-root",
   "--repo-only",
   "--check-sales-today",
+  "--check-alerts",
 ]);
 
 const argv = process.argv.slice(2);
@@ -72,6 +73,7 @@ let fixtureDir = null;
 let repoRootArg = null;
 let repoOnly = false;
 let checkSalesToday = false;
+let checkAlerts = false; // R-02: алерты оператору (репо + health.alerts)
 
 for (let i = 0; i < argv.length; i += 1) {
   const flag = argv[i];
@@ -84,6 +86,7 @@ for (let i = 0; i < argv.length; i += 1) {
   if (flag === "--repo-root") { repoRootArg = argv[++i] ?? null; continue; }
   if (flag === "--repo-only") { repoOnly = true; continue; }
   if (flag === "--check-sales-today") { checkSalesToday = true; continue; }
+  if (flag === "--check-alerts") { checkAlerts = true; continue; }
 }
 
 if (fixtureDir && baseUrlArg) {
@@ -395,14 +398,64 @@ async function checkAutomationBoundary() {
 // Прогон
 // ============================================================
 
+/**
+ * R-02 «Алерты оператору» (ADR-004): единый notifyOperator с дедупликацией в БД, точки вызова во
+ * всех исключениях штатного пути, health.alerts. Каждая группа = один шаг контракта
+ * .itd-memory/contracts/R-02.md = одна находка (какие бы needles ни отсутствовали).
+ */
+function checkAlertsRepo() {
+  const groups = {
+    migration: [["packages/supabase/migrations/030_operator_alerts.sql", [
+      "operator_alerts", "claim_operator_alert", "record_operator_alert_error", "last_sent_at", "p_dedup_seconds"]]],
+    shared: [
+      ["packages/shared/src/ops/alerts.ts", ["formatOperatorAlert", "alertDedupSeconds", "\"health_degraded\"", "\"service_order\"", "\"quota_exhausted\""]],
+      ["packages/shared/src/ops/notify-operator.ts", ["createOperatorNotifier", "deps.claim(", "recordError", "\"deduped\""]],
+    ],
+    worker: [
+      ["apps/worker/src/services/operator-alerts.ts", ["claim_operator_alert", "TELEGRAM_ADMIN_CHAT_ID", "tgFetch", "createOperatorNotifier"]],
+      ["apps/worker/src/services/audit-delivery.ts", ["notifyOperator?.(\"order_failed\"", "notifyOperator?.(\"order_refunded\"", "notifyOperator?.(\"sla_breached\"", "notifyOperator?.(\"email_failed\""]],
+      ["apps/worker/src/services/payment-reconcile.ts", ["notifyOperator?.(\"reconcile_mismatch\"", "notifyOperator?.(\"reconcile_errors\""]],
+      ["apps/worker/src/index.ts", ["notifyOperator(\"quota_exhausted\"", "notifyOperator(\"health_degraded\"", "/api/health"]],
+    ],
+    web: [
+      ["apps/web/lib/operator-alerts.ts", ["claim_operator_alert", "createOperatorNotifier"]],
+      ["apps/web/app/api/service-orders/route.ts", ["notifyOperator(\"service_order\""]],
+      ["apps/web/app/api/health/route.ts", ["operator_alerts", "sent_24h", "failed_24h", "alerts:"]],
+    ],
+  };
+  for (const [name, files] of Object.entries(groups)) {
+    const missing = [];
+    for (const [rel, needles] of files) {
+      const text = readRepoFile(rel);
+      if (text === null) { missing.push(`${rel}: файл отсутствует`); continue; }
+      for (const n of needles) if (!text.includes(n)) missing.push(`${rel}: нет «${n}»`);
+    }
+    if (missing.length > 0) finding(`[alerts:${name}]`, missing.join("; "), "реализовать контракт R-02 (.itd-memory/contracts/R-02.md)");
+  }
+}
+
+/** R-02 живой слой: health.alerts — last_sent_at (строка ISO или null), sent_24h/failed_24h целые >= 0. */
+function checkAlertsHealth(health) {
+  const a = health?.alerts;
+  if (!a || typeof a !== "object") { finding("/api/health", "блок alerts отсутствует", "вернуть alerts из таблицы operator_alerts"); return; }
+  if (!(a.last_sent_at === null || (typeof a.last_sent_at === "string" && !Number.isNaN(Date.parse(a.last_sent_at))))) {
+    finding("/api/health", "alerts.last_sent_at не ISO-строка и не null", "отдавать max(last_sent_at) или null");
+  }
+  for (const k of ["sent_24h", "failed_24h"]) {
+    if (!Number.isInteger(a[k]) || a[k] < 0) finding("/api/health", `alerts.${k} отсутствует или неверен (миграция 030 не применена?)`, "применить 030 и считать за 24 часа");
+  }
+}
+
 checkContractSection();
 check754Decision();
 checkSalesLog();
+if (checkAlerts) checkAlertsRepo();
 
 if (!repoOnly) {
   try {
     const health = await getHealth();
     checkHealthPayload(health);
+    if (checkAlerts) checkAlertsHealth(health);
     await checkWebhookRoute();
     await checkAutomationBoundary();
   } catch (err) {

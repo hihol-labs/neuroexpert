@@ -3,6 +3,7 @@ import { supabase } from "../supabase.js";
 import { createAuditDelivery, type DeliveryJobContext } from "../services/audit-delivery.js";
 import { createPaymentReconcile } from "../services/payment-reconcile.js";
 import { createMailer } from "../services/mailer.js";
+import { createWorkerOperatorNotifier } from "../services/operator-alerts.js";
 
 /** Письмо-ссылка на страницу статуса заказа (magic link через Supabase Auth / SMTP). */
 export async function sendStatusLink(email:string,orderId:string):Promise<void> {
@@ -15,9 +16,11 @@ export async function sendStatusLink(email:string,orderId:string):Promise<void> 
 }
 
 const mailer=createMailer();
-const delivery=createAuditDelivery({admin:supabase,sendReady:sendStatusLink,sendMail:mailer});
+// R-02: единый канал алертов оператору (Telegram админ-чат, дедуп в БД).
+export const notifyOperator=createWorkerOperatorNotifier({admin:supabase});
+const delivery=createAuditDelivery({admin:supabase,sendReady:sendStatusLink,sendMail:mailer,notifyOperator});
 // R-01: сверка pending/expired-заказов с кассой (потерянный webhook, брошенные корзины).
-const reconcile=createPaymentReconcile({admin:supabase,sendStatusLink});
+const reconcile=createPaymentReconcile({admin:supabase,sendStatusLink,notifyOperator});
 export const handleRunAudit=(payload:Record<string,unknown>,context?:DeliveryJobContext)=>delivery.run(payload,context);
 export const sweepAuditDelivery=()=>delivery.sweep();
 export const reconcilePayments=()=>reconcile.run();

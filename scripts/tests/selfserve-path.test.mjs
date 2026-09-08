@@ -90,9 +90,13 @@ function writeFx(dir, fx) {
   mkdirSync(dir, { recursive: true });
   for (const [name, body] of Object.entries(fx)) writeFileSync(join(dir, name), body);
 }
+// R-02 гигиена: usage-кейсы не должны зависеть от env оркестратора (экспортированный SELFSERVE_URL
+// превращал «нет URL -> exit 2» в живой прогон — ложный провал на ОТК R-01 2026-09-08).
+const cleanEnv = { ...process.env };
+for (const k of ["SELFSERVE_URL", "CANONICAL_URL", "SELFSERVE_CANARY_TOKEN"]) delete cleanEnv[k];
 function run(args) {
   try {
-    return { code: 0, out: execFileSync(process.execPath, [oracle, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }) };
+    return { code: 0, out: execFileSync(process.execPath, [oracle, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: cleanEnv }) };
   } catch (err) {
     return { code: err.status ?? -1, out: `${err.stdout ?? ""}${err.stderr ?? ""}` };
   }
