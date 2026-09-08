@@ -60,9 +60,14 @@ function writeRepo(root, files) {
   }
   mkdirSync(root, { recursive: true });
 }
-function writeFixtures(dir, health) {
+const GREEN_AUDIO = [
+  { id: "00000000-0000-0000-0000-000000000000", status: 404, contentType: "application/json" },
+  { id: "not-a-uuid", status: 404, contentType: "application/json" },
+];
+function writeFixtures(dir, health, audio = GREEN_AUDIO) {
   mkdirSync(dir, { recursive: true });
   if (health !== null) writeFileSync(join(dir, "health.json"), JSON.stringify(health));
+  if (audio !== null) writeFileSync(join(dir, "audio.json"), JSON.stringify(audio));
 }
 function run(args, env = {}) {
   try {
@@ -165,6 +170,21 @@ try {
     const fx = join(work, "nofx-fx"); writeFixtures(fx, null);
     const r = runOracle(repo, fx); expect("фикстура health.json отсутствует -> exit 1", r.code, 1, r.out);
   }
+  // ===== живой слой /api/audio =====
+  const A = GREEN_AUDIO;
+  const audioMutations = [
+    ["/api/audio: роут отсутствует (HTML 404 от Next)", A.map((p) => ({ ...p, contentType: "text/html; charset=utf-8" }))],
+    ["/api/audio: неизвестный id отдаёт 302 (утечка/перебор)", [{ ...A[0], status: 302 }, A[1]]],
+    ["/api/audio: невалидный id -> 500", [A[0], { ...A[1], status: 500 }]],
+    ["/api/audio: неизвестный id -> 200", [{ ...A[0], status: 200 }, A[1]]],
+    ["/api/audio: фикстура без пробы not-a-uuid", [A[0]]],
+    ["/api/audio: фикстура audio.json отсутствует", null],
+  ];
+  audioMutations.forEach(([label, audio], i) => {
+    const repo = join(work, `am${i}`); writeRepo(repo, GREEN_FILES);
+    const fx = join(work, `am${i}-fx`); writeFixtures(fx, GREEN_HEALTH, audio);
+    const r = runOracle(repo, fx); expect(`мутация live: ${label}`, r.code, 1, r.out);
+  });
 
   // ===== транспорт: мёртвый URL -> exit 3; находки репо доминируют -> exit 1 =====
   {

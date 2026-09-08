@@ -8,8 +8,9 @@
  *
  * Слой РЕПО (всегда): needles по миграции 031, боту, web-роуту /api/voice, health.
  * Живой слой (кроме --repo-only): GET /api/health -> cron.extension, cron.jobs[*].active,
- * storage.voice_bucket === "private". Адрес: --base-url / EXPERT_URL / SELFSERVE_URL / CANONICAL_URL;
- * оффлайн — --fixture-dir с health.json.
+ * storage.voice_bucket === "private"; GET /api/audio/<неизвестный|невалидный id> -> JSON 404 без
+ * редиректа. Адрес: --base-url / EXPERT_URL / SELFSERVE_URL / CANONICAL_URL; оффлайн — --fixture-dir
+ * с health.json и audio.json.
  *
  * Exit: 0 ок; 1 находки; 2 usage; 3 транспорт (живой контур недоступен, находок нет).
  * Граница: оракул ничего не мутирует, cron/Storage не трогает, только читает health.
@@ -168,6 +169,33 @@ async function getHealth() {
   return res.json();
 }
 
+/**
+ * Живая проба /api/audio/<id>: роут существует и на неизвестный/невалидный id отвечает JSON 404 без
+ * редиректа (нет утечки; отсутствующий роут дал бы HTML 404 от Next, открытый - 302/200).
+ * redirect:"manual": undici (Node fetch) возвращает 3xx-ответ как есть (status 302), браузерные
+ * реализации - opaqueredirect со status 0; в обоих случаях status !== 404 и проба краснеет.
+ * Оффлайн - фикстура audio.json: [{"id": "...", "status": 404, "contentType": "application/json"}].
+ */
+const AUDIO_PROBES = ["00000000-0000-0000-0000-000000000000", "not-a-uuid"];
+async function getAudioProbe(id) {
+  if (fixtureDir) {
+    const abs = join(fixtureDir, "audio.json");
+    if (!existsSync(abs)) { finding("fixture:audio.json", "фикстура отсутствует", "положить audio.json в --fixture-dir"); return null; }
+    const rows = JSON.parse(readFileSync(abs, "utf8"));
+    return rows.find((r) => r.id === id) ?? null;
+  }
+  const res = await fetchWithRetry(`${baseUrl}/api/audio/${id}`, { method: "GET", redirect: "manual" });
+  return { id, status: res.status, contentType: res.headers.get("content-type") || "" };
+}
+async function checkAudioRouteLive() {
+  for (const id of AUDIO_PROBES) {
+    const p = await getAudioProbe(id);
+    if (!p) { finding(`/api/audio/${id}`, "нет данных пробы", "фикстура audio.json обязана содержать этот id"); continue; }
+    if (p.status !== 404) finding(`/api/audio/${id}`, `HTTP ${p.status} (ожидается 404 без редиректа)`, "роут обязан отвечать 404 на неизвестный/невалидный id: черновики и перебор не отдаются, 302 только для опубликованных");
+    else if (!String(p.contentType).includes("application/json")) finding(`/api/audio/${id}`, `404 без JSON (${p.contentType || "нет content-type"}) - роут отсутствует?`, "создать apps/web/app/api/audio/[id]/route.ts (JSON 404)");
+  }
+}
+
 const REQUIRED_JOBS = ["weekly-demand", "weekly-generate-orders"];
 function checkInfraHealth(health) {
   if (!health) return;
@@ -196,7 +224,7 @@ function checkInfraHealth(health) {
 
 checkInfraRepo();
 if (!repoOnly) {
-  try { checkInfraHealth(await getHealth()); }
+  try { checkInfraHealth(await getHealth()); await checkAudioRouteLive(); }
   catch (err) { transportErrors.push(err instanceof Error ? err.message : String(err)); }
 }
 
