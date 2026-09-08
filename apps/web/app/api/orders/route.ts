@@ -411,6 +411,8 @@ export async function POST(request: NextRequest) {
     order_id: order.id,
     amount_rub: pkg.amountRub,
     confirmation_url: payment.confirmation.confirmation_url,
+    // mode - режим checkout (dark/live), payment_test - магазин платежа (shopMode): у канарейки при
+    // live они расходятся намеренно (mode: "live", payment_test: true). Не унифицировать.
     mode,
     payment_test: shopMode === "dark",
   });
