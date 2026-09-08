@@ -1,9 +1,9 @@
 {
   "version": 1,
   "purpose": "Executable verification contract for the active unit.",
-  "unitId": "R-02",
+  "unitId": "R-03",
   "createdAt": "2026-09-08",
-  "note": "R-02: активирован 2026-09-08 после verified R-01. Tier medium (уведомления оператору). Оракул verify-preflight.mjs --check-alerts пишется первым; регрессии — прежние + reconcile.",
+  "note": "R-03: активирован 2026-09-08 после verified R-02. Tier medium. Оракул --stage=delivery --check-details пишется первым; регрессии — прежние + alerts.",
   "commandSchema": {
     "requiredFields": [
       "id",
@@ -21,8 +21,8 @@
   },
   "commands": [
     {
-      "id": "r-02-unit",
-      "command": "node scripts/verify-preflight.mjs --check-alerts",
+      "id": "r-03-unit",
+      "command": "node scripts/verify-selfserve-path.mjs --stage=delivery --check-details",
       "timeoutSeconds": 600,
       "expectedOutput": "exit 0",
       "passFailParser": "exit_code_zero",
@@ -164,6 +164,13 @@
     {
       "id": "r01-selfserve-reconcile",
       "command": "node scripts/verify-selfserve-path.mjs --stage=reconcile --repo-only",
+      "timeoutSeconds": 300,
+      "expectedOutput": "exit 0",
+      "passFailParser": "exit_code_zero"
+    },
+    {
+      "id": "r02-preflight-alerts",
+      "command": "node scripts/verify-preflight.mjs --repo-only --check-alerts",
       "timeoutSeconds": 300,
       "expectedOutput": "exit 0",
       "passFailParser": "exit_code_zero"

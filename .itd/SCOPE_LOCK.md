@@ -2,22 +2,37 @@
 
 ## Current Task
 
-- **R-02** (активирован 2026-09-08 после verified R-01, tier medium): Алерты оператору — единый
-  `notifyOperator()` → `TELEGRAM_ADMIN_CHAT_ID` (через прокси, как `tgFetch`) для
-  failed/refund/SLA/quota/health-degraded/service-order; дедупликация 1 ч; health отдаёт
-  `alerts.last_sent_at`; оракул `node scripts/verify-preflight.mjs --check-alerts` пишется первым.
-  **Стадия: ПЛАНИРОВАНИЕ** — контракт `.itd-memory/contracts/R-02.md`; код после короткого плана
-  (владелец: «делай все сам»). Гигиена из R-01 в scope: мутационный тест
-  `scripts/tests/selfserve-path.test.mjs` обязан очищать `SELFSERVE_URL`/`CANONICAL_URL` в `run()`
-  (usage-кейс ложно падает при экспортированном env — обнаружено на ОТК R-01).
-  Разрешены (после плана): `scripts/verify-preflight.mjs` (+ тест), `packages/shared/src/ops/**`
-  или `apps/worker/src/services/alerts.ts` (новый), точки вызова в `audit-delivery.ts`,
-  `payment-reconcile.ts`, `apps/web/app/api/service-orders/route.ts`, health, `.itd*`, BACKLOG,
-  CURRENT_PLAN, OPERATIONS, READINESS_PLAN. Запрещены: цены, платёжный код (кроме вызова алерта),
-  `llm/*`, экспертный контур, массовые рассылки.
+- **R-03** (активирован 2026-09-08 после verified R-02, tier medium): Данные клиента и уборка —
+  `details` заказа (сайт, конкуренты, заметки) попадают в промпт движка; пара активируется в
+  weekly-demand при `paid`; один почтовый транспорт (Resend удалить или включить по ключу);
+  нерегистрируемые job-типы удалены из реестра worker; оракул
+  `node scripts/verify-selfserve-path.mjs --stage=delivery --check-details` пишется первым.
+  **Стадия: ПЛАНИРОВАНИЕ** — контракт `.itd-memory/contracts/R-03.md`; код после короткого плана
+  (владелец: «делай все сам»). Разрешены (после плана): `scripts/verify-selfserve-path.mjs`
+  (+ тест), `apps/web/app/api/audit/route.ts` (только передача details в промпт), worker
+  `audit-delivery.ts` (передача details), `apps/web/app/api/webhooks/yukassa/route.ts` и
+  `payment-reconcile.ts` (активация пары при paid), `apps/worker/src/services/resend.ts` и
+  `index.ts` (реестр job-типов), миграция при необходимости, `.itd*`, BACKLOG, CURRENT_PLAN,
+  OPERATIONS, READINESS_PLAN. Запрещены: цены, реестр пакетов, checkout-флаг, `llm/*` (кроме
+  промпта аудита), экспертный контур.
   Операционные тикеты (SEC-2…SEC-5, OPS-2, DEMAND-4, OPS-1) — только по решению владельца.
+  Хотфикс **SCAN-1** (GigaChat в `/api/scan`, BACKLOG) — отдельным коммитом после R-03 или
+  внутри окна R-03 по решению владельца.
 
-Предыдущий юнит: **R-01 — VERIFIED 2026-09-08** (ОТК exit 0 через проброс: «Self-serve reconcile
+Предыдущий юнит: **R-02 — VERIFIED 2026-09-08** (ОТК exit 0 через проброс: «Preflight verification
+passed for http://127.0.0.1:13100» с `--check-alerts`; коммиты `e67bc8a`, `af898fb`, `2805086`,
+`54476d2`, `b872579`, `0f1483c`, `78b107e`, `5f644ab`; targeted r2 + full r7 PASSED (семь раундов:
+гонка INSERT в claim, await алертов, гонка sweep/run по SLA, exception-путь причины, канареечный
+шум в run и refund); квитанции `r02-gr-adjudication.json`/`r02-fix*-adjudication.json` (review-кеш),
+`r02-ch-adjudication.json` (pre-deploy гейт), `r02-otk-adjudication.json` (ОТК); `.deploy-sha=5f644ab`,
+миграция 030 применена; канарейка — реальная заявка `da3a08ae` → сообщение в админ-чат, дедуп RPC
+`f`/count=2, health `alerts {sent_24h:1, failed_24h:0}`, live-оракулы ALL_GREEN, providers все `ok`
+включая Perplexity). Scope сохранён как история: shared `ops/{alerts,notify-operator}.ts`, миграция
+030, worker `services/operator-alerts.ts` + hooks в `audit-delivery.ts`/`payment-reconcile.ts`/`index.ts`,
+web `lib/operator-alerts.ts` + `service-orders` + health `alerts`, оракул `--check-alerts` + мутации,
+гигиена `selfserve-path.test.mjs`, OPERATIONS §9b, `.env.example`.
+
+Предыдущий: **R-01 — VERIFIED 2026-09-08** (ОТК exit 0 через проброс: «Self-serve reconcile
 stage verification passed for http://127.0.0.1:13100»; коммит `f640f3b`; full-чекеры r4 (staged)
 и committed head PASSED; квитанции `r01-gr-adjudication.json` (review-кеш), `r01-ch-adjudication.json`
 (pre-deploy гейт), `r01-otk-adjudication-4.json` (ОТК); `.deploy-sha=f640f3b`, миграция 029 применена
