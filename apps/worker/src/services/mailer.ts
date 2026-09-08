@@ -6,7 +6,7 @@ import nodemailer from "nodemailer";
  * Без конфигурации бросает ошибку — вызывающий пишет её в *_last_error и повторит на следующем свипе;
  * письмо никогда не считается отправленным молча.
  */
-export interface MailMessage { to: string; subject: string; text: string; html?: string }
+export interface MailMessage { to: string; subject: string; text: string; html?: string; bcc?: string[] }
 export type SendMail = (message: MailMessage) => Promise<void>;
 
 export function createMailer(env: Record<string, string | undefined> = process.env): SendMail {
@@ -20,6 +20,6 @@ export function createMailer(env: Record<string, string | undefined> = process.e
       connectionTimeout: 15000, greetingTimeout: 15000, socketTimeout: 30000,
     });
     const from = env.SMTP_ADMIN_EMAIL || user;
-    await transport.sendMail({ from: `НейроЭксперт <${from}>`, to: message.to, subject: message.subject, text: message.text, html: message.html });
+    await transport.sendMail({ from: `НейроЭксперт <${from}>`, to: message.to, ...(message.bcc?.length ? { bcc: message.bcc } : {}), subject: message.subject, text: message.text, html: message.html });
   };
 }

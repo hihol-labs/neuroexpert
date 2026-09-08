@@ -22,6 +22,7 @@ commands = [
     ['node', 'scripts/tests/selfserve-path.test.mjs'],
     ['node', 'scripts/tests/preflight.test.mjs'],
     ['node', 'scripts/verify-preflight.mjs', '--repo-only', '--check-alerts'],
+    ['node', 'scripts/verify-selfserve-path.mjs', '--stage=delivery', '--check-details', '--repo-only'],
     ['pnpm', '--filter', 'web', 'exec', 'tsc', '--noEmit'],
 ]
 for stage in ['order', 'pair', 'delivery', 'reconcile']:

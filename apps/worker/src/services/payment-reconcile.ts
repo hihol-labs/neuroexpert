@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
-  decidePendingOrder, kassaShopsFromEnv, selectShopForOrder, assessPackagePayment, transition, mayEnqueueAuditJob,
+  decidePendingOrder, kassaShopsFromEnv, selectShopForOrder, assessPackagePayment, transition, mayEnqueueAuditJob, activateLocalPair,
   type KassaPayment, type KassaShop, type PackageOrderStatus, type NotifyOperator,
 } from "shared";
 
@@ -20,7 +20,7 @@ type Env = Record<string, string | undefined>;
 type Row = {
   id: string; owner_id: string; email: string; package: string; status: PackageOrderStatus & ("pending" | "expired");
   amount_rub: number; yukassa_payment_id: string | null; payment_test: boolean | null; payment_shop_id: string | null;
-  job_id: string | null; created_at: string;
+  job_id: string | null; created_at: string; niche_id: string | null;
 };
 export interface ReconcileDependencies {
   admin: SupabaseClient;
@@ -67,6 +67,9 @@ export function createPaymentReconcile(deps: ReconcileDependencies) {
         .eq("id", order.id).in("status", ["pending", "expired"]));
     }
     if (mayEnqueueAuditJob("paid", order.job_id)) checked(await admin.rpc("ensure_package_audit_job", { p_order_id: order.id }));
+    // R-03: оплаченная локальная пара попадает в еженедельный сбор спроса (idempotent, ошибка не ломает оплату).
+    try { await activateLocalPair(admin, order.niche_id); }
+    catch (e) { log(`[reconcile] pair activation for ${order.id} failed: ${e instanceof Error ? e.message : String(e)}`); }
     try { await deps.sendStatusLink(order.email, order.id); }
     catch (e) { log(`[reconcile] status email for ${order.id} failed: ${e instanceof Error ? e.message : String(e)}`); }
   }
@@ -75,7 +78,7 @@ export function createPaymentReconcile(deps: ReconcileDependencies) {
     const s: ReconcileSummary = { scanned: 0, paid: 0, failed: 0, expired: 0, kept: 0, errors: 0 };
     const shops = kassaShopsFromEnv(env);
     const rows = checked(await admin.from("package_orders")
-      .select("id, owner_id, email, package, status, amount_rub, yukassa_payment_id, payment_test, payment_shop_id, job_id, created_at")
+      .select("id, owner_id, email, package, status, amount_rub, yukassa_payment_id, payment_test, payment_shop_id, job_id, created_at, niche_id")
       .in("status", ["pending", "expired"]).order("created_at").limit(100)) as Row[] | null;
     for (const order of rows ?? []) {
       s.scanned += 1;

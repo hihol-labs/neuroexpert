@@ -13,6 +13,7 @@ type Order = {
   refund_attempts:number; refund_next_attempt_at:string|null;
   failure_email_sent_at?:string|null; refund_email_sent_at?:string|null;
   failure_reason?:string|null;
+  details?:Record<string,string>|null;
   niches?:{name?:string}|null;
 };
 type Shop = {id:string; key:string; test:boolean};
@@ -142,7 +143,8 @@ export function createAuditDelivery(deps: DeliveryDependencies) {
           const url=new URL("/api/audit",env.AUDIT_INTERNAL_URL||"http://web:3000");
           if(!["http:","https:"].includes(url.protocol)||url.username||url.password)throw new Error("Invalid internal audit URL");
           const response=await http(url,{method:"POST",redirect:"error",signal:AbortSignal.timeout(Math.max(1,Math.min(12*60000,Date.parse(order.paid_at)+60*60000-now()))),
-            headers:{"Content-Type":"application/json","x-audit-internal":token},body:JSON.stringify({niche_id:order.niche_id,type:"paid"})});
+            // R-03: данные клиента (сайт, конкуренты, заметки) доходят до движка — контекст анализатора.
+            headers:{"Content-Type":"application/json","x-audit-internal":token},body:JSON.stringify({niche_id:order.niche_id,type:"paid",details:order.details??{}})});
           if(!response.ok)throw new Error(`Audit engine HTTP ${response.status}`);
           const raw:unknown=await response.json();
           const mode=decideDeliveryMode(raw);

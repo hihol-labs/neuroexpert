@@ -86,6 +86,50 @@ interface GeneratedQuestion {
 
 const ANALYSIS_PROMPT = `Ты анализируешь ответ AI на вопрос пользователя. Проверяешь объективные структурные маркеры — не оцениваешь качество, а проверяешь факты. Ответь строго JSON.`;
 
+/**
+ * R-03: данные клиента из формы заказа (сайт, конкуренты, заметки) — контекст анализатора.
+ * Строки режутся до 500 символов, HTML-теги и переводы строк убираются; неизвестные ключи игнорируются.
+ */
+function sanitizeDetails(raw: unknown): { website?: string; competitors?: string; notes?: string } {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  const out: { website?: string; competitors?: string; notes?: string } = {};
+  for (const key of ["website", "competitors", "notes"] as const) {
+    const v = (raw as Record<string, unknown>)[key];
+    if (typeof v !== "string") continue;
+    const clean = v.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 500);
+    if (clean) out[key] = clean;
+  }
+  return out;
+}
+
+type ClientDetails = { website?: string; competitors?: string; notes?: string };
+
+/**
+ * Структурная изоляция от prompt-injection: текст клиента в LLM не передаётся вообще. Пометка
+ * «клиент упомянут / конкуренты в ответе» считается детерминированно по ответу платформы
+ * (домен сайта и названия конкурентов ищутся как подстроки) и дописывается к weakness.
+ * Маркеры и gap_score не зависят от клиента.
+ */
+function clientMentions(aiResponse: string, d: ClientDetails): string {
+  const text = aiResponse.toLowerCase();
+  let host: string | null = null;
+  if (d.website) {
+    try { host = new URL(d.website.includes("://") ? d.website : `https://${d.website}`).hostname.replace(/^www\./, "").toLowerCase(); } catch { host = null; }
+  }
+  const competitors = (d.competitors ?? "").split(/[,;\n]/).map((s) => s.trim()).filter((s) => s.length >= 3).slice(0, 10);
+  const hits = competitors.filter((c) => text.includes(c.toLowerCase()));
+  const parts: string[] = [];
+  if (host) parts.push(`Клиент (${host}) ${text.includes(host) ? "упомянут" : "не упомянут"}`);
+  if (competitors.length) parts.push(`Конкуренты в ответе: ${hits.length ? hits.join(", ") : "нет"}`);
+  return parts.join("; ");
+}
+
+function annotateClientMentions(markers: GapMarkers, aiResponse: string, d?: ClientDetails): GapMarkers {
+  if (!d) return markers;
+  const note = clientMentions(aiResponse, d);
+  return note ? { ...markers, weakness: `${markers.weakness.trim().replace(/\.$/, "")}. ${note}.` } : markers;
+}
+
 function buildAnalysisUserPrompt(question: string, aiResponse: string): string {
   return `ВОПРОС: ${question}
 
@@ -162,9 +206,10 @@ async function analyzeResponse(
   question: string,
   aiResponse: string,
   proxiedFetch?: FetchFn,
+  clientDetails?: ClientDetails,
 ): Promise<GapMarkers> {
   if (!process.env.OPENAI_API_KEY) {
-    return analyzeResponseHeuristically(aiResponse);
+    return annotateClientMentions(analyzeResponseHeuristically(aiResponse), aiResponse, clientDetails);
   }
 
   const analyzer = new OpenAI({
@@ -173,10 +218,10 @@ async function analyzeResponse(
   });
 
   try {
-    return await analyzeWithOpenAI(analyzer, question, aiResponse);
+    return annotateClientMentions(await analyzeWithOpenAI(analyzer, question, aiResponse), aiResponse, clientDetails);
   } catch (err) {
     console.error("[audit] OpenAI analyzer failed; using heuristic markers:", err);
-    return analyzeResponseHeuristically(aiResponse);
+    return annotateClientMentions(analyzeResponseHeuristically(aiResponse), aiResponse, clientDetails);
   }
 }
 
@@ -184,6 +229,7 @@ async function analyzeResponse(
 async function checkChatGPT(
   question: string,
   proxiedFetch?: FetchFn,
+  clientDetails?: ClientDetails,
 ): Promise<PlatformResult | null> {
   if (!process.env.OPENAI_API_KEY) return null;
 
@@ -200,7 +246,7 @@ async function checkChatGPT(
   });
 
   const aiResponse = chatResponse.choices[0]?.message?.content || "";
-  const markers = await analyzeResponse(question, aiResponse, proxiedFetch);
+  const markers = await analyzeResponse(question, aiResponse, proxiedFetch, clientDetails);
 
   return { platform: "ChatGPT", ai_response: aiResponse, markers };
 }
@@ -209,6 +255,7 @@ async function checkChatGPT(
 async function checkPerplexity(
   question: string,
   proxiedFetch?: FetchFn,
+  clientDetails?: ClientDetails,
 ): Promise<PlatformResult | null> {
   if (!process.env.PERPLEXITY_API_KEY) return null;
 
@@ -225,7 +272,7 @@ async function checkPerplexity(
   });
 
   const aiResponse = chatResponse.choices[0]?.message?.content || "";
-  const markers = await analyzeResponse(question, aiResponse, proxiedFetch);
+  const markers = await analyzeResponse(question, aiResponse, proxiedFetch, clientDetails);
 
   return { platform: "Perplexity", ai_response: aiResponse, markers };
 }
@@ -234,6 +281,7 @@ async function checkPerplexity(
 async function checkYandexGPT(
   question: string,
   proxiedFetch?: FetchFn,
+  clientDetails?: ClientDetails,
 ): Promise<PlatformResult | null> {
   if (!process.env.YANDEX_API_KEY || !process.env.YANDEX_FOLDER_ID) return null;
 
@@ -262,7 +310,7 @@ async function checkYandexGPT(
     result: { alternatives: Array<{ message: { text: string } }> };
   };
   const aiResponse = data.result.alternatives[0]?.message?.text || "";
-  const markers = await analyzeResponse(question, aiResponse, proxiedFetch);
+  const markers = await analyzeResponse(question, aiResponse, proxiedFetch, clientDetails);
 
   return { platform: "Яндекс.GPT", ai_response: aiResponse, markers };
 }
@@ -310,6 +358,7 @@ async function checkGigaChat(
   question: string,
   accessToken: string | null,
   proxiedFetch?: FetchFn,
+  clientDetails?: ClientDetails,
 ): Promise<PlatformResult | null> {
   if (!accessToken) return null;
 
@@ -342,7 +391,7 @@ async function checkGigaChat(
     choices: Array<{ message: { content: string } }>;
   };
   const aiResponse = chatData.choices[0]?.message?.content || "";
-  const markers = await analyzeResponse(question, aiResponse, proxiedFetch);
+  const markers = await analyzeResponse(question, aiResponse, proxiedFetch, clientDetails);
 
   return { platform: "GigaChat", ai_response: aiResponse, markers };
 }
@@ -474,7 +523,7 @@ function sortGaps(gaps: AuditGap[]): AuditGap[] {
 export async function POST(request: NextRequest) {
   const ip = clientIpFromHeaders((name) => request.headers.get(name));
 
-  let body: { niche_id?: string; type?: string };
+  let body: { niche_id?: string; type?: string; details?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -500,6 +549,9 @@ export async function POST(request: NextRequest) {
     }
   }
   const paid = type === "paid" && internal;
+  // R-03: данные клиента только для платного (внутреннего) аудита; в LLM не передаются —
+  // используются для детерминированной пометки «клиент упомянут / конкуренты в ответе» в weakness.
+  const clientDetails = paid ? sanitizeDetails(body.details) : undefined;
   const ranAt = new Date().toISOString();
 
   if (!niche_id) {
@@ -551,7 +603,7 @@ export async function POST(request: NextRequest) {
   const gigaChatToken = await getGigaChatToken();
 
   const checkers: Array<
-    (q: string, pf?: FetchFn) => Promise<PlatformResult | null>
+    (q: string, pf?: FetchFn, client?: ClientDetails) => Promise<PlatformResult | null>
   > = [checkChatGPT, checkPerplexity, checkYandexGPT];
 
   // GigaChat chat endpoint also rate-limits on GIGACHAT_API_PERS free tier
@@ -563,7 +615,7 @@ export async function POST(request: NextRequest) {
       if (i > 0) await new Promise((r) => setTimeout(r, 1100));
       try {
         gigaChatResults.push(
-          await checkGigaChat(questions[i].question, gigaChatToken, proxiedFetch),
+          await checkGigaChat(questions[i].question, gigaChatToken, proxiedFetch, clientDetails),
         );
       } catch (err) {
         console.error(
@@ -582,7 +634,7 @@ export async function POST(request: NextRequest) {
       const parallelResults = await Promise.all(
         checkers.map(async (checker) => {
           try {
-            return await checker(q.question, proxiedFetch);
+            return await checker(q.question, proxiedFetch, clientDetails);
           } catch (err) {
             console.error(
               `[audit] Platform check error for "${q.question}":`,

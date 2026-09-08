@@ -7,7 +7,7 @@ const json=(body,status=200)=>new Response(JSON.stringify(body),{status});
 const clone=v=>structuredClone(v);
 
 function order(over={}){return {id:`o-${Math.random().toString(16).slice(2,8)}`,owner_id:OWNER,email:'client@example.org',package:'audit_start',status:'pending',
- amount_rub:7900,yukassa_payment_id:'pay-1',payment_test:false,payment_shop_id:'live-shop',job_id:null,created_at:new Date(NOW-2*H).toISOString(),...over};}
+ amount_rub:7900,yukassa_payment_id:'pay-1',payment_test:false,payment_shop_id:'live-shop',job_id:null,niche_id:'pair-1',created_at:new Date(NOW-2*H).toISOString(),...over};}
 function payment(o,over={}){return {id:o.yukassa_payment_id,status:'succeeded',test:false,amount:{value:'7900.00',currency:'RUB'},
  metadata:{type:'package',package:'audit_start',order_id:o.id,user_id:o.owner_id},...over};}
 
@@ -19,7 +19,9 @@ function harness(rows,options={}){
   in(k,v){filters.push(r=>v.includes(r[k]));return q},lte(k,v){filters.push(r=>r[k]<=v);return q},order(){ordered=true;return q},limit(n){lim=n;return q},
   then(resolve){let m=h.rows.filter(r=>filters.every(f=>f(r)));if(ordered)m.sort((a,b)=>a.created_at<b.created_at?-1:1);m=m.slice(0,lim);
    if(patch)for(const r of m)Object.assign(r,clone(patch));return Promise.resolve({data:m.map(clone),error:null}).then(resolve)}};return q}
- const admin={from(t){assert.equal(t,'package_orders');return query()},async rpc(name,args){h.rpc.push({name,args});
+ h.pairs=[]; // R-03: активация локальной пары при paid — update niches ... .eq(id).not(vertical is null)
+ const nichesQuery=()=>{const c={};const q={update(v){c.v=v;return q},eq(k,v){c.id=v;return q},not(){h.pairs.push({id:c.id,...c.v});return Promise.resolve({error:null})}};return q};
+ const admin={from(t){if(t==='niches')return nichesQuery();assert.equal(t,'package_orders');return query()},async rpc(name,args){h.rpc.push({name,args});
   const r=h.rows.find(x=>x.id===args.p_order_id);if(name==='ensure_package_audit_job'){if(!r||r.status!=='paid')return {data:null,error:null};r.job_id??='job-'+r.id;return {data:r.job_id,error:null}}
   return {data:null,error:{message:'unexpected rpc '+name}}}};
  async function http(url,init={}){const u=new URL(String(url));const shop=Buffer.from(init.headers.Authorization.slice(6),'base64').toString().split(':')[0];
@@ -34,6 +36,7 @@ test('потерянный webhook: succeeded в кассе -> paid, job чер�
  const s=await h.service.run();assert.deepEqual(s,{scanned:1,paid:1,failed:0,expired:0,kept:0,errors:0});
  const r=h.rows[0];assert.equal(r.status,'paid');assert.ok(r.paid_at);assert.equal(r.job_id,'job-'+o.id);assert.equal(r.reconciled_at,new Date(NOW).toISOString());
  assert.deepEqual(h.rpc.map(x=>x.name),['ensure_package_audit_job']);assert.deepEqual(h.links,[o.id]);
+ assert.deepEqual(h.pairs,[{id:'pair-1',is_active:true}],'R-03: оплаченная локальная пара активирована');
 });
 
 test('гонка с webhook: заказ уже paid с job — сверка его не трогает и job не дублирует',async()=>{

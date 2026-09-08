@@ -72,7 +72,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const KNOWN = new Set(["--stage", "--base-url", "--fixture-dir", "--checkout", "--repo-root", "--repo-only"]);
+const KNOWN = new Set(["--stage", "--base-url", "--fixture-dir", "--checkout", "--repo-root", "--repo-only", "--check-details"]);
 const STAGES = ["order", "pair", "delivery", "reconcile"];
 const argv = process.argv.slice(2);
 const opts = { stage: null, baseUrl: null, fixtureDir: null, checkout: "dark", repoRoot: null, repoOnly: false };
@@ -87,6 +87,7 @@ for (let i = 0; i < argv.length; i += 1) {
   else if (flag === "--checkout") opts.checkout = value();
   else if (flag === "--repo-root") opts.repoRoot = value();
   else if (flag === "--repo-only") opts.repoOnly = true;
+  else if (flag === "--check-details") opts.checkDetails = true; // R-03: details в движок, активация пары, один транспорт, уборка job-типов
 }
 if (!STAGES.includes(opts.stage)) { console.error(`usage: --stage=${STAGES.join("|")} (delivery — юнит G-019, reconcile — юнит R-01)`); process.exit(2); }
 if (!["dark", "live"].includes(opts.checkout)) { console.error("usage: --checkout dark|live"); process.exit(2); }
@@ -310,7 +311,49 @@ function repoReconcile() {
     requireGroup(name, files.map(([path, needles]) => [path, needles]), "реализовать контракт R-01 (.itd-memory/contracts/R-01.md)");
   }
 }
+// ============================================================ РЕПО: --check-details (R-03)
+/**
+ * R-03 «Данные клиента и уборка» (ADR-004): details заказа доходят до движка (промпт анализатора),
+ * пара активируется при оплате (webhook и сверка), один почтовый транспорт (SMTP mailer, Resend
+ * удалён), реестр worker без job-типов с нулевыми продюсерами. Группа = шаг контракта = одна находка.
+ */
+function repoDetails() {
+  const groups = {
+    details: [
+      ["apps/worker/src/services/audit-delivery.ts", [["type:\"paid\",details:", "details в теле POST /api/audit"]]],
+      ["apps/web/app/api/audit/route.ts", [["body.details", "роут читает details"], ["sanitizeDetails", "санитизация details"],
+        ["function clientMentions(", "детерминированная пометка по ответу платформы (клиент/конкуренты)"],
+        ["annotateClientMentions(", "пометка дописывается в weakness"],
+        ["buildAnalysisUserPrompt(question, aiResponse)", "текст клиента в промпт LLM НЕ передаётся (структурная изоляция от prompt-injection)"]]],
+    ],
+    "pair-activation": [
+      ["apps/web/app/api/webhooks/yukassa/route.ts", [["activateLocalPair", "активация пары при paid (webhook)"]]],
+      ["apps/worker/src/services/payment-reconcile.ts", [["activateLocalPair", "активация пары при paid (сверка)"]]],
+      ["packages/shared/src/orders/pair-activation.ts", [["function activateLocalPair(", "helper активации"], ["is_active: true", "is_active=true"], ["vertical", "только локальные пары (vertical)"]]],
+    ],
+    "mail-transport": [
+      ["apps/worker/src/jobs/send-email-digest.ts", [["createMailer", "дайджест через SMTP mailer"], ["bcc", "bcc-батчи"]]],
+      ["apps/worker/src/services/mailer.ts", [["bcc", "поддержка bcc"]]],
+    ],
+    "jobs-cleanup": [
+      ["apps/worker/src/index.ts", [["run_audit: handleRunAudit", "реестр на месте"]]],
+    ],
+  };
+  for (const [name, files] of Object.entries(groups)) {
+    requireGroup(name, files.map(([path, needles]) => [path, needles]), "реализовать контракт R-03 (.itd-memory/contracts/R-03.md)");
+  }
+  // Отсутствие мёртвых артефактов: Resend-транспорт, job без продюсеров, ключ Resend в примере env.
+  const gone = [];
+  if (readRepo("apps/worker/src/services/resend.ts") !== null) gone.push("apps/worker/src/services/resend.ts: файл должен быть удалён (один почтовый транспорт)");
+  if (readRepo("apps/worker/src/jobs/track-geo-services.ts") !== null) gone.push("apps/worker/src/jobs/track-geo-services.ts: job без продюсеров должен быть удалён");
+  const idx = readRepo("apps/worker/src/index.ts") ?? "";
+  if (idx.includes("track_geo_services")) gone.push("apps/worker/src/index.ts: track_geo_services всё ещё в реестре");
+  const envx = readRepo(".env.example") ?? "";
+  if (envx.includes("RESEND_API_KEY")) gone.push(".env.example: RESEND_API_KEY должен быть убран");
+  if (gone.length > 0) finding("[cleanup]", gone.join("; "), "реализовать контракт R-03 (уборка)");
+}
 if (opts.stage === "order") repoOrder(); else if (opts.stage === "pair") repoPair(); else if (opts.stage === "reconcile") repoReconcile(); else repoDelivery();
+if (opts.checkDetails) repoDetails();
 
 // ============================================================ ЖИВОЙ
 const transport = [];

@@ -266,6 +266,58 @@ try {
     expect(`reconcile мутация live: ${label}`, r.code, 1, r.out);
   });
 
+  // ===== --check-details (R-03) поверх зелёного delivery-дерева =====
+  const FILES_DELIVERY = {
+    "packages/supabase/migrations/028_audit_delivery.sql": "package_orders_job_requires_paid complete_package_audit fail_package_audit sla_deadline_at payment_test notification_sent_at refund_id\n",
+    "packages/shared/src/delivery/index.ts": "export function decideDeliveryMode() {} export function buildReportSnapshot() {} export function isSlaBreached() {} export function decideRefund() {} const s = \"unavailable\";\n",
+    "apps/web/app/api/audit/route.ts": "const t = process.env.AUDIT_INTERNAL_TOKEN; request.headers.get(\"x-audit-internal\"); source_question_id; collected_at; platforms_tried; analyzer_model;\n",
+    "apps/worker/src/jobs/run-audit.ts": "export const handleRunAudit = () => {};\n",
+    "apps/worker/src/services/audit-delivery.ts": "complete_package_audit fail_package_audit https://api.yookassa.ru/v3 refund- notification_sent_at signInWithOtp\n",
+    "apps/worker/src/index.ts": "const handlers = { run_audit: handleRunAudit };\nsweepAuditDelivery();\n",
+    "apps/web/app/orders/[id]/page.tsx": "<section data-order-report=\"x\">delivered</section> if (order.owner_id !== user.id) notFound();\n",
+    "apps/web/app/api/orders/[id]/route.ts": "return NextResponse.json({ report: order.report }); if (order.owner_id !== user.id) {}\n",
+    "apps/web/app/api/health/route.ts": "return NextResponse.json({ audit_delivery: { paid_waiting, sla_breached, refunded } });\n",
+  };
+  const FILES_DETAILS = {
+    ...FILES_DELIVERY,
+    "apps/worker/src/services/audit-delivery.ts": FILES_DELIVERY["apps/worker/src/services/audit-delivery.ts"] + "body:JSON.stringify({niche_id:order.niche_id,type:\"paid\",details:order.details??{}})\n",
+    "apps/web/app/api/audit/route.ts": FILES_DELIVERY["apps/web/app/api/audit/route.ts"] + "function clientMentions(aiResponse, d) {}\nfunction annotateClientMentions(m, aiResponse, d) {}\nconst clientDetails = paid ? sanitizeDetails(body.details) : undefined;\nbuildAnalysisUserPrompt(question, aiResponse);\nannotateClientMentions(markers, aiResponse, clientDetails);\n",
+    "apps/web/app/api/webhooks/yukassa/route.ts": "await activateLocalPair(admin, order.niche_id);\n",
+    "apps/worker/src/services/payment-reconcile.ts": "await activateLocalPair(admin, order.niche_id);\n",
+    "packages/shared/src/orders/pair-activation.ts": "export function activateLocalPair(admin, nicheId) { return admin.from(\"niches\").update({ is_active: true }).eq(\"id\", nicheId).not(\"vertical\", \"is\", null); }\n",
+    "apps/worker/src/jobs/send-email-digest.ts": "import { createMailer } from \"../services/mailer.js\";\nawait mailer({ to, bcc: batch, subject, text, html });\n",
+    "apps/worker/src/services/mailer.ts": "export interface MailMessage { to: string; bcc?: string[] }\n",
+    ".env.example": "SMTP_HOST=\n",
+  };
+  const detGreen = join(work, "details-green"); writeTree(detGreen, FILES_DETAILS);
+  { const r = run(["--stage=delivery", "--check-details", "--repo-root", detGreen, "--repo-only"]); expect("details: позитив (--stage=delivery --check-details --repo-only)", r.code, 0, r.out); }
+  { const r = run(["--stage=delivery", "--repo-root", detGreen, "--repo-only"]); expect("delivery без --check-details на том же дереве", r.code, 0, r.out); }
+  {
+    const bare = join(work, "details-bare"); writeTree(bare, { ...FILES_DELIVERY, ".env.example": "RESEND_API_KEY=\n", "apps/worker/src/services/resend.ts": "x\n", "apps/worker/src/jobs/track-geo-services.ts": "x\n", "apps/worker/src/index.ts": "const handlers = { run_audit: handleRunAudit, track_geo_services: h };\nsweepAuditDelivery();\n" });
+    const r = run(["--stage=delivery", "--check-details", "--repo-root", bare, "--repo-only"]);
+    expect("details: репо до R-03 -> exit 1", r.code, 1, r.out);
+    const m = /(\d+) finding\(s\)/.exec(r.out); expect("details: репо до R-03 даёт ровно 4 находки (3 группы + cleanup)", m ? Number(m[1]) : -1, 4, r.out);
+  }
+  const DF = FILES_DETAILS;
+  const detailsMutations = [
+    ["worker не передаёт details движку", { "apps/worker/src/services/audit-delivery.ts": FILES_DELIVERY["apps/worker/src/services/audit-delivery.ts"] + "body:JSON.stringify({niche_id:order.niche_id,type:\"paid\"})\n" }],
+    ["роут читает details, но не дописывает пометку в weakness", { "apps/web/app/api/audit/route.ts": DF["apps/web/app/api/audit/route.ts"].replace("annotateClientMentions(markers, aiResponse, clientDetails);", "log(markers);").replace("function annotateClientMentions(m, aiResponse, d) {}", "") }],
+    ["текст клиента попал в промпт LLM (prompt-injection)", { "apps/web/app/api/audit/route.ts": DF["apps/web/app/api/audit/route.ts"].replace("buildAnalysisUserPrompt(question, aiResponse);", "buildAnalysisUserPrompt(question, aiResponse, clientContext);") }],
+    ["details без санитизации", { "apps/web/app/api/audit/route.ts": DF["apps/web/app/api/audit/route.ts"].replace("sanitizeDetails(body.details)", "body.details") }],
+    ["webhook не активирует пару", { "apps/web/app/api/webhooks/yukassa/route.ts": "// no activation\n" }],
+    ["сверка не активирует пару", { "apps/worker/src/services/payment-reconcile.ts": "// no activation\n" }],
+    ["helper активирует любые ниши, не только локальные пары", { "packages/shared/src/orders/pair-activation.ts": DF["packages/shared/src/orders/pair-activation.ts"].replace(".not(\"vertical\", \"is\", null)", "") }],
+    ["дайджест по-прежнему через Resend", { "apps/worker/src/jobs/send-email-digest.ts": "fetch(\"https://api.resend.com/emails\")\n" }],
+    ["resend.ts не удалён", { "apps/worker/src/services/resend.ts": "x\n" }],
+    ["track_geo_services остался в реестре", { "apps/worker/src/index.ts": "const handlers = { run_audit: handleRunAudit, track_geo_services: h };\nsweepAuditDelivery();\n" }],
+    [".env.example всё ещё предлагает RESEND_API_KEY", { ".env.example": "RESEND_API_KEY=\n" }],
+  ];
+  detailsMutations.forEach(([label, ov], i) => {
+    const d = join(work, `details-m${i}`); writeTree(d, { ...FILES_DETAILS, ...ov });
+    const r = run(["--stage=delivery", "--check-details", "--repo-root", d, "--repo-only"]);
+    expect(`details мутация: ${label}`, r.code, 1, r.out);
+  });
+
   { const r = run(["--stage=delivery"]); expect("usage: --stage=delivery без URL -> exit 2", r.code, 2, r.out); }
   { const r = run(["--stage=order", "--repo-root", green, "--repo-only"]); expect("--repo-only на зелёном репо", r.code, 0, r.out); }
 } finally {

@@ -11,6 +11,7 @@ import {
   type PackageOrderStatus,
   type ReconcileOrder,
 } from "shared";
+import { activateLocalPair } from "shared";
 import { createClient } from "@supabase/supabase-js";
 import { KassaUnavailableError, fetchKassaPayment, fetchKassaRefund, kassaShops } from "@/lib/yukassa-verify";
 
@@ -151,6 +152,10 @@ async function handlePackagePaymentSucceeded(
       // R-01: оплата по старой ссылке после протухания (expired) тоже принимается.
       .in("status", ["pending", "expired"]);
     if (error) throw new Error("Package payment database update failed");
+    // R-03: оплаченная локальная пара попадает в еженедельный сбор спроса (только при реальном
+    // переходе в paid — повтор webhook не делает лишний UPDATE); ошибка активации не ломает оплату.
+    try { await activateLocalPair(admin, order.niche_id); }
+    catch (err) { console.error(`[yukassa] pair activation for order ${orderId} failed:`, err instanceof Error ? err.message : err); }
   }
 
   if (mayEnqueueAuditJob("paid", order.job_id)) {

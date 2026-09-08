@@ -1,10 +1,11 @@
 import { supabase } from "../supabase.js";
+import { createMailer } from "../services/mailer.js";
 
-// Email digest — отправляет подписчикам уведомления о новых статьях эксперта
-// Использует Resend API (https://resend.com/docs/api-reference/emails/send-email)
+// Email digest — отправляет подписчикам уведомления о новых статьях эксперта.
+// R-03: единый почтовый транспорт — SMTP mailer (тот же, что письма Audit Start); Resend удалён.
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
-const FROM_EMAIL = process.env.EMAIL_FROM || "noreply@neuroexpertise.ru";
+const mailer = createMailer();
+const FROM_EMAIL = process.env.EMAIL_FROM || process.env.SMTP_ADMIN_EMAIL || "noreply@neuroexpertise.ru";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://neuroexpertise.ru";
 
 interface SendResult {
@@ -94,40 +95,16 @@ export async function handleSendEmailDigest(payload: Record<string, unknown>): P
   let sent = 0;
   let failed = 0;
 
-  if (!RESEND_API_KEY) {
-    console.warn("[email_digest] RESEND_API_KEY not set, skipping actual send");
-    console.log(`[email_digest] Would send to ${subscribers.length} subscribers`);
-    return { sent: 0, failed: 0 };
-  }
-
-  // Батч — до 50 за раз
+  // Батч — до 50 за раз, получатели в bcc; отправитель — FROM_EMAIL (тот же SMTP, что письма Audit Start).
   for (let i = 0; i < subscribers.length; i += 50) {
     const batch = subscribers.slice(i, i + 50);
     const bccList = batch.map((s) => s.email);
 
     try {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${RESEND_API_KEY}`,
-        },
-        body: JSON.stringify({
-          from: `НейроЭксперт <${FROM_EMAIL}>`,
-          to: FROM_EMAIL, // primary recipient
-          bcc: bccList,
-          subject,
-          html,
-        }),
-      });
-
-      if (res.ok) {
-        sent += bccList.length;
-      } else {
-        const err = await res.text();
-        console.error(`[email_digest] Resend error: ${err}`);
-        failed += bccList.length;
-      }
+      // Текстовая версия: ссылки сохраняются как «текст (URL)», остальные теги убираются.
+      const text = html.replace(/<a\s[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi, "$2 ($1)").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      await mailer({ to: FROM_EMAIL, bcc: bccList, subject, text, html });
+      sent += bccList.length;
     } catch (err) {
       console.error("[email_digest] Send error:", err);
       failed += bccList.length;

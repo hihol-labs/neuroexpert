@@ -335,6 +335,32 @@ empty` ставит новый `collect_demand`, если `demand_collected_at` 
   тестового магазина алертятся как боевые (по дизайну: канал один).
 - **Оракул:** `node scripts/verify-preflight.mjs --check-alerts [--repo-only|--base-url]`.
 
+### 9c. Audit Start: данные клиента в движке, активация пары, один почтовый транспорт (R-03, 2026-09-08)
+
+- **Details → движок:** поля формы `/orders/[id]` (сайт, конкуренты, «что пробовали») worker
+  передаёт в `POST /api/audit` (paid); роут санитизирует (≤500 символов на поле, без HTML). Текст
+  клиента **в LLM не передаётся** (структурная защита от prompt-injection): пометка «Клиент (домен)
+  упомянут/не упомянут; Конкуренты в ответе: …» считается детерминированно по тексту ответа
+  платформы и дописывается к `weakness`. Маркеры и `gap_score` не меняются; free-аудит details не
+  принимает. Заполнить форму можно и после оплаты — движок читает `details` в момент запуска job.
+- **Активация пары при оплате:** после `paid` (webhook и сверка R-01) локальная пара
+  (`niches.vertical IS NOT NULL`) получает `is_active=true` и попадает в еженедельный `weekly-demand`
+  (повторный сбор спроса — основа remeasure R-11). Ручной `UPDATE is_active` больше не нужен;
+  ошибка активации логируется и не ломает оплату.
+- **Один почтовый транспорт:** все письма worker'а — SMTP `services/mailer.ts` (Yandex 360);
+  `send_email_digest` тоже (bcc-батчи по 50, отправитель `EMAIL_FROM`/`SMTP_ADMIN_EMAIL`). Resend
+  удалён вместе с `RESEND_API_KEY`.
+- **Реестр job-типов worker (карта «кто ставит»):** cron `weekly-demand`/`weekly-generate-orders`
+  (003/008) → `collect_demand`, `find_gaps`, `expand_query`, `generate_orders`; оплата →
+  `run_audit`; голос/публикация → `transcribe`, `generate_content`, `validate_content`,
+  `crosspost_social`; cron платных тарифов (003) → `track_citations`, `track_serp`,
+  `calculate_trust_score`, `submit_sitemap`, `check_cwv`; API `/api/local-sales*`, `/api/agency` →
+  `generate_daily_growth_tasks`, `generate_local_weekly_report`, `generate_b2b_page_draft`,
+  `analyze_behavior_signals`, `calculate_unit_economics`, `generate_agency_report`; **без продюсера
+  сейчас:** `send_email_digest` (R-08), `refresh_content`, `crosspost`, `optimize_images` (R-11);
+  удалён: `track_geo_services` (нулевые продюсеры).
+- **Оракул:** `node scripts/verify-selfserve-path.mjs --stage=delivery --check-details [--repo-only|--base-url]`.
+
 ---
 
 ## 10. Регулярные процедуры (playbooks)
