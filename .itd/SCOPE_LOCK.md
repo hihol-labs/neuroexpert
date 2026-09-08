@@ -2,22 +2,31 @@
 
 ## Current Task
 
-- **R-01** (активирован 2026-09-06 после утверждения ADR-004, tier high): Сверка и провалы
-  платежей — job `reconcile_payments` (15 мин, платежи ЮKassa за 48 ч ↔ `orders`: succeeded без
-  paid → paid + job; canceled → canceled), `pending` старше 24 ч → `expired`, письмо клиенту при
-  `failed`/`refunded` (шаблон в git), `decideRefund()` подключён; оракул
-  `node scripts/verify-selfserve-path.mjs --stage=reconcile` пишется первым. **Стадия:
-  ПЛАНИРОВАНИЕ** — контракт `.itd-memory/contracts/R-01.md` и короткий план показываются
-  владельцу; код после «утверждаю» (или сразу, если владелец сказал «делай сам»).
-  Разрешены (после утверждения): `scripts/verify-selfserve-path.mjs` (+ мутационный тест),
-  `apps/worker/src/jobs/reconcile-payments.ts` (новый) и регистрация в `apps/worker/src/index.ts`,
-  `apps/worker/src/services/audit-delivery.ts`, `packages/shared/src/delivery/**` (state,
-  decideRefund, письма), клиент ЮKassa (`packages/shared/src/payments/**` или `apps/web/lib/yukassa*`),
-  миграция `029_*` (статус `expired`, cron), `apps/web/app/orders/[id]/page.tsx` (статус expired),
-  `.itd*`, BACKLOG, CURRENT_PLAN, OPERATIONS, READINESS_PLAN.
-  Запрещены: цены, реестр пакетов, публичный checkout-флаг, `llm/*`, экспертный контур,
-  массовые операции над историческими заказами (сверка — только окно 48 ч).
+- **R-02** (активирован 2026-09-08 после verified R-01, tier medium): Алерты оператору — единый
+  `notifyOperator()` → `TELEGRAM_ADMIN_CHAT_ID` (через прокси, как `tgFetch`) для
+  failed/refund/SLA/quota/health-degraded/service-order; дедупликация 1 ч; health отдаёт
+  `alerts.last_sent_at`; оракул `node scripts/verify-preflight.mjs --check-alerts` пишется первым.
+  **Стадия: ПЛАНИРОВАНИЕ** — контракт `.itd-memory/contracts/R-02.md`; код после короткого плана
+  (владелец: «делай все сам»). Гигиена из R-01 в scope: мутационный тест
+  `scripts/tests/selfserve-path.test.mjs` обязан очищать `SELFSERVE_URL`/`CANONICAL_URL` в `run()`
+  (usage-кейс ложно падает при экспортированном env — обнаружено на ОТК R-01).
+  Разрешены (после плана): `scripts/verify-preflight.mjs` (+ тест), `packages/shared/src/ops/**`
+  или `apps/worker/src/services/alerts.ts` (новый), точки вызова в `audit-delivery.ts`,
+  `payment-reconcile.ts`, `apps/web/app/api/service-orders/route.ts`, health, `.itd*`, BACKLOG,
+  CURRENT_PLAN, OPERATIONS, READINESS_PLAN. Запрещены: цены, платёжный код (кроме вызова алерта),
+  `llm/*`, экспертный контур, массовые рассылки.
   Операционные тикеты (SEC-2…SEC-5, OPS-2, DEMAND-4, OPS-1) — только по решению владельца.
+
+Предыдущий юнит: **R-01 — VERIFIED 2026-09-08** (ОТК exit 0 через проброс: «Self-serve reconcile
+stage verification passed for http://127.0.0.1:13100»; коммит `f640f3b`; full-чекеры r4 (staged)
+и committed head PASSED; квитанции `r01-gr-adjudication.json` (review-кеш), `r01-ch-adjudication.json`
+(pre-deploy гейт), `r01-otk-adjudication-4.json` (ОТК); `.deploy-sha=f640f3b`, миграция 029 применена
+с бэкапом `/root/backup-before-029-2026-09-08.sql`; канарейки ALL_GREEN; канареечный pending-заказ
+`0980cd52` ждёт протухания через 24 ч — проверить в R-02). Его scope сохранён как история:
+`scripts/verify-selfserve-path.mjs` (+ мутационный тест, exact-tree раннер `reconcile-candidate.py`),
+`packages/shared/src/orders/{state,reconcile}.ts`, миграция 029, worker `services/{payment-reconcile,
+mailer,audit-delivery}.ts`, `emails/package-order.ts`, `jobs/run-audit.ts`, `index.ts`; web webhook,
+`orders/[id]/page.tsx`, health; OPERATIONS §9a, `.env.example`.
 
 Контекст очереди: **ADR-004 ACCEPTED 2026-09-06** — readiness gate 2026-10-15, фаза C
 приостановлена, последовательность R-01 → R-13 (`docs/plan/READINESS_PLAN.md`); G-015/G-016/G-017

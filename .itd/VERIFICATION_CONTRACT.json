@@ -1,9 +1,9 @@
 {
   "version": 1,
   "purpose": "Executable verification contract for the active unit.",
-  "unitId": "R-01",
-  "createdAt": "2026-09-06",
-  "note": "R-01: активирован 2026-09-06 после утверждения ADR-004 (readiness gate 2026-10-15). Tier high (деньги). Оракул --stage=reconcile пишется первым; регрессии — прежние + strategy-docs.",
+  "unitId": "R-02",
+  "createdAt": "2026-09-08",
+  "note": "R-02: активирован 2026-09-08 после verified R-01. Tier medium (уведомления оператору). Оракул verify-preflight.mjs --check-alerts пишется первым; регрессии — прежние + reconcile.",
   "commandSchema": {
     "requiredFields": [
       "id",
@@ -21,12 +21,12 @@
   },
   "commands": [
     {
-      "id": "r01-unit",
-      "command": "node scripts/verify-selfserve-path.mjs --stage=reconcile",
+      "id": "r-02-unit",
+      "command": "node scripts/verify-preflight.mjs --check-alerts",
       "timeoutSeconds": 600,
       "expectedOutput": "exit 0",
       "passFailParser": "exit_code_zero",
-      "note": "НЕ СОЗДАН — стадия reconcile добавляется в verify-selfserve-path.mjs первым шагом юнита."
+      "note": "НЕ СОЗДАН — оракул юнита пишется первым шагом."
     }
   ],
   "regressionCommands": [
@@ -158,6 +158,13 @@
       "id": "strategy-docs",
       "command": "python3 scripts/verify-strategy-docs.py",
       "timeoutSeconds": 120,
+      "expectedOutput": "exit 0",
+      "passFailParser": "exit_code_zero"
+    },
+    {
+      "id": "r01-selfserve-reconcile",
+      "command": "node scripts/verify-selfserve-path.mjs --stage=reconcile --repo-only",
+      "timeoutSeconds": 300,
       "expectedOutput": "exit 0",
       "passFailParser": "exit_code_zero"
     }
