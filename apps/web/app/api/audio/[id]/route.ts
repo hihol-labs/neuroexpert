@@ -11,6 +11,10 @@ export const dynamic = "force-dynamic";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SIGNED_TTL_SECONDS = 3600;
+// Ни один ответ роута не кэшируется (ни 302 с подписью, ни 404/503): черновик может стать
+// опубликованным, а кэшированный 404 скрыл бы его; подпись - одноразовая.
+const NO_STORE = { "Cache-Control": "private, no-store" };
+const notFound = () => NextResponse.json({ error: "Not found" }, { status: 404, headers: NO_STORE });
 
 function getAdmin() {
   return createSupabaseClient(
@@ -22,7 +26,7 @@ function getAdmin() {
 
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   const id = params.id;
-  if (!UUID_RE.test(id)) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!UUID_RE.test(id)) return notFound();
 
   const admin = getAdmin();
   // Только опубликованная статья с этой записью: voice_id - FK content_packages -> voice_recordings.
@@ -33,21 +37,21 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
     .eq("status", "published")
     .limit(1)
     .maybeSingle();
-  if (!published) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!published) return notFound();
 
   const { data: recording } = await admin
     .from("voice_recordings")
     .select("file_path")
     .eq("id", id)
     .maybeSingle();
-  if (!recording?.file_path) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!recording?.file_path) return notFound();
 
   const { data: signed, error: signError } = await admin.storage
     .from("voice")
     .createSignedUrl(recording.file_path, SIGNED_TTL_SECONDS);
   if (signError || !signed?.signedUrl) {
     console.error(`[audio] createSignedUrl failed for ${id}:`, signError?.message ?? "no url");
-    return NextResponse.json({ error: "Audio unavailable" }, { status: 503 });
+    return NextResponse.json({ error: "Audio unavailable" }, { status: 503, headers: NO_STORE });
   }
-  return NextResponse.redirect(signed.signedUrl, { status: 302, headers: { "Cache-Control": "private, no-store" } });
+  return NextResponse.redirect(signed.signedUrl, { status: 302, headers: NO_STORE });
 }
