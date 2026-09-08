@@ -15,6 +15,7 @@ const oracle = resolve(here, "..", "verify-expert-path.mjs");
 
 const GREEN_FILES = {
   "packages/supabase/migrations/031_cron_and_voice_bucket.sql": [
+    "DO $$ BEGIN IF current_setting('cron.database_name', true) IS DISTINCT FROM current_database() THEN RAISE EXCEPTION 'cron.database_name mismatch'; END IF; END $$;",
     "CREATE EXTENSION IF NOT EXISTS pg_cron;",
     "SELECT cron.unschedule(jobid) FROM cron.job WHERE jobname IN ('weekly-demand','weekly-generate-orders');",
     "SELECT cron.schedule('weekly-demand', '0 3 * * 1', $$INSERT INTO public.jobs (type, payload) SELECT 'collect_demand', jsonb_build_object('niche_id', id) FROM public.niches WHERE is_active = TRUE$$);",
@@ -110,6 +111,8 @@ try {
   const F = GREEN_FILES; const MIG = "packages/supabase/migrations/031_cron_and_voice_bucket.sql";
   const repoMutations = [
     ["миграция: нет CREATE EXTENSION pg_cron (инцидент прода: расширение никогда не ставилось)", { [MIG]: F[MIG].replace("CREATE EXTENSION IF NOT EXISTS pg_cron;", "") }],
+    ["миграция: нет guard cron.database_name (задания регистрируются, но не исполняются)", { [MIG]: F[MIG].replace("current_setting('cron.database_name', true)", "current_setting('cron.db', true)") }],
+    ["миграция: guard не падает (нет RAISE EXCEPTION)", { [MIG]: F[MIG].replace("RAISE EXCEPTION", "RAISE NOTICE") }],
     ["миграция: нет weekly-demand", { [MIG]: F[MIG].replace("cron.schedule('weekly-demand'", "cron.schedule('weekly-demand-old'") }],
     ["миграция: нет weekly-generate-orders", { [MIG]: F[MIG].replace("cron.schedule('weekly-generate-orders'", "cron.schedule('weekly-orders'") }],
     ["миграция: расписания не идемпотентны (нет cron.unschedule)", { [MIG]: F[MIG].replace("cron.unschedule(", "cron.noop(") }],

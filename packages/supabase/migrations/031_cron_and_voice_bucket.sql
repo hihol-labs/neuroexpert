@@ -6,8 +6,20 @@
 -- SELECT cron.unschedule(jobid) FROM cron.job WHERE jobname IN ('weekly-demand','weekly-generate-orders');
 -- Расширение pg_cron и bucket voice не удаляем и public=true не возвращаем: bucket может содержать
 -- записи экспертов, а публичность - регрессия безопасности; вернуть public только решением владельца.
--- Требование: cron.database_name (GUC) = БД миграции (на проде обе 'postgres', проверено 2026-09-08).
+-- Требование cron.database_name (GUC) = БД миграции проверяется guard-блоком ниже (на проде обе
+-- 'postgres', read-only проверка 2026-09-08; guard - исполняемое доказательство при apply).
 BEGIN;
+
+-- 0. Guard: pg_cron исполняет задания только в БД из GUC cron.database_name. При несовпадении
+--    cron.schedule молча зарегистрирует задания, которые никогда не запустятся (тот же класс
+--    отказа, что E-AUTO-12) - поэтому миграция падает громко, а не притворяется применённой.
+DO $$
+BEGIN
+  IF current_setting('cron.database_name', true) IS DISTINCT FROM current_database() THEN
+    RAISE EXCEPTION 'cron.database_name (%) != current_database (%): pg_cron не будет исполнять задания в этой БД',
+      current_setting('cron.database_name', true), current_database();
+  END IF;
+END $$;
 
 -- 1. pg_cron (в supabase/postgres предзагружен в shared_preload_libraries, но CREATE EXTENSION не делался).
 CREATE EXTENSION IF NOT EXISTS pg_cron;

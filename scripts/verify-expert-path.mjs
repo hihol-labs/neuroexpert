@@ -82,6 +82,9 @@ const MIGRATION = "packages/supabase/migrations/031_cron_and_voice_bucket.sql";
 function checkInfraRepo() {
   // Миграция 031: pg_cron + два расписания идемпотентно, bucket voice private, RPC infra_status.
   requireGroup("migration", [[MIGRATION, [
+    // Guard: cron.database_name = current_database(), иначе задания регистрируются и не исполняются.
+    "current_setting('cron.database_name'",
+    "RAISE EXCEPTION",
     "CREATE EXTENSION IF NOT EXISTS pg_cron",
     "cron.unschedule(",
     "cron.schedule('weekly-demand'",
