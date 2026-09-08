@@ -82,7 +82,9 @@ Tier по методологии: high — деньги/auth/прод-данны
   canceled); `pending` старше 24 ч → `expired`; письмо клиенту при `failed`/`refunded`
   (шаблон в git); `decideRefund()` подключён. Оракул: `verify-selfserve-path.mjs
   --stage=reconcile` (негатив: потерянный webhook, дубль, просрочка). Закрывает B-AUTO-2/3/7/22.
-- **R-02 · Алерты оператору** (medium, M). Единый `notifyOperator()` → `TELEGRAM_ADMIN_CHAT_ID`
+- **R-02 · Алерты оператору — VERIFIED 2026-09-08** (коммиты `e67bc8a`…`5f644ab`, выкачено, ОТК exit 0,
+  канарейка — реальная заявка в админ-чат; дедуп в БД, а не in-memory; семь раундов чекеров закрыли
+  гонки sweep/run и канареечный шум). Исходный план (medium, M). Единый `notifyOperator()` → `TELEGRAM_ADMIN_CHAT_ID`
   (через прокси, как `tgFetch`): failed/refund/SLA/quota/health-degraded/service-order;
   дедупликация 1 ч; health отдаёт `alerts.last_sent_at`. Оракул: `verify-preflight.mjs
   --check-alerts`. Закрывает B-AUTO-8/11/23.
