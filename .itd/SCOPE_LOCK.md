@@ -2,6 +2,24 @@
 
 ## Current Task
 
+- **R-05' (R-05b)** — вставлен 2026-09-09 по решению владельца («отчёт должен показывать деньги, а
+  не проблемы»; «добавь в план как R-05'»), tier medium, стадия **ПЛАНИРОВАНИЕ**. Форма заказа
+  получает средний чек и конверсию (необязательные поля); отчёт — денежный блок с открытой формулой
+  и подписью источника каждого множителя; без цифр клиента блок не показывается. Оракул
+  `node scripts/verify-selfserve-path.mjs --stage=delivery --check-money` пишется первым. Контракт
+  `.itd-memory/contracts/R-05b.md` (ещё не написан — диагноз по коду первый шаг). Разрешены после
+  плана: `scripts/verify-selfserve-path.mjs` (+ тест), `apps/web/app/orders/[id]/details-form.tsx`,
+  `apps/web/app/api/orders/[id]/route.ts` (приём двух полей), `packages/shared/src/delivery/*`
+  (расчёт), `apps/web/components/report/report-view.tsx` (блок), миграция при необходимости,
+  `.itd*`, BACKLOG, CURRENT_PLAN, READINESS_PLAN, OPERATIONS. Запрещены: цены пакетов, реестр
+  пакетов, checkout-флаг, касса, отраслевые средние вместо цифр клиента (граница честности).
+
+Предыдущий юнит: **R-05 — VERIFIED 2026-09-09** (ОТК exit 0 через проброс: «Expert-path infra stage
+verification passed»; коммиты `894213d`, `a278130`, `a00726b`, `029a488`, `d267a59`, `787ede4`;
+миграция 031 применена с бэкапом `storage.buckets`; `.deploy-sha=787ede4`, bot и web пересозданы на
+свежих образах; канарейки schema/live ALL_GREEN, live-оракулы ALL_GREEN с выключателем
+`SELFSERVE_PAIRS_ACTIVATED=1`, см. DECISIONS и тикет PAIR-2). Ниже — история юнита.
+
 - **R-05** (активирован 2026-09-08 после verified R-04b, tier medium): Хранилище и cron экспертов —
   миграция создаёт private bucket `voice` с политикой; бот заливает аудио в Storage; upload в
   `/api/voice` обязателен (ошибка → 500, не «принято»); health проверяет `cron.job`
