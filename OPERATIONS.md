@@ -390,6 +390,14 @@ empty` ставит новый `collect_demand`, если `demand_collected_at` 
   `storage {voice_bucket: private|public|missing}` через RPC `infra_status()` (SECURITY DEFINER,
   только service_role). Оракул: `node scripts/verify-expert-path.mjs --stage=infra` (живьём —
   `EXPERT_URL`/`SELFSERVE_URL`), мутации `scripts/tests/expert-path.test.mjs`.
+- **Активные пары и cron (важно с 2026-09-09).** До R-05 расписания не работали, и оракул
+  `--stage=pair` требовал `local_pairs.active = 0`. Теперь пара активируется автоматически при
+  оплате (R-03, `activateLocalPair`), а `weekly-demand` реально ставит `collect_demand` по каждой
+  активной паре каждый понедельник 03:00 UTC — это расход XMLRIVER и LLM. Живые прогоны идут с
+  `SELFSERVE_PAIRS_ACTIVATED=1` (штатный выключатель §5). Смотреть, что реально активно:
+  `select id, name, is_active, demand_status from niches where vertical is not null`.
+  Долг: health должен отдавать «активные пары без оплаченного заказа» — тогда выключатель заменится
+  на настоящий инвариант (тикет PAIR-1 в BACKLOG).
 - **Runbook «pg_cron не установлен»:** `select extname from pg_extension where extname='pg_cron'`
   пусто → применить 031 через `tools/migrate.py apply 031_cron_and_voice_bucket.sql`; после —
   health `cron.extension=true`, оба job `active`. Ловушка образа `supabase/postgres` на self-hosted:
