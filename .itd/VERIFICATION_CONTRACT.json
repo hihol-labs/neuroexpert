@@ -1,9 +1,9 @@
 {
   "version": 1,
   "purpose": "Executable verification contract for the active unit.",
-  "unitId": "R-05",
-  "createdAt": "2026-09-08",
-  "note": "node scripts/verify-expert-path.mjs --stage=infra — НЕ СОЗДАН, оракул пишется первым",
+  "unitId": "R-05b",
+  "createdAt": "2026-09-13",
+  "note": "node scripts/verify-selfserve-path.mjs --stage=delivery --check-money — НЕ СОЗДАН, оракул пишется первым",
   "commandSchema": {
     "requiredFields": [
       "id",
@@ -21,8 +21,8 @@
   },
   "commands": [
     {
-      "id": "r-05-unit",
-      "command": "node scripts/verify-expert-path.mjs --stage=infra",
+      "id": "r-05b-unit",
+      "command": "node scripts/verify-selfserve-path.mjs --stage=delivery --check-money",
       "timeoutSeconds": 600,
       "expectedOutput": "exit 0",
       "passFailParser": "exit_code_zero",
@@ -185,6 +185,13 @@
     {
       "id": "r04b-preflight-paid-alert",
       "command": "node scripts/verify-preflight.mjs --repo-only --check-paid-alert",
+      "timeoutSeconds": 300,
+      "expectedOutput": "exit 0",
+      "passFailParser": "exit_code_zero"
+    },
+    {
+      "id": "r05-expert-infra",
+      "command": "node scripts/verify-expert-path.mjs --stage=infra --repo-only",
       "timeoutSeconds": 300,
       "expectedOutput": "exit 0",
       "passFailParser": "exit_code_zero"
