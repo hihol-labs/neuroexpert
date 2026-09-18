@@ -141,7 +141,11 @@ Tier по методологии: high — деньги/auth/прод-данны
   бот заливает аудио в Storage; upload в `/api/voice` обязателен (ошибка → 500, не «принято»);
   health проверяет `cron.job` (weekly-demand, generate-orders) и последний запуск. Оракул:
   `verify-expert-path.mjs --stage=infra`. Закрывает E-AUTO-5/6/12.
-- **R-06 · Выбор спроса** (medium, S+M+M). `POST /api/orders/[id]/accept|skip` (владелец);
+- **R-06 · Выбор спроса — ✅ VERIFIED 2026-09-18** (коммиты `f1ff332`, `4bac79c`; роуты
+  `/api/expert-orders/[id]/accept|skip`, `/generate`, GET — отдельный неймспейс от платных
+  `/api/orders/*`; голос к выбранной теме; подбор тем раз в сутки; CSRF-origin из конфигурации;
+  порядок выкатки worker → web → bot; OPERATIONS §9f). Исходная постановка (medium, S+M+M):
+  `POST /api/orders/[id]/accept|skip` (владелец);
   `/content/new?order_id=` показывает вопрос и передаёт `order_id`; кнопка «Подобрать темы
   сейчас» ставит `generate_orders` для эксперта (лимит 1/сутки). Бот использует те же роуты.
   Оракул: `--stage=demand`. Закрывает E-AUTO-1/7/13.
