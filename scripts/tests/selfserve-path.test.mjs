@@ -318,6 +318,85 @@ try {
     expect(`details мутация: ${label}`, r.code, 1, r.out);
   });
 
+  // ===== --check-money (R-05b) поверх зелёного delivery-дерева =====
+  const MONEY_TS = "packages/shared/src/delivery/money.ts";
+  const ORDER_ROUTE = "apps/web/app/api/orders/[id]/route.ts";
+  const ORDER_PAGE = "apps/web/app/orders/[id]/page.tsx";
+  const FORM = "apps/web/app/orders/[id]/details-form.tsx";
+  const VIEW = "apps/web/components/report/report-view.tsx";
+  const EXAMPLE = "apps/web/app/(marketing)/audit/example/page.tsx";
+  const FILES_MONEY = {
+    ...FILES_DELIVERY,
+    [MONEY_TS]: "export type MoneySource = \"wordstat\" | \"measured\" | \"client\";\nexport function computeMoneyBlock(report, details) {\n  if (!Number.isFinite(check)) return null;\n  if (gap.monthly_volume === null) skipped++;\n}\n",
+    "packages/shared/src/index.ts": "export * from \"./delivery/index.js\";\nexport * from \"./delivery/money.js\";\n",
+    "packages/shared/tests/money.test.cjs": "const {computeMoneyBlock} = require('../dist/delivery/money.js');\n",
+    [ORDER_ROUTE]: FILES_DELIVERY[ORDER_ROUTE] + "const MONEY = [\"avg_check\", \"conversion\"]; const TEXT = { brand: 100 };\nconst err = validateMoneyField(key, value);\nconst merged = { ...current, ...details };\nawait admin.from(\"package_orders\").update({ details: merged }).eq(\"id\", orderId);\n",
+    [FORM]: "<input name=\"avg_check\" /><input name=\"conversion\" /><input name=\"brand\" /><small>ваша оценка</small>\n",
+    [ORDER_PAGE]: FILES_DELIVERY[ORDER_PAGE] + "{[\"paid\", \"delivered\"].includes(order.status) && <DetailsForm orderId={order.id} initial={details} />}\n<ReportView report={report} mode={mode} details={details} />\n",
+    [VIEW]: "const money = computeMoneyBlock(report, details);\n{money && (<section data-report-section=\"money\"><li data-money-source={m.source}>x</li>{assumptionsLabel && <p>Для примера: {assumptionsLabel}</p>}<p>Частотность Wordstat - спрос в Яндексе, а не обращения. Это не прогноз и не гарантия.</p></section>)}\n",
+    [EXAMPLE]: "const EXAMPLE_ASSUMPTIONS = { avg_check: \"1\", conversion: \"1\", brand: \"x\" };\n<ReportView report={report} mode={meta.mode} details={EXAMPLE_ASSUMPTIONS} assumptionsLabel=\"x\" />\n",
+  };
+  const MONEY_FX = {
+    "health.json": '{"status":"ok","audit_delivery":{"paid_waiting":0,"delivered":3,"failed":1,"refunded":1,"sla_breached":0}}',
+    "audit-paid.json": '{"status":401}', "orders-get.json": '{"status":401}',
+    "example.html": '<section data-report-section="money"><li data-money-source="wordstat">x</li><p>Для примера: чек 15 000 ₽</p></section>',
+  };
+  const moneyGreen = join(work, "money-green"); writeTree(moneyGreen, FILES_MONEY);
+  const moneyFx = join(work, "money-fx"); writeFx(moneyFx, MONEY_FX);
+  { const r = run(["--stage=delivery", "--check-money", "--repo-root", moneyGreen, "--repo-only"]); expect("money: позитив --repo-only", r.code, 0, r.out); }
+  { const r = run(["--stage=delivery", "--check-money", "--repo-root", moneyGreen, "--fixture-dir", moneyFx]); expect("money: позитив с живым слоем (фикстуры)", r.code, 0, r.out); }
+  {
+    const bare = join(work, "money-bare"); writeTree(bare, FILES_DELIVERY);
+    const r = run(["--stage=delivery", "--check-money", "--repo-root", bare, "--repo-only"]);
+    expect("money: репо до R-05b -> exit 1", r.code, 1, r.out);
+    const m = /(\d+) finding\(s\)/.exec(r.out); expect("money: репо до R-05b даёт ровно 5 групповых находок", m ? Number(m[1]) : -1, 5, r.out);
+    const plain = run(["--stage=delivery", "--repo-root", bare, "--repo-only"]); expect("money: без флага то же дерево зелёное (флаг не ломает delivery)", plain.code, 0, plain.out);
+  }
+  const MF = FILES_MONEY;
+  const moneyMutations = [
+    ["расчёт не возвращает null без данных", { [MONEY_TS]: MF[MONEY_TS].replace("return null", "return { lost_rub: 0 }") }],
+    ["отраслевая конверсия по умолчанию", { [MONEY_TS]: MF[MONEY_TS] + "const DEFAULT_CONVERSION = 0.02;\n" }],
+    ["отраслевой средний чек в комментарии-константе", { [MONEY_TS]: MF[MONEY_TS] + "// средний чек по отрасли\nconst avg = 15000;\n" }],
+    ["источник конверсии не помечен как клиентский", { [MONEY_TS]: MF[MONEY_TS].replace(" | \"client\"", "") }],
+    ["вопросы без частотности не исключаются", { [MONEY_TS]: MF[MONEY_TS].replace("monthly_volume === null", "monthly_volume == 0") }],
+    ["нечисловые входы не отбрасываются", { [MONEY_TS]: MF[MONEY_TS].replace("Number.isFinite(", "Boolean(") }],
+    ["расчёт не экспортирован из shared", { "packages/shared/src/index.ts": "export * from \"./delivery/index.js\";\n" }],
+    ["нет unit-тестов расчёта", { "packages/shared/tests/money.test.cjs": "// todo\n" }],
+    ["PATCH без серверной валидации чисел", { [ORDER_ROUTE]: MF[ORDER_ROUTE].replace("validateMoneyField(", "String(") }],
+    ["PATCH затирает прежние details", { [ORDER_ROUTE]: MF[ORDER_ROUTE].replace("update({ details: merged })", "update({ details })") }],
+    ["PATCH не принимает название", { [ORDER_ROUTE]: MF[ORDER_ROUTE].replace("brand", "label") }],
+    ["в форме нет поля чека", { [FORM]: MF[FORM].replace("name=\"avg_check\"", "name=\"x\"") }],
+    ["поля не названы оценкой клиента", { [FORM]: MF[FORM].replace("ваша оценка", "точные данные") }],
+    ["форма скрыта после доставки", { [ORDER_PAGE]: MF[ORDER_PAGE].replace("[\"paid\", \"delivered\"].includes(order.status) && <DetailsForm", "order.status === \"paid\" && <DetailsForm") }],
+    ["details не переданы в отчёт", { [ORDER_PAGE]: MF[ORDER_PAGE].replace(" details={details} />", " />") }],
+    ["блок рендерится без проверки на null", { [VIEW]: MF[VIEW].replace("{money && (", "{(").replace(")}\n", ")}\n") }],
+    ["множители без подписи источника", { [VIEW]: MF[VIEW].replace("data-money-source={m.source}", "") }],
+    ["нет дисклеймера «не прогноз»", { [VIEW]: MF[VIEW].replace("не прогноз и не гарантия", "точный расчёт") }],
+    ["частотность выдана за обращения", { [VIEW]: MF[VIEW].replace("спрос в Яндексе, а не обращения", "обращения клиентов") }],
+    ["пример без подписи «Для примера:»", { [VIEW]: MF[VIEW].replace("Для примера:", "Расчёт:") }],
+    ["пример без констант допущений", { [EXAMPLE]: "<ReportView report={report} mode={meta.mode} />\n" }],
+  ];
+  moneyMutations.forEach(([label, ov], i) => {
+    const d = join(work, `money-m${i}`); writeTree(d, { ...FILES_MONEY, ...ov });
+    const r = run(["--stage=delivery", "--check-money", "--repo-root", d, "--repo-only"]);
+    expect(`money мутация: ${label}`, r.code, 1, r.out);
+  });
+  const moneyLiveMutations = [
+    ["пример без денежного блока", { "example.html": "<section data-report-section=\"plan\"></section>" }],
+    ["пример без подписи допущений", { "example.html": MONEY_FX["example.html"].replace("Для примера:", "Расчёт:") }],
+    ["пример без источников множителей", { "example.html": MONEY_FX["example.html"].replace("data-money-source=\"wordstat\"", "") }],
+  ];
+  moneyLiveMutations.forEach(([label, ov], i) => {
+    const d = join(work, `money-fx-m${i}`); writeFx(d, { ...MONEY_FX, ...ov });
+    const r = run(["--stage=delivery", "--check-money", "--repo-root", moneyGreen, "--fixture-dir", d]);
+    expect(`money мутация live: ${label}`, r.code, 1, r.out);
+  });
+  {
+    const d = join(work, "money-fx-missing"); const { ["example.html"]: _drop, ...rest } = MONEY_FX; writeFx(d, rest);
+    const r = run(["--stage=delivery", "--check-money", "--repo-root", moneyGreen, "--fixture-dir", d]);
+    expect("money live: фикстура примера отсутствует -> exit 1", r.code, 1, r.out);
+  }
+
   { const r = run(["--stage=delivery"]); expect("usage: --stage=delivery без URL -> exit 2", r.code, 2, r.out); }
   { const r = run(["--stage=order", "--repo-root", green, "--repo-only"]); expect("--repo-only на зелёном репо", r.code, 0, r.out); }
 } finally {

@@ -1,4 +1,5 @@
-import type { ReportSnapshot } from "shared";
+import { computeMoneyBlock } from "shared";
+import type { MoneyBlock, MoneyDetails, ReportSnapshot } from "shared";
 
 /**
  * Единый рендер отчёта Audit Start (G-013): владелец заказа на /orders/[id] и
@@ -42,7 +43,45 @@ function V2Placeholder({ title, body }: { title: string; body: string }) {
   );
 }
 
-export function ReportView({ report, mode }: { report: ReportSnapshot; mode: "full" | "degraded" | string | null }) {
+const SOURCE_TAGS: Record<string, string> = { wordstat: "измерено", measured: "измерено", client: "ваша цифра" };
+
+/**
+ * R-05b: потери в клиентах и рублях. Блок есть только когда клиент сам дал чек и конверсию и
+ * есть сайт или название, по которым мы проверили ответы платформ; иначе computeMoneyBlock -> null.
+ */
+function MoneySection({ money, assumptionsLabel }: { money: MoneyBlock; assumptionsLabel?: string }) {
+  const rub = money.lost_rub.toLocaleString("ru-RU");
+  const clients = money.lost_clients.toLocaleString("ru-RU");
+  return (
+    <section data-report-section="money" style={{ marginTop: 24, padding: 24, border: "2px solid currentColor", borderRadius: 16 }}>
+      <h2 style={{ marginTop: 0 }}>Сколько это в деньгах</h2>
+      {assumptionsLabel && <p data-money-example=""><strong>Для примера:</strong> {assumptionsLabel}. В вашем отчёте здесь будут ваши цифры.</p>}
+      {money.questions_unnamed === 0 ? (
+        <p style={{ fontSize: 22 }}>Нейросети называют вас во всех {money.questions_measured} измеренных вопросах — потерь по этой формуле нет: <strong>0 ₽</strong>.</p>
+      ) : (
+        <p style={{ fontSize: 22 }}>
+          Вас не называют в {money.questions_unnamed} из {money.questions_measured} вопросов. Оценка потерь:{" "}
+          <strong>около {clients} клиентов в месяц — это {rub} ₽</strong> по вашему чеку.
+        </p>
+      )}
+      <p>Как посчитано: {money.volume_unnamed.toLocaleString("ru-RU")} запросов/мес. × {money.conversion_pct.toLocaleString("ru-RU")}% × {money.avg_check_rub.toLocaleString("ru-RU")} ₽ = {rub} ₽ в месяц.</p>
+      <ul>
+        {money.multipliers.map((m) => (
+          <li key={m.key} data-money-source={m.source}>
+            {m.label}: <strong>{m.display}</strong> — <em>{SOURCE_TAGS[m.source] ?? m.source}</em>: {m.source_label}
+          </li>
+        ))}
+      </ul>
+      {(money.questions_without_volume > 0 || money.questions_unanswered > 0) && (
+        <p><small>В расчёт не вошли: без частотности Wordstat — {money.questions_without_volume}, без ответа платформ — {money.questions_unanswered}.</small></p>
+      )}
+      <p><small>Частотность Wordstat — это спрос в Яндексе, а не обращения к вам: доля спрашивающих, которые станут клиентами, и средний чек — ваши допущения. Замер фиксирует ответы платформ на дату отчёта. Это оценка, а не прогноз и не гарантия выручки.</small></p>
+    </section>
+  );
+}
+
+export function ReportView({ report, mode, details, assumptionsLabel }: { report: ReportSnapshot; mode: "full" | "degraded" | string | null; details?: MoneyDetails | null; assumptionsLabel?: string }) {
+  const money = computeMoneyBlock(report, details);
   const byIntent = new Map<string, typeof report.gaps>();
   for (const gap of report.gaps) {
     const list = byIntent.get(gap.search_intent) ?? [];
@@ -60,6 +99,9 @@ export function ReportView({ report, mode }: { report: ReportSnapshot; mode: "fu
         Замер: {new Date(report.ran_at).toLocaleString("ru-RU")} · платформы: {report.platforms_tried.join(", ")} ·{" "}
         {mode === "degraded" ? "часть источников недоступна" : "все подключённые платформы ответили"}
       </p>
+      {money && (
+        <MoneySection money={money} assumptionsLabel={assumptionsLabel} />
+      )}
       <p>Вопросы расположены по частотности Wordstat. Более высокий gap-score означает больше отсутствующих структурных маркеров; это не оценка точности ответа.</p>
 
       <section data-report-section="intents" style={{ marginTop: 32 }}>

@@ -72,7 +72,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const KNOWN = new Set(["--stage", "--base-url", "--fixture-dir", "--checkout", "--repo-root", "--repo-only", "--check-details"]);
+const KNOWN = new Set(["--stage", "--base-url", "--fixture-dir", "--checkout", "--repo-root", "--repo-only", "--check-details", "--check-money"]);
 const STAGES = ["order", "pair", "delivery", "reconcile"];
 const argv = process.argv.slice(2);
 const opts = { stage: null, baseUrl: null, fixtureDir: null, checkout: "dark", repoRoot: null, repoOnly: false };
@@ -87,6 +87,7 @@ for (let i = 0; i < argv.length; i += 1) {
   else if (flag === "--checkout") opts.checkout = value();
   else if (flag === "--repo-root") opts.repoRoot = value();
   else if (flag === "--repo-only") opts.repoOnly = true;
+  else if (flag === "--check-money") opts.checkMoney = true; // R-05b: деньги в отчёте - формула открыта, источники подписаны, без цифр клиента блока нет
   else if (flag === "--check-details") opts.checkDetails = true; // R-03: details в движок, активация пары, один транспорт, уборка job-типов
 }
 if (!STAGES.includes(opts.stage)) { console.error(`usage: --stage=${STAGES.join("|")} (delivery — юнит G-019, reconcile — юнит R-01)`); process.exit(2); }
@@ -354,6 +355,48 @@ function repoDetails() {
 }
 if (opts.stage === "order") repoOrder(); else if (opts.stage === "pair") repoPair(); else if (opts.stage === "reconcile") repoReconcile(); else repoDelivery();
 if (opts.checkDetails) repoDetails();
+// ============================================================ РЕПО: --check-money (R-05b)
+/**
+ * R-05b «Деньги в отчёте» (контракт .itd-memory/contracts/R-05b.md): чистая функция в shared считает
+ * блок из неизменяемого снимка + details; множители подписаны источником; конверсия и чек только от
+ * клиента (никаких отраслевых констант); без цифр клиента блока нет; форма доступна и после доставки;
+ * PATCH валидирует числа и не затирает прежние details; пример подписан «Для примера:».
+ */
+function repoMoney() {
+  const MONEY = "packages/shared/src/delivery/money.ts";
+  const fix = "реализовать контракт R-05b (.itd-memory/contracts/R-05b.md)";
+  const groups = {
+    "money-engine": [
+      [MONEY, [["export function computeMoneyBlock(", "чистая функция расчёта"], ["return null", "блок не считается без данных"],
+        ["\"wordstat\"", "источник частотности - Wordstat"], ["\"measured\"", "источник доли - наш замер"], ["\"client\"", "источник конверсии и чека - клиент"],
+        ["monthly_volume === null", "вопросы без частотности исключены из суммы"], ["Number.isFinite(", "нечисловые входы отбрасываются"]]],
+      ["packages/shared/src/index.ts", [["./delivery/money.js", "экспорт из shared"]]],
+      ["packages/shared/tests/money.test.cjs", [["computeMoneyBlock", "unit-тесты расчёта"]]],
+    ],
+    "money-input": [
+      ["apps/web/app/api/orders/[id]/route.ts", [["avg_check", "поле среднего чека"], ["conversion", "поле конверсии"], ["brand", "поле названия"],
+        ["validateMoneyField(", "серверная валидация чисел"], ["update({ details: merged })", "PATCH дополняет details, а не затирает"]]],
+    ],
+    "money-form": [
+      ["apps/web/app/orders/[id]/details-form.tsx", [["name=\"avg_check\"", "ввод чека"], ["name=\"conversion\"", "ввод конверсии"], ["name=\"brand\"", "ввод названия"], ["ваша оценка", "поля названы допущением клиента"]]],
+      ["apps/web/app/orders/[id]/page.tsx", [["[\"paid\", \"delivered\"].includes(order.status) && <DetailsForm", "форма доступна и после доставки"], ["details={details}", "details переданы в отчёт"]]],
+    ],
+    "money-render": [
+      ["apps/web/components/report/report-view.tsx", [["data-report-section=\"money\"", "секция денег"], ["computeMoneyBlock(", "расчёт через shared"], ["{money && (", "без данных блок не рендерится"],
+        ["data-money-source=", "у каждого множителя подпись источника"], ["не прогноз и не гарантия", "дисклеймер"], ["спрос в Яндексе, а не обращения", "честная подпись частотности"]]],
+    ],
+    "money-example": [
+      ["apps/web/app/(marketing)/audit/example/page.tsx", [["EXAMPLE_ASSUMPTIONS", "демо-допущения - константы примера"], ["assumptionsLabel=", "подпись допущений передана в отчёт"]]],
+      ["apps/web/components/report/report-view.tsx", [["Для примера:", "пример подписан «Для примера:»"]]],
+    ],
+  };
+  for (const [name, files] of Object.entries(groups)) requireGroup(name, files, fix);
+  // Граница честности: в расчёте нет отраслевых констант и значений по умолчанию для конверсии/чека.
+  const money = readRepo(MONEY) ?? "";
+  const banned = ["DEFAULT_CONVERSION", "DEFAULT_CHECK", "INDUSTRY", "industry", "отрасл"].filter((b) => money.includes(b));
+  if (banned.length > 0) finding("[money-honesty]", `${MONEY}: отраслевые константы/значения по умолчанию (${banned.join(", ")})`, "конверсия и чек - только цифры клиента; нет цифр - computeMoneyBlock возвращает null");
+}
+if (opts.checkMoney) repoMoney();
 
 // ============================================================ ЖИВОЙ
 const transport = [];
@@ -470,6 +513,15 @@ async function liveDelivery() {
   if (paid !== 401) finding("/api/audit", `paid без токена: HTTP ${paid}`, "отказать 401 до запуска движка");
   const owner = await getStatus("/api/orders/00000000-0000-4000-8000-000000000001", { method: "GET", redirect: "manual" }, "orders-get.json");
   if (owner !== 401) finding("/api/orders/[id]", `без сессии: HTTP ${owner}`, "owner-only API требует 401");
+  if (opts.checkMoney) {
+    // R-05b живой слой: публичный пример показывает денежный блок с подписанными демо-допущениями.
+    const html = await getHtml("/audit/example", "example.html");
+    if (html !== null) {
+      if (!html.includes('data-report-section="money"')) finding("/audit/example", "нет денежного блока", "пример обязан показывать блок «Сколько это в деньгах»");
+      if (!html.includes("Для примера:")) finding("/audit/example", "демо-допущения не подписаны «Для примера:»", "подписать чек, конверсию и название как допущения примера");
+      if (!html.includes("data-money-source=")) finding("/audit/example", "множители без подписи источника", "у каждого множителя data-money-source и текст источника");
+    }
+  }
 }
 /**
  * R-01 живой слой: health отдаёт счётчики expired и pending_stale (pending старше окна);

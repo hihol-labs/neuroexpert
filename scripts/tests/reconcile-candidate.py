@@ -27,6 +27,7 @@ commands = [
     ['node', 'scripts/verify-expert-path.mjs', '--stage=infra', '--repo-only'],
     ['pnpm', '--filter', 'bot', 'build'],
     ['node', 'scripts/verify-selfserve-path.mjs', '--stage=delivery', '--check-details', '--repo-only'],
+    ['node', 'scripts/verify-selfserve-path.mjs', '--stage=delivery', '--check-money', '--repo-only'],
     ['pnpm', '--filter', 'web', 'exec', 'tsc', '--noEmit'],
 ]
 for stage in ['order', 'pair', 'delivery', 'reconcile']:

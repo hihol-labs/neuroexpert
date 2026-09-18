@@ -78,11 +78,12 @@ export default async function OrderStatusPage({ params }: { params: { id: string
             <p className="dm-pay-note"><Link href="/pricing">Посмотреть пакеты</Link></p>
           )}
         </section>
-        {order.status === "paid" && <DetailsForm orderId={order.id} initial={details} />}
+        {/* R-05b: форма остаётся и после доставки - чек и конверсия включают денежный блок в готовом отчёте. */}
+        {["paid", "delivered"].includes(order.status) && <DetailsForm orderId={order.id} initial={details} delivered={order.status === "delivered"} />}
         {/* G-013: тот же рендер, что публичный пример /audit/example — расхождений «показали/выдали» нет. */}
         {report && (
           <section data-order-report="audit_start">
-            <ReportView report={report} mode={typeof order.report_mode === "string" ? order.report_mode : null} />
+            <ReportView report={report} mode={typeof order.report_mode === "string" ? order.report_mode : null} details={details} />
           </section>
         )}
       </main>

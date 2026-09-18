@@ -23,6 +23,14 @@ export const metadata: Metadata = {
   openGraph: { title: "Пример отчёта Audit Start", description: "Реальный замер по паре «стоматология × Тюмень»: ответы AI-платформ дословно и план доработки.", type: "article" },
 };
 
+/**
+ * R-05b: денежный блок примера считается той же функцией, что у клиента, но на демонстрационных
+ * допущениях. Это константы примера (вымышленная клиника, условные чек и конверсия), не данные
+ * рынка; в отчёте они подписаны «Для примера:». Замер (вопросы, частотность, ответы) - реальный.
+ */
+const EXAMPLE_ASSUMPTIONS = { brand: "Клиника-пример", avg_check: "12000", conversion: "0.1" };
+const EXAMPLE_ASSUMPTIONS_LABEL = "вымышленная «Клиника-пример», средний чек 12 000 ₽, клиентами становятся 0,1% спрашивающих (1 из 1000)";
+
 // Флаг checkout читается на каждый запрос (как /pricing): CTA заказа не запекается в сборку.
 export const dynamic = "force-dynamic";
 
@@ -48,7 +56,7 @@ export default function ExampleReportPage() {
           </p>
         </section>
 
-        <ReportView report={report} mode={meta.mode} />
+        <ReportView report={report} mode={meta.mode} details={EXAMPLE_ASSUMPTIONS} assumptionsLabel={EXAMPLE_ASSUMPTIONS_LABEL} />
 
         <section data-cases="" style={{ maxWidth: 960, margin: "0 auto", padding: "0 20px 48px" }}>
           <h2>Кейсы: замер ДО и ПОСЛЕ</h2>
