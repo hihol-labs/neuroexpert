@@ -2,13 +2,20 @@
 
 ## Current Task
 
-- **R-06** — активирован 2026-09-18 после verified R-05b, tier medium, стадия **ПЛАНИРОВАНИЕ**.
-  Выбор спроса экспертом: `POST /api/orders/[id]/accept|skip` только владельцу, голос к конкретному
-  вопросу, «Подобрать темы сейчас» (E-AUTO-1/7/13, READINESS_PLAN R-06). Оракул
-  `node scripts/verify-expert-path.mjs --stage=demand` пишется первым; контракт
-  `.itd-memory/contracts/R-06.md` — первый шаг (диагноз по коду). Разрешены после плана: файлы,
-  названные контрактом, `scripts/verify-expert-path.mjs` (+ тест), `.itd*`, BACKLOG, CURRENT_PLAN,
-  READINESS_PLAN, OPERATIONS. Запрещены: цены пакетов, касса, checkout-флаг, платный контур Audit Start.
+- **R-07** — активирован 2026-09-18 после verified R-06, tier **high**, стадия **ПЛАНИРОВАНИЕ**.
+  Approval → публикация: `/api/publish` публикует профиль эксперта (is_published, slug) и
+  ревалидирует страницы; «Опубликовать» из Telegram реально публикует и проверяет владельца;
+  FAQ-гейт 422 с понятным предупреждением (E-AUTO-3/17/18, READINESS_PLAN R-07). Оракул
+  `node scripts/verify-expert-path.mjs --stage=publish` пишется первым; контракт
+  `.itd-memory/contracts/R-07.md` — первый шаг (диагноз по коду), затем утверждение владельца.
+  Разрешены после плана: файлы, названные контрактом, `scripts/verify-expert-path.mjs` (+ тест),
+  `.itd*`, BACKLOG, CURRENT_PLAN, READINESS_PLAN, OPERATIONS. Запрещены: цены пакетов, касса,
+  checkout-флаг, платный контур Audit Start.
+
+Предыдущий юнит: **R-06 — VERIFIED 2026-09-18** (ОТК exit 0 через проброс: «Expert-path demand stage
+verification passed»; коммиты `f1ff332`, `4bac79c`, docs `cca7e40`, `a79c2fc`; worker, web, bot
+пересозданы на свежих образах в порядке worker → web → bot; live-оракулы ALL_GREEN; см. DECISIONS
+2026-09-18 и OPERATIONS 9f).
 
 Предыдущий юнит: **R-05b (= R-05') — VERIFIED 2026-09-18** (ОТК exit 0 через проброс: «Self-serve
 delivery stage verification passed»; коммиты `6357d42`, `b2aa775`, `5118126`, docs `2f4c351`; web
