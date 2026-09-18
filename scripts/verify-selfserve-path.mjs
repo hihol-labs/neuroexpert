@@ -379,7 +379,8 @@ function repoMoney() {
         [".eq(\"updated_at\", current.updated_at)", "запись с проверкой версии (параллельный PATCH не теряет поля)"]]],
     ],
     "money-form": [
-      ["apps/web/app/orders/[id]/details-form.tsx", [["name=\"avg_check\"", "ввод чека"], ["name=\"conversion\"", "ввод конверсии"], ["name=\"brand\"", "ввод названия"], ["ваша оценка", "поля названы допущением клиента"]]],
+      ["apps/web/app/orders/[id]/details-form.tsx", [["name=\"avg_check\"", "ввод чека"], ["name=\"conversion\"", "ввод конверсии"], ["name=\"brand\"", "ввод названия"], ["ваша оценка", "поля названы допущением клиента"],
+        ["value !== (baseline[name] ?? \"\")", "форма шлёт только изменённые поля (устаревшая вкладка не стирает сохранённое)"]]],
       ["apps/web/app/orders/[id]/page.tsx", [["[\"paid\", \"delivered\"].includes(order.status) && <DetailsForm", "форма доступна и после доставки"], ["details={details}", "details переданы в отчёт"]]],
     ],
     "money-render": [

@@ -13,13 +13,24 @@ export function DetailsForm({ orderId, initial, delivered = false }: { orderId: 
   const router = useRouter();
   const [saved, setSaved] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  // Последнее состояние, подтверждённое сервером: от него считается, какие поля изменены.
+  const [baseline, setBaseline] = useState<Record<string, string>>(initial);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPending(true);
     setSaved(null);
     const form = new FormData(event.currentTarget);
-    const body = Object.fromEntries(FIELDS.map((name) => [name, String(form.get(name) || "")]));
+    // Только изменённые поля: устаревшая вторая вкладка не стирает то, что сохранила первая
+    // (нетронутое поле в PATCH не попадает, сервер оставляет сохранённое значение).
+    const body = Object.fromEntries(
+      FIELDS.map((name) => [name, String(form.get(name) || "").trim()] as const).filter(([name, value]) => value !== (baseline[name] ?? "")),
+    );
+    if (Object.keys(body).length === 0) {
+      setSaved("Изменений нет.");
+      setPending(false);
+      return;
+    }
     try {
       const res = await fetch(`/api/orders/${orderId}`, {
         method: "PATCH",
@@ -27,6 +38,8 @@ export function DetailsForm({ orderId, initial, delivered = false }: { orderId: 
         body: JSON.stringify(body),
       });
       if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data?.details && typeof data.details === "object") setBaseline(data.details as Record<string, string>);
         setSaved(delivered ? "Сохранено — расчёт в отчёте обновлён." : "Сохранено — учтём в отчёте.");
         router.refresh();
       } else {
