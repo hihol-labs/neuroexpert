@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { resolveVoiceOrder } from "@/lib/expert-orders";
 
 function getAdmin() {
   return createSupabaseClient(
@@ -38,6 +39,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No audio file" }, { status: 400 });
     }
 
+    // R-06 (E-AUTO-7): запись привязывается к теме, которую выбрал эксперт, а не к «первому принятому
+    // заказу». Проверка - ДО загрузки файла: отклонённая запись не оставляет объект в Storage.
+    const orderIdRaw = formData.get("order_id");
+    const resolved = await resolveVoiceOrder(admin, profile.id, typeof orderIdRaw === "string" && orderIdRaw ? orderIdRaw : null);
+    if (!resolved.ok) {
+      const error = resolved.code === "order_required"
+        ? "У вас есть выбранные темы — откройте «Возможности спроса» и нажмите «Записать ответ» у нужной темы."
+        : "Тема не найдена или уже в работе. Выберите тему заново.";
+      return NextResponse.json({ error, code: resolved.code }, { status: resolved.status });
+    }
+
     const buffer = Buffer.from(await audioFile.arrayBuffer());
     // Суффикс от коллизий в одну миллисекунду при upsert:false (двойной submit / ретрай).
     const filePath = `voice/${profile.id}/${Date.now()}-${randomUUID().slice(0, 8)}.webm`;
@@ -57,16 +69,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to store audio" }, { status: 500 });
     }
 
-    // Находим принятый заказ
-    const { data: acceptedOrder } = await admin
-      .from("orders")
-      .select("id")
-      .eq("expert_id", profile.id)
-      .eq("status", "accepted")
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .single();
-
     // Длительность записи (передаётся с фронтенда)
     const durationRaw = formData.get("duration");
     const durationSeconds = durationRaw ? parseInt(String(durationRaw), 10) || 0 : 0;
@@ -76,7 +78,7 @@ export async function POST(request: NextRequest) {
       .from("voice_recordings")
       .insert({
         expert_id: profile.id,
-        order_id: acceptedOrder?.id ?? null,
+        order_id: resolved.orderId,
         file_path: filePath,
         file_size: buffer.length,
         duration_seconds: durationSeconds,

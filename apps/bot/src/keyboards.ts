@@ -57,6 +57,16 @@ export function orderKeyboard(orderId: string): InlineKeyboard {
     .text("Пропустить", `skip_order:${orderId}`);
 }
 
+/** R-06: выбор темы для записи, когда принятых тем несколько (подпись кнопки - начало вопроса). */
+export function recordOrderKeyboard(orders: Array<{ id: string; question: string }>): InlineKeyboard {
+  const kb = new InlineKeyboard();
+  for (const o of orders.slice(0, 8)) {
+    const label = o.question.length > 48 ? `${o.question.slice(0, 47)}…` : o.question || "Тема без текста";
+    kb.text(label, `record_order:${o.id}`).row();
+  }
+  return kb;
+}
+
 export function contentReviewKeyboard(contentId: string): InlineKeyboard {
   return new InlineKeyboard()
     .text("Опубликовать", `approve:${contentId}`)

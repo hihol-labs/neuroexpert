@@ -217,6 +217,124 @@ try {
     const r2 = run(["--stage=infra", "--repo-root", bare, "--base-url", "http://127.0.0.1:1"], env);
     expect("находки репо доминируют над транспортом -> exit 1", r2.code, 1, r2.out);
   }
+
+  // ===== R-06: стадия demand =====
+  {
+    const D = {
+      shared: "packages/shared/src/orders/expert-selection.ts",
+      index: "packages/shared/src/index.ts",
+      sharedTest: "packages/shared/tests/expert-selection.test.cjs",
+      lib: "apps/web/lib/expert-orders.ts",
+      accept: "apps/web/app/api/expert-orders/[id]/accept/route.ts",
+      skip: "apps/web/app/api/expert-orders/[id]/skip/route.ts",
+      get: "apps/web/app/api/expert-orders/[id]/route.ts",
+      gen: "apps/web/app/api/expert-orders/generate/route.ts",
+      dash: "apps/web/app/(dashboard)/orders/page.tsx",
+      contentNew: "apps/web/app/(dashboard)/content/new/page.tsx",
+      voice: "apps/web/app/api/voice/route.ts",
+      botVoice: "apps/bot/src/handlers/voice.ts",
+      botRecord: "apps/bot/src/commands/record.ts",
+      botKeys: "apps/bot/src/keyboards.ts",
+      botCb: "apps/bot/src/handlers/callback.ts",
+      handler: "apps/worker/src/jobs/generate-orders.ts",
+    };
+    const GREEN_DEMAND = {
+      [D.shared]: "export const GENERATE_COOLDOWN_MS = 86400000;\nexport function decideOrderSelection(order, userId, action) { return { ok: true, status: action === \"accept\" ? \"accepted\" : \"rejected\" }; }\nexport function decideGenerateNow(last, now) {}\nexport function planExpertOrders(input) {}\nexport function isFirstGenerateRequest(mine, others) {}\nexport function isSameOriginRequest(origin, site, allowed) {}\n",
+      [D.index]: "export * from \"./orders/expert-selection.js\";\n",
+      [D.sharedTest]: "const {decideOrderSelection, decideGenerateNow, planExpertOrders} = require('../dist/orders/expert-selection.js');\n",
+      [D.lib]: "if (!user) return NextResponse.json({ error: \"Unauthorized\" }, { status: 401 });\nif (!isSameOriginPost(request)) return NextResponse.json({ error: \"Forbidden\" }, { status: 403 });\nexport function isSameOriginPost(request) { return isSameOriginRequest(o, s, allowed); }\nawait admin.from(\"orders\").update({ status }).eq(\"id\", id).eq(\"expert_id\", user.id).eq(\"status\", \"pending\");\nconst d = decideOrderSelection(order, user.id, action);\nreturn NextResponse.redirect(url, 303);\nexport async function resolveVoiceOrder(admin, expertId, orderId) { return admin.from(\"orders\").select(\"id\")\n      .eq(\"expert_id\", expertId)\n      .eq(\"status\", \"accepted\")\n      .maybeSingle(); }\n",
+      [D.accept]: "export async function POST(request, { params }) { return handleExpertOrderSelection(request, params.id, \"accept\"); }\n",
+      [D.skip]: "export async function POST(request, { params }) { return handleExpertOrderSelection(request, params.id, \"skip\"); }\n",
+      [D.get]: "if (!user) return NextResponse.json({ error: \"Unauthorized\" }, { status: 401 });\nadmin.from(\"orders\").select(\"id, status, questions(question_text)\").eq(\"expert_id\", user.id);\n",
+      [D.gen]: "if (!user) return NextResponse.json({ error: \"Unauthorized\" }, { status: 401 });\nif (!isSameOriginPost(request)) return NextResponse.json({ error: \"Forbidden\" }, { status: 403 });\nif (!isFirstGenerateRequest(mine, others)) return redirect(\"generate_cooldown\");\nconst d = decideGenerateNow(last, Date.now());\nif (!d.ok) return redirect(\"generate_cooldown\");\nawait admin.from(\"jobs\").insert({ type: \"generate_orders\", payload: { niche_id, expert_id: user.id } });\n",
+      [D.dash]: "const STATUS_LABELS = { expired: \"Истекли\" };\n<form action=\"/api/expert-orders/generate\" method=\"POST\"><button>Подобрать темы сейчас</button></form>\n<form action={`/api/expert-orders/${o.id as string}/skip`} method=\"POST\" />\n<form action={`/api/expert-orders/${o.id as string}/accept`} method=\"POST\" />\n<Link href={`/content/new?order_id=${o.id as string}`}>Записать ответ</Link>\n",
+      [D.contentNew]: "const params = useSearchParams();\nformData.append(\"order_id\", orderId);\n<p>{order.question_text}</p>\n",
+      [D.voice]: "const orderId = formData.get(\"order_id\");\nconst resolved = await resolveVoiceOrder(admin, profile.id, orderId);\nif (resolved.code === \"order_required\") return NextResponse.json({ error: \"x\" }, { status: 400 });\n",
+      [D.botVoice]: "const { data } = await supabase.from(\"orders\").select(\"id\").eq(\"status\", \"accepted\").order(\"updated_at\", { ascending: false }).limit(1);\nawait ctx.reply(`Вопрос: ${q}`);\n",
+      [D.botRecord]: "await ctx.reply(\"Выберите тему\", { reply_markup: recordOrderKeyboard(accepted) });\n",
+      [D.botKeys]: "export function recordOrderKeyboard(orders) { return new InlineKeyboard().text(\"x\", `record_order:${orders[0].id}`); }\n",
+      [D.botCb]: "bot.callbackQuery(/^record_order:(.+)$/, async (ctx) => { await supabase.from(\"orders\").update({ updated_at: new Date().toISOString() }); });\n",
+      [D.handler]: "const onlyExpertId = expertIdFrom(payload.expert_id);\nconst plan = planExpertOrders({ questions, experts, existing, onlyExpertId });\n",
+    };
+    const GREEN_DEMAND_FX = ["accept", "skip", "generate", "order-get", "paid-order"].map((probe) => ({ probe, status: 401 }))
+      .concat([{ probe: "legacy-accept", status: 405 }, { probe: "legacy-skip", status: 405 }]);
+    const writeDemandFx = (dir, rows) => { mkdirSync(dir, { recursive: true }); if (rows !== null) writeFileSync(join(dir, "demand.json"), JSON.stringify(rows)); };
+    const runDemand = (repo, fx) => run(["--stage=demand", "--repo-root", repo, ...(fx ? ["--fixture-dir", fx] : ["--repo-only"])]);
+
+    const repo = join(work, "demand-green"); writeRepo(repo, GREEN_DEMAND);
+    const fx = join(work, "demand-green-fx"); writeDemandFx(fx, GREEN_DEMAND_FX);
+    { const r = runDemand(repo, fx); expect("demand: зелёное репо + зелёные пробы -> exit 0", r.code, 0, r.out); }
+    { const r = runDemand(repo, null); expect("demand: --repo-only на зелёном репо -> exit 0", r.code, 0, r.out); }
+    {
+      const bare = join(work, "demand-bare"); mkdirSync(bare, { recursive: true });
+      const r = runDemand(bare, null); expect("demand: пустое репо -> exit 1", r.code, 1, r.out);
+      const m = /(\d+) finding\(s\)/.exec(r.out); expect("demand: пустое репо даёт ровно 5 групповых находок (legacy-группы молчат)", m ? Number(m[1]) : -1, 5, r.out);
+    }
+    {
+      // Репо до R-06: старые кнопки и «первый принятый заказ» - legacy-группы обязаны краснеть.
+      const before = join(work, "demand-before");
+      writeRepo(before, { ...GREEN_DEMAND,
+        [D.dash]: GREEN_DEMAND[D.dash] + "<form action=\"/api/orders/accept\" method=\"POST\" />\n",
+        [D.voice]: GREEN_DEMAND[D.voice] + "q.order(\"created_at\", { ascending: true })\n" });
+      const r = runDemand(before, null); expect("demand: остатки старого поведения -> exit 1", r.code, 1, r.out);
+      const m = /(\d+) finding\(s\)/.exec(r.out); expect("demand: остатки дают ровно 2 legacy-находки", m ? Number(m[1]) : -1, 2, r.out);
+    }
+    const G = GREEN_DEMAND;
+    const demandMutations = [
+      ["shared: skip не пишет rejected (статуса skipped в CHECK нет)", { [D.shared]: G[D.shared].replace("\"rejected\"", "\"skipped\"") }],
+      ["shared: решение не экспортировано", { [D.index]: "export {};\n" }],
+      ["shared: нет unit-тестов решения", { [D.sharedTest]: "// todo\n" }],
+      ["web: обновление без проверки владельца", { [D.lib]: G[D.lib].replace(".eq(\"expert_id\", user.id)", "") }],
+      ["web: можно принять уже обработанный заказ (нет фильтра pending)", { [D.lib]: G[D.lib].replace(".eq(\"status\", \"pending\")", "") }],
+      ["web: нет отказа без сессии", { [D.lib]: G[D.lib].replace("status: 401", "status: 200") }],
+      ["web: форма не получает редирект 303", { [D.lib]: G[D.lib].replace("redirect(url, 303)", "redirect(url, 307)") }],
+      ["web: роут accept отсутствует", { [D.accept]: null }],
+      ["web: skip вызывает accept", { [D.skip]: G[D.skip].replace("\"skip\")", "\"accept\")") }],
+      ["web: GET заказа без проверки владельца", { [D.get]: G[D.get].replace(".eq(\"expert_id\", user.id)", "") }],
+      ["дашборд: кнопка принять ведёт на старый путь", { [D.dash]: G[D.dash].replace("action={`/api/expert-orders/${o.id as string}/accept`}", "action=\"/api/orders/accept\"") }],
+      ["дашборд: нет кнопки «Подобрать темы сейчас»", { [D.dash]: G[D.dash].replace("Подобрать темы сейчас", "Обновить") }],
+      ["дашборд: ссылка записи без order_id", { [D.dash]: G[D.dash].replace("href={`/content/new?order_id=${o.id as string}`}", "href=\"/content/new\"") }],
+      ["дашборд: статус expired без подписи", { [D.dash]: G[D.dash].replace("expired: \"Истекли\"", "") }],
+      ["voice web: order_id не читается", { [D.voice]: G[D.voice].replace("formData.get(\"order_id\")", "null") }],
+      ["voice web: остался «первый принятый заказ»", { [D.voice]: G[D.voice] + ".order(\"created_at\", { ascending: true })\n" }],
+      ["voice web: запись без выбора темы не отклоняется", { [D.voice]: G[D.voice].replace("order_required", "ok") }],
+      ["voice web: привязка к заказу не в статусе accepted", { [D.lib]: G[D.lib].replace("      .eq(\"status\", \"accepted\")\n", "") }],
+      ["страница записи не передаёт order_id", { [D.contentNew]: G[D.contentNew].replace("formData.append(\"order_id\"", "formData.append(\"x\"") }],
+      ["страница записи не показывает вопрос", { [D.contentNew]: G[D.contentNew].replace("question_text", "id") }],
+      ["бот: привязка к первому по created_at", { [D.botVoice]: G[D.botVoice].replace(".order(\"updated_at\", { ascending: false })", ".order(\"created_at\", { ascending: true })") }],
+      ["бот: вопрос не назван в ответе", { [D.botVoice]: G[D.botVoice].replace("Вопрос: ", "") }],
+      ["бот: /record без выбора темы", { [D.botRecord]: "await ctx.reply(\"ответ будет привязан к первому из них\");\n" }],
+      ["бот: колбэк выбора темы отсутствует", { [D.botCb]: "// none\n" }],
+      ["web: accept/skip без проверки origin (CSRF)", { [D.lib]: G[D.lib].replace("if (!isSameOriginPost(request)) return", "if (false) return") }],
+      ["генерация: без проверки origin (CSRF)", { [D.gen]: G[D.gen].replace("if (!isSameOriginPost(request)) return", "if (false) return") }],
+      ["генерация: гонка двух кликов обходит лимит", { [D.gen]: G[D.gen].replace("isFirstGenerateRequest(", "always(") }],
+      ["shared: нет проверки origin", { [D.shared]: G[D.shared].replace("export function isSameOriginRequest(", "function sameOrigin(") }],
+      ["генерация: нет лимита 24 ч", { [D.gen]: G[D.gen].replace("decideGenerateNow(", "allow(") }],
+      ["генерация: job без expert_id (темы всем экспертам ниши)", { [D.gen]: G[D.gen].replace("expert_id: user.id", "") }],
+      ["генерация: роут без отказа без сессии", { [D.gen]: G[D.gen].replace("status: 401", "status: 200") }],
+      ["worker: handler игнорирует expert_id", { [D.handler]: G[D.handler].replace("payload.expert_id", "payload.x") }],
+      ["worker: план не через planExpertOrders", { [D.handler]: G[D.handler].replace("planExpertOrders(", "plan(") }],
+    ];
+    demandMutations.forEach(([label, ov], i) => {
+      const d = join(work, `demand-m${i}`); writeRepo(d, { ...GREEN_DEMAND, ...ov });
+      const r = runDemand(d, null); expect(`demand мутация репо: ${label}`, r.code, 1, r.out);
+    });
+    const setProbe = (probe, status) => GREEN_DEMAND_FX.map((r) => (r.probe === probe ? { ...r, status } : r));
+    const demandLiveMutations = [
+      ["роут accept отсутствует (HTML 404)", setProbe("accept", 404)],
+      ["роут skip открыт без сессии", setProbe("skip", 303)],
+      ["роут generate открыт без сессии", setProbe("generate", 200)],
+      ["GET заказа открыт без сессии", setProbe("order-get", 200)],
+      ["старый адрес кнопки отвечает успехом", setProbe("legacy-accept", 200)],
+      ["платный /api/orders/<uuid> задет", setProbe("paid-order", 404)],
+      ["проба отсутствует в фикстуре", GREEN_DEMAND_FX.filter((r) => r.probe !== "generate")],
+      ["фикстура demand.json отсутствует", null],
+    ];
+    demandLiveMutations.forEach(([label, rows], i) => {
+      const d = join(work, `demand-fx-m${i}`); writeDemandFx(d, rows);
+      const r = runDemand(repo, d); expect(`demand мутация live: ${label}`, r.code, 1, r.out);
+    });
+  }
 } finally {
   rmSync(work, { recursive: true, force: true });
 }

@@ -20,7 +20,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const KNOWN_FLAGS = new Set(["--stage", "--base-url", "--fixture-dir", "--repo-root", "--repo-only"]);
-const STAGES = new Set(["infra"]);
+const STAGES = new Set(["infra", "demand"]);
 const argv = process.argv.slice(2);
 let stage = null;
 let baseUrlArg = null;
@@ -43,7 +43,7 @@ for (let i = 0; i < argv.length; i += 1) {
 }
 
 if (!stage || !STAGES.has(stage)) {
-  console.error(`usage: --stage=<${[...STAGES].join("|")}> обязателен (demand/voice/publish — R-06+)`);
+  console.error(`usage: --stage=<${[...STAGES].join("|")}> обязателен (publish — R-07+)`);
   process.exit(2);
 }
 if (fixtureDir && baseUrlArg) { console.error("usage: --fixture-dir и --base-url взаимоисключающи"); process.exit(2); }
@@ -72,7 +72,7 @@ function requireGroup(name, files, fix) {
     if (text === null) { missing.push(`${rel}: файл отсутствует`); continue; }
     for (const n of needles) if (!text.includes(n)) missing.push(`${rel}: нет «${n}»`);
   }
-  if (missing.length > 0) finding(`[infra:${name}]`, missing.join("; "), fix);
+  if (missing.length > 0) finding(`[${stage}:${name}]`, missing.join("; "), fix);
 }
 
 // ============================================================
@@ -246,10 +246,120 @@ function checkInfraHealth(health) {
   }
 }
 
-checkInfraRepo();
-if (!repoOnly) {
-  try { checkInfraHealth(await getHealth()); await checkAudioRouteLive(); }
-  catch (err) { transportErrors.push(err instanceof Error ? err.message : String(err)); }
+// ============================================================
+// R-06 стадия demand: выбор спроса экспертом (контракт .itd-memory/contracts/R-06.md)
+// ============================================================
+const DEMAND_FIX = "реализовать контракт R-06 (.itd-memory/contracts/R-06.md)";
+const SEL_LIB = "apps/web/lib/expert-orders.ts";
+const DASHBOARD = "apps/web/app/(dashboard)/orders/page.tsx";
+const CONTENT_NEW = "apps/web/app/(dashboard)/content/new/page.tsx";
+const VOICE_ROUTE = "apps/web/app/api/voice/route.ts";
+const BOT_VOICE = "apps/bot/src/handlers/voice.ts";
+const BOT_RECORD = "apps/bot/src/commands/record.ts";
+const GEN_ROUTE = "apps/web/app/api/expert-orders/generate/route.ts";
+const GEN_HANDLER = "apps/worker/src/jobs/generate-orders.ts";
+const SHARED_SEL = "packages/shared/src/orders/expert-selection.ts";
+/** Литералы, которых в файле быть НЕ должно (старое поведение) - одна находка на группу. */
+function forbidGroup(name, files, fix) {
+  const present = [];
+  for (const [rel, needles] of files) {
+    const text = readRepoFile(rel);
+    if (text === null) continue;
+    for (const n of needles) if (text.includes(n)) present.push(`${rel}: осталось «${n}»`);
+  }
+  if (present.length > 0) finding(`[${stage}:${name}]`, present.join("; "), fix);
+}
+function checkDemandRepo() {
+  requireGroup("routes", [
+    [SHARED_SEL, ["export function decideOrderSelection(", "\"rejected\"", "\"accepted\""]],
+    ["packages/shared/src/index.ts", ["./orders/expert-selection.js"]],
+    ["packages/shared/tests/expert-selection.test.cjs", ["decideOrderSelection", "decideGenerateNow", "planExpertOrders"]],
+    [SEL_LIB, ["decideOrderSelection(", ".eq(\"expert_id\", user.id)", ".eq(\"status\", \"pending\")", "status: 401", "NextResponse.redirect(url, 303)",
+      "if (!isSameOriginPost(request)) return NextResponse.json({ error: \"Forbidden\" }, { status: 403 });", "isSameOriginRequest("]],
+    ["apps/web/app/api/expert-orders/[id]/accept/route.ts", ["handleExpertOrderSelection(request, params.id, \"accept\")"]],
+    ["apps/web/app/api/expert-orders/[id]/skip/route.ts", ["handleExpertOrderSelection(request, params.id, \"skip\")"]],
+    ["apps/web/app/api/expert-orders/[id]/route.ts", [".eq(\"expert_id\", user.id)", "question_text", "status: 401"]],
+  ], DEMAND_FIX);
+  requireGroup("dashboard", [
+    [DASHBOARD, ["action={`/api/expert-orders/${o.id as string}/accept`}", "action={`/api/expert-orders/${o.id as string}/skip`}",
+      "action=\"/api/expert-orders/generate\"", "Подобрать темы сейчас", "href={`/content/new?order_id=${o.id as string}`}", "expired: \"Истекли\""]],
+  ], DEMAND_FIX);
+  forbidGroup("dashboard-legacy", [[DASHBOARD, ["/api/orders/accept", "/api/orders/skip", "href=\"/content/new\""]]],
+    "кнопки дашборда обязаны вести на /api/expert-orders/*: /api/orders/* занят платными заказами Audit Start и отвечал 404/405");
+  requireGroup("voice-web", [
+    [VOICE_ROUTE, ["formData.get(\"order_id\")", "resolveVoiceOrder(", "order_required"]],
+    // Многострочный needle: точечная проверка выбранной темы (владелец + accepted), а не любой accepted-запрос.
+    [SEL_LIB, ["export async function resolveVoiceOrder(", ".eq(\"expert_id\", expertId)\n      .eq(\"status\", \"accepted\")\n      .maybeSingle()"]],
+    [CONTENT_NEW, ["useSearchParams", "formData.append(\"order_id\"", "question_text"]],
+  ], DEMAND_FIX);
+  requireGroup("voice-bot", [
+    [BOT_VOICE, [".order(\"updated_at\", { ascending: false })", "Вопрос: "]],
+    [BOT_RECORD, ["recordOrderKeyboard("]],
+    ["apps/bot/src/keyboards.ts", ["export function recordOrderKeyboard(", "record_order:"]],
+    ["apps/bot/src/handlers/callback.ts", ["/^record_order:(.+)$/", ".update({ updated_at: new Date().toISOString() })"]],
+  ], DEMAND_FIX);
+  forbidGroup("voice-legacy", [
+    [VOICE_ROUTE, [".order(\"created_at\", { ascending: true })"]],
+    [BOT_VOICE, [".order(\"created_at\", { ascending: true })"]],
+    [BOT_RECORD, ["к первому из них", ".order(\"created_at\", { ascending: true })"]],
+  ], "голос привязывается к выбранной теме, а не к «первому принятому заказу» (E-AUTO-7)");
+  requireGroup("generate", [
+    [SHARED_SEL, ["export function decideGenerateNow(", "export function planExpertOrders(", "GENERATE_COOLDOWN_MS",
+      "export function isFirstGenerateRequest(", "export function isSameOriginRequest("]],
+    [GEN_ROUTE, ["type: \"generate_orders\"", "expert_id: user.id", "decideGenerateNow(", "status: 401", "generate_cooldown",
+      "if (!isSameOriginPost(request)) return NextResponse.json({ error: \"Forbidden\" }, { status: 403 });", "isFirstGenerateRequest("]],
+    [GEN_HANDLER, ["payload.expert_id", "planExpertOrders("]],
+  ], DEMAND_FIX);
+}
+/**
+ * Живой слой demand: роуты существуют и закрыты сессией (401 JSON, а не HTML 404 от Next); старые
+ * адреса кнопок не отвечают успехом; платный /api/orders/<uuid> по-прежнему 401 (контур не задет).
+ * Оффлайн - фикстура demand.json: [{"probe": "<имя>", "status": N}]. Ничего не мутирует: без сессии
+ * роуты отказывают до обращения к БД.
+ */
+const ZERO_UUID = "00000000-0000-4000-8000-000000000001";
+const DEMAND_PROBES = [
+  { probe: "accept", method: "POST", path: `/api/expert-orders/${ZERO_UUID}/accept`, expect: (s) => s === 401, want: "401" },
+  { probe: "skip", method: "POST", path: `/api/expert-orders/${ZERO_UUID}/skip`, expect: (s) => s === 401, want: "401" },
+  { probe: "generate", method: "POST", path: "/api/expert-orders/generate", expect: (s) => s === 401, want: "401" },
+  { probe: "order-get", method: "GET", path: `/api/expert-orders/${ZERO_UUID}`, expect: (s) => s === 401, want: "401" },
+  { probe: "legacy-accept", method: "POST", path: "/api/orders/accept", expect: (s) => s >= 400, want: ">= 400" },
+  { probe: "legacy-skip", method: "POST", path: "/api/orders/skip", expect: (s) => s >= 400, want: ">= 400" },
+  { probe: "paid-order", method: "GET", path: `/api/orders/${ZERO_UUID}`, expect: (s) => s === 401, want: "401" },
+];
+async function checkDemandLive() {
+  let rows = null;
+  if (fixtureDir) {
+    const abs = join(fixtureDir, "demand.json");
+    if (!existsSync(abs)) { finding("fixture:demand.json", "фикстура отсутствует", "положить demand.json в --fixture-dir"); return; }
+    rows = JSON.parse(readFileSync(abs, "utf8"));
+  }
+  for (const p of DEMAND_PROBES) {
+    let status;
+    if (rows) {
+      const row = rows.find((r) => r.probe === p.probe);
+      if (!row) { finding(p.path, "нет данных пробы", `фикстура demand.json обязана содержать probe ${p.probe}`); continue; }
+      status = row.status;
+    } else {
+      const res = await fetchWithRetry(`${baseUrl}${p.path}`, { method: p.method, redirect: "manual" });
+      status = res.status;
+    }
+    if (!p.expect(status)) finding(p.path, `${p.method} без сессии: HTTP ${status} (ожидается ${p.want})`, "роут обязан существовать и отказывать без сессии; старые адреса кнопок не должны отвечать успехом");
+  }
+}
+
+if (stage === "demand") {
+  checkDemandRepo();
+  if (!repoOnly) {
+    try { await checkDemandLive(); }
+    catch (err) { transportErrors.push(err instanceof Error ? err.message : String(err)); }
+  }
+} else {
+  checkInfraRepo();
+  if (!repoOnly) {
+    try { checkInfraHealth(await getHealth()); await checkAudioRouteLive(); }
+    catch (err) { transportErrors.push(err instanceof Error ? err.message : String(err)); }
+  }
 }
 
 // Находки доминируют над транспортом (exit 3 не маскирует repo-находки).

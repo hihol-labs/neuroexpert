@@ -34,15 +34,17 @@ export function registerVoiceHandler(bot: Bot): void {
     }
     const audioBuffer = Buffer.from(await response.arrayBuffer());
 
-    // Находим принятый заказ (если есть)
-    const { data: acceptedOrder } = await supabase
+    // R-06 (E-AUTO-7): тема записи - последняя выбранная экспертом (кнопка «Принять» или выбор в
+    // /record двигают updated_at), а не «первый принятый заказ» по дате создания.
+    const { data: acceptedOrders } = await supabase
       .from("orders")
-      .select("id")
+      .select("id, questions(question_text)")
       .eq("expert_id", profile.id)
       .eq("status", "accepted")
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .single();
+      .order("updated_at", { ascending: false })
+      .limit(1);
+    const acceptedOrder = acceptedOrders?.[0] ?? null;
+    const acceptedQuestion: string = (acceptedOrder as any)?.questions?.question_text ?? "";
 
     // R-05: аудио обязано лечь в Storage ДО записи voice_recordings - transcribe читает файл по
     // file_path из bucket voice; без файла запись в БД указывала бы в пустоту (E-AUTO-6).
@@ -128,6 +130,7 @@ export function registerVoiceHandler(bot: Bot): void {
 
       await ctx.reply(
         `Расшифровка готова, создаю контент...\n\n` +
+          (acceptedOrder ? `Вопрос: ${acceptedQuestion}\n` : "Свободная тема (без привязки к вопросу): выбранных тем нет, см. /orders\n") +
           `Длительность: ${durationMin}:${String(durationSec).padStart(2, "0")}\n` +
           `Символов: ${transcript.length}\n\n` +
           `Я отправлю готовый контент на проверку, когда он будет готов.`,

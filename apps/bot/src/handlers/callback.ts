@@ -225,7 +225,8 @@ export function registerCallbackHandler(bot: Bot): void {
 
     const { error } = await supabase
       .from("orders")
-      .update({ status: "accepted" })
+      // R-06: updated_at - время выбора темы; голосовое привязывается к последней выбранной.
+      .update({ status: "accepted", updated_at: new Date().toISOString() })
       .eq("id", orderId)
       .eq("expert_id", profileId)
       .eq("status", "pending");
@@ -242,6 +243,35 @@ export function registerCallbackHandler(bot: Bot): void {
     await ctx.reply(
       "Заказ принят! Запишите голосовое с ответом:\n/record",
     );
+  });
+
+  // R-06 (E-AUTO-7): выбрать тему для записи, когда принятых несколько. Состояние не храним:
+  // выбранная тема становится «последней выбранной» (updated_at), к ней привяжется следующее голосовое.
+  bot.callbackQuery(/^record_order:(.+)$/, async (ctx) => {
+    const orderId = ctx.match[1];
+    const profileId = await getProfileId(ctx.from.id);
+
+    if (!profileId) {
+      await ctx.answerCallbackQuery({ text: "Профиль не найден" });
+      return;
+    }
+
+    const { data: touched, error } = await supabase
+      .from("orders")
+      .update({ updated_at: new Date().toISOString() })
+      .eq("id", orderId)
+      .eq("expert_id", profileId)
+      .eq("status", "accepted")
+      .select("id, questions(question_text)");
+
+    if (error || !touched || touched.length === 0) {
+      await ctx.answerCallbackQuery({ text: "Тема уже в работе или не найдена" });
+      return;
+    }
+
+    const question = (touched[0] as any).questions?.question_text ?? "";
+    await ctx.answerCallbackQuery({ text: "Тема выбрана" });
+    await ctx.reply(`Вопрос: ${question}\n\nЗапишите голосовое сообщение прямо здесь — ответ будет привязан к этой теме.`);
   });
 
   // Пропустить заказ

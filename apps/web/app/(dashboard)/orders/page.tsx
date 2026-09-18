@@ -12,6 +12,8 @@ function getSupabase() {
 
 interface SearchParams {
   status?: string;
+  notice?: string;
+  retry_at?: string;
 }
 
 const MARKER_LABELS: Record<string, { label: string; good: string; bad: string }> = {
@@ -45,6 +47,20 @@ const STATUS_LABELS: Record<string, string> = {
   review: "На проверке",
   published: "Опубликованы",
   rejected: "Отклонены",
+  expired: "Истекли",
+};
+
+// R-06: итог действия с темой приходит параметром после редиректа из /api/expert-orders/*.
+const NOTICES: Record<string, { tone: "ok" | "warn"; text: string }> = {
+  accepted: { tone: "ok", text: "Тема выбрана. Нажмите «Записать ответ» у этой темы." },
+  rejected: { tone: "ok", text: "Тема пропущена." },
+  conflict: { tone: "warn", text: "Эта тема уже обработана — список обновлён." },
+  not_found: { tone: "warn", text: "Тема не найдена." },
+  bad_action: { tone: "warn", text: "Неизвестное действие." },
+  generate_queued: { tone: "ok", text: "Подбираем темы — обновите страницу через минуту. Если новых тем не появится, значит подходящих вопросов по вашей нише пока нет." },
+  generate_cooldown: { tone: "warn", text: "Подбор уже запускался за последние сутки." },
+  generate_no_niche: { tone: "warn", text: "Сначала выберите нишу в профиле — темы подбираются по ней." },
+  generate_failed: { tone: "warn", text: "Не удалось запустить подбор, попробуйте позже." },
 };
 
 function extractMentionedExperts(text: string): string[] {
@@ -132,7 +148,10 @@ export default async function OrdersPage({
     "review",
     "published",
     "rejected",
+    "expired",
   ];
+  const notice = searchParams.notice ? NOTICES[searchParams.notice] : undefined;
+  const retryAt = searchParams.retry_at && Number.isFinite(Date.parse(searchParams.retry_at)) ? new Date(searchParams.retry_at) : null;
 
   return (
     <div>
@@ -142,7 +161,24 @@ export default async function OrdersPage({
           Это реальные вопросы людей, из которых можно сделать страницу для привлечения заявки.
           Таблица `orders` остаётся техническим названием, но в продукте это возможности спроса.
         </p>
+        {/* R-06: не ждать недельного подбора (понедельник) - поставить подбор тем в очередь сейчас. */}
+        <form action="/api/expert-orders/generate" method="POST" className="mt-4">
+          <button className="px-4 py-2 text-sm font-medium text-blue-700 border border-blue-300 rounded-lg hover:bg-blue-50">
+            Подобрать темы сейчас
+          </button>
+          <span className="ml-3 text-xs text-gray-500">Не чаще одного раза в сутки</span>
+        </form>
       </div>
+
+      {notice && (
+        <p
+          role="status"
+          className={`mb-6 px-4 py-3 rounded-lg text-sm border ${notice.tone === "ok" ? "bg-green-50 border-green-200 text-green-800" : "bg-amber-50 border-amber-200 text-amber-800"}`}
+        >
+          {notice.text}
+          {searchParams.notice === "generate_cooldown" && retryAt ? ` Следующий запуск — после ${retryAt.toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })} (мск).` : ""}
+        </p>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2 mb-6">
@@ -326,22 +362,12 @@ export default async function OrdersPage({
 
                   {isPending && (
                     <div className="flex gap-3">
-                      <form action="/api/orders/skip" method="POST">
-                        <input
-                          type="hidden"
-                          name="order_id"
-                          value={o.id as string}
-                        />
+                      <form action={`/api/expert-orders/${o.id as string}/skip`} method="POST">
                         <button className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
                           Пропустить
                         </button>
                       </form>
-                      <form action="/api/orders/accept" method="POST">
-                        <input
-                          type="hidden"
-                          name="order_id"
-                          value={o.id as string}
-                        />
+                      <form action={`/api/expert-orders/${o.id as string}/accept`} method="POST">
                         <button className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
                           Превратить в страницу
                         </button>
@@ -351,7 +377,7 @@ export default async function OrdersPage({
 
                   {o.status === "accepted" && (
                     <Link
-                      href="/content/new"
+                      href={`/content/new?order_id=${o.id as string}`}
                       className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
                     >
                       Записать ответ
