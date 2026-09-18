@@ -43,7 +43,7 @@ function V2Placeholder({ title, body }: { title: string; body: string }) {
   );
 }
 
-const SOURCE_TAGS: Record<string, string> = { wordstat: "измерено", measured: "измерено", client: "ваша цифра" };
+const SOURCE_TAGS: Record<string, string> = { wordstat: "измерено", measured: "измерено", client: "допущение" };
 
 /**
  * R-05b: потери в клиентах и рублях. Блок есть только когда клиент сам дал чек и конверсию и

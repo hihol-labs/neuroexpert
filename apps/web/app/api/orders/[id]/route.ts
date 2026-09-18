@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import { clientBrand, parseAvgCheck, parseConversion } from "shared";
+import { AVG_CHECK_MAX, clientBrand, parseAvgCheck, parseConversion } from "shared";
 
 // Нетипизированный service_role клиент — как в webhook и service-orders:
 // сгенерированные типы Database не покрывают новые таблицы полностью.
@@ -69,7 +69,7 @@ const DETAIL_LIMITS: Record<string, number> = { website: 200, competitors: 1000,
 /** R-05b: числа для денежного блока проверяются на сервере тем же парсером, что и расчёт; пустая строка = «не указано». */
 function validateMoneyField(key: string, value: string): string | null {
   if (!value) return null;
-  if (key === "avg_check" && parseAvgCheck(value) === null) return "Средний чек — целое число рублей от 1 до 100 000 000.";
+  if (key === "avg_check" && parseAvgCheck(value) === null) return `Средний чек — целое число рублей от 1 до ${AVG_CHECK_MAX.toLocaleString("ru-RU")}.`;
   if (key === "conversion" && parseConversion(value) === null) return "Конверсия — число больше 0 и не больше 100, до двух знаков после запятой.";
   if (key === "brand" && clientBrand(value) === null) return "Название — от 3 до 100 символов.";
   return null;
@@ -106,25 +106,31 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 
   const admin = createAdminClient();
-  const { data: current } = await admin
-    .from("package_orders")
-    .select("details")
-    .eq("id", orderId)
-    .eq("owner_id", user.id)
-    .maybeSingle();
-  if (!current) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  const previous = current.details && typeof current.details === "object" && !Array.isArray(current.details) ? current.details as Record<string, unknown> : {};
-  const merged: Record<string, string> = {};
-  for (const key of Object.keys(DETAIL_LIMITS)) {
-    const next = key in details ? details[key] : previous[key];
-    if (typeof next === "string" && next) merged[key] = next;
+  // Чтение-слияние-запись с проверкой версии (updated_at): параллельный PATCH или смена статуса
+  // worker'ом между чтением и записью не теряет поля - попытка повторяется на свежей строке.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const { data: current } = await admin
+      .from("package_orders")
+      .select("details, updated_at")
+      .eq("id", orderId)
+      .eq("owner_id", user.id)
+      .maybeSingle();
+    if (!current) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const previous = current.details && typeof current.details === "object" && !Array.isArray(current.details) ? current.details as Record<string, unknown> : {};
+    const merged: Record<string, string> = {};
+    for (const key of Object.keys(DETAIL_LIMITS)) {
+      const next = key in details ? details[key] : previous[key];
+      if (typeof next === "string" && next) merged[key] = next;
+    }
+    const { data: updated } = await admin
+      .from("package_orders")
+      // updated_at двигаем явно: версия меняется и там, где триггера set_updated_at нет.
+      .update({ details: merged, updated_at: new Date().toISOString() })
+      .eq("id", orderId)
+      .eq("owner_id", user.id)
+      .eq("updated_at", current.updated_at)
+      .select("id");
+    if (updated && updated.length > 0) return NextResponse.json({ ok: true, details: merged });
   }
-  const { data: updated } = await admin
-    .from("package_orders")
-    .update({ details: merged })
-    .eq("id", orderId)
-    .eq("owner_id", user.id)
-    .select("id");
-  if (!updated || updated.length === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json({ ok: true, details: merged });
+  return NextResponse.json({ error: "Заказ менялся одновременно, попробуйте ещё раз." }, { status: 409 });
 }

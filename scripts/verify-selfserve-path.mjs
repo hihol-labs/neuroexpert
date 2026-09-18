@@ -375,7 +375,8 @@ function repoMoney() {
     ],
     "money-input": [
       ["apps/web/app/api/orders/[id]/route.ts", [["avg_check", "поле среднего чека"], ["conversion", "поле конверсии"], ["brand", "поле названия"],
-        ["validateMoneyField(", "серверная валидация чисел"], ["update({ details: merged })", "PATCH дополняет details, а не затирает"]]],
+        ["validateMoneyField(", "серверная валидация чисел"], ["update({ details: merged,", "PATCH дополняет details, а не затирает"],
+        [".eq(\"updated_at\", current.updated_at)", "запись с проверкой версии (параллельный PATCH не теряет поля)"]]],
     ],
     "money-form": [
       ["apps/web/app/orders/[id]/details-form.tsx", [["name=\"avg_check\"", "ввод чека"], ["name=\"conversion\"", "ввод конверсии"], ["name=\"brand\"", "ввод названия"], ["ваша оценка", "поля названы допущением клиента"]]],

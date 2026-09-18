@@ -66,7 +66,7 @@ test('сопоставление целым словом: подстрока н�
  for (const [text, token, want] of [
   ['чистка хлоркой не нужна','лор',false], ['клиника лор, запись','лор',true], ['«лор»','лор',true], ['лор-центр на ленина','лор',false],
   ['см. notexample.com','example.com',false], ['см. sub.example.com/x','example.com',true], ['см. example.com.ru','example.com',false],
-  ['сайт example.com. далее','example.com',true], ['example.com','example.com',true], ['my-example.com','example.com',false],
+  ['сайт example.com. далее','example.com',true], ['советуют улыбка плюс.рекомендуем','улыбка плюс',true], ['улыбка плюсовая','улыбка плюс',false], ['example.com','example.com',true], ['my-example.com','example.com',false],
  ]) assert.equal(mentionsToken(text, token), want, `${token} в «${text}»`);
 });
 test('короткое название (меньше 3 символов) не принимается; подстрока бренда не занижает потери',()=>{

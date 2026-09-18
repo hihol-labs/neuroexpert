@@ -59,6 +59,7 @@ export function clientBrand(brand: unknown): string | null {
   return b.length >= 3 && b.length <= 100 ? b : null;
 }
 const WORD_CHAR = /[\p{L}\p{N}]/u;
+const DOMAIN_TOKEN = /^[\p{L}\p{N}-]+(\.[\p{L}\p{N}-]+)+$/u;
 /**
  * Вхождение токена целым словом: соседние символы не буква и не цифра (для домена слева допустима
  * точка поддомена, справа недопустим дефис). Простая подстрока дала бы ложное «называют»
@@ -69,7 +70,8 @@ export function mentionsToken(text: string, token: string): boolean {
     const before = i > 0 ? text[i - 1] : "", after = text[i + token.length] ?? "";
     const next = text[i + token.length + 1] ?? "";
     const glued = (c: string) => c !== "" && (WORD_CHAR.test(c) || c === "-");
-    const longerDomain = after === "." && next !== "" && WORD_CHAR.test(next); // example.com.ru - другой домен
+    // example.com.ru - другой домен; к названию правило не относится («Улыбка Плюс.Рекомендуем» - упоминание).
+    const longerDomain = DOMAIN_TOKEN.test(token) && after === "." && next !== "" && WORD_CHAR.test(next);
     if (!glued(before) && !glued(after) && !longerDomain) return true;
   }
   return false;
