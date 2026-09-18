@@ -242,7 +242,7 @@ try {
       [D.shared]: "export const GENERATE_COOLDOWN_MS = 86400000;\nexport function decideOrderSelection(order, userId, action) { return { ok: true, status: action === \"accept\" ? \"accepted\" : \"rejected\" }; }\nexport function decideGenerateNow(last, now) {}\nexport function planExpertOrders(input) {}\nexport function isFirstGenerateRequest(mine, others) {}\nexport function isSameOriginRequest(origin, site, allowed) {}\n",
       [D.index]: "export * from \"./orders/expert-selection.js\";\n",
       [D.sharedTest]: "const {decideOrderSelection, decideGenerateNow, planExpertOrders} = require('../dist/orders/expert-selection.js');\n",
-      [D.lib]: "if (!user) return NextResponse.json({ error: \"Unauthorized\" }, { status: 401 });\nif (!isSameOriginPost(request)) return NextResponse.json({ error: \"Forbidden\" }, { status: 403 });\nexport function isSameOriginPost(request) { return isSameOriginRequest(o, s, allowed); }\nawait admin.from(\"orders\").update({ status }).eq(\"id\", id).eq(\"expert_id\", user.id).eq(\"status\", \"pending\");\nconst d = decideOrderSelection(order, user.id, action);\nreturn NextResponse.redirect(url, 303);\nexport async function resolveVoiceOrder(admin, expertId, orderId) { return admin.from(\"orders\").select(\"id\")\n      .eq(\"expert_id\", expertId)\n      .eq(\"status\", \"accepted\")\n      .maybeSingle(); }\n",
+      [D.lib]: "if (!user) return NextResponse.json({ error: \"Unauthorized\" }, { status: 401 });\nif (!isSameOriginPost(request)) return NextResponse.json({ error: \"Forbidden\" }, { status: 403 });\nexport function isSameOriginPost(request) {\n  const allowed = [process.env[\"APP_URL\"] ?? \"\", process.env[\"NEXT_PUBLIC_APP_URL\"] ?? \"\"];\n  if (process.env.NODE_ENV === \"development\") { allowed.push(`http://${request.headers.get(\"host\")}`); }\n  return isSameOriginRequest(o, s, allowed);\n}\nawait admin.from(\"orders\").update({ status }).eq(\"id\", id).eq(\"expert_id\", user.id).eq(\"status\", \"pending\");\nconst d = decideOrderSelection(order, user.id, action);\nreturn NextResponse.redirect(url, 303);\nexport async function resolveVoiceOrder(admin, expertId, orderId) { return admin.from(\"orders\").select(\"id\")\n      .eq(\"expert_id\", expertId)\n      .eq(\"status\", \"accepted\")\n      .maybeSingle(); }\n",
       [D.accept]: "export async function POST(request, { params }) { return handleExpertOrderSelection(request, params.id, \"accept\"); }\n",
       [D.skip]: "export async function POST(request, { params }) { return handleExpertOrderSelection(request, params.id, \"skip\"); }\n",
       [D.get]: "if (!user) return NextResponse.json({ error: \"Unauthorized\" }, { status: 401 });\nadmin.from(\"orders\").select(\"id, status, questions(question_text)\").eq(\"expert_id\", user.id);\n",
@@ -254,6 +254,7 @@ try {
       [D.botRecord]: "await ctx.reply(\"Выберите тему\", { reply_markup: recordOrderKeyboard(accepted) });\n",
       [D.botKeys]: "export function recordOrderKeyboard(orders) { return new InlineKeyboard().text(\"x\", `record_order:${orders[0].id}`); }\n",
       [D.botCb]: "bot.callbackQuery(/^record_order:(.+)$/, async (ctx) => { await supabase.from(\"orders\").update({ updated_at: new Date().toISOString() }); });\n",
+      "OPERATIONS.md": "### 9f\n- **Порядок выкатки: worker → web → bot.** При откате — обратный порядок: сначала web, потом worker.\n",
       [D.handler]: "const onlyExpertId = expertIdFrom(payload.expert_id);\nconst plan = planExpertOrders({ questions, experts, existing, onlyExpertId });\n",
     };
     const GREEN_DEMAND_FX = ["accept", "skip", "generate", "order-get", "paid-order"].map((probe) => ({ probe, status: 401 }))
@@ -268,7 +269,7 @@ try {
     {
       const bare = join(work, "demand-bare"); mkdirSync(bare, { recursive: true });
       const r = runDemand(bare, null); expect("demand: пустое репо -> exit 1", r.code, 1, r.out);
-      const m = /(\d+) finding\(s\)/.exec(r.out); expect("demand: пустое репо даёт ровно 5 групповых находок (legacy-группы молчат)", m ? Number(m[1]) : -1, 5, r.out);
+      const m = /(\d+) finding\(s\)/.exec(r.out); expect("demand: пустое репо даёт ровно 7 групповых находок (forbid-группы молчат)", m ? Number(m[1]) : -1, 7, r.out);
     }
     {
       // Репо до R-06: старые кнопки и «первый принятый заказ» - legacy-группы обязаны краснеть.
@@ -306,6 +307,12 @@ try {
       ["бот: /record без выбора темы", { [D.botRecord]: "await ctx.reply(\"ответ будет привязан к первому из них\");\n" }],
       ["бот: колбэк выбора темы отсутствует", { [D.botCb]: "// none\n" }],
       ["web: accept/skip без проверки origin (CSRF)", { [D.lib]: G[D.lib].replace("if (!isSameOriginPost(request)) return", "if (false) return") }],
+      ["CSRF: разрешённый origin выводится из X-Forwarded-Host запроса", { [D.lib]: G[D.lib] + "const h = request.headers.get(\"x-forwarded-host\");\n" }],
+      ["CSRF: хост запроса разрешён вне явного режима разработки", { [D.lib]: G[D.lib].replace("if (process.env.NODE_ENV === \"development\") {", "if (process.env.NODE_ENV !== \"production\") {") }],
+      ["CSRF: канонический origin не из конфигурации", { [D.lib]: G[D.lib].replace("process.env[\"APP_URL\"] ?? \"\"", "request.url") }],
+      ["CSRF: NEXT_PUBLIC_APP_URL читается точечной записью (инлайнится при сборке)", { [D.lib]: G[D.lib].replace("process.env[\"NEXT_PUBLIC_APP_URL\"]", "process.env.NEXT_PUBLIC_APP_URL") }],
+      ["runbook: порядок выкатки не записан", { "OPERATIONS.md": "### 9f\nвыкатывать как обычно\n" }],
+      ["runbook: порядок выкатки web раньше worker", { "OPERATIONS.md": "### 9f\n- **Порядок выкатки: web → worker → bot.** При откате — обратный порядок: сначала web.\n" }],
       ["генерация: без проверки origin (CSRF)", { [D.gen]: G[D.gen].replace("if (!isSameOriginPost(request)) return", "if (false) return") }],
       ["генерация: гонка двух кликов обходит лимит", { [D.gen]: G[D.gen].replace("isFirstGenerateRequest(", "always(") }],
       ["shared: нет проверки origin", { [D.shared]: G[D.shared].replace("export function isSameOriginRequest(", "function sameOrigin(") }],

@@ -280,6 +280,13 @@ function checkDemandRepo() {
     ["apps/web/app/api/expert-orders/[id]/skip/route.ts", ["handleExpertOrderSelection(request, params.id, \"skip\")"]],
     ["apps/web/app/api/expert-orders/[id]/route.ts", [".eq(\"expert_id\", user.id)", "question_text", "status: 401"]],
   ], DEMAND_FIX);
+  // CSRF-проверка опирается на конфигурацию сервера, а не на заголовки проверяемого запроса.
+  requireGroup("csrf-config", [[SEL_LIB, ["process.env[\"APP_URL\"] ?? \"\"", "process.env[\"NEXT_PUBLIC_APP_URL\"] ?? \"\"", "if (process.env.NODE_ENV === \"development\") {"]]], DEMAND_FIX);
+  forbidGroup("csrf-headers", [[SEL_LIB, ["x-forwarded-host", "x-forwarded-proto"]]],
+    "разрешённый origin нельзя выводить из X-Forwarded-*: эти заголовки приходят вместе с проверяемым запросом");
+  // Порядок выкатки - процедурная защита: старый worker раздал бы темы всей нише (не знает expert_id).
+  requireGroup("rollout", [["OPERATIONS.md", ["Порядок выкатки: worker → web → bot", "обратный порядок: сначала web"]]],
+    "записать в OPERATIONS порядок выкатки R-06 (worker раньше web) и порядок отката");
   requireGroup("dashboard", [
     [DASHBOARD, ["action={`/api/expert-orders/${o.id as string}/accept`}", "action={`/api/expert-orders/${o.id as string}/skip`}",
       "action=\"/api/expert-orders/generate\"", "Подобрать темы сейчас", "href={`/content/new?order_id=${o.id as string}`}", "expired: \"Истекли\""]],

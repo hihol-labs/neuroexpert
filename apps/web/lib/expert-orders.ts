@@ -19,13 +19,20 @@ export function expertOrdersAdmin(): SupabaseClient {
 }
 
 /**
- * CSRF: формы дашборда - POST с cookie-сессией. Разрешён только наш origin: канонический
- * NEXT_PUBLIC_APP_URL и хост самого запроса (за Traefik - x-forwarded-host/proto; локальная разработка).
+ * CSRF: формы дашборда - POST с cookie-сессией. Разрешённые origin берутся ТОЛЬКО из конфигурации
+ * сервера (NEXT_PUBLIC_APP_URL / APP_URL), а не из заголовков запроса: Host и X-Forwarded-Host
+ * приходят вместе с проверяемым запросом и не могут быть мерилом его происхождения. Env читается
+ * через скобки: так Next не инлайнит NEXT_PUBLIC_* при сборке, значение берётся из рантайма
+ * контейнера (APP_URL - первым). Хост запроса добавляется только в явном режиме разработки
+ * (`next dev`): незаданный NODE_ENV на будущем стенде не ослабляет проверку. Обе переменные пусты -
+ * отказ всем (fail-closed), см. OPERATIONS 9f.
  */
 export function isSameOriginPost(request: NextRequest): boolean {
-  const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
-  const proto = request.headers.get("x-forwarded-proto") || new URL(request.url).protocol.replace(":", "");
-  const allowed = [process.env.NEXT_PUBLIC_APP_URL ?? "", host ? `${proto}://${host}` : ""];
+  const allowed = [process.env["APP_URL"] ?? "", process.env["NEXT_PUBLIC_APP_URL"] ?? ""];
+  if (process.env.NODE_ENV === "development") {
+    const host = request.headers.get("host");
+    if (host) allowed.push(`http://${host}`, `https://${host}`);
+  }
   return isSameOriginRequest(request.headers.get("origin"), request.headers.get("sec-fetch-site"), allowed);
 }
 

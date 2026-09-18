@@ -1,6 +1,6 @@
 import type { Bot } from "grammy";
 import { supabase } from "../supabase";
-import { recordOrderKeyboard } from "../keyboards";
+import { RECORD_TOPICS_LIMIT, recordOrderKeyboard } from "../keyboards";
 
 const TIPS =
   "Советы:\n" +
@@ -33,7 +33,7 @@ export function registerRecordCommand(bot: Bot): void {
       .eq("expert_id", profile.id)
       .eq("status", "accepted")
       .order("updated_at", { ascending: false })
-      .limit(8);
+      .limit(RECORD_TOPICS_LIMIT);
 
     const topics = (accepted ?? []).map((o) => ({
       id: o.id as string,
