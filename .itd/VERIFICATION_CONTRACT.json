@@ -1,9 +1,9 @@
 {
   "version": 1,
   "purpose": "Executable verification contract for the active unit.",
-  "unitId": "R-05b",
-  "createdAt": "2026-09-13",
-  "note": "node scripts/verify-selfserve-path.mjs --stage=delivery --check-money — НЕ СОЗДАН, оракул пишется первым",
+  "unitId": "R-06",
+  "createdAt": "2026-09-18",
+  "note": "node scripts/verify-expert-path.mjs --stage=demand — стадия НЕ СОЗДАНА, оракул пишется первым",
   "commandSchema": {
     "requiredFields": [
       "id",
@@ -21,8 +21,8 @@
   },
   "commands": [
     {
-      "id": "r-05b-unit",
-      "command": "node scripts/verify-selfserve-path.mjs --stage=delivery --check-money",
+      "id": "r-06-unit",
+      "command": "node scripts/verify-expert-path.mjs --stage=demand",
       "timeoutSeconds": 600,
       "expectedOutput": "exit 0",
       "passFailParser": "exit_code_zero",
@@ -192,6 +192,13 @@
     {
       "id": "r05-expert-infra",
       "command": "node scripts/verify-expert-path.mjs --stage=infra --repo-only",
+      "timeoutSeconds": 300,
+      "expectedOutput": "exit 0",
+      "passFailParser": "exit_code_zero"
+    },
+    {
+      "id": "r05b-selfserve-money",
+      "command": "node scripts/verify-selfserve-path.mjs --stage=delivery --check-money --repo-only",
       "timeoutSeconds": 300,
       "expectedOutput": "exit 0",
       "passFailParser": "exit_code_zero"

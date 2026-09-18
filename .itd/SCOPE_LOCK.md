@@ -2,17 +2,19 @@
 
 ## Current Task
 
-- **R-05b** (= R-05') — вставлен 2026-09-09 по решению владельца («отчёт должен показывать деньги, а
-  не проблемы»; «добавь в план как R-05'»), tier medium, стадия **ПЛАНИРОВАНИЕ**. Форма заказа
-  получает средний чек и конверсию (необязательные поля); отчёт — денежный блок с открытой формулой
-  и подписью источника каждого множителя; без цифр клиента блок не показывается. Оракул
-  `node scripts/verify-selfserve-path.mjs --stage=delivery --check-money` пишется первым. Контракт
-  `.itd-memory/contracts/R-05b.md` (ещё не написан — диагноз по коду первый шаг). Разрешены после
-  плана: `scripts/verify-selfserve-path.mjs` (+ тест), `apps/web/app/orders/[id]/details-form.tsx`,
-  `apps/web/app/api/orders/[id]/route.ts` (приём двух полей), `packages/shared/src/delivery/*`
-  (расчёт), `apps/web/components/report/report-view.tsx` (блок), миграция при необходимости,
-  `.itd*`, BACKLOG, CURRENT_PLAN, READINESS_PLAN, OPERATIONS. Запрещены: цены пакетов, реестр
-  пакетов, checkout-флаг, касса, отраслевые средние вместо цифр клиента (граница честности).
+- **R-06** — активирован 2026-09-18 после verified R-05b, tier medium, стадия **ПЛАНИРОВАНИЕ**.
+  Выбор спроса экспертом: `POST /api/orders/[id]/accept|skip` только владельцу, голос к конкретному
+  вопросу, «Подобрать темы сейчас» (E-AUTO-1/7/13, READINESS_PLAN R-06). Оракул
+  `node scripts/verify-expert-path.mjs --stage=demand` пишется первым; контракт
+  `.itd-memory/contracts/R-06.md` — первый шаг (диагноз по коду). Разрешены после плана: файлы,
+  названные контрактом, `scripts/verify-expert-path.mjs` (+ тест), `.itd*`, BACKLOG, CURRENT_PLAN,
+  READINESS_PLAN, OPERATIONS. Запрещены: цены пакетов, касса, checkout-флаг, платный контур Audit Start.
+
+Предыдущий юнит: **R-05b (= R-05') — VERIFIED 2026-09-18** (ОТК exit 0 через проброс: «Self-serve
+delivery stage verification passed»; коммиты `6357d42`, `b2aa775`, `5118126`, docs `2f4c351`; web
+пересобран и пересоздан на проде; `/audit/example` показывает блок «Сколько это в деньгах» с подписью
+«Для примера:»; live-оракулы ALL_GREEN; см. DECISIONS 2026-09-18 и OPERATIONS 9e). Перед ним —
+bugfix R-05: миграция 032 (права Storage), коммит `dd6dfdc`, канарейка голосового ALL_GREEN.
 
 Предыдущий юнит: **R-05 — VERIFIED 2026-09-09** (ОТК exit 0 через проброс: «Expert-path infra stage
 verification passed»; коммиты `894213d`, `a278130`, `a00726b`, `029a488`, `d267a59`, `787ede4`;
