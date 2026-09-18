@@ -100,6 +100,21 @@ function checkInfraRepo() {
     "SECURITY DEFINER",
   ]]], "миграция 031 по контракту R-05: CREATE EXTENSION pg_cron, cron.unschedule+schedule для weekly-demand и weekly-generate-orders, bucket voice ON CONFLICT ... public = false, RPC infra_status() SECURITY DEFINER");
 
+  // Миграция 032: штатные гранты Supabase для Storage. Инцидент 2026-09-18: на self-hosted БД
+  // supabase_storage_admin не был членом service_role, а у service_role не было прав на схему storage -
+  // любая загрузка через API падала 403 «row-level security», в bucket voice 0 объектов за всё время.
+  requireGroup("storage-grants", [["packages/supabase/migrations/032_storage_role_grants.sql", [
+    "GRANT anon, authenticated, service_role TO supabase_storage_admin",
+    "GRANT USAGE ON SCHEMA storage TO anon, authenticated, service_role",
+    "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE storage.objects TO service_role",
+    "GRANT SELECT ON TABLE storage.buckets TO service_role",
+    "upload_ready",
+    "pg_has_role('supabase_storage_admin', 'service_role', 'MEMBER')",
+    // upload_ready обязан проверять весь выданный набор, иначе частичный отзыв прав даст ложный true.
+    "has_table_privilege('service_role', 'storage.objects', 'DELETE')",
+    "has_table_privilege('service_role', 'storage.buckets', 'SELECT')",
+  ]]], "миграция 032: членство supabase_storage_admin в anon/authenticated/service_role, USAGE на схему storage, права service_role на таблицы storage, infra_status().storage.upload_ready");
+
   // Бот: аудио обязано лечь в Storage до записи voice_recordings; ошибка -> ответ и выход.
   requireGroup("bot", [["apps/bot/src/handlers/voice.ts", [
     ".storage",
@@ -218,9 +233,16 @@ function checkInfraHealth(health) {
   const storage = health.storage;
   if (!storage || typeof storage !== "object") {
     finding("/api/health", "блок storage отсутствует", "отдать storage.voice_bucket из rpc infra_status()");
-  } else if (storage.voice_bucket !== "private") {
-    finding("/api/health", `storage.voice_bucket = ${JSON.stringify(storage.voice_bucket)} (ожидается \"private\")`,
-      "миграция 031: bucket voice public = false; «missing» — bucket не создан");
+  } else {
+    if (storage.voice_bucket !== "private") {
+      finding("/api/health", `storage.voice_bucket = ${JSON.stringify(storage.voice_bucket)} (ожидается \"private\")`,
+        "миграция 031: bucket voice public = false; «missing» — bucket не создан");
+    }
+    // Право записи через API: без грантов 032 storage-api отвечает 403 на любую загрузку.
+    if (storage.upload_ready !== true) {
+      finding("/api/health", `storage.upload_ready = ${JSON.stringify(storage.upload_ready)} (ожидается true)`,
+        "применить миграцию 032: гранты Storage для service_role и членство supabase_storage_admin; без них бот и /api/voice не могут сохранить аудио");
+    }
   }
 }
 

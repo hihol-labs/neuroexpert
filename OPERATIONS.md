@@ -390,6 +390,19 @@ empty` ставит новый `collect_demand`, если `demand_collected_at` 
   `storage {voice_bucket: private|public|missing}` через RPC `infra_status()` (SECURITY DEFINER,
   только service_role). Оракул: `node scripts/verify-expert-path.mjs --stage=infra` (живьём —
   `EXPERT_URL`/`SELFSERVE_URL`), мутации `scripts/tests/expert-path.test.mjs`.
+- **Гранты Storage (миграция 032, инцидент 2026-09-18).** Симптом: бот отвечает «Не удалось сохранить
+  запись», в логе `StorageApiError: new row violates row-level security policy` (403), хотя ключ —
+  service role. Причина не в RLS: storage-api подключается как `supabase_storage_admin` и
+  переключается на роль из JWT, а на нашей self-hosted БД не было штатных грантов Supabase —
+  `supabase_storage_admin` не состоял в `anon`/`authenticated`/`service_role`, у `service_role` не
+  было прав на схему `storage`. В bucket `voice` было 0 объектов за всё время: web-загрузка «best
+  effort» падала молча. Миграция 032 выдаёт членство, `USAGE` на схему и права `service_role` только
+  на `storage.objects` (SELECT/INSERT/UPDATE/DELETE) и `storage.buckets` (SELECT) — уже штатного
+  гранта Supabase; `storage.upload_ready` в health проверяет ровно этот набор. У `anon`/`authenticated`
+  прав на таблицы нет. При апгрейде storage-api с новыми рабочими таблицами — отдельный грант и
+  прогон канарейки голосового. Health: `storage.upload_ready`
+  обязан быть `true`; оракул `--stage=infra` проверяет это живьём. Проверка руками:
+  `select public.infra_status()->'storage'`.
 - **Активные пары и cron (важно с 2026-09-09).** До R-05 расписания не работали, и оракул
   `--stage=pair` требовал `local_pairs.active = 0`. Теперь пара активируется автоматически при
   оплате (R-03, `activateLocalPair`), а `weekly-demand` реально ставит `collect_demand` по каждой

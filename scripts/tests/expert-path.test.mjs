@@ -24,6 +24,13 @@ const GREEN_FILES = {
     "INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types) VALUES ('voice', 'voice', false, 26214400, ARRAY['audio/*']) ON CONFLICT (id) DO UPDATE SET public = false, file_size_limit = 26214400, allowed_mime_types = ARRAY['audio/*'];",
     "CREATE OR REPLACE FUNCTION public.infra_status() RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$ BEGIN RETURN '{}'::jsonb; END $$;",
   ].join("\n") + "\n",
+  "packages/supabase/migrations/032_storage_role_grants.sql": [
+    "GRANT anon, authenticated, service_role TO supabase_storage_admin;",
+    "GRANT USAGE ON SCHEMA storage TO anon, authenticated, service_role;",
+    "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE storage.objects TO service_role;",
+    "GRANT SELECT ON TABLE storage.buckets TO service_role;",
+    "CREATE OR REPLACE FUNCTION public.infra_status() RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$ BEGIN RETURN jsonb_build_object('storage', jsonb_build_object('upload_ready', pg_has_role('supabase_storage_admin', 'service_role', 'MEMBER') AND has_table_privilege('service_role', 'storage.objects', 'DELETE') AND has_table_privilege('service_role', 'storage.buckets', 'SELECT'))); END $$;",
+  ].join("\n") + "\n",
   "apps/bot/src/handlers/voice.ts": [
     "const { error: uploadError } = await supabase.storage.from(\"voice\").upload(filePath, audioBuffer, { contentType: \"audio/ogg\", upsert: false });",
     "if (uploadError) { console.error(\"[voice] Upload error:\", uploadError); await ctx.reply(\"Не удалось сохранить запись, попробуйте еще раз.\"); return; }",
@@ -50,7 +57,7 @@ const GREEN_HEALTH = {
       "weekly-generate-orders": { schedule: "0 4 * * 1", active: true, last_status: null, last_run_at: null },
     },
   },
-  storage: { voice_bucket: "private" },
+  storage: { voice_bucket: "private", upload_ready: true },
 };
 
 function writeRepo(root, files) {
@@ -111,7 +118,7 @@ try {
     const r2 = runOracle(repo, null); expect("--repo-only на зелёном репо -> exit 0", r2.code, 0, r2.out);
     const bare = join(work, "bare"); mkdirSync(bare, { recursive: true });
     const r3 = runOracle(bare, null); expect("пустое репо -> exit 1", r3.code, 1, r3.out);
-    const m = /(\d+) finding\(s\)/.exec(r3.out); expect("пустое репо даёт ровно 5 групповых находок", m ? Number(m[1]) : -1, 5, r3.out);
+    const m = /(\d+) finding\(s\)/.exec(r3.out); expect("пустое репо даёт ровно 6 групповых находок", m ? Number(m[1]) : -1, 6, r3.out);
   }
 
   // ===== мутации репо =====
@@ -130,6 +137,15 @@ try {
     ["миграция: bucket без лимита размера и типов", { [MIG]: F[MIG].replace("INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types) VALUES ('voice', 'voice', false, 26214400, ARRAY['audio/*']) ON CONFLICT (id) DO UPDATE SET public = false, file_size_limit = 26214400, allowed_mime_types = ARRAY['audio/*'];", "INSERT INTO storage.buckets (id, name, public) VALUES ('voice', 'voice', false) ON CONFLICT (id) DO UPDATE SET public = false;") }],
     ["миграция: нет RPC infra_status", { [MIG]: F[MIG].replace("FUNCTION public.infra_status(", "FUNCTION public.cron_status(") }],
     ["миграция: RPC без SECURITY DEFINER (PostgREST не увидит cron/storage)", { [MIG]: F[MIG].replace("SECURITY DEFINER", "SECURITY INVOKER") }],
+    ["гранты: supabase_storage_admin не член service_role (инцидент 2026-09-18: 403 на любую загрузку)", { "packages/supabase/migrations/032_storage_role_grants.sql": F["packages/supabase/migrations/032_storage_role_grants.sql"].replace("GRANT anon, authenticated, service_role TO supabase_storage_admin;", "") }],
+    ["гранты: нет USAGE на схему storage", { "packages/supabase/migrations/032_storage_role_grants.sql": F["packages/supabase/migrations/032_storage_role_grants.sql"].replace("GRANT USAGE ON SCHEMA storage TO anon, authenticated, service_role;", "") }],
+    ["гранты: service_role без прав на таблицы storage", { "packages/supabase/migrations/032_storage_role_grants.sql": F["packages/supabase/migrations/032_storage_role_grants.sql"].replace("GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE storage.objects TO service_role;", "") }],
+    ["гранты: service_role не видит buckets (upload не найдёт bucket)", { "packages/supabase/migrations/032_storage_role_grants.sql": F["packages/supabase/migrations/032_storage_role_grants.sql"].replace("GRANT SELECT ON TABLE storage.buckets TO service_role;", "") }],
+    ["гранты: на buckets выдан лишний DML (шире проверяемого набора)", { "packages/supabase/migrations/032_storage_role_grants.sql": F["packages/supabase/migrations/032_storage_role_grants.sql"].replace("GRANT SELECT ON TABLE storage.buckets TO service_role;", "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE storage.buckets TO service_role;") }],
+    ["гранты: health не отдаёт upload_ready", { "packages/supabase/migrations/032_storage_role_grants.sql": F["packages/supabase/migrations/032_storage_role_grants.sql"].replace("upload_ready", "ready") }],
+    ["гранты: upload_ready не проверяет права на buckets (ложный true при частичном отзыве)", { "packages/supabase/migrations/032_storage_role_grants.sql": F["packages/supabase/migrations/032_storage_role_grants.sql"].replace(" AND has_table_privilege('service_role', 'storage.buckets', 'SELECT')", "") }],
+    ["гранты: upload_ready не проверяет DELETE на objects", { "packages/supabase/migrations/032_storage_role_grants.sql": F["packages/supabase/migrations/032_storage_role_grants.sql"].replace(" AND has_table_privilege('service_role', 'storage.objects', 'DELETE')", "") }],
+    ["гранты: миграция 032 отсутствует", { "packages/supabase/migrations/032_storage_role_grants.sql": null }],
     ["бот: аудио не заливается в Storage (E-AUTO-6)", { "apps/bot/src/handlers/voice.ts": "await ctx.reply(\"Получил голосовое сообщение. Расшифровываю...\");\n" }],
     ["бот: ошибка upload игнорируется", { "apps/bot/src/handlers/voice.ts": F["apps/bot/src/handlers/voice.ts"].replace("error: uploadError", "error: _ignored").replace("Не удалось сохранить запись", "Получил") }],
     ["web: upload best-effort без 500", { "apps/web/app/api/voice/route.ts": "await admin.storage.from(\"voice\").upload(filePath, buffer);\n" }],
@@ -159,8 +175,10 @@ try {
     ["health: weekly-generate-orders неактивен", { ...H, cron: { ...H.cron, jobs: { ...H.cron.jobs, "weekly-generate-orders": { ...H.cron.jobs["weekly-generate-orders"], active: false } } } }],
     ["health: последний запуск weekly-demand failed", { ...H, cron: { ...H.cron, jobs: { ...H.cron.jobs, "weekly-demand": { ...H.cron.jobs["weekly-demand"], last_status: "failed" } } } }],
     ["health: блока cron нет (миграция 031 не применена)", { status: "ok", storage: H.storage }],
-    ["health: bucket voice публичный", { ...H, storage: { voice_bucket: "public" } }],
-    ["health: bucket voice отсутствует", { ...H, storage: { voice_bucket: "missing" } }],
+    ["health: bucket voice публичный", { ...H, storage: { voice_bucket: "public", upload_ready: true } }],
+    ["health: bucket voice отсутствует", { ...H, storage: { voice_bucket: "missing", upload_ready: true } }],
+    ["health: upload_ready false (гранты 032 не применены — прод 2026-09-18)", { ...H, storage: { voice_bucket: "private", upload_ready: false } }],
+    ["health: upload_ready отсутствует (старая infra_status)", { ...H, storage: { voice_bucket: "private" } }],
     ["health: блока storage нет", { status: "ok", cron: H.cron }],
   ];
   liveMutations.forEach(([label, health], i) => {
