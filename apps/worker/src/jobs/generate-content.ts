@@ -12,6 +12,7 @@ import {
   buildVoiceProfilePrompt,
   formatVoiceProfileForPrompt,
   slugifyLatin,
+  uniqueSlug,
   type VoiceProfile,
 } from "shared";
 
@@ -198,7 +199,9 @@ export async function handleGenerateContent(payload: Record<string, unknown>): P
   // Извлекаем мета из SEO-статьи
   const meta = extractMeta(seoArticle);
   const expertQuotes = extractQuotes(seoArticle, expert.full_name);
-  const slug = slugifyLatin(meta.metaTitle || questionText);
+  // R-07: slug уникален в пределах эксперта (миграция 033) - повторная тема получает суффикс -2, -3…
+  const { data: takenSlugs } = await supabase.from("content_packages").select("slug").eq("expert_id", expertId).not("slug", "is", null);
+  const slug = uniqueSlug(slugifyLatin(meta.metaTitle || questionText), (takenSlugs ?? []).map((r) => r.slug as string));
 
   // Считаем метрики
   const wordCount = seoArticle.split(/\s+/).filter(Boolean).length;
@@ -208,7 +211,7 @@ export async function handleGenerateContent(payload: Record<string, unknown>): P
   const passageCount = headingMatches.length;
 
   // Сохраняем
-  const { data: contentPkg, error: cpErr } = await supabase
+  const insertPackage = (slugValue: string) => supabase
     .from("content_packages")
     .insert({
       expert_id: expertId,
@@ -217,7 +220,7 @@ export async function handleGenerateContent(payload: Record<string, unknown>): P
       question_id: questionId,
       status: "generating",
       title: meta.metaTitle || questionText,
-      slug,
+      slug: slugValue,
       format_telegram_post: telegramPost,
       format_seo_article: seoArticle,
       format_cards: cards,
@@ -242,6 +245,14 @@ export async function handleGenerateContent(payload: Record<string, unknown>): P
     })
     .select("id")
     .single();
+
+  // Гонка двух генераций с одной основой slug: индекс 033 отклоняет вторую вставку (23505) -
+  // пересчитываем суффикс от уже занятых и повторяем, а не роняем job с готовым контентом.
+  let { data: contentPkg, error: cpErr } = await insertPackage(slug);
+  for (let attempt = 0; attempt < 3 && cpErr?.code === "23505"; attempt += 1) {
+    const { data: again } = await supabase.from("content_packages").select("slug").eq("expert_id", expertId).not("slug", "is", null);
+    ({ data: contentPkg, error: cpErr } = await insertPackage(uniqueSlug(slug, (again ?? []).map((r) => r.slug as string))));
+  }
 
   if (cpErr || !contentPkg) {
     throw new Error(`Failed to save content package: ${cpErr?.message}`);

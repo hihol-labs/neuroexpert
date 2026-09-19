@@ -42,7 +42,7 @@ async function getExperts(searchParams: SearchParams) {
   let query = supabase
     .from("profiles")
     .select(
-      "id, full_name, slug, qualification, city, avatar_url, trust_score, niche_id, years_experience, is_verified, is_featured, avg_rating, review_count, niches(name, icon)",
+      "id, full_name, slug, qualification, city, avatar_url, trust_score, niche_id, years_experience, is_verified, is_featured, avg_rating, review_count, niches!profiles_niche_id_fkey(name, icon)",
     )
     .eq("is_published", true);
 
@@ -147,7 +147,7 @@ async function getExperts(searchParams: SearchParams) {
     const { data: featuredData } = await supabase
       .from("profiles")
       .select(
-        "id, full_name, slug, qualification, city, avatar_url, trust_score, niche_id, years_experience, is_verified, is_featured, avg_rating, review_count, niches(name, icon)",
+        "id, full_name, slug, qualification, city, avatar_url, trust_score, niche_id, years_experience, is_verified, is_featured, avg_rating, review_count, niches!profiles_niche_id_fkey(name, icon)",
       )
       .eq("is_published", true)
       .eq("is_featured", true)

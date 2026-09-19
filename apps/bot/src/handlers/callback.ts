@@ -33,6 +33,10 @@ async function getProfileId(telegramId: number): Promise<string | null> {
   return data?.id ?? null;
 }
 
+function appUrl(): string {
+  return (process.env["APP_URL"] || process.env["NEXT_PUBLIC_APP_URL"] || "https://neuroexpertise.ru").replace(/\/+$/, "");
+}
+
 export function registerCallbackHandler(bot: Bot): void {
   // Toggle ниши (выбрать / снять)
   bot.callbackQuery(/^toggle_niche:(.+)$/, async (ctx) => {
@@ -302,35 +306,71 @@ export function registerCallbackHandler(bot: Bot): void {
     );
   });
 
-  // Одобрить контент
+  // R-07 (E-AUTO-3): «Опубликовать» публикует через общий сервис web (/api/internal/publish) - там
+  // проверка владельца, FAQ-гейт, публикация профиля и ревалидация страниц. Раньше колбэк писал
+  // статус-тупик без проверки владельца: любой пользователь бота мог одобрить чужой пакет.
   bot.callbackQuery(/^approve:(.+)$/, async (ctx) => {
     const contentId = ctx.match[1];
-
-    const { error } = await supabase
-      .from("content_packages")
-      .update({ status: "approved" })
-      .eq("id", contentId)
-      .eq("status", "review");
-
-    if (error) {
-      await ctx.answerCallbackQuery({ text: "Ошибка" });
+    const profileId = await getProfileId(ctx.from.id);
+    if (!profileId) {
+      await ctx.answerCallbackQuery({ text: "Профиль не найден" });
       return;
     }
 
-    await ctx.answerCallbackQuery({ text: "Контент одобрен!" });
-    await ctx.editMessageText(
-      ctx.callbackQuery.message?.text + "\n\nСтатус: Одобрен к публикации",
-    );
+    const token = process.env["PUBLISH_INTERNAL_TOKEN"];
+    if (!token) {
+      console.error("[callback] PUBLISH_INTERNAL_TOKEN is missing");
+      await ctx.answerCallbackQuery({ text: "Публикация из Telegram временно недоступна" });
+      await ctx.reply(`Опубликуйте на сайте: ${appUrl()}/content/${contentId}`);
+      return;
+    }
+
+    let status = 0;
+    let data: { ok?: boolean; code?: string; problems?: string[]; url?: string; profile_url?: string; profile_published_now?: boolean; profile_visible?: boolean } = {};
+    try {
+      // Внутренний адрес web в сети compose; глобальный fetch - без Telegram-прокси.
+      const res = await fetch(new URL("/api/internal/publish", process.env["PUBLISH_INTERNAL_URL"] || "http://web:3000"), {
+        method: "POST",
+        redirect: "error",
+        signal: AbortSignal.timeout(30_000),
+        headers: { "Content-Type": "application/json", "x-internal-token": token },
+        body: JSON.stringify({ content_id: contentId, expert_id: profileId }),
+      });
+      status = res.status;
+      data = await res.json().catch(() => ({}));
+    } catch (err) {
+      console.error("[callback] internal publish failed:", err);
+    }
+
+    if (status === 200 && data.ok) {
+      await ctx.answerCallbackQuery({ text: "Опубликовано!" });
+      await ctx.editMessageText(ctx.callbackQuery.message?.text + "\n\nСтатус: Опубликовано");
+      if (data.profile_visible === false) {
+        await ctx.reply(`Статья опубликована, но профиль не удалось сделать публичным - без этого статья недоступна. Включите публикацию профиля на сайте: ${appUrl()}/profile`);
+      } else if (data.profile_published_now) {
+        await ctx.reply(`Ваш профиль стал публичным: ${data.profile_url}\nСкрыть его можно в настройках профиля на сайте.`);
+      }
+      return;
+    }
+
+    const editor = `${appUrl()}/content/${contentId}`;
+    const reasons: Record<string, string> = {
+      not_found: "Материал не найден.",
+      already_published: "Материал уже опубликован.",
+      bad_status: "Материал ещё не готов к публикации.",
+      conflict: "Материал уже опубликован или изменён - обновите список.",
+      no_slug: `У материала нет адреса страницы. Откройте редактор: ${editor}`,
+      faq_required: `Перед публикацией нужно дополнить FAQ:\n${(data.problems ?? []).map((p) => `- ${p}`).join("\n")}\n\nРедактор: ${editor}`,
+    };
+    await ctx.answerCallbackQuery({ text: "Не опубликовано" });
+    await ctx.reply(reasons[data.code ?? ""] ?? `Не удалось опубликовать, попробуйте позже или на сайте: ${editor}`);
   });
 
-  // Редактировать контент
+  // R-07 (E-AUTO-4): правка текста - в веб-редакторе; прежняя заглушка обещала то, чего бот не умеет.
   bot.callbackQuery(/^edit:(.+)$/, async (ctx) => {
     const contentId = ctx.match[1];
 
     await ctx.answerCallbackQuery();
-    await ctx.reply(
-      "Отправьте текстом, что нужно изменить в контенте.\n" +
-        `(ID: ${contentId})`,
-    );
+    await ctx.reply(`Отредактировать материал можно на сайте:\n${appUrl()}/content/${contentId}`);
   });
 }

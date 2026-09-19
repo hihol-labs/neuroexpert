@@ -20,7 +20,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const KNOWN_FLAGS = new Set(["--stage", "--base-url", "--fixture-dir", "--repo-root", "--repo-only"]);
-const STAGES = new Set(["infra", "demand"]);
+const STAGES = new Set(["infra", "demand", "publish"]);
 const argv = process.argv.slice(2);
 let stage = null;
 let baseUrlArg = null;
@@ -43,7 +43,7 @@ for (let i = 0; i < argv.length; i += 1) {
 }
 
 if (!stage || !STAGES.has(stage)) {
-  console.error(`usage: --stage=<${[...STAGES].join("|")}> обязателен (publish — R-07+)`);
+  console.error(`usage: --stage=<${[...STAGES].join("|")}> обязателен`);
   process.exit(2);
 }
 if (fixtureDir && baseUrlArg) { console.error("usage: --fixture-dir и --base-url взаимоисключающи"); process.exit(2); }
@@ -355,7 +355,95 @@ async function checkDemandLive() {
   }
 }
 
-if (stage === "demand") {
+// ============================================================
+// R-07 стадия publish: approval -> публикация (контракт .itd-memory/contracts/R-07.md)
+// ============================================================
+const PUBLISH_FIX = "реализовать контракт R-07 (.itd-memory/contracts/R-07.md)";
+const SHARED_PUB = "packages/shared/src/content/publish.ts";
+const PUB_SVC = "apps/web/lib/publish-service.ts";
+const PUB_ROUTE = "apps/web/app/api/publish/route.ts";
+const PUB_INTERNAL = "apps/web/app/api/internal/publish/route.ts";
+const BOT_CB = "apps/bot/src/handlers/callback.ts";
+const CONTENT_PAGE = "apps/web/app/(dashboard)/content/[id]/page.tsx";
+const CATALOG = "apps/web/app/experts/page.tsx";
+const MIG_033 = "packages/supabase/migrations/033_content_slug_unique.sql";
+function checkPublishRepo() {
+  requireGroup("service", [
+    [SHARED_PUB, ["export function decidePublish(", "export function faqProblems(", "export function uniqueSlug(", "\"faq_required\"", "\"bad_status\"", "\"no_slug\""]],
+    ["packages/shared/src/index.ts", ["./content/publish.js"]],
+    ["packages/shared/tests/publish.test.cjs", ["decidePublish", "faqProblems", "uniqueSlug"]],
+    [PUB_SVC, ["export async function publishContent(", "decidePublish(", ".eq(\"expert_id\", expertId)", ".in(\"status\", [\"review\", \"approved\"])",
+      ".update({ is_published: true })", "profileVisible = true", "revalidatePath(`/experts/${expertSlug}`)", "revalidatePath(`/experts/${expertSlug}/${pkg!.slug}`)", "revalidatePath(\"/sitemap.xml\")"]],
+    [PUB_ROUTE, ["publishContent(", "status: 401", "if (!isSameOriginPost(request)) return NextResponse.json({ error: \"Forbidden\" }, { status: 403 });"]],
+  ], PUBLISH_FIX);
+  requireGroup("internal", [
+    [PUB_INTERNAL, ["process.env[\"PUBLISH_INTERNAL_TOKEN\"]", "timingSafeEqual(", "status: 401", "status: 503", "expert_id", "publishContent("]],
+    [".env.example", ["PUBLISH_INTERNAL_TOKEN="]],
+  ], PUBLISH_FIX);
+  requireGroup("bot", [
+    [BOT_CB, ["/api/internal/publish", "\"x-internal-token\"", "expert_id: profileId", "/content/${contentId}"]],
+  ], PUBLISH_FIX);
+  forbidGroup("bot-legacy", [[BOT_CB, ["status: \"approved\"", "Отправьте текстом, что нужно изменить"]]],
+    "«Опубликовать» в Telegram обязан публиковать через общий сервис с проверкой владельца; «Редактировать» - ссылка на веб-редактор");
+  requireGroup("faq-ui", [
+    [CONTENT_PAGE, ["faqProblems(", "data-faq-warning", "disabled={faqIssues.length > 0", "PUBLISH_ERRORS"]],
+  ], PUBLISH_FIX);
+  forbidGroup("faq-legacy", [[CONTENT_PAGE, ["JSON.stringify(data.format_faq", "try { faq = JSON.parse(faqJson); } catch"]]],
+    "FAQ редактируется формой «вопрос - ответ», а не сырым JSON с молчаливым откатом при ошибке разбора");
+  // PGRST201: у profiles две связи с niches - embed без подсказки отклоняется, каталог пуст, публикация 404.
+  requireGroup("embed", [
+    [CATALOG, ["niches!profiles_niche_id_fkey(name, icon)"]],
+    [PUB_SVC, ["niches!profiles_niche_id_fkey(slug)"]],
+  ], PUBLISH_FIX);
+  forbidGroup("embed-legacy", [[CATALOG, [" niches(name, icon)"]], [PUB_SVC, [" niches(slug)"]], [PUB_ROUTE, ["revalidateTag(", "niches(slug)"]], [PUB_SVC, ["revalidateTag("]]],
+    "embed niches из profiles только с подсказкой связи (!profiles_niche_id_fkey); revalidateTag(\"sitemap\") - мёртвый вызов");
+  requireGroup("slug", [
+    [MIG_033, ["CREATE UNIQUE INDEX IF NOT EXISTS", "(expert_id, slug)", "WHERE slug IS NOT NULL"]],
+    ["apps/worker/src/jobs/generate-content.ts", ["uniqueSlug(", "cpErr?.code === \"23505\""]],
+  ], PUBLISH_FIX);
+  requireGroup("rollout", [["OPERATIONS.md", ["Порядок выкатки R-07: worker → миграция 033 → токен → web → bot"]]],
+    "записать в OPERATIONS порядок выкатки R-07: бот вызывает внутренний роут web, которого в старом web нет");
+}
+/**
+ * Живой слой publish: роуты закрыты (401 без сессии и без токена; 503 - токен не задан в env, это
+ * находка), каталог показывает опубликованных экспертов, профиль каждого открывается и есть в sitemap.
+ * Оффлайн - фикстура publish.json: {"probes": {"publish": 401, "internal": 401}, "catalog": ["slug"],
+ * "profiles": {"slug": 200}, "sitemap": ["slug"]}. Ничего не мутирует.
+ */
+async function checkPublishLive() {
+  let fx = null;
+  if (fixtureDir) {
+    const abs = join(fixtureDir, "publish.json");
+    if (!existsSync(abs)) { finding("fixture:publish.json", "фикстура отсутствует", "положить publish.json в --fixture-dir"); return; }
+    fx = JSON.parse(readFileSync(abs, "utf8"));
+  }
+  const post = async (path) => (await fetchWithRetry(`${baseUrl}${path}`, { method: "POST", redirect: "manual", headers: { "content-type": "application/json" }, body: "{}" })).status;
+  const probes = fx ? (fx.probes ?? {}) : { publish: await post("/api/publish"), internal: await post("/api/internal/publish") };
+  if (probes.publish !== 401) finding("/api/publish", `без сессии: HTTP ${probes.publish} (ожидается 401)`, "отказ до обращения к БД");
+  if (probes.internal !== 401) finding("/api/internal/publish", `без токена: HTTP ${probes.internal} (ожидается 401; 503 = PUBLISH_INTERNAL_TOKEN не задан в env web, 404 = роута нет)`, "создать роут и задать токен в .env, пересоздать web");
+  let catalog, sitemap;
+  if (fx) { catalog = fx.catalog ?? []; sitemap = fx.sitemap ?? []; }
+  else {
+    const html = await (await fetchWithRetry(`${baseUrl}/experts`, { method: "GET" })).text();
+    catalog = [...new Set([...html.matchAll(/href="\/experts\/([a-z0-9-]+)"/g)].map((m) => m[1]))];
+    const xml = await (await fetchWithRetry(`${baseUrl}/sitemaps/experts.xml`, { method: "GET" })).text();
+    sitemap = [...new Set([...xml.matchAll(/\/experts\/([a-z0-9-]+)</g)].map((m) => m[1]))];
+  }
+  if (catalog.length === 0) { finding("/experts", "в каталоге нет ни одного эксперта", "проверить запрос каталога (PGRST201) и profiles.is_published у опубликовавших"); return; }
+  for (const slug of catalog.slice(0, 5)) {
+    const status = fx ? fx.profiles?.[slug] : (await fetchWithRetry(`${baseUrl}/experts/${slug}`, { method: "GET", redirect: "manual" })).status;
+    if (status !== 200) finding(`/experts/${slug}`, `HTTP ${status} (эксперт есть в каталоге, профиль обязан открываться)`, "профиль публикуется вместе со статьёй: profiles.is_published = true");
+    if (!sitemap.includes(slug)) finding("/sitemaps/experts.xml", `эксперта ${slug} нет в sitemap`, "sitemap строится по is_published = true и ревалидируется при публикации");
+  }
+}
+
+if (stage === "publish") {
+  checkPublishRepo();
+  if (!repoOnly) {
+    try { await checkPublishLive(); }
+    catch (err) { transportErrors.push(err instanceof Error ? err.message : String(err)); }
+  }
+} else if (stage === "demand") {
   checkDemandRepo();
   if (!repoOnly) {
     try { await checkDemandLive(); }

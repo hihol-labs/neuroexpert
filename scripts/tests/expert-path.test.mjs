@@ -103,7 +103,7 @@ try {
   {
     const repo = join(work, "usage"); writeRepo(repo, GREEN_FILES);
     expect("usage: без --stage -> exit 2", run(["--repo-root", repo, "--repo-only"]).code, 2, "");
-    expect("usage: неизвестная стадия -> exit 2", run(["--stage=publish", "--repo-root", repo, "--repo-only"]).code, 2, "");
+    expect("usage: неизвестная стадия -> exit 2", run(["--stage=notify", "--repo-root", repo, "--repo-only"]).code, 2, "");
     expect("usage: неизвестный флаг -> exit 2", run(["--stage=infra", "--repo-root", repo, "--repo-only", "--base_url", "x"]).code, 2, "");
     expect("usage: без живого контура и без --repo-only -> exit 2", run(["--stage=infra", "--repo-root", repo], { EXPERT_URL: "", SELFSERVE_URL: "", CANONICAL_URL: "" }).code, 2, "");
     const fx = join(work, "usage-fx"); writeFixtures(fx, GREEN_HEALTH);
@@ -340,6 +340,101 @@ try {
     demandLiveMutations.forEach(([label, rows], i) => {
       const d = join(work, `demand-fx-m${i}`); writeDemandFx(d, rows);
       const r = runDemand(repo, d); expect(`demand мутация live: ${label}`, r.code, 1, r.out);
+    });
+  }
+
+  // ===== R-07: стадия publish =====
+  {
+    const P = {
+      shared: "packages/shared/src/content/publish.ts", index: "packages/shared/src/index.ts", sharedTest: "packages/shared/tests/publish.test.cjs",
+      svc: "apps/web/lib/publish-service.ts", route: "apps/web/app/api/publish/route.ts", internal: "apps/web/app/api/internal/publish/route.ts",
+      env: ".env.example", bot: "apps/bot/src/handlers/callback.ts", page: "apps/web/app/(dashboard)/content/[id]/page.tsx",
+      catalog: "apps/web/app/experts/page.tsx", mig: "packages/supabase/migrations/033_content_slug_unique.sql",
+      gen: "apps/worker/src/jobs/generate-content.ts", ops: "OPERATIONS.md",
+    };
+    const GREEN_PUBLISH = {
+      [P.shared]: "export type PublishCode = \"not_found\" | \"already_published\" | \"bad_status\" | \"no_slug\" | \"faq_required\";\nexport function faqProblems(faq) {}\nexport function decidePublish(pkg, expertId) {}\nexport function uniqueSlug(base, taken) {}\n",
+      [P.index]: "export * from \"./content/publish.js\";\n",
+      [P.sharedTest]: "const {decidePublish, faqProblems, uniqueSlug} = require('../dist/content/publish.js');\n",
+      [P.svc]: "export async function publishContent(admin, contentId, expertId) {\n  const q = admin.from(\"content_packages\").select(\"id, profiles!inner(slug, niches!profiles_niche_id_fkey(slug))\");\n  const d = decidePublish(pkg, expertId);\n  await admin.from(\"content_packages\").update(x).eq(\"id\", contentId).eq(\"expert_id\", expertId).in(\"status\", [\"review\", \"approved\"]);\n  await admin.from(\"profiles\").update({ is_published: true }).eq(\"id\", expertId);\n  if (!profErr) { profileVisible = true; }\n  revalidatePath(`/experts/${expertSlug}/${pkg!.slug}`);\n  revalidatePath(`/experts/${expertSlug}`);\n  revalidatePath(\"/sitemap.xml\");\n}\n",
+      [P.route]: "if (!user) return NextResponse.json({ error: \"Unauthorized\" }, { status: 401 });\nif (!isSameOriginPost(request)) return NextResponse.json({ error: \"Forbidden\" }, { status: 403 });\nconst result = await publishContent(admin, content_id, user.id);\n",
+      [P.internal]: "const token = process.env[\"PUBLISH_INTERNAL_TOKEN\"];\nif (!token) return NextResponse.json({ error: \"x\" }, { status: 503 });\nif (!timingSafeEqual(a, b)) return NextResponse.json({ error: \"Unauthorized\" }, { status: 401 });\nconst { content_id, expert_id } = body;\nconst result = await publishContent(admin, content_id, expert_id);\n",
+      [P.env]: "PUBLISH_INTERNAL_TOKEN=\n",
+      [P.bot]: "const res = await fetch(new URL(\"/api/internal/publish\", base), { headers: { \"x-internal-token\": token }, body: JSON.stringify({ content_id: contentId, expert_id: profileId }) });\nawait ctx.reply(`${appUrl}/content/${contentId}`);\n",
+      [P.page]: "const PUBLISH_ERRORS = {};\nconst faqIssues = faqProblems(faq);\n<div data-faq-warning>{faqIssues}</div>\n<Button disabled={faqIssues.length > 0 || publishing}>Опубликовать</Button>\n",
+      [P.catalog]: "select(\"id, slug, niches!profiles_niche_id_fkey(name, icon)\")\n",
+      [P.mig]: "CREATE UNIQUE INDEX IF NOT EXISTS content_packages_expert_slug_uniq ON public.content_packages (expert_id, slug) WHERE slug IS NOT NULL;\n",
+      [P.gen]: "const slug = uniqueSlug(base, taken);\nfor (let a = 0; a < 3 && cpErr?.code === \"23505\"; a += 1) { retry(); }\n",
+      [P.ops]: "- **Порядок выкатки R-07: worker → миграция 033 → токен → web → bot.**\n",
+    };
+    const GREEN_PUBLISH_FX = { probes: { publish: 401, internal: 401 }, catalog: ["ivan-petrov"], profiles: { "ivan-petrov": 200 }, sitemap: ["ivan-petrov"] };
+    const writePubFx = (dir, fx) => { mkdirSync(dir, { recursive: true }); if (fx !== null) writeFileSync(join(dir, "publish.json"), JSON.stringify(fx)); };
+    const runPublish = (repo, fx) => run(["--stage=publish", "--repo-root", repo, ...(fx ? ["--fixture-dir", fx] : ["--repo-only"])]);
+
+    const repo = join(work, "publish-green"); writeRepo(repo, GREEN_PUBLISH);
+    const fx = join(work, "publish-green-fx"); writePubFx(fx, GREEN_PUBLISH_FX);
+    { const r = runPublish(repo, fx); expect("publish: зелёное репо + зелёные пробы -> exit 0", r.code, 0, r.out); }
+    { const r = runPublish(repo, null); expect("publish: --repo-only на зелёном репо -> exit 0", r.code, 0, r.out); }
+    {
+      const bare = join(work, "publish-bare"); mkdirSync(bare, { recursive: true });
+      const r = runPublish(bare, null); expect("publish: пустое репо -> exit 1", r.code, 1, r.out);
+      const m = /(\d+) finding\(s\)/.exec(r.out); expect("publish: пустое репо даёт ровно 7 групповых находок (forbid-группы молчат)", m ? Number(m[1]) : -1, 7, r.out);
+    }
+    const G = GREEN_PUBLISH;
+    const publishMutations = [
+      ["shared: нет кода отказа faq_required", { [P.shared]: G[P.shared].replace("\"faq_required\"", "\"x\"") }],
+      ["shared: публикация из любого статуса (нет bad_status)", { [P.shared]: G[P.shared].replace(" | \"bad_status\"", "") }],
+      ["shared: решение не экспортировано", { [P.index]: "export {};\n" }],
+      ["shared: нет unit-тестов", { [P.sharedTest]: "// todo\n" }],
+      ["сервис: UPDATE без владельца", { [P.svc]: G[P.svc].replace(".eq(\"expert_id\", expertId)", "") }],
+      ["сервис: UPDATE без фильтра статуса", { [P.svc]: G[P.svc].replace(".in(\"status\", [\"review\", \"approved\"])", "") }],
+      ["сервис: профиль не публикуется (E-AUTO-18)", { [P.svc]: G[P.svc].replace(".update({ is_published: true })", ".select()") }],
+      ["сервис: сбой публикации профиля замалчивается (profileVisible всегда true)", { [P.svc]: G[P.svc].replace("if (!profErr) { profileVisible = true; }", "") }],
+      ["сервис: профиль эксперта не ревалидируется", { [P.svc]: G[P.svc].replace("  revalidatePath(`/experts/${expertSlug}`);\n", "") }],
+      ["сервис: sitemap не ревалидируется", { [P.svc]: G[P.svc].replace("revalidatePath(\"/sitemap.xml\")", "noop()") }],
+      ["сервис: мёртвый revalidateTag", { [P.svc]: G[P.svc] + "revalidateTag(\"sitemap\");\n" }],
+      ["сервис: embed niches без подсказки связи (PGRST201 -> 404)", { [P.svc]: G[P.svc].replace("niches!profiles_niche_id_fkey(slug)", "niches(slug)") }],
+      ["каталог: embed niches без подсказки связи (пустой каталог)", { [P.catalog]: "select(\"id, slug, niches(name, icon)\")\n" }],
+      ["роут: публикация мимо общего сервиса", { [P.route]: G[P.route].replace("publishContent(", "inlinePublish(") }],
+      ["роут: без проверки origin (CSRF)", { [P.route]: G[P.route].replace("if (!isSameOriginPost(request)) return", "if (false) return") }],
+      ["роут: нет отказа без сессии", { [P.route]: G[P.route].replace("status: 401", "status: 200") }],
+      ["internal: сравнение токена не constant-time", { [P.internal]: G[P.internal].replace("timingSafeEqual(a, b)", "a === b") }],
+      ["internal: без токена в env не отказывает (fail-open)", { [P.internal]: G[P.internal].replace("status: 503", "status: 200") }],
+      ["internal: токен читается точечной записью", { [P.internal]: G[P.internal].replace("process.env[\"PUBLISH_INTERNAL_TOKEN\"]", "process.env.PUBLISH_INTERNAL_TOKEN") }],
+      ["internal: владелец не передаётся", { [P.internal]: G[P.internal].replace(/expert_id/g, "x") }],
+      ["internal: роут отсутствует", { [P.internal]: null }],
+      [".env.example без PUBLISH_INTERNAL_TOKEN", { [P.env]: "SMTP_HOST=\n" }],
+      ["бот: approve пишет status approved напрямую (тупик, без владельца)", { [P.bot]: G[P.bot] + "await supabase.from(\"content_packages\").update({ status: \"approved\" });\n" }],
+      ["бот: не передаёт владельца", { [P.bot]: G[P.bot].replace("expert_id: profileId", "x: 1") }],
+      ["бот: без токена", { [P.bot]: G[P.bot].replace("\"x-internal-token\"", "\"x\"") }],
+      ["бот: «Редактировать» осталась заглушкой", { [P.bot]: G[P.bot].replace("/content/${contentId}", "") + "await ctx.reply(\"Отправьте текстом, что нужно изменить в контенте.\");\n" }],
+      ["UI: нет предупреждения FAQ до нажатия", { [P.page]: G[P.page].replace("data-faq-warning", "data-x") }],
+      ["UI: кнопка активна при непройденном гейте", { [P.page]: G[P.page].replace("disabled={faqIssues.length > 0", "disabled={false") }],
+      ["UI: отказы не переведены", { [P.page]: G[P.page].replace("PUBLISH_ERRORS", "ERR") }],
+      ["UI: FAQ снова сырой JSON", { [P.page]: G[P.page] + "setFaqJson(JSON.stringify(data.format_faq ?? [], null, 2));\n" }],
+      ["миграция: индекс не уникальный", { [P.mig]: G[P.mig].replace("CREATE UNIQUE INDEX IF NOT EXISTS", "CREATE INDEX IF NOT EXISTS") }],
+      ["миграция: индекс падает на slug NULL-дублях (нет WHERE)", { [P.mig]: G[P.mig].replace(" WHERE slug IS NOT NULL", "") }],
+      ["worker: гонка slug роняет генерацию (нет повтора при 23505)", { [P.gen]: "const slug = uniqueSlug(base, taken);\n" }],
+      ["worker: slug без защиты от коллизии", { [P.gen]: "const slug = slugifyLatin(title);\n" }],
+      ["runbook: порядок выкатки не записан", { [P.ops]: "выкатывать как обычно\n" }],
+    ];
+    publishMutations.forEach(([label, ov], i) => {
+      const d = join(work, `publish-m${i}`); writeRepo(d, { ...GREEN_PUBLISH, ...ov });
+      const r = runPublish(d, null); expect(`publish мутация репо: ${label}`, r.code, 1, r.out);
+    });
+    const publishLiveMutations = [
+      ["/api/publish открыт без сессии", { ...GREEN_PUBLISH_FX, probes: { publish: 200, internal: 401 } }],
+      ["внутреннего роута нет", { ...GREEN_PUBLISH_FX, probes: { publish: 401, internal: 404 } }],
+      ["токен не задан в env web (503)", { ...GREEN_PUBLISH_FX, probes: { publish: 401, internal: 503 } }],
+      ["каталог пуст", { ...GREEN_PUBLISH_FX, catalog: [] }],
+      ["эксперт в каталоге, профиль 404", { ...GREEN_PUBLISH_FX, profiles: { "ivan-petrov": 404 } }],
+      ["эксперта нет в sitemap", { ...GREEN_PUBLISH_FX, sitemap: [] }],
+      ["пробы отсутствуют в фикстуре", { catalog: ["ivan-petrov"], profiles: { "ivan-petrov": 200 }, sitemap: ["ivan-petrov"] }],
+      ["фикстура publish.json отсутствует", null],
+    ];
+    publishLiveMutations.forEach(([label, fxRows], i) => {
+      const d = join(work, `publish-fx-m${i}`); writePubFx(d, fxRows);
+      const r = runPublish(repo, d); expect(`publish мутация live: ${label}`, r.code, 1, r.out);
     });
   }
 } finally {
