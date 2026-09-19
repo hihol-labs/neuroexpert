@@ -2,15 +2,18 @@
 
 ## Current Task
 
-- **R-07** — активирован 2026-09-18 после verified R-06, tier **high**, стадия **ПЛАНИРОВАНИЕ**.
-  Approval → публикация: `/api/publish` публикует профиль эксперта (is_published, slug) и
-  ревалидирует страницы; «Опубликовать» из Telegram реально публикует и проверяет владельца;
-  FAQ-гейт 422 с понятным предупреждением (E-AUTO-3/17/18, READINESS_PLAN R-07). Оракул
-  `node scripts/verify-expert-path.mjs --stage=publish` пишется первым; контракт
-  `.itd-memory/contracts/R-07.md` — первый шаг (диагноз по коду), затем утверждение владельца.
-  Разрешены после плана: файлы, названные контрактом, `scripts/verify-expert-path.mjs` (+ тест),
-  `.itd*`, BACKLOG, CURRENT_PLAN, READINESS_PLAN, OPERATIONS. Запрещены: цены пакетов, касса,
-  checkout-флаг, платный контур Audit Start.
+- **R-08** — активирован 2026-09-19 после verified R-07, tier **high**, стадия **ПЛАНИРОВАНИЕ**.
+  Уведомления и привязка Telegram: `notifyExpert()` = e-mail всегда + Telegram при наличии (черновик
+  готов, опубликовано, заявка); привязка Telegram к существующему аккаунту по подписанной deep-link
+  без дубль-аккаунта (READINESS_PLAN R-08). Оракул `node scripts/verify-expert-path.mjs --stage=notify`
+  пишется первым; контракт `.itd-memory/contracts/R-08.md` — первый шаг (диагноз по коду), затем
+  утверждение владельца. Разрешены после плана: файлы, названные контрактом,
+  `scripts/verify-expert-path.mjs` (+ тест), `.itd*`, BACKLOG, CURRENT_PLAN, READINESS_PLAN,
+  OPERATIONS. Запрещены: цены пакетов, касса, checkout-флаг, платный контур Audit Start.
+
+Предыдущий юнит: **R-07 — VERIFIED 2026-09-19** (ОТК exit 0 через проброс: «Expert-path publish stage
+verification passed»; коммит `5091071`, docs `425e21f`; миграция 033 применена; выкатка worker → 033 →
+токен → web → bot; live-оракулы ALL_GREEN; см. DECISIONS 2026-09-19 и OPERATIONS 9g).
 
 Предыдущий юнит: **R-06 — VERIFIED 2026-09-18** (ОТК exit 0 через проброс: «Expert-path demand stage
 verification passed»; коммиты `f1ff332`, `4bac79c`, docs `cca7e40`, `a79c2fc`; worker, web, bot
