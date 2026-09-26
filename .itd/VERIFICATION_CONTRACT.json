@@ -1,9 +1,9 @@
 {
   "version": 1,
   "purpose": "Executable verification contract for the active unit.",
-  "unitId": "R-08",
-  "createdAt": "2026-09-19",
-  "note": "node scripts/verify-expert-path.mjs --stage=notify — стадия НЕ СОЗДАНА, оракул пишется первым",
+  "unitId": "R-09",
+  "createdAt": "2026-09-26",
+  "note": "node scripts/verify-expert-path.mjs --stage=billing — стадия НЕ СОЗДАНА, оракул пишется первым",
   "commandSchema": {
     "requiredFields": [
       "id",
@@ -21,8 +21,8 @@
   },
   "commands": [
     {
-      "id": "r-08-unit",
-      "command": "node scripts/verify-expert-path.mjs --stage=notify",
+      "id": "r-09-unit",
+      "command": "node scripts/verify-expert-path.mjs --stage=billing",
       "timeoutSeconds": 600,
       "expectedOutput": "exit 0",
       "passFailParser": "exit_code_zero",
@@ -213,6 +213,13 @@
     {
       "id": "r07-expert-publish",
       "command": "node scripts/verify-expert-path.mjs --stage=publish --repo-only",
+      "timeoutSeconds": 300,
+      "expectedOutput": "exit 0",
+      "passFailParser": "exit_code_zero"
+    },
+    {
+      "id": "r08-expert-notify",
+      "command": "node scripts/verify-expert-path.mjs --stage=notify --repo-only",
       "timeoutSeconds": 300,
       "expectedOutput": "exit 0",
       "passFailParser": "exit_code_zero"

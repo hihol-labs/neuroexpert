@@ -2,14 +2,19 @@
 
 ## Current Task
 
-- **R-08** — активирован 2026-09-19 после verified R-07, tier **high**, стадия **ПЛАНИРОВАНИЕ**.
-  Уведомления и привязка Telegram: `notifyExpert()` = e-mail всегда + Telegram при наличии (черновик
-  готов, опубликовано, заявка); привязка Telegram к существующему аккаунту по подписанной deep-link
-  без дубль-аккаунта (READINESS_PLAN R-08). Оракул `node scripts/verify-expert-path.mjs --stage=notify`
-  пишется первым; контракт `.itd-memory/contracts/R-08.md` — первый шаг (диагноз по коду), затем
-  утверждение владельца. Разрешены после плана: файлы, названные контрактом,
-  `scripts/verify-expert-path.mjs` (+ тест), `.itd*`, BACKLOG, CURRENT_PLAN, READINESS_PLAN,
-  OPERATIONS. Запрещены: цены пакетов, касса, checkout-флаг, платный контур Audit Start.
+- **R-09** — активирован 2026-09-26 после verified R-08, tier **high**, стадия **ПЛАНИРОВАНИЕ**.
+  Тарифы: `checkPackageLimit` / `getAllowedFormats` / `checkNicheLimit` применяются в generate-content
+  и accept; `tier=free` без платежа (downgrade); аналитика цитирования доступна для любой опубликованной
+  статьи (READINESS_PLAN R-09). Оракул `node scripts/verify-expert-path.mjs --stage=billing` пишется
+  первым; контракт `.itd-memory/contracts/R-09.md` — первый шаг (диагноз по коду), затем утверждение
+  владельца. Разрешены после плана: файлы, названные контрактом, `scripts/verify-expert-path.mjs`
+  (+ тест), `.itd*`, BACKLOG, CURRENT_PLAN, READINESS_PLAN, OPERATIONS. Запрещены: изменение цен и
+  состава тарифов без решения владельца, касса Audit Start, checkout-флаг.
+
+Предыдущий юнит: **R-08 — VERIFIED 2026-09-26** (ОТК exit 0 через проброс: «Expert-path notify stage
+verification passed»; коммит `8b52daa`, docs `9be798a`; миграция 034 применена; выкатка 034 → worker →
+секрет → bot → web; live-оракулы ALL_GREEN; бот не стартует из-за недоступного прокси Telegram —
+TG-PROXY-1; см. DECISIONS 2026-09-26 и OPERATIONS 9h).
 
 Предыдущий юнит: **R-07 — VERIFIED 2026-09-19** (ОТК exit 0 через проброс: «Expert-path publish stage
 verification passed»; коммит `5091071`, docs `425e21f`; миграция 033 применена; выкатка worker → 033 →
