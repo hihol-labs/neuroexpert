@@ -16,6 +16,7 @@ import { handleCheckCwv } from "./jobs/check-cwv.js";
 import { handleCrosspost } from "./jobs/crosspost.js";
 import { handleCrosspostSocial } from "./jobs/crosspost-social.js";
 import { handleSendEmailDigest } from "./jobs/send-email-digest.js";
+import { handleNotifyExpert } from "./jobs/notify-expert.js";
 import { handleOptimizeImages } from "./jobs/optimize-images.js";
 import {
   handleAnalyzeBehaviorSignals,
@@ -57,6 +58,7 @@ const handlers: Record<string, JobHandler> = {
   crosspost: handleCrosspost,
   crosspost_social: handleCrosspostSocial,
   send_email_digest: handleSendEmailDigest,
+  notify_expert: handleNotifyExpert,
   optimize_images: handleOptimizeImages,
   generate_daily_growth_tasks: handleGenerateDailyGrowthTasks,
   generate_local_weekly_report: handleGenerateLocalWeeklyReport,

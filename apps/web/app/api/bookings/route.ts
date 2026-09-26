@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import { tgFetch } from "shared/http/telegram-fetch";
 
 function getAdmin() {
   return createSupabaseClient(
@@ -147,35 +146,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Ошибка создания записи" }, { status: 500 });
     }
 
-    // Telegram notification
-    if (expert.telegram_id) {
-      const botToken = process.env.TELEGRAM_BOT_TOKEN;
-      if (botToken) {
-        const text = [
-          "📅 Новая запись!",
-          "",
-          `👤 ${client_name}`,
-          `📱 ${client_contact}`,
-          `📆 ${booking_date} в ${booking_time}`,
-          ...(client_message ? [`💬 ${client_message}`] : []),
-        ].join("\n");
-
-        const keyboard = {
-          inline_keyboard: [
-            [
-              { text: "✅ Подтвердить", callback_data: `confirm_booking:${booking.id}` },
-              { text: "❌ Отменить", callback_data: `cancel_booking:${booking.id}` },
-            ],
-          ],
-        };
-
-        tgFetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id: expert.telegram_id, text, reply_markup: keyboard }),
-        }).catch(() => {});
-      }
-    }
+    // R-08: уведомление эксперту - job notify_expert (Telegram при наличии + e-mail всегда). Кнопки
+    // «Подтвердить / Отменить» убраны: у них не было обработчиков (тикет в BACKLOG).
+    const { error: notifyErr } = await admin.from("jobs").insert({
+      type: "notify_expert",
+      payload: { kind: "booking", ref_id: booking.id, expert_id: expert.id },
+      priority: 3,
+    });
+    if (notifyErr) console.error("[bookings] notify_expert enqueue failed:", notifyErr.message);
 
     return NextResponse.json({ ok: true, booking_id: booking.id });
   } catch (err) {

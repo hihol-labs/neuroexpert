@@ -2,6 +2,7 @@ import type { Bot, Context } from "grammy";
 import { supabase } from "../supabase";
 import { nicheKeyboard, changeNichesKeyboard } from "../keyboards";
 import { NICHES } from "shared";
+import { hashLinkNonce, verifyTelegramLinkToken } from "shared/notify/link-token";
 
 /** Получает выбранные ниши эксперта */
 async function getSelectedNiches(profileId: string): Promise<string[]> {
@@ -66,47 +67,27 @@ export function registerCommands(bot: Bot): void {
       return;
     }
 
-    // Создаём нового пользователя через Supabase Auth Admin
-    const email = `tg_${telegramId}@neuroexpert.bot`;
-    const { data: authUser, error: authError } =
-      await supabase.auth.admin.createUser({
-        email,
-        email_confirm: true,
-        user_metadata: {
-          telegram_id: telegramId,
-          telegram_username: username,
-          full_name: firstName,
-        },
-      });
-
-    if (authError) {
-      console.error("[start] Auth createUser error:", authError);
-      await ctx.reply("Произошла ошибка при регистрации. Попробуйте позже.");
-      return;
-    }
-
-    // Обновляем профиль с telegram_id (профиль создаётся триггером auth)
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update({
-        telegram_id: telegramId,
-        telegram_username: username ?? null,
-        full_name: firstName,
-      })
-      .eq("id", authUser.user.id);
-
-    if (updateError) {
-      console.error("[start] Profile update error:", updateError);
-    }
-
+    // R-08 (E-AUTO-2): аккаунт создаётся только на сайте. Раньше здесь создавался новый аккаунт
+    // tg_<id>@neuroexpert.bot - для эксперта, зарегистрированного на сайте, это был дубль.
     await ctx.reply(
-      `Добро пожаловать в НейроЭксперт, ${firstName}!\n\n` +
-        "Я помогу вам стать видимым для AI-платформ. " +
-        "Для начала выберите ваши ниши (до 3):",
-      { reply_markup: nicheKeyboard() },
+      `Здравствуйте, ${firstName}!\n\n` +
+        "Чтобы работать с НейроЭкспертом через Telegram, привяжите его к своему аккаунту:\n" +
+        `1. Зарегистрируйтесь или войдите: ${appUrl()}/login\n` +
+        "2. В профиле нажмите «Подключить Telegram» и откройте ссылку — она приведёт обратно сюда.",
     );
   });
 }
+
+function appUrl(): string {
+  return (process.env["APP_URL"] || process.env["NEXT_PUBLIC_APP_URL"] || "https://neuroexpertise.ru").replace(/\/+$/, "");
+}
+
+const LINK_ERRORS: Record<string, string> = {
+  expired: "Ссылка устарела (действует 15 минут). Получите новую в профиле на сайте.",
+  bad_signature: "Ссылка недействительна. Получите новую в профиле на сайте.",
+  bad_format: "Ссылка недействительна. Получите новую в профиле на сайте.",
+  no_secret: "Привязка временно недоступна. Попробуйте позже.",
+};
 
 async function handleLinkAccount(
   ctx: Context,
@@ -114,21 +95,41 @@ async function handleLinkAccount(
   username: string | undefined,
   token: string,
 ): Promise<void> {
-  // token = user id для привязки
+  // R-08: токен - подписанная ссылка из профиля (HMAC, 15 минут, одноразовый номер). Сырой id
+  // профиля больше не принимается: зная UUID, можно было привязать свой Telegram к чужому профилю.
+  const secret = process.env["TELEGRAM_LINK_SECRET"];
+  const verified = verifyTelegramLinkToken(token, secret, Date.now());
+  if (!verified.ok) {
+    if (verified.code === "no_secret") console.error("[start] TELEGRAM_LINK_SECRET is missing");
+    await ctx.reply(`${LINK_ERRORS[verified.code]}\n${appUrl()}/profile`);
+    return;
+  }
+
+  // Номер гасится этой же записью: повторное применение ссылки не найдёт строку.
   const { data: profile, error } = await supabase
     .from("profiles")
     .update({
       telegram_id: telegramId,
       telegram_username: username ?? null,
+      telegram_link_nonce: null,
+      telegram_link_expires_at: null,
     })
-    .eq("id", token)
+    .eq("id", verified.profileId)
+    .eq("telegram_link_nonce", hashLinkNonce(verified.nonce))
+    // Срок проверяется и в подписи, и по записи профиля (вторая линия защиты).
+    .gt("telegram_link_expires_at", new Date().toISOString())
     .select("id, full_name")
-    .single();
+    .maybeSingle();
 
-  if (error || !profile) {
+  if (error?.code === "23505") {
     await ctx.reply(
-      "Не удалось привязать аккаунт. Убедитесь, что ссылка актуальна.",
+      "Этот Telegram уже привязан к другому аккаунту НейроЭксперта. Отключите его там в профиле и получите новую ссылку.",
     );
+    return;
+  }
+  if (error || !profile) {
+    if (error) console.error("[start] link update failed:", error.message);
+    await ctx.reply(`Ссылка уже использована или заменена новой. Получите новую в профиле: ${appUrl()}/profile`);
     return;
   }
 

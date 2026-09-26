@@ -1,7 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
 import { decidePublish, type PublishCode } from "shared";
-import { sendSharingNotification } from "@/lib/publish-notify";
 
 /**
  * R-07: единственный путь публикации контент-пакета - и для сайта (/api/publish), и для Telegram
@@ -86,8 +85,13 @@ export async function publishContent(admin: SupabaseClient, contentId: string, e
   revalidatePath("/sitemap.xml");
   revalidatePath("/sitemaps/experts.xml");
 
-  if (profile.telegram_id) {
-    await sendSharingNotification(profile.telegram_id, (pkg!.title as string) ?? "", publishedUrl, profile.niches?.slug ?? undefined);
-  }
+  // R-08: «опубликовано» - job notify_expert (Telegram при наличии + e-mail всегда, дедуп); сбой постановки
+  // не отменяет публикацию.
+  const { error: notifyErr } = await admin.from("jobs").insert({
+    type: "notify_expert",
+    payload: { kind: "published", ref_id: contentId, expert_id: expertId },
+    priority: 4,
+  });
+  if (notifyErr) console.error("[publish] notify_expert enqueue failed", { contentId, error: notifyErr.message });
   return { ok: true, url: publishedUrl, profileUrl, profilePublishedNow, profileVisible };
 }

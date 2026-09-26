@@ -18,7 +18,7 @@ with tarfile.open(archive) as tar:
 commands = [
     ['pnpm', '--filter', 'shared', 'test'],
     ['pnpm', '--filter', 'worker', 'build'],
-    ['node', '--test', 'apps/worker/tests/audit-delivery.test.cjs', 'apps/worker/tests/payment-reconcile.test.cjs', 'apps/worker/tests/operator-alerts.test.cjs'],
+    ['node', '--test', 'apps/worker/tests/audit-delivery.test.cjs', 'apps/worker/tests/payment-reconcile.test.cjs', 'apps/worker/tests/operator-alerts.test.cjs', 'apps/worker/tests/expert-notify.test.cjs'],
     ['node', 'scripts/tests/selfserve-path.test.mjs'],
     ['node', 'scripts/tests/preflight.test.mjs'],
     ['node', 'scripts/verify-preflight.mjs', '--repo-only', '--check-alerts'],
@@ -27,6 +27,7 @@ commands = [
     ['node', 'scripts/verify-expert-path.mjs', '--stage=infra', '--repo-only'],
     ['node', 'scripts/verify-expert-path.mjs', '--stage=demand', '--repo-only'],
     ['node', 'scripts/verify-expert-path.mjs', '--stage=publish', '--repo-only'],
+    ['node', 'scripts/verify-expert-path.mjs', '--stage=notify', '--repo-only'],
     ['pnpm', '--filter', 'bot', 'build'],
     ['node', 'scripts/verify-selfserve-path.mjs', '--stage=delivery', '--check-details', '--repo-only'],
     ['node', 'scripts/verify-selfserve-path.mjs', '--stage=delivery', '--check-money', '--repo-only'],

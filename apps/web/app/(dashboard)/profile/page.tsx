@@ -14,6 +14,35 @@ export default function ProfilePage() {
     ),
   );
   const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
+  const [tgLink, setTgLink] = useState<string | null>(null);
+  const [tgBusy, setTgBusy] = useState(false);
+
+  // R-08: подписанная одноразовая ссылка на бота (POST /api/telegram/link); отвязка - DELETE.
+  async function linkTelegram() {
+    setTgBusy(true);
+    try {
+      const res = await fetch("/api/telegram/link", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && typeof data.url === "string") setTgLink(data.url);
+      else toast(typeof data.error === "string" && res.status !== 401 ? data.error : "Не удалось получить ссылку", "error");
+    } catch {
+      toast("Сеть недоступна, попробуйте ещё раз.", "error");
+    } finally {
+      setTgBusy(false);
+    }
+  }
+  async function unlinkTelegram() {
+    setTgBusy(true);
+    try {
+      const res = await fetch("/api/telegram/link", { method: "DELETE" });
+      if (res.ok) { setProfile((p) => (p ? { ...p, telegram_id: null } : p)); setTgLink(null); toast("Telegram отключён", "success"); }
+      else toast("Не удалось отключить Telegram", "error");
+    } catch {
+      toast("Сеть недоступна, попробуйте ещё раз.", "error");
+    } finally {
+      setTgBusy(false);
+    }
+  }
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
   const [knowsInput, setKnowsInput] = useState("");
@@ -313,11 +342,25 @@ export default function ProfilePage() {
         {/* Telegram */}
         <div className="bg-white rounded-xl border p-6 lg:col-span-2">
           <h2 className="font-semibold text-gray-900 mb-2">Telegram</h2>
+          {/* R-08: привязка по подписанной ссылке из кабинета; письма приходят всегда, Telegram - дополнительно. */}
           {profile.telegram_id ? (
-            <p className="text-sm text-green-600">Привязан (ID: {String(profile.telegram_id)})</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-sm text-green-600">Привязан (ID: {String(profile.telegram_id)})</p>
+              <Button variant="secondary" onClick={unlinkTelegram} disabled={tgBusy}>Отключить</Button>
+            </div>
           ) : (
             <div>
-              <p className="text-sm text-gray-600 mb-2">Telegram не привязан. Напишите боту @neuroexpert_bot команду /start</p>
+              <p className="text-sm text-gray-600 mb-2">
+                Telegram не привязан. Уведомления приходят на e-mail; с Telegram — ещё и в бот, а черновики можно публиковать кнопкой.
+              </p>
+              {tgLink ? (
+                <p className="text-sm">
+                  <a href={tgLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Открыть бота и подтвердить привязку</a>
+                  <span className="text-gray-500"> — ссылка действует 15 минут и срабатывает один раз. После привязки обновите страницу.</span>
+                </p>
+              ) : (
+                <Button onClick={linkTelegram} disabled={tgBusy}>{tgBusy ? "..." : "Подключить Telegram"}</Button>
+              )}
             </div>
           )}
         </div>

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { randomBytes } from "crypto";
-import { tgFetch } from "shared/http/telegram-fetch";
 
 function getAdmin() {
   return createSupabaseClient(
@@ -102,22 +101,14 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Telegram notification to expert
-    const { data: expert } = await admin
-      .from("profiles")
-      .select("telegram_id, full_name")
-      .eq("id", expert_id)
-      .single();
-
-    if (expert?.telegram_id) {
-      await sendTelegramNotification(
-        expert.telegram_id,
-        lead.id,
-        client_name,
-        client_contact,
-        client_message || "",
-      );
-    }
+    // R-08: уведомление эксперту - job notify_expert (Telegram при наличии + e-mail всегда); раньше
+    // только Telegram, и эксперт без привязанного бота заявку не видел.
+    const { error: notifyErr } = await admin.from("jobs").insert({
+      type: "notify_expert",
+      payload: { kind: "lead", ref_id: lead.id, expert_id },
+      priority: 3,
+    });
+    if (notifyErr) console.error("[leads] notify_expert enqueue failed:", notifyErr.message);
 
     // If form submission, redirect to tracking page
     if (!contentType.includes("application/json")) {
@@ -140,47 +131,5 @@ export async function POST(request: NextRequest) {
       { error: "Internal server error" },
       { status: 500 },
     );
-  }
-}
-
-async function sendTelegramNotification(
-  telegramId: number,
-  leadId: string,
-  name: string,
-  contact: string,
-  message: string,
-): Promise<void> {
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  if (!botToken) return;
-
-  const text = [
-    "🔔 Новая заявка!",
-    "",
-    `👤 ${name}`,
-    `📱 ${contact}`,
-    ...(message ? [`💬 ${message}`] : []),
-  ].join("\n");
-
-  const keyboard = {
-    inline_keyboard: [
-      [
-        { text: "✅ Принять", callback_data: `accept_lead:${leadId}` },
-        { text: "❌ Отклонить", callback_data: `reject_lead:${leadId}` },
-      ],
-    ],
-  };
-
-  try {
-    await tgFetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: telegramId,
-        text,
-        reply_markup: keyboard,
-      }),
-    });
-  } catch (err) {
-    console.error("[leads] Telegram notification failed:", err);
   }
 }

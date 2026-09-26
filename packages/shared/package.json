@@ -30,6 +30,11 @@
       "types": "./dist/content/publish.d.ts",
       "import": "./dist/content/publish.js",
       "default": "./dist/content/publish.js"
+    },
+    "./notify/link-token": {
+      "types": "./dist/notify/link-token.d.ts",
+      "import": "./dist/notify/link-token.js",
+      "default": "./dist/notify/link-token.js"
     }
   },
   "scripts": {

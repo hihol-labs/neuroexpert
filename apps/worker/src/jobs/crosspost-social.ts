@@ -1,5 +1,4 @@
 import { supabase } from "../supabase.js";
-import { tgFetch } from "shared/http/telegram-fetch";
 
 // Кросспост в социальные сети + отзовики
 // При публикации статьи — подготовка постов для размещения на разных площадках
@@ -63,35 +62,8 @@ export async function handleCrosspostSocial(payload: Record<string, unknown>): P
     status: "prepared",
   });
 
-  // Уведомляем эксперта со ссылками для шеринга
-  if (expert.telegram_id) {
-    const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    if (botToken) {
-      const text = [
-        `🚀 Статья опубликована! Поделитесь для максимального охвата:`,
-        "",
-        `📝 ${pkg.title}`,
-        "",
-        "Чем быстрее поделитесь — тем быстрее нейросети найдут вашу статью.",
-      ].join("\n");
-
-      const keyboard = {
-        inline_keyboard: [
-          [{ text: "📤 Поделиться в Telegram", url: posts[0].url }],
-          [{ text: "📤 Поделиться в VK", url: posts[1].url }],
-          [{ text: "📋 Копировать текст поста", callback_data: `copy_post:${contentId}` }],
-        ],
-      };
-
-      try {
-        await tgFetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id: expert.telegram_id, text, reply_markup: keyboard }),
-        });
-      } catch { /* ignore */ }
-    }
-  }
+  // R-08: уведомление «опубликовано» со ссылками «Поделиться» - одно, job notify_expert из
+  // publish-service; здесь больше не дублируется (раньше эксперт получал два сообщения).
 
   console.log(`[crosspost_social] Prepared ${posts.length} posts for content ${contentId}`);
   return { posts };

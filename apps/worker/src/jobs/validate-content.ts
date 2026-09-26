@@ -1,6 +1,5 @@
 import { supabase } from "../supabase.js";
 import { getLLM, SYSTEM_PROMPT_CONTENT, ARTICLE_STRUCTURE } from "shared";
-import { tgFetch } from "shared/http/telegram-fetch";
 
 const MAX_REWORK_ATTEMPTS = 2;
 
@@ -213,40 +212,12 @@ async function notifyExpertReady(
   contentPackageId: string,
   needsManualReview = false,
 ): Promise<void> {
-  const { data: expert } = await supabase
-    .from("profiles")
-    .select("telegram_id")
-    .eq("id", expertId)
-    .single();
-
-  if (!expert?.telegram_id) return;
-
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  if (!botToken) return;
-
-  const reviewNote = needsManualReview ? "\n\n⚠️ Требуется ручная проверка" : "";
-  const text = `✅ Контент готов к проверке!${reviewNote}`;
-
-  const keyboard = {
-    inline_keyboard: [
-      [
-        { text: "✅ Опубликовать", callback_data: `approve:${contentPackageId}` },
-        { text: "✏️ Редактировать", callback_data: `edit:${contentPackageId}` },
-      ],
-    ],
-  };
-
-  try {
-    await tgFetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: expert.telegram_id,
-        text,
-        reply_markup: keyboard,
-      }),
-    });
-  } catch (err) {
-    console.error("[validate_content] Telegram notification error:", err);
-  }
+  // R-08: черновик готов - job notify_expert (Telegram при наличии + e-mail всегда, дедуп, проверка
+  // ответа Telegram). Раньше - прямая отправка в Telegram только тем, у кого привязан Telegram.
+  const { error } = await supabase.from("jobs").insert({
+    type: "notify_expert",
+    payload: { kind: "draft_ready", ref_id: contentPackageId, expert_id: expertId, needs_review: needsManualReview },
+    priority: 4,
+  });
+  if (error) console.error("[validate_content] notify_expert enqueue failed:", error.message);
 }

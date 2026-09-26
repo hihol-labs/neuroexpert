@@ -20,7 +20,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const KNOWN_FLAGS = new Set(["--stage", "--base-url", "--fixture-dir", "--repo-root", "--repo-only"]);
-const STAGES = new Set(["infra", "demand", "publish"]);
+const STAGES = new Set(["infra", "demand", "publish", "notify"]);
 const argv = process.argv.slice(2);
 let stage = null;
 let baseUrlArg = null;
@@ -437,7 +437,89 @@ async function checkPublishLive() {
   }
 }
 
-if (stage === "publish") {
+// ============================================================
+// R-08 стадия notify: уведомления эксперту и привязка Telegram (контракт .itd-memory/contracts/R-08.md)
+// ============================================================
+const NOTIFY_FIX = "реализовать контракт R-08 (.itd-memory/contracts/R-08.md)";
+const SHARED_NOTIFY = "packages/shared/src/notify/expert.ts";
+const SHARED_LINK = "packages/shared/src/notify/link-token.ts";
+const W_NOTIFY_JOB = "apps/worker/src/jobs/notify-expert.ts";
+const W_NOTIFY_SVC = "apps/worker/src/services/expert-notify.ts";
+const W_VALIDATE = "apps/worker/src/jobs/validate-content.ts";
+const W_CROSSPOST = "apps/worker/src/jobs/crosspost-social.ts";
+const LINK_ROUTE = "apps/web/app/api/telegram/link/route.ts";
+const BOT_START = "apps/bot/src/commands/start.ts";
+const BOT_LEADS = "apps/bot/src/handlers/leads.ts";
+const MIG_034 = "packages/supabase/migrations/034_expert_notifications.sql";
+function checkNotifyRepo() {
+  requireGroup("core", [
+    [SHARED_NOTIFY, ["export function createExpertNotifier(", "export function planExpertChannels(", "export function formatExpertNotification(",
+      "export function isServiceEmail(", "\"draft_ready\"", "\"published\"", "\"lead\"", "\"booking\""]],
+    ["packages/shared/src/index.ts", ["./notify/expert.js"]],
+    ["packages/shared/tests/notify-expert.test.cjs", ["createExpertNotifier", "planExpertChannels", "formatExpertNotification"]],
+  ], NOTIFY_FIX);
+  requireGroup("link-token", [
+    [SHARED_LINK, ["export function hashLinkNonce(", "export function signTelegramLinkToken(", "export function verifyTelegramLinkToken(", "createHmac(\"sha256\"", "timingSafeEqual(", "LINK_TOKEN_TTL_MS = 15 * 60 * 1000", "raw.toString(\"base64url\") !== encoded"]],
+    ["packages/shared/package.json", ["\"./notify/link-token\""]],
+    ["packages/shared/tests/link-token.test.cjs", ["signTelegramLinkToken", "verifyTelegramLinkToken"]],
+  ], NOTIFY_FIX);
+  requireGroup("worker", [
+    [W_NOTIFY_JOB, ["export async function handleNotifyExpert(", "createWorkerExpertNotifier(", "data.expert_id !== expertId"]],
+    [W_NOTIFY_SVC, ["createExpertNotifier(", "if (!res.ok)", "createMailer(", "expert_notifications"]],
+    ["apps/worker/tests/expert-notify.test.cjs", ["createWorkerExpertNotifier"]],
+    ["apps/worker/src/index.ts", ["notify_expert: handleNotifyExpert"]],
+    [W_VALIDATE, ["type: \"notify_expert\""]],
+  ], NOTIFY_FIX);
+  requireGroup("web-enqueue", [
+    ["apps/web/lib/publish-service.ts", ["type: \"notify_expert\""]],
+    ["apps/web/app/api/leads/route.ts", ["type: \"notify_expert\""]],
+    ["apps/web/app/api/bookings/route.ts", ["type: \"notify_expert\""]],
+  ], NOTIFY_FIX);
+  // Прямые отправки эксперту в обход общего ядра: без e-mail, без проверки ответа, без дедупа.
+  forbidGroup("direct-sends", [
+    [W_VALIDATE, ["sendMessage"]], [W_CROSSPOST, ["chat_id: expert.telegram_id"]],
+    ["apps/web/app/api/leads/route.ts", ["sendMessage"]], ["apps/web/app/api/bookings/route.ts", ["sendMessage"]],
+    ["apps/web/lib/publish-service.ts", ["sendSharingNotification"]],
+  ], "уведомления эксперту - только job notify_expert через createExpertNotifier (Telegram при наличии + e-mail всегда)");
+  if (readRepoFile("apps/web/lib/publish-notify.ts") !== null) finding(`[${stage}:direct-sends]`, "apps/web/lib/publish-notify.ts: файл должен быть удалён (второй путь уведомления о публикации)", NOTIFY_FIX);
+  requireGroup("link", [
+    [LINK_ROUTE, ["status: 401", "if (!isSameOriginPost(request)) return NextResponse.json({ error: \"Forbidden\" }, { status: 403 });",
+      "signTelegramLinkToken(", "telegram_link_nonce: hashLinkNonce(", "process.env[\"TELEGRAM_LINK_SECRET\"]", "process.env[\"TELEGRAM_BOT_USERNAME\"]", "export async function DELETE("]],
+    [BOT_START, ["verifyTelegramLinkToken(", ".eq(\"telegram_link_nonce\", hashLinkNonce(", ".gt(\"telegram_link_expires_at\", ", "process.env[\"TELEGRAM_LINK_SECRET\"]"]],
+    [BOT_LEADS, [".eq(\"expert_id\", profileId)"]],
+    ["apps/web/app/(dashboard)/profile/page.tsx", ["Подключить Telegram", "/api/telegram/link"]],
+    [".env.example", ["TELEGRAM_LINK_SECRET=", "TELEGRAM_BOT_USERNAME="]],
+  ], NOTIFY_FIX);
+  forbidGroup("link-legacy", [[BOT_START, ["auth.admin.createUser", ".eq(\"id\", token)"]]],
+    "/start без подписанной ссылки не создаёт аккаунт (дубль tg_…@neuroexpert.bot); сырой id профиля - не токен привязки");
+  requireGroup("migration", [
+    [MIG_034, ["CREATE TABLE IF NOT EXISTS public.expert_notifications", "UNIQUE (expert_id, kind, ref_id)", "ENABLE ROW LEVEL SECURITY",
+      "telegram_link_nonce", "'notify_expert'", "cron.schedule('weekly-email-digest'", "j.type = 'send_email_digest' AND j.payload->>'content_id' = cp.id::text"]],
+  ], NOTIFY_FIX);
+  requireGroup("rollout", [["OPERATIONS.md", ["Порядок выкатки R-08: миграция 034 → worker → секрет → bot → web"]]],
+    "записать в OPERATIONS порядок выкатки R-08: web и worker ставят job notify_expert, которого нет в CHECK до миграции 034");
+}
+/** Живой слой notify: роут привязки существует и закрыт сессией (401, а не HTML 404). Ничего не мутирует. */
+async function checkNotifyLive() {
+  let rows = null;
+  if (fixtureDir) {
+    const abs = join(fixtureDir, "notify.json");
+    if (!existsSync(abs)) { finding("fixture:notify.json", "фикстура отсутствует", "положить notify.json в --fixture-dir"); return; }
+    rows = JSON.parse(readFileSync(abs, "utf8"));
+  }
+  for (const method of ["POST", "DELETE"]) {
+    const status = rows ? rows[method] : (await fetchWithRetry(`${baseUrl}/api/telegram/link`, { method, redirect: "manual" })).status;
+    if (status !== 401) finding("/api/telegram/link", `${method} без сессии: HTTP ${status} (ожидается 401; 404 = роута нет)`, "роут привязки обязан существовать и отказывать без сессии");
+  }
+}
+
+if (stage === "notify") {
+  checkNotifyRepo();
+  if (!repoOnly) {
+    try { await checkNotifyLive(); }
+    catch (err) { transportErrors.push(err instanceof Error ? err.message : String(err)); }
+  }
+} else if (stage === "publish") {
   checkPublishRepo();
   if (!repoOnly) {
     try { await checkPublishLive(); }

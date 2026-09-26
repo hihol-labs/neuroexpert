@@ -507,6 +507,39 @@ empty` ставит новый `collect_demand`, если `demand_collected_at` 
 - **Проверка:** `node scripts/verify-expert-path.mjs --stage=publish` (живой слой: 401 на обоих роутах,
   каталог не пуст, профиль каждого эксперта из каталога открывается и есть в `/sitemaps/experts.xml`).
 
+### 9h. Уведомления эксперту и привязка Telegram (R-08, 2026-09-26)
+
+- **Порядок выкатки R-08: миграция 034 → worker → секрет → bot → web.** Миграция первой: web и worker
+  ставят job `notify_expert`, которого нет в CHECK `jobs` до 034. Worker раньше web: новый web ставит
+  `notify_expert`, старый worker его не знает. Bot раньше web: новому боту нужны только 034 и секрет, а
+  ссылки привязки выдаёт новый web — не остаётся окна, когда старый `/start` принимает сырой id профиля
+  при уже выкаченном сайте. `TELEGRAM_LINK_SECRET` (`openssl rand -hex 32`, значение не печатать) и
+  `TELEGRAM_BOT_USERNAME` дописываются в `.env` до пересоздания bot и web (`up -d --force-recreate`).
+  Секрет нужен обоим: на проде бот работает в режиме polling (контейнер bot), а в режиме webhook апдейты
+  обрабатывает процесс web (`/api/webhooks/telegram`). Откат: web → bot → worker; 034 можно оставить.
+- **Один отправитель.** Все уведомления эксперту (черновик готов, опубликовано, заявка, запись) —
+  job `notify_expert {kind, ref_id, expert_id}` → worker → `createExpertNotifier` (shared). Каналы:
+  Telegram, если привязан, **и e-mail всегда** (решение владельца 2026-09-26); служебные адреса
+  `tg_…@neuroexpert.bot` писем не получают. Ответ Telegram проверяется; сбой одного канала не мешает
+  второму. Данные сообщения читаются из БД по `ref_id` и сверяются с `expert_id`.
+- **Дедуп:** `public.expert_notifications` (UNIQUE `expert_id, kind, ref_id`). Повтор job не шлёт
+  второй раз. Если не дошёл ни один канал — строка удаляется, job падает и повторяется worker'ом.
+  Проверка: `SELECT kind, telegram, email, sent_at FROM expert_notifications ORDER BY created_at DESC LIMIT 10;`
+- **«Эксперт не получил письмо».** Строки нет — job не ставился или ещё в очереди (`jobs` type
+  `notify_expert`). `email = failed` — SMTP (лог worker `[notify-expert]`). `email = skipped` — служебный
+  или пустой адрес в `profiles.email`.
+- **Привязка Telegram.** Профиль → «Подключить Telegram» → `POST /api/telegram/link` → ссылка
+  `t.me/<бот>?start=l_<токен>`: HMAC-SHA256 от id профиля, одноразового номера и срока (15 минут).
+  Номер хранится в `profiles.telegram_link_nonce`, бот гасит его при использовании; новая ссылка
+  заменяет старую. `/start` без ссылки аккаунт не создаёт — отправляет на сайт. «Этот Telegram уже
+  привязан к другому аккаунту» — `profiles.telegram_id` UNIQUE: отключить там («Отключить» в профиле).
+  503 при выдаче ссылки или «временно недоступна» в боте — нет `TELEGRAM_LINK_SECRET` в env.
+- **Кнопки заявки в боте** меняют только заявку эксперта, нажавшего кнопку.
+- **Дайджест:** cron `weekly-email-digest` (понедельник 07:00 UTC) ставит `send_email_digest` по статьям,
+  опубликованным за 7 дней, если у эксперта есть активные подписчики.
+- **Проверка:** `node scripts/verify-expert-path.mjs --stage=notify` (живой слой: `POST` и `DELETE`
+  `/api/telegram/link` без сессии — 401).
+
 ## 10. Регулярные процедуры (playbooks)
 
 ### Проверка AI-цитирования

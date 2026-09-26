@@ -24,3 +24,4 @@ export * from "./security/index.js";
 export * from "./providers/index.js";
 export * from "./ops/index.js";
 export * from "./content/publish.js";
+export * from "./notify/expert.js";

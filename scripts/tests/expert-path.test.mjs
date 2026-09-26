@@ -103,7 +103,7 @@ try {
   {
     const repo = join(work, "usage"); writeRepo(repo, GREEN_FILES);
     expect("usage: без --stage -> exit 2", run(["--repo-root", repo, "--repo-only"]).code, 2, "");
-    expect("usage: неизвестная стадия -> exit 2", run(["--stage=notify", "--repo-root", repo, "--repo-only"]).code, 2, "");
+    expect("usage: неизвестная стадия -> exit 2", run(["--stage=tariffs", "--repo-root", repo, "--repo-only"]).code, 2, "");
     expect("usage: неизвестный флаг -> exit 2", run(["--stage=infra", "--repo-root", repo, "--repo-only", "--base_url", "x"]).code, 2, "");
     expect("usage: без живого контура и без --repo-only -> exit 2", run(["--stage=infra", "--repo-root", repo], { EXPERT_URL: "", SELFSERVE_URL: "", CANONICAL_URL: "" }).code, 2, "");
     const fx = join(work, "usage-fx"); writeFixtures(fx, GREEN_HEALTH);
@@ -435,6 +435,114 @@ try {
     publishLiveMutations.forEach(([label, fxRows], i) => {
       const d = join(work, `publish-fx-m${i}`); writePubFx(d, fxRows);
       const r = runPublish(repo, d); expect(`publish мутация live: ${label}`, r.code, 1, r.out);
+    });
+  }
+
+  // ===== R-08: стадия notify =====
+  {
+    const N = {
+      core: "packages/shared/src/notify/expert.ts", index: "packages/shared/src/index.ts", coreTest: "packages/shared/tests/notify-expert.test.cjs",
+      link: "packages/shared/src/notify/link-token.ts", pkg: "packages/shared/package.json", linkTest: "packages/shared/tests/link-token.test.cjs",
+      job: "apps/worker/src/jobs/notify-expert.ts", svc: "apps/worker/src/services/expert-notify.ts", widx: "apps/worker/src/index.ts",
+      validate: "apps/worker/src/jobs/validate-content.ts", crosspost: "apps/worker/src/jobs/crosspost-social.ts",
+      publish: "apps/web/lib/publish-service.ts", leads: "apps/web/app/api/leads/route.ts", bookings: "apps/web/app/api/bookings/route.ts",
+      route: "apps/web/app/api/telegram/link/route.ts", start: "apps/bot/src/commands/start.ts", botLeads: "apps/bot/src/handlers/leads.ts",
+      profile: "apps/web/app/(dashboard)/profile/page.tsx", env: ".env.example", mig: "packages/supabase/migrations/034_expert_notifications.sql", ops: "OPERATIONS.md",
+    };
+    const ENQ = "await admin.from(\"jobs\").insert({ type: \"notify_expert\", payload: { kind, ref_id, expert_id } });\n";
+    const GREEN_NOTIFY = {
+      [N.core]: "export type ExpertNotifyKind = \"draft_ready\" | \"published\" | \"lead\" | \"booking\";\nexport function isServiceEmail(e) {}\nexport function planExpertChannels(p) {}\nexport function formatExpertNotification(k, f) {}\nexport function createExpertNotifier(deps) {}\n",
+      [N.index]: "export * from \"./notify/expert.js\";\n",
+      [N.coreTest]: "const {createExpertNotifier, planExpertChannels, formatExpertNotification} = require('../dist/notify/expert.js');\n",
+      [N.link]: "export const LINK_TOKEN_TTL_MS = 15 * 60 * 1000;\nexport function hashLinkNonce(n) {}\nexport function signTelegramLinkToken(p, n, now, s) { return createHmac(\"sha256\", s); }\nexport function verifyTelegramLinkToken(t, s, now) { if (raw.toString(\"base64url\") !== encoded) return bad; return timingSafeEqual(a, b); }\n",
+      [N.pkg]: "{\"exports\": {\"./notify/link-token\": {}}}\n",
+      [N.linkTest]: "const {signTelegramLinkToken, verifyTelegramLinkToken} = require('../dist/notify/link-token.js');\n",
+      [N.job]: "export async function handleNotifyExpert(payload) { if (!data || data.expert_id !== expertId) return null; const notify = createWorkerExpertNotifier(deps); }\n",
+      [N.svc]: "return createExpertNotifier({});\nconst mailer = createMailer(env);\nif (!res.ok) throw new Error(\"telegram\");\nawait supabase.from(\"expert_notifications\").insert(row);\n",
+      "apps/worker/tests/expert-notify.test.cjs": "const {createWorkerExpertNotifier} = require('../dist/services/expert-notify.js');\n",
+      [N.widx]: "const handlers = { notify_expert: handleNotifyExpert };\n",
+      [N.validate]: "await supabase.from(\"jobs\").insert({ type: \"notify_expert\", payload });\n",
+      [N.crosspost]: "// share-ссылки готовятся здесь, уведомление - job notify_expert\n",
+      [N.publish]: "await admin.from(\"jobs\").insert({ type: \"notify_expert\", payload });\n",
+      [N.leads]: ENQ, [N.bookings]: ENQ,
+      [N.route]: "if (!user) return NextResponse.json({ error: \"Unauthorized\" }, { status: 401 });\nif (!isSameOriginPost(request)) return NextResponse.json({ error: \"Forbidden\" }, { status: 403 });\nconst secret = process.env[\"TELEGRAM_LINK_SECRET\"]; const bot = process.env[\"TELEGRAM_BOT_USERNAME\"];\nconst token = signTelegramLinkToken(user.id, nonce, now, secret);\nawait admin.from(\"profiles\").update({ telegram_link_nonce: hashLinkNonce(nonce) });\nexport async function DELETE(request) {}\n",
+      [N.start]: "const secret = process.env[\"TELEGRAM_LINK_SECRET\"];\nconst v = verifyTelegramLinkToken(token, secret, Date.now());\nawait supabase.from(\"profiles\").update(x).eq(\"id\", v.profileId).eq(\"telegram_link_nonce\", hashLinkNonce(v.nonce)).gt(\"telegram_link_expires_at\", now);\n",
+      [N.botLeads]: "await supabase.from(\"leads\").update(x).eq(\"id\", leadId).eq(\"expert_id\", profileId);\n",
+      [N.profile]: "<button>Подключить Telegram</button> fetch(\"/api/telegram/link\")\n",
+      [N.env]: "TELEGRAM_LINK_SECRET=\nTELEGRAM_BOT_USERNAME=\n",
+      [N.mig]: "CREATE TABLE IF NOT EXISTS public.expert_notifications (id uuid, UNIQUE (expert_id, kind, ref_id));\nALTER TABLE public.expert_notifications ENABLE ROW LEVEL SECURITY;\nALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS telegram_link_nonce text;\n'notify_expert'\nSELECT cron.schedule('weekly-email-digest', '0 7 * * 1', $$ AND NOT EXISTS (SELECT 1 FROM public.jobs j WHERE j.type = 'send_email_digest' AND j.payload->>'content_id' = cp.id::text)$$);\n",
+      [N.ops]: "- **Порядок выкатки R-08: миграция 034 → worker → секрет → bot → web.**\n",
+    };
+    const writeNotifyFx = (dir, rows) => { mkdirSync(dir, { recursive: true }); if (rows !== null) writeFileSync(join(dir, "notify.json"), JSON.stringify(rows)); };
+    const runNotify = (repo, fx) => run(["--stage=notify", "--repo-root", repo, ...(fx ? ["--fixture-dir", fx] : ["--repo-only"])]);
+    const repo = join(work, "notify-green"); writeRepo(repo, GREEN_NOTIFY);
+    const fx = join(work, "notify-green-fx"); writeNotifyFx(fx, { POST: 401, DELETE: 401 });
+    { const r = runNotify(repo, fx); expect("notify: зелёное репо + зелёные пробы -> exit 0", r.code, 0, r.out); }
+    { const r = runNotify(repo, null); expect("notify: --repo-only на зелёном репо -> exit 0", r.code, 0, r.out); }
+    {
+      const bare = join(work, "notify-bare"); mkdirSync(bare, { recursive: true });
+      const r = runNotify(bare, null); expect("notify: пустое репо -> exit 1", r.code, 1, r.out);
+      const m = /(\d+) finding\(s\)/.exec(r.out); expect("notify: пустое репо даёт ровно 7 групповых находок (forbid-группы молчат)", m ? Number(m[1]) : -1, 7, r.out);
+    }
+    const G = GREEN_NOTIFY;
+    const notifyMutations = [
+      ["ядро: нет события «заявка»", { [N.core]: G[N.core].replace(" | \"lead\"", "") }],
+      ["ядро: нет выбора каналов (e-mail всегда)", { [N.core]: G[N.core].replace("export function planExpertChannels(", "function channels(") }],
+      ["ядро: служебные адреса tg_ не отсекаются", { [N.core]: G[N.core].replace("export function isServiceEmail(", "function x(") }],
+      ["ядро не экспортировано", { [N.index]: "export {};\n" }],
+      ["нет unit-тестов ядра", { [N.coreTest]: "// todo\n" }],
+      ["токен: подпись не HMAC-SHA256", { [N.link]: G[N.link].replace("createHmac(\"sha256\"", "createHash(\"md5\"") }],
+      ["токен: сравнение подписи не constant-time", { [N.link]: G[N.link].replace("timingSafeEqual(a, b)", "a === b") }],
+      ["токен: неканоническая запись base64url принимается", { [N.link]: G[N.link].replace("if (raw.toString(\"base64url\") !== encoded) return bad; ", "") }],
+      ["токен: срок жизни не 15 минут", { [N.link]: G[N.link].replace("15 * 60 * 1000", "24 * 60 * 60 * 1000") }],
+      ["токен: нет subpath-экспорта", { [N.pkg]: "{}\n" }],
+      ["worker: адаптер мимо общего ядра", { [N.svc]: G[N.svc].replace("createExpertNotifier(", "ownNotifier(") }],
+      ["worker: поля сообщения не сверяются с экспертом (чужая заявка уйдёт не тому)", { [N.job]: G[N.job].replace(" || data.expert_id !== expertId", "") }],
+      ["worker: нет теста адаптера", { "apps/worker/tests/expert-notify.test.cjs": "// todo\n" }],
+      ["worker: отправка без проверки ответа Telegram", { [N.svc]: G[N.svc].replace("if (!res.ok)", "if (false)") }],
+      ["worker: нет e-mail канала", { [N.svc]: G[N.svc].replace("createMailer(", "noMail(") }],
+      ["worker: нет дедупа", { [N.svc]: G[N.svc].replace("expert_notifications", "x") }],
+      ["worker: job не зарегистрирован", { [N.widx]: "const handlers = {};\n" }],
+      ["worker: черновик уведомляет напрямую", { [N.validate]: G[N.validate] + "tgFetch(`https://api.telegram.org/bot${t}/sendMessage`);\n" }],
+      ["worker: второе сообщение о публикации", { [N.crosspost]: "body: JSON.stringify({ chat_id: expert.telegram_id, text })\n" }],
+      ["web: публикация уведомляет напрямую", { [N.publish]: "await sendSharingNotification(id, title, url);\n" }],
+      ["web: publish-notify.ts не удалён", { "apps/web/lib/publish-notify.ts": "export async function sendSharingNotification() {}\n" }],
+      ["web: заявка шлёт Telegram напрямую", { [N.leads]: ENQ + "await tgFetch(`https://api.telegram.org/bot${t}/sendMessage`);\n" }],
+      ["web: запись не ставит job", { [N.bookings]: "// нет уведомления\n" }],
+      ["привязка: роут без сессии", { [N.route]: G[N.route].replace("status: 401", "status: 200") }],
+      ["привязка: без проверки origin", { [N.route]: G[N.route].replace("if (!isSameOriginPost(request)) return", "if (false) return") }],
+      ["привязка: без одноразового номера", { [N.route]: G[N.route].replace("telegram_link_nonce", "x") }],
+      ["привязка: номер хранится открыто (виден anon у опубликованных профилей)", { [N.route]: G[N.route].replace("telegram_link_nonce: hashLinkNonce(nonce)", "telegram_link_nonce: nonce") }],
+      ["бот: сравнивает открытый номер", { [N.start]: G[N.start].replace("hashLinkNonce(v.nonce)", "v.nonce") }],
+      ["привязка: секрет точечной записью", { [N.route]: G[N.route].replace("process.env[\"TELEGRAM_LINK_SECRET\"]", "process.env.TELEGRAM_LINK_SECRET") }],
+      ["привязка: нельзя отключить", { [N.route]: G[N.route].replace("export async function DELETE(", "async function del(") }],
+      ["бот: номер привязки не гасится", { [N.start]: G[N.start].replace(".eq(\"telegram_link_nonce\", ", ".eq(\"x\", ") }],
+      ["бот: /start снова создаёт аккаунт", { [N.start]: G[N.start] + "await supabase.auth.admin.createUser({ email });\n" }],
+      ["бот: токен = сырой id профиля", { [N.start]: G[N.start] + "await supabase.from(\"profiles\").update(x).eq(\"id\", token);\n" }],
+      ["бот: кнопки заявки без владельца", { [N.botLeads]: "await supabase.from(\"leads\").update(x).eq(\"id\", leadId);\n" }],
+      ["профиль: нет кнопки подключения", { [N.profile]: "Напишите боту /start\n" }],
+      [".env.example без секрета привязки", { [N.env]: "TELEGRAM_BOT_USERNAME=\n" }],
+      ["миграция: дедуп без уникальности", { [N.mig]: G[N.mig].replace("UNIQUE (expert_id, kind, ref_id)", "") }],
+      ["миграция: таблица без RLS", { [N.mig]: G[N.mig].replace("ENABLE ROW LEVEL SECURITY", "") }],
+      ["миграция: notify_expert не в CHECK", { [N.mig]: G[N.mig].replace("'notify_expert'", "") }],
+      ["миграция: повтор cron дайджеста шлёт статью второй раз", { [N.mig]: G[N.mig].replace(" AND NOT EXISTS (SELECT 1 FROM public.jobs j WHERE j.type = 'send_email_digest' AND j.payload->>'content_id' = cp.id::text)", "") }],
+      ["бот: срок ссылки не сверяется с профилем", { [N.start]: G[N.start].replace(".gt(\"telegram_link_expires_at\", now)", "") }],
+      ["миграция: нет cron дайджеста", { [N.mig]: G[N.mig].replace("cron.schedule('weekly-email-digest'", "") }],
+      ["runbook: порядок выкатки не записан", { [N.ops]: "выкатывать как обычно\n" }],
+    ];
+    notifyMutations.forEach(([label, ov], i) => {
+      const d = join(work, `notify-m${i}`); writeRepo(d, { ...GREEN_NOTIFY, ...ov });
+      const r = runNotify(d, null); expect(`notify мутация репо: ${label}`, r.code, 1, r.out);
+    });
+    const notifyLiveMutations = [
+      ["POST привязки без сессии не 401", { POST: 200, DELETE: 401 }],
+      ["роута привязки нет", { POST: 404, DELETE: 404 }],
+      ["DELETE привязки открыт", { POST: 401, DELETE: 200 }],
+      ["фикстура notify.json отсутствует", null],
+    ];
+    notifyLiveMutations.forEach(([label, rows], i) => {
+      const d = join(work, `notify-fx-m${i}`); writeNotifyFx(d, rows);
+      const r = runNotify(repo, d); expect(`notify мутация live: ${label}`, r.code, 1, r.out);
     });
   }
 } finally {
