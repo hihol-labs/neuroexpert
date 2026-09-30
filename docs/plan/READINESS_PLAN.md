@@ -164,7 +164,11 @@ Tier по методологии: high — деньги/auth/прод-данны
   e-mail всегда (черновик готов, опубликовано, заявка); deep-link `t.me/bot?start=<signed
   token>` из профиля (HMAC, TTL 15 мин), `/start` без токена не создаёт аккаунт, а ведёт на
   сайт; `send_email_digest` еженедельно по cron. Оракул: `--stage=notify`. Закрывает E-AUTO-2/8/9.
-- **R-09 · Тарифы** (high, M+S+S). `checkPackageLimit`/`getAllowedFormats`/`checkNicheLimit`
+- **R-09 · Тарифы** ✅ VERIFIED 2026-09-30 (коммит `7e52f6a`; миграция 035 — cron sweep срока,
+  расписания аналитики без гейта, backfill ниш, RLS/триггеры защиты биллинга, леджер пакетов; worker,
+  bot, web на проде; live-оракулы ALL_GREEN; 4 раунда full + security чекеров; OPERATIONS §9i;
+  все 13 экспертов на free → 2 формата и 3 пакета/мес по таблице тарифов; вне юнита — RLS-1 P0).
+  Исходная постановка (high, M+S+S). `checkPackageLimit`/`getAllowedFormats`/`checkNicheLimit`
   применяются в generate-content и accept; `tier=free` — без платежа (downgrade); аналитика
   цитирования доступна для любой опубликованной статьи (решение: иначе цикл бессмыслен для
   free). Оракул: `--stage=billing`. Закрывает E-AUTO-11/14/15.
