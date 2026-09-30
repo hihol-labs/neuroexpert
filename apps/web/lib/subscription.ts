@@ -1,169 +1,63 @@
-// Subscription tier limits, commission rates, demand-map access, and content format access
+// R-09: одна таблица тарифов - shared SUBSCRIPTION_TIERS. Здесь только web-специфичный вид
+// (ordersPerWeek и флаги features для страниц) и делегирование проверок в shared/billing/limits.
+// Цены, лимиты ниш, пакетов и форматы не дублируются: расходиться нечему.
+import {
+  ALL_FORMATS,
+  SUBSCRIPTION_TIERS,
+  checkNicheLimit,
+  checkPackageLimit,
+  getAllowedFormats,
+  getMaxNiches,
+  resolveTier,
+  type ContentFormat,
+  type SubscriptionTier,
+} from "shared";
 
-export type ContentFormat = "telegram_post" | "seo_article" | "cards" | "reels_script" | "faq";
+export { ALL_FORMATS, checkNicheLimit, checkPackageLimit, getAllowedFormats, getMaxNiches, type ContentFormat };
 
-export const ALL_FORMATS: ContentFormat[] = ["telegram_post", "seo_article", "cards", "reels_script", "faq"];
+export type TierName = "free" | "starter" | "pro" | "expert" | "business" | "enterprise";
 
-export const TIER_CONFIG = {
-  free: {
-    name: "Free",
-    price: 0,
-    maxNiches: 1,
-    ordersPerWeek: 3,
-    packagesPerMonth: 3,
-    commission: 0.15,
-    // 2 формата: Telegram-пост (экспорт ✅) + SEO-статья (только платформа)
-    formats: ["telegram_post", "seo_article"] as ContentFormat[],
-    exportableFormats: ["telegram_post"] as ContentFormat[],
-    features: {
-      demandMap: true,
-      pageAnalytics: false,
-      unlimitedPublications: true,
-      crosspost: false,
-      distributionHelp: false,
-      refreshReminders: false,
-      citationTracking: false,
-      competitorAnalysis: false,
-      expertRating: false,
-    },
-  },
-  starter: {
-    name: "Starter",
-    price: 1490,
-    maxNiches: 2,
-    ordersPerWeek: 10,
-    packagesPerMonth: Infinity,
-    commission: 0.07,
-    // Все 5 форматов, всё экспортируется
-    formats: ALL_FORMATS,
-    exportableFormats: ALL_FORMATS,
-    features: {
-      demandMap: true,
-      pageAnalytics: false,
-      unlimitedPublications: true,
-      crosspost: false,
-      distributionHelp: false,
-      refreshReminders: false,
-      citationTracking: false,
-      competitorAnalysis: false,
-      expertRating: false,
-    },
-  },
-  pro: {
-    name: "Pro",
-    price: 2990,
-    maxNiches: 3,
-    ordersPerWeek: Infinity,
-    packagesPerMonth: Infinity,
-    commission: 0.03,
-    formats: ALL_FORMATS,
-    exportableFormats: ALL_FORMATS,
-    features: {
-      demandMap: true,
-      pageAnalytics: false,
-      unlimitedPublications: true,
-      crosspost: true,
-      distributionHelp: true,
-      refreshReminders: true,
-      citationTracking: false,
-      competitorAnalysis: false,
-      expertRating: false,
-    },
-  },
-  expert: {
-    name: "Expert",
-    price: 4990,
-    maxNiches: 5,
-    ordersPerWeek: Infinity,
-    packagesPerMonth: Infinity,
-    commission: 0,
-    formats: ALL_FORMATS,
-    exportableFormats: ALL_FORMATS,
-    features: {
-      demandMap: true,
-      pageAnalytics: true,
-      unlimitedPublications: true,
-      crosspost: true,
-      distributionHelp: true,
-      refreshReminders: true,
-      citationTracking: true,
-      competitorAnalysis: true,
-      expertRating: true,
-    },
-  },
-  business: {
-    name: "Business",
-    price: 24990,
-    maxNiches: 10,
-    ordersPerWeek: Infinity,
-    packagesPerMonth: Infinity,
-    commission: 0,
-    formats: ALL_FORMATS,
-    exportableFormats: ALL_FORMATS,
-    features: {
-      demandMap: true,
-      pageAnalytics: true,
-      unlimitedPublications: true,
-      crosspost: true,
-      distributionHelp: true,
-      refreshReminders: true,
-      citationTracking: true,
-      competitorAnalysis: true,
-      expertRating: true,
-    },
-  },
-  enterprise: {
-    name: "Enterprise",
-    price: 99990,
-    maxNiches: 20,
-    ordersPerWeek: Infinity,
-    packagesPerMonth: Infinity,
-    commission: 0,
-    formats: ALL_FORMATS,
-    exportableFormats: ALL_FORMATS,
-    features: {
-      demandMap: true,
-      pageAnalytics: true,
-      unlimitedPublications: true,
-      crosspost: true,
-      distributionHelp: true,
-      refreshReminders: true,
-      citationTracking: true,
-      competitorAnalysis: true,
-      expertRating: true,
-    },
-  },
-} as const;
-
-export type TierName = keyof typeof TIER_CONFIG;
-
-export function getTierConfig(tier: string) {
-  return TIER_CONFIG[tier as TierName] ?? TIER_CONFIG.free;
+export interface TierFeatures {
+  demandMap: boolean;
+  pageAnalytics: boolean;
+  unlimitedPublications: boolean;
+  crosspost: boolean;
+  distributionHelp: boolean;
+  refreshReminders: boolean;
+  citationTracking: boolean;
+  competitorAnalysis: boolean;
+  expertRating: boolean;
 }
 
-export function checkPackageLimit(tier: string, currentMonthPackages: number): { allowed: boolean; limit: number } {
-  const config = getTierConfig(tier);
+// Web-only: лимит тем в неделю (в плане R-09 не применяется, см. BACKLOG) и флаги фич страниц.
+const WEB_ONLY: Record<TierName, { ordersPerWeek: number; features: TierFeatures }> = {
+  free: { ordersPerWeek: 3, features: { demandMap: true, pageAnalytics: false, unlimitedPublications: true, crosspost: false, distributionHelp: false, refreshReminders: false, citationTracking: false, competitorAnalysis: false, expertRating: false } },
+  starter: { ordersPerWeek: 10, features: { demandMap: true, pageAnalytics: false, unlimitedPublications: true, crosspost: false, distributionHelp: false, refreshReminders: false, citationTracking: false, competitorAnalysis: false, expertRating: false } },
+  pro: { ordersPerWeek: Infinity, features: { demandMap: true, pageAnalytics: false, unlimitedPublications: true, crosspost: true, distributionHelp: true, refreshReminders: true, citationTracking: false, competitorAnalysis: false, expertRating: false } },
+  expert: { ordersPerWeek: Infinity, features: { demandMap: true, pageAnalytics: true, unlimitedPublications: true, crosspost: true, distributionHelp: true, refreshReminders: true, citationTracking: true, competitorAnalysis: true, expertRating: true } },
+  business: { ordersPerWeek: Infinity, features: { demandMap: true, pageAnalytics: true, unlimitedPublications: true, crosspost: true, distributionHelp: true, refreshReminders: true, citationTracking: true, competitorAnalysis: true, expertRating: true } },
+  enterprise: { ordersPerWeek: Infinity, features: { demandMap: true, pageAnalytics: true, unlimitedPublications: true, crosspost: true, distributionHelp: true, refreshReminders: true, citationTracking: true, competitorAnalysis: true, expertRating: true } },
+};
+
+export type TierConfig = Pick<SubscriptionTier, "name" | "price" | "maxNiches" | "packagesPerMonth" | "commission" | "formats" | "exportableFormats">
+  & { ordersPerWeek: number; features: TierFeatures };
+
+function toConfig(tier: SubscriptionTier, web: { ordersPerWeek: number; features: TierFeatures }): TierConfig {
   return {
-    allowed: currentMonthPackages < config.packagesPerMonth,
-    limit: config.packagesPerMonth,
+    name: tier.name, price: tier.price, maxNiches: tier.maxNiches, packagesPerMonth: tier.packagesPerMonth,
+    commission: tier.commission, formats: [...tier.formats], exportableFormats: [...tier.exportableFormats], ...web,
   };
 }
 
-export function getAllowedFormats(tier: string): ContentFormat[] {
-  const config = getTierConfig(tier);
-  return [...config.formats];
-}
+export const TIER_CONFIG: Record<TierName, TierConfig> = Object.fromEntries(
+  (Object.keys(WEB_ONLY) as TierName[]).map((id) => [id, toConfig(SUBSCRIPTION_TIERS[id]!, WEB_ONLY[id])]),
+) as Record<TierName, TierConfig>;
 
-export function getMaxNiches(tier: string): number {
-  return getTierConfig(tier).maxNiches;
-}
-
-export function checkNicheLimit(tier: string, currentNiches: number): { allowed: boolean; limit: number } {
-  const limit = getMaxNiches(tier);
-  return { allowed: currentNiches < limit, limit };
+export function getTierConfig(tier: string): TierConfig {
+  const id = resolveTier(tier).id as TierName;
+  return TIER_CONFIG[id] ?? TIER_CONFIG.free;
 }
 
 export function isFormatExportable(tier: string, format: ContentFormat): boolean {
-  const config = getTierConfig(tier);
-  return config.exportableFormats.includes(format);
+  return resolveTier(tier).exportableFormats.includes(format);
 }

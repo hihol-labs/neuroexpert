@@ -11,7 +11,7 @@ import {
   type PackageOrderStatus,
   type ReconcileOrder,
 } from "shared";
-import { activateLocalPair } from "shared";
+import { activateLocalPair, checkSubscriptionAmount, nextSubscriptionExpiry } from "shared";
 import { createClient } from "@supabase/supabase-js";
 import { notifyOperator } from "@/lib/operator-alerts";
 import { KassaUnavailableError, fetchKassaPayment, fetchKassaRefund, kassaShops } from "@/lib/yukassa-verify";
@@ -337,6 +337,23 @@ export async function POST(request: NextRequest) {
       }
       const verifiedMetadata = (verified.metadata ?? {}) as Record<string, string>;
 
+      // R-09: повторная доставка того же payment.succeeded не выдаёт и не продлевает тариф второй раз.
+      // Признак - metadata.tier_applied_at, который ставится ТОЛЬКО после успешного обновления профиля:
+      // сбой записи профиля оставляет платёж «не применённым», и повтор webhook выдаст тариф.
+      const { data: priorPayment, error: priorErr } = await admin.from("payments").select("status, metadata").eq("yukassa_payment_id", paymentId).maybeSingle();
+      if (priorErr) {
+        // Fail-closed: не зная, применён ли платёж, тариф не трогаем; 503 - касса повторит уведомление.
+        console.error(`[yukassa] payments read failed for ${paymentId}: ${priorErr.message}`);
+        return NextResponse.json({ error: "payments unavailable" }, { status: 503 });
+      }
+      if (priorPayment?.status === "refunded") {
+        // Запоздалый повтор payment.succeeded после возврата: платёж уже закрыт, тариф не выдаём.
+        console.warn(`[yukassa] payment.succeeded ${paymentId} after refund, ignoring`);
+        return NextResponse.json({ ok: true });
+      }
+      const priorMeta = (priorPayment?.metadata ?? {}) as Record<string, unknown>;
+      const alreadyApplied = priorPayment?.status === "succeeded" && typeof priorMeta.tier_applied_at === "string";
+
       // Save payment
       await admin.from("payments").upsert({
         expert_id: expertId,
@@ -346,23 +363,54 @@ export async function POST(request: NextRequest) {
         status: "succeeded",
         yukassa_payment_id: paymentId,
         description: verifiedMetadata.description || `${paymentType} payment`,
-        metadata: verifiedMetadata,
+        metadata: alreadyApplied ? { ...verifiedMetadata, tier_applied_at: priorMeta.tier_applied_at } : verifiedMetadata,
       }, { onConflict: "yukassa_payment_id" });
 
-      // Update subscription if applicable
-      if (paymentType === "subscription" && verifiedMetadata.tier) {
-        const expiresAt = new Date();
-        expiresAt.setMonth(expiresAt.getMonth() + 1);
+      // R-09 (E-AUTO-15): тариф выдаётся только за подтверждённую кассой сумму, равную цене тарифа
+      // из единой таблицы (shared). Платёж уже сохранён; расхождение - алерт оператору, тариф не меняется.
+      const amountRub = parseFloat(verified.amount.value);
+      const amountCheck = checkSubscriptionAmount(verifiedMetadata.tier, amountRub, verified.amount.currency);
+      if (paymentType === "subscription" && alreadyApplied) {
+        console.log(`[yukassa] subscription payment ${paymentId} already applied, skipping tier update`);
+      } else if (paymentType === "subscription" && !amountCheck.ok) {
+        console.warn(`[yukassa] subscription payment ${paymentId} not applied: ${amountCheck.reason} (tier=${String(verifiedMetadata.tier)}, amount=${amountRub}, expected=${String(amountCheck.expected)})`);
+        try {
+          void notifyOperator("reconcile_mismatch", paymentId, {
+            платёж: paymentId, эксперт: expertId, тариф: String(verifiedMetadata.tier ?? ""), сумма: `${amountRub} руб`,
+            ожидалось: amountCheck.expected === null ? "тариф неизвестен" : `${amountCheck.expected} руб`, причина: amountCheck.reason,
+          });
+        } catch (err) {
+          console.error(`[yukassa] reconcile_mismatch alert for ${paymentId} failed:`, err instanceof Error ? err.message : err);
+        }
+      } else if (paymentType === "subscription" && amountCheck.ok) {
+        // Срок - календарный месяц от текущего срока (досрочное продление не теряет остаток) или от
+        // оплаты; по его истечении cron daily-subscription-expiry (035) возвращает free.
+        const { data: current } = await admin.from("profiles").select("subscription_tier, subscription_expires_at").eq("id", expertId).maybeSingle();
+        const sameTier = current?.subscription_tier === amountCheck.tier.id;
+        const expiresAt = nextSubscriptionExpiry(new Date(), sameTier ? (current?.subscription_expires_at as string | null) : null);
 
-        await admin
+        const { error: tierErr } = await admin
           .from("profiles")
           .update({
-            subscription_tier: verifiedMetadata.tier,
+            subscription_tier: amountCheck.tier.id,
             subscription_expires_at: expiresAt.toISOString(),
           })
           .eq("id", expertId);
 
-        console.log(`[yukassa] Subscription updated: ${expertId} → ${verifiedMetadata.tier}`);
+        if (tierErr) {
+          console.error(`[yukassa] Subscription update failed for ${expertId}: ${tierErr.message}`);
+          try {
+            void notifyOperator("reconcile_mismatch", paymentId, { платёж: paymentId, эксперт: expertId, тариф: amountCheck.tier.id, причина: `profile update failed: ${tierErr.message}` });
+          } catch (err) {
+            console.error(`[yukassa] alert for ${paymentId} failed:`, err instanceof Error ? err.message : err);
+          }
+        } else {
+          const appliedAt = new Date().toISOString();
+          const { error: markErr } = await admin.from("payments").update({ metadata: { ...verifiedMetadata, tier_applied_at: appliedAt } }).eq("yukassa_payment_id", paymentId);
+          // Маркер не записан - повтор webhook продлил бы тариф второй раз; это видно в логе и оператору.
+          if (markErr) console.error(`[yukassa] tier_applied_at mark failed for ${paymentId}: ${markErr.message} (повтор webhook продлит срок повторно)`);
+          console.log(`[yukassa] Subscription updated: ${expertId} → ${amountCheck.tier.id} until ${expiresAt.toISOString()}`);
+        }
       }
 
       // Save payment method for recurring
@@ -388,7 +436,7 @@ export async function POST(request: NextRequest) {
       if (!handledPackage) {
         const { data: legacy } = await admin
           .from("payments")
-          .select("expert_id")
+          .select("expert_id, type, status")
           .eq("yukassa_payment_id", paymentId)
           .maybeSingle();
         const expertId = legacy?.expert_id as string | undefined;
@@ -407,6 +455,12 @@ export async function POST(request: NextRequest) {
           const verdict = await check;
           if (verdict.ok) {
             await admin.from("payments").update({ status }).eq("yukassa_payment_id", paymentId);
+            // R-09: возврат подтверждённого платежа подписки отзывает тариф - деньги вернулись, доступ тоже.
+            if (event === "refund.succeeded" && legacy?.type === "subscription" && legacy?.status === "succeeded") {
+              const { error: revokeErr } = await admin.from("profiles").update({ subscription_tier: "free", subscription_expires_at: null }).eq("id", expertId);
+              if (revokeErr) console.error(`[yukassa] subscription revoke after refund failed for ${expertId}: ${revokeErr.message}`);
+              else console.log(`[yukassa] subscription revoked after refund ${paymentId}: ${expertId} → free`);
+            }
           } else {
             console.warn(`[yukassa] ${event} ${paymentId} rejected by kassa reconciliation: ${verdict.reason}`);
           }

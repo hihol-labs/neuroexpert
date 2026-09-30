@@ -1,7 +1,7 @@
 import type { Bot, Context } from "grammy";
 import { supabase } from "../supabase";
 import { nicheKeyboard, changeNichesKeyboard } from "../keyboards";
-import { NICHES } from "shared";
+import { NICHES, getMaxNiches } from "shared";
 import { hashLinkNonce, verifyTelegramLinkToken } from "shared/notify/link-token";
 
 /** Получает выбранные ниши эксперта */
@@ -35,7 +35,7 @@ export function registerCommands(bot: Bot): void {
     // Проверяем, есть ли уже профиль по telegram_id
     const { data: existing } = await supabase
       .from("profiles")
-      .select("id, full_name, onboarding_completed")
+      .select("id, full_name, onboarding_completed, subscription_tier")
       .eq("telegram_id", telegramId)
       .single();
 
@@ -43,9 +43,11 @@ export function registerCommands(bot: Bot): void {
       const selectedIds = await getSelectedNiches(existing.id);
 
       if (selectedIds.length === 0) {
+        // R-09: лимит ниш из тарифа (free - 1).
+        const maxNiches = getMaxNiches((existing.subscription_tier as string | null) ?? "free");
         await ctx.reply(
-          `С возвращением, ${firstName}! Выберите ниши (до 3):`,
-          { reply_markup: nicheKeyboard() },
+          `С возвращением, ${firstName}! Выберите ниши (до ${maxNiches}):`,
+          { reply_markup: nicheKeyboard([], maxNiches) },
         );
         return;
       }
@@ -118,7 +120,7 @@ async function handleLinkAccount(
     .eq("telegram_link_nonce", hashLinkNonce(verified.nonce))
     // Срок проверяется и в подписи, и по записи профиля (вторая линия защиты).
     .gt("telegram_link_expires_at", new Date().toISOString())
-    .select("id, full_name")
+    .select("id, full_name, subscription_tier")
     .maybeSingle();
 
   if (error?.code === "23505") {
@@ -136,10 +138,11 @@ async function handleLinkAccount(
   const selectedIds = await getSelectedNiches(profile.id);
 
   if (selectedIds.length === 0) {
+    const maxNiches = getMaxNiches((profile.subscription_tier as string | null) ?? "free");
     await ctx.reply(
       `Аккаунт привязан! Привет, ${profile.full_name}!\n\n` +
-        "Выберите ваши ниши (до 3):",
-      { reply_markup: nicheKeyboard() },
+        `Выберите ваши ниши (до ${maxNiches}):`,
+      { reply_markup: nicheKeyboard([], maxNiches) },
     );
     return;
   }

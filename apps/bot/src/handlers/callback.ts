@@ -1,17 +1,21 @@
 import type { Bot } from "grammy";
 import { supabase } from "../supabase";
 import { nicheKeyboard, otherNichesKeyboard } from "../keyboards";
-import { NICHES, SUBSCRIPTION_TIERS } from "shared";
+import { NICHES, getMaxNiches as tierMaxNiches, packageAllowance, packageLimitMessage } from "shared";
 
-/** Получает лимит ниш по тарифу эксперта */
-async function getMaxNiches(profileId: string): Promise<number> {
+/** Тариф эксперта (неизвестный / пустой -> free, fail-closed в shared). */
+async function getTier(profileId: string): Promise<string> {
   const { data } = await supabase
     .from("profiles")
     .select("subscription_tier")
     .eq("id", profileId)
     .single();
-  const tier = data?.subscription_tier ?? "free";
-  return SUBSCRIPTION_TIERS[tier]?.maxNiches ?? 1;
+  return (data?.subscription_tier as string | null) ?? "free";
+}
+
+/** Получает лимит ниш по тарифу эксперта (R-09: единая таблица shared) */
+async function getMaxNiches(profileId: string): Promise<number> {
+  return tierMaxNiches(await getTier(profileId));
 }
 
 /** Получает выбранные ниши эксперта */
@@ -85,8 +89,8 @@ export function registerCallbackHandler(bot: Bot): void {
     // Определяем, какую клавиатуру показывать (фокусные или другие)
     const isFocusNiche = NICHES.find((n) => n.id === nicheId)?.isFocus;
     const keyboard = isFocusNiche
-      ? nicheKeyboard(selectedIds)
-      : otherNichesKeyboard(selectedIds);
+      ? nicheKeyboard(selectedIds, maxNiches)
+      : otherNichesKeyboard(selectedIds, maxNiches);
 
     const selectedNames = selectedIds
       .map((id) => NICHES.find((n) => n.id === id))
@@ -121,7 +125,7 @@ export function registerCallbackHandler(bot: Bot): void {
       ? `Выберите ниши (до ${maxNiches}):\n\nВыбрано: ${selectedNames.join(", ")}`
       : `Выберите ниши (до ${maxNiches}):`;
 
-    await ctx.editMessageText(text, { reply_markup: nicheKeyboard(selectedIds) });
+    await ctx.editMessageText(text, { reply_markup: nicheKeyboard(selectedIds, maxNiches) });
   });
 
   // Лимит достигнут — нажатие на неактивную кнопку
@@ -155,7 +159,7 @@ export function registerCallbackHandler(bot: Bot): void {
       ? `Выберите ниши (до ${maxNiches}):\n\nВыбрано: ${selectedNames.join(", ")}`
       : `Выберите ниши (до ${maxNiches}):`;
 
-    await ctx.editMessageText(text, { reply_markup: otherNichesKeyboard(selectedIds) });
+    await ctx.editMessageText(text, { reply_markup: otherNichesKeyboard(selectedIds, maxNiches) });
   });
 
   // Показать основные ниши (назад)
@@ -179,7 +183,7 @@ export function registerCallbackHandler(bot: Bot): void {
       ? `Выберите ниши (до ${maxNiches}):\n\nВыбрано: ${selectedNames.join(", ")}`
       : `Выберите ниши (до ${maxNiches}):`;
 
-    await ctx.editMessageText(text, { reply_markup: nicheKeyboard(selectedIds) });
+    await ctx.editMessageText(text, { reply_markup: nicheKeyboard(selectedIds, maxNiches) });
   });
 
   // Подтвердить выбор ниш
@@ -224,6 +228,14 @@ export function registerCallbackHandler(bot: Bot): void {
 
     if (!profileId) {
       await ctx.answerCallbackQuery({ text: "Профиль не найден" });
+      return;
+    }
+
+    // R-09 (E-AUTO-14): выбор темы = будущий пакет; при исчерпанном лимите месяца тема не принимается.
+    const allowance = await packageAllowance(supabase, await getTier(profileId), profileId);
+    if (!allowance.allowed) {
+      await ctx.answerCallbackQuery({ text: "Лимит пакетов на этот месяц исчерпан", show_alert: true });
+      await ctx.reply(packageLimitMessage(allowance, `${appUrl()}/billing`));
       return;
     }
 

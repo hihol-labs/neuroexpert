@@ -4,7 +4,9 @@
  *   --stage=infra   R-05: pg_cron установлен и расписания weekly-demand / weekly-generate-orders
  *                   активны; bucket voice приватный и создаётся миграцией; бот и web обязаны
  *                   загрузить аудио в Storage до записи voice_recordings; health отдаёт cron/storage.
- *   (demand / voice / publish — R-06+, пока не реализованы: exit 2.)
+ *   --stage=demand  R-06, --stage=publish R-07, --stage=notify R-08,
+ *   --stage=billing R-09: лимиты тарифа применяются на входах и в генерации, подписка кончается,
+ *                   сумма сверяется с ценой, аналитика цитирования для всех опубликованных.
  *
  * Слой РЕПО (всегда): needles по миграции 031, боту, web-роуту /api/voice, health.
  * Живой слой (кроме --repo-only): GET /api/health -> cron.extension, cron.jobs[*].active,
@@ -20,7 +22,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const KNOWN_FLAGS = new Set(["--stage", "--base-url", "--fixture-dir", "--repo-root", "--repo-only"]);
-const STAGES = new Set(["infra", "demand", "publish", "notify"]);
+const STAGES = new Set(["infra", "demand", "publish", "notify", "billing"]);
 const argv = process.argv.slice(2);
 let stage = null;
 let baseUrlArg = null;
@@ -513,7 +515,139 @@ async function checkNotifyLive() {
   }
 }
 
-if (stage === "notify") {
+// ============================================================
+// R-09 стадия billing: тарифы применяются, подписка кончается, аналитика для всех (контракт .itd-memory/contracts/R-09.md)
+// ============================================================
+const BILLING_FIX = "реализовать контракт R-09 (.itd-memory/contracts/R-09.md)";
+const SHARED_LIMITS = "packages/shared/src/billing/limits.ts";
+const WEB_SUB = "apps/web/lib/subscription.ts";
+const W_GEN = "apps/worker/src/jobs/generate-content.ts";
+const WEB_ORDERS_LIB = "apps/web/lib/expert-orders.ts";
+const WEB_VOICE = "apps/web/app/api/voice/route.ts";
+const WEB_WEBHOOK = "apps/web/app/api/webhooks/yukassa/route.ts";
+const WEB_BILLING = "apps/web/app/(dashboard)/billing/page.tsx";
+const WEB_ANALYTICS = "apps/web/app/(dashboard)/analytics/page.tsx";
+const WEB_ORDERS_PAGE = "apps/web/app/(dashboard)/orders/page.tsx";
+const BOT_KEYS = "apps/bot/src/keyboards.ts";
+const MIG_035 = "packages/supabase/migrations/035_billing_and_analytics.sql";
+const BILLING_CRON = ["weekly-citations", "weekly-serp", "monthly-trust", "daily-subscription-expiry"];
+function checkBillingRepo() {
+  // Одна таблица тарифов и одни проверки - в shared; web больше не держит свою копию цен.
+  requireGroup("core", [
+    [SHARED_LIMITS, ["export function checkPackageLimit(", "export function getAllowedFormats(", "export function checkNicheLimit(",
+      "export function monthStartUtc(", "export function checkSubscriptionAmount(", "export async function packageAllowance(", "SUBSCRIPTION_TIERS",
+      "export function nextSubscriptionExpiry(", "Object.hasOwn(SUBSCRIPTION_TIERS", "currency", "\"expert_package_ledger\""]],
+    ["packages/shared/src/index.ts", ["./billing/limits.js"]],
+    ["packages/shared/tests/billing-limits.test.cjs", ["checkPackageLimit", "getAllowedFormats", "checkNicheLimit", "checkSubscriptionAmount", "packageAllowance"]],
+    [WEB_SUB, ["SUBSCRIPTION_TIERS"]],
+  ], BILLING_FIX);
+  forbidGroup("core-copy", [[WEB_SUB, ["price: 1490", "packagesPerMonth: 3", "maxNiches: 1"]],
+    // Сумма сверяется точно и в рублях; счётчик - по леджеру, а не по content_packages (владелец удаляет/меняет свои пакеты по RLS 002).
+    [SHARED_LIMITS, ["Math.round(amountRub)", ".neq(\"status\", \"failed\")", "from(\"content_packages\")"]]],
+    "цены и лимиты в web берутся из shared SUBSCRIPTION_TIERS, а не из второй таблицы TIER_CONFIG; сумма подписки без округления, счётчик пакетов по леджеру expert_package_ledger");
+  // Лимит пакетов в месяц - на каждом входе (выбор темы и запись голоса, сайт и бот) с понятным отказом.
+  requireGroup("entries", [
+    [WEB_ORDERS_LIB, ["packageAllowance(", "\"package_limit\"", "action === \"accept\""]],
+    [WEB_ORDERS_PAGE, ["package_limit:", "/billing"]],
+    [WEB_VOICE, ["packageAllowance(", "code: \"package_limit\"", "status: 402"]],
+    [BOT_CB, ["packageAllowance(", "/billing"]],
+    [BOT_VOICE, ["packageAllowance(", "/billing"]],
+  ], BILLING_FIX);
+  // Генерация: только форматы тарифа (cards / reels_script не вызывают LLM у free) и страховка лимита без повторов.
+  requireGroup("generate", [[W_GEN, ["getAllowedFormats(", "allowed.has(\"cards\")", "allowed.has(\"reels_script\")", "packageAllowance(", "subscription_tier", "skipped: \"package_limit\""]]], BILLING_FIX);
+  // Ниши: клавиатура бота берёт лимит тарифа, а не жёсткие 3.
+  requireGroup("niches", [[BOT_KEYS, ["maxNiches: number"]], [BOT_CB, ["nicheKeyboard(selectedIds, maxNiches)", "otherNichesKeyboard(selectedIds, maxNiches)"]]], BILLING_FIX);
+  forbidGroup("niches-hardcode", [[BOT_KEYS, ["const MAX_NICHES = 3"]]], "лимит ниш - из тарифа (checkNicheLimit / getMaxNiches), не константа");
+  // Подписка: сумма сверяется с ценой тарифа; срок кончается sweep'ом; «Отменить» заменена честным текстом.
+  requireGroup("subscription", [
+    // Тариф только за точную сумму, один раз на платёж, срок без потери остатка; возврат отзывает тариф.
+    [WEB_WEBHOOK, ["checkSubscriptionAmount(", "amountCheck.ok", "alreadyApplied", "typeof priorMeta.tier_applied_at === \"string\"", "nextSubscriptionExpiry(", "legacy?.type === \"subscription\"",
+      "priorPayment?.status === \"refunded\"", "if (priorErr) {", "error: markErr"]],
+    [WEB_BILLING, ["не продлевается автоматически"]],
+    [MIG_035, ["cron.schedule('daily-subscription-expiry'", "subscription_tier <> 'free'", "subscription_expires_at < now()", "SET subscription_tier = 'free'",
+      // Security-аудит R-09: пользователь не может сам выставить тариф / публикацию (RLS 002 без WITH CHECK);
+      // счётчик пакетов - неудаляемый леджер (владелец удаляет свои пакеты по RLS 002); миграцию применяет серверная роль.
+      "WITH CHECK (auth.uid() = id)", "CREATE TRIGGER profiles_protect_billing", "BEFORE UPDATE ON public.profiles",
+      "current_user NOT IN ('postgres', 'service_role', 'supabase_admin')", "NEW.subscription_tier IS DISTINCT FROM OLD.subscription_tier",
+      "NEW.subscription_expires_at IS DISTINCT FROM OLD.subscription_expires_at", "NEW.trust_score IS DISTINCT FROM OLD.trust_score",
+      "NEW.is_published IS DISTINCT FROM OLD.is_published", "ERRCODE = '42501'",
+      "CREATE TABLE IF NOT EXISTS public.expert_package_ledger", "ALTER TABLE public.expert_package_ledger ENABLE ROW LEVEL SECURITY",
+      "REVOKE ALL ON TABLE public.expert_package_ledger FROM PUBLIC, anon, authenticated", "CREATE TRIGGER content_packages_ledger",
+      "AFTER INSERT ON public.content_packages", "SELECT id, expert_id, created_at FROM public.content_packages",
+      "IF current_user NOT IN ('postgres', 'supabase_admin') THEN"]],
+  ], BILLING_FIX);
+  // Функция защиты биллинга обязана быть БЕЗ SECURITY DEFINER: иначе current_user = владелец функции и проверка роли пуста.
+  const mig = readRepoFile(MIG_035);
+  const fnBody = (name, until) => {
+    if (mig === null) return "";
+    const a = mig.indexOf(`CREATE OR REPLACE FUNCTION public.${name}()`); const b = mig.indexOf(until);
+    return a >= 0 && b > a ? mig.slice(a, b) : "";
+  };
+  if (mig !== null) {
+    const protect = fnBody("protect_billing_columns", "CREATE TRIGGER profiles_protect_billing");
+    if (protect.length === 0 || protect.includes("SECURITY DEFINER")) finding(`[${stage}:subscription-definer]`, `${MIG_035}: protect_billing_columns отсутствует или объявлена SECURITY DEFINER (current_user внутри = владелец, проверка роли не работает)`, "функция BEFORE UPDATE без SECURITY DEFINER");
+    // Триггеры под ролью пользователя (UPDATE профиля / INSERT пакета по RLS) пишут в таблицы под RLS 035 - нужен SECURITY DEFINER,
+    // и созданная им запись не должна зависеть от клиентских значений (created_at леджера = now()).
+    const sync = fnBody("sync_expert_niche_from_profile", "CREATE TRIGGER profiles_sync_expert_niche");
+    if (!sync.includes("SECURITY DEFINER")) finding(`[${stage}:expert-niches-definer]`, `${MIG_035}: sync_expert_niche_from_profile отсутствует или без SECURITY DEFINER (вставка в expert_niches под RLS пользователя не пройдёт)`, "объявить функцию SECURITY DEFINER SET search_path = public");
+    const ledger = fnBody("record_package_in_ledger", "CREATE TRIGGER content_packages_ledger");
+    if (!ledger.includes("SECURITY DEFINER")) finding(`[${stage}:ledger-definer]`, `${MIG_035}: record_package_in_ledger отсутствует или без SECURITY DEFINER (вставка в леджер под RLS пользователя не пройдёт)`, "объявить функцию SECURITY DEFINER SET search_path = public");
+    if (ledger.length > 0 && !ledger.includes("VALUES (NEW.id, NEW.expert_id, now())")) finding(`[${stage}:ledger-definer]`, `${MIG_035}: леджер берёт created_at из клиентской строки, а не now() (вставка «задним числом» выпадает из месячного окна)`, "VALUES (NEW.id, NEW.expert_id, now())");
+    if (!mig.includes("REVOKE ALL ON FUNCTION public.record_package_in_ledger() FROM PUBLIC, anon, authenticated")) finding(`[${stage}:ledger-definer]`, `${MIG_035}: нет REVOKE на SECURITY DEFINER-функции леджера`, "REVOKE ALL ON FUNCTION ... FROM PUBLIC, anon, authenticated");
+  }
+  forbidGroup("subscription-legacy", [[WEB_BILLING, ["subscribe(\"free\")"]]], "кнопка «Отменить подписку» вела в /api/subscribe с free (400, ничего не происходило)");
+  // Аналитика для всех опубликованных (решение владельца 2026-09-06): расписания без гейта по тарифу.
+  requireGroup("analytics", [
+    [MIG_035, ["cron.schedule('weekly-citations'", "cron.schedule('weekly-serp'", "cron.schedule('monthly-trust'", "'track_citations'", "'track_serp'", "is_published = TRUE",
+      "cron.unschedule(jobid) FROM cron.job WHERE jobname IN (", "current_setting('cron.database_name'", "j.status IN ('pending', 'processing')"]],
+    [WEB_ANALYTICS, ["select(\"trust_score, subscription_tier\")"]],
+  ], BILLING_FIX);
+  forbidGroup("analytics-gate", [[MIG_035, ["subscription_tier NOT IN", "subscription_tier IN ('expert'"]], [WEB_ANALYTICS, ["\"trust_score, tier\""]]],
+    "аналитика цитирования открыта всем опубликованным; страница читает существующую колонку subscription_tier");
+  // Ниши эксперта с сайта: backfill из profiles.niche_id и триггер синхронизации (иначе тем не будет никогда).
+  requireGroup("expert-niches", [[MIG_035, ["INSERT INTO public.expert_niches (expert_id, niche_id)", "SELECT p.id, p.niche_id FROM public.profiles p", "ON CONFLICT DO NOTHING", "CREATE OR REPLACE FUNCTION public.sync_expert_niche_from_profile()",
+    "CREATE TRIGGER profiles_sync_expert_niche", "AFTER INSERT OR UPDATE OF niche_id ON public.profiles",
+    // Только первая ниша (пока строк нет): лишняя строка превысила бы лимит ниш тарифа. RLS: 007 её не включал.
+    "NOT EXISTS (SELECT 1 FROM public.expert_niches e WHERE e.expert_id = NEW.id)",
+    "ALTER TABLE public.expert_niches ENABLE ROW LEVEL SECURITY", "ON public.expert_niches FOR SELECT", "USING (auth.uid() = expert_id)"]]], BILLING_FIX);
+  requireGroup("rollout", [["OPERATIONS.md", ["Порядок выкатки R-09: миграция 035 → worker → bot → web"]]],
+    "записать в OPERATIONS порядок выкатки R-09: старый worker генерирует 5 форматов всем, а web/bot уже отказывают по лимиту");
+}
+/**
+ * Живой слой billing: /api/subscribe без сессии - 401; health показывает активные расписания аналитики и
+ * sweep подписки. Оффлайн - фикстура billing.json: {"subscribe": 401, "jobs": {"weekly-citations": {"active": true}, …}}.
+ */
+async function checkBillingLive() {
+  let fx = null;
+  if (fixtureDir) {
+    const abs = join(fixtureDir, "billing.json");
+    if (!existsSync(abs)) { finding("fixture:billing.json", "фикстура отсутствует", "положить billing.json в --fixture-dir"); return; }
+    fx = JSON.parse(readFileSync(abs, "utf8"));
+  }
+  const subscribe = fx ? fx.subscribe : (await fetchWithRetry(`${baseUrl}/api/subscribe`, { method: "POST", redirect: "manual", headers: { "content-type": "application/json" }, body: JSON.stringify({ tier: "pro" }) })).status;
+  if (subscribe !== 401) finding("/api/subscribe", `без сессии: HTTP ${subscribe} (ожидается 401)`, "отказ до создания платежа");
+  let jobs;
+  if (fx) jobs = fx.jobs ?? null;
+  else {
+    const health = await getHealth();
+    jobs = health?.cron?.jobs ?? null;
+  }
+  if (!jobs || typeof jobs !== "object") { finding("/api/health", "нет блока cron.jobs", "миграция 031/035 и RPC infra_status"); return; }
+  for (const name of BILLING_CRON) {
+    const job = jobs[name];
+    if (!job) { finding("/api/health", `расписание ${name} отсутствует (миграция 035 не применена)`, "применить 035: cron.schedule без гейта по тарифу"); continue; }
+    if (job.active !== true) finding("/api/health", `расписание ${name} неактивно`, "включить расписание");
+    if (job.last_status === "failed") finding("/api/health", `последний запуск ${name} failed`, "смотреть cron.job_run_details");
+  }
+}
+
+if (stage === "billing") {
+  checkBillingRepo();
+  if (!repoOnly) {
+    try { await checkBillingLive(); }
+    catch (err) { transportErrors.push(err instanceof Error ? err.message : String(err)); }
+  }
+} else if (stage === "notify") {
   checkNotifyRepo();
   if (!repoOnly) {
     try { await checkNotifyLive(); }

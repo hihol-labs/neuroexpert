@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
-import { decideOrderSelection, isSameOriginRequest, type ExpertOrderAction } from "shared";
+import { decideOrderSelection, isSameOriginRequest, packageAllowance, type ExpertOrderAction, type LimitCheck } from "shared";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -59,6 +59,13 @@ export async function handleExpertOrderSelection(request: NextRequest, id: strin
   const { data: order } = await admin.from("orders").select("expert_id, status").eq("id", id).maybeSingle();
   const decision = decideOrderSelection(order, user.id, action);
   if (!decision.ok) return backToOrders(request, decision.code);
+  // R-09 (E-AUTO-14): выбор темы = будущий пакет; при исчерпанном лимите месяца тема не принимается.
+  if (action === "accept") {
+    const allowance = await expertPackageAllowance(admin, user.id);
+    // Сбой проверки - отказ (fail-closed), но с честной подписью, а не «лимит исчерпан».
+    if (allowance.error) return backToOrders(request, "package_check_failed");
+    if (!allowance.allowed) return backToOrders(request, "package_limit");
+  }
 
   const { data: updated } = await admin
     .from("orders")
@@ -70,6 +77,16 @@ export async function handleExpertOrderSelection(request: NextRequest, id: strin
     .select("id");
   if (!updated || updated.length === 0) return backToOrders(request, "conflict");
   return backToOrders(request, decision.status);
+}
+
+/**
+ * R-09: лимит «пакетов в месяц» по тарифу профиля (shared packageAllowance). Профиль не найден или
+ * ошибка чтения - отказ (fail-closed): лимит не обходится сбоем.
+ */
+export async function expertPackageAllowance(admin: SupabaseClient, expertId: string): Promise<LimitCheck & { error?: string }> {
+  const { data: profile, error } = await admin.from("profiles").select("subscription_tier").eq("id", expertId).maybeSingle();
+  if (error || !profile) return { allowed: false, limit: 0, used: 0, remaining: 0, error: error?.message ?? "profile not found" };
+  return packageAllowance(admin, (profile.subscription_tier as string | null) ?? "free", expertId);
 }
 
 export type VoiceOrderResolution =

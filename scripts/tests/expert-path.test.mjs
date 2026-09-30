@@ -545,6 +545,171 @@ try {
       const r = runNotify(repo, d); expect(`notify мутация live: ${label}`, r.code, 1, r.out);
     });
   }
+
+  // ===== R-09: стадия billing =====
+  {
+    const B = {
+      limits: "packages/shared/src/billing/limits.ts", index: "packages/shared/src/index.ts", test: "packages/shared/tests/billing-limits.test.cjs",
+      webSub: "apps/web/lib/subscription.ts", gen: "apps/worker/src/jobs/generate-content.ts", ordersLib: "apps/web/lib/expert-orders.ts",
+      ordersPage: "apps/web/app/(dashboard)/orders/page.tsx", voice: "apps/web/app/api/voice/route.ts", webhook: "apps/web/app/api/webhooks/yukassa/route.ts",
+      billing: "apps/web/app/(dashboard)/billing/page.tsx", analytics: "apps/web/app/(dashboard)/analytics/page.tsx",
+      botCb: "apps/bot/src/handlers/callback.ts", botVoice: "apps/bot/src/handlers/voice.ts", botKeys: "apps/bot/src/keyboards.ts",
+      mig: "packages/supabase/migrations/035_billing_and_analytics.sql", ops: "OPERATIONS.md",
+    };
+    const GREEN_BILLING = {
+      [B.limits]: "import { SUBSCRIPTION_TIERS } from \"../constants.js\";\nexport function findTier(t) { return Object.hasOwn(SUBSCRIPTION_TIERS, t) ? SUBSCRIPTION_TIERS[t] : undefined; }\nexport function monthStartUtc(now) {}\nexport function nextSubscriptionExpiry(now, cur) {}\nexport function checkPackageLimit(tier, used) {}\nexport function getAllowedFormats(tier) {}\nexport function checkNicheLimit(tier, n) {}\nexport function checkSubscriptionAmount(tier, amount, currency) { if (currency !== \"RUB\") return bad; }\nexport async function packageAllowance(db, tier, expertId, now) { return db.from(\"expert_package_ledger\").select(\"id\").eq(\"expert_id\", expertId).gte(\"created_at\", monthStartUtc(now)); }\n",
+      [B.index]: "export * from \"./billing/limits.js\";\n",
+      [B.test]: "const {checkPackageLimit, getAllowedFormats, checkNicheLimit, checkSubscriptionAmount, packageAllowance} = require('../dist/billing/limits.js');\n",
+      [B.webSub]: "import { SUBSCRIPTION_TIERS } from \"shared\";\nexport const TIER_CONFIG = Object.fromEntries(Object.values(SUBSCRIPTION_TIERS).map((t) => [t.id, { name: t.name, price: t.price }]));\n",
+      [B.gen]: "const { data: expert } = await supabase.from(\"profiles\").select(\"full_name, subscription_tier\");\nconst allowance = await packageAllowance(supabase, expert.subscription_tier, expertId);\nif (!allowance.allowed) return { content_package_id: null, skipped: \"package_limit\" };\nconst allowed = new Set(getAllowedFormats(expert.subscription_tier));\nconst cards = allowed.has(\"cards\") ? await callLLMJson(buildCardsPrompt(params)) : [];\nconst reelsScript = allowed.has(\"reels_script\") ? await callLLM(buildReelsScriptPrompt(params)) : \"\";\n",
+      [B.ordersLib]: "if (action === \"accept\") { const a = await packageAllowance(admin, tier, user.id); if (!a.allowed) return backToOrders(request, \"package_limit\"); }\n",
+      [B.ordersPage]: "const NOTICES = { package_limit: { tone: \"warn\", text: \"Лимит пакетов в этом месяце исчерпан.\", href: \"/billing\" } };\n",
+      [B.voice]: "const a = await packageAllowance(admin, profile.subscription_tier, profile.id);\nif (!a.allowed) return NextResponse.json({ error: \"x\", code: \"package_limit\" }, { status: 402 });\n",
+      [B.webhook]: "if (priorErr) { return NextResponse.json({ error: \"x\" }, { status: 503 }); }\nif (priorPayment?.status === \"refunded\") { return NextResponse.json({ ok: true }); }\nconst { error: markErr } = await admin.from(\"payments\").update({ metadata: { tier_applied_at: appliedAt } });\nconst alreadyApplied = priorPayment?.status === \"succeeded\" && typeof priorMeta.tier_applied_at === \"string\";\nconst amountCheck = checkSubscriptionAmount(verifiedMetadata.tier, amountRub, verified.amount.currency);\nif (paymentType === \"subscription\" && !alreadyApplied && amountCheck.ok) { const expiresAt = nextSubscriptionExpiry(new Date(), current?.subscription_expires_at); await admin.from(\"profiles\").update({ subscription_tier: amountCheck.tier.id, subscription_expires_at: expiresAt }); }\nif (event === \"refund.succeeded\" && legacy?.type === \"subscription\") { await admin.from(\"profiles\").update({ subscription_tier: \"free\" }); }\n",
+      [B.billing]: "<p>Подписка не продлевается автоматически: после {date} тариф станет бесплатным.</p>\n",
+      [B.analytics]: "const { data: profile } = await supabase.from(\"profiles\").select(\"trust_score, subscription_tier\").eq(\"id\", user.id).single();\n",
+      [B.botCb]: "const a = await packageAllowance(supabase, tier, profileId); if (!a.allowed) { await ctx.reply(`Лимит. ${appUrl()}/billing`); return; }\nnicheKeyboard(selectedIds, maxNiches)\notherNichesKeyboard(selectedIds, maxNiches)\n",
+      [B.botVoice]: "const a = await packageAllowance(supabase, profile.subscription_tier, profile.id); if (!a.allowed) { await ctx.reply(`Лимит. ${appUrl()}/billing`); return; }\n",
+      [B.botKeys]: "export function nicheKeyboard(selectedIds = [], maxNiches: number = 1) {}\n",
+      [B.mig]: [
+        "DO $$ BEGIN IF current_setting('cron.database_name', true) IS DISTINCT FROM current_database() THEN RAISE EXCEPTION 'x'; END IF; END $$;",
+        "SELECT cron.unschedule(jobid) FROM cron.job WHERE jobname IN ('weekly-citations','weekly-serp','monthly-trust','daily-subscription-expiry');",
+        "SELECT cron.schedule('weekly-citations', '0 4 * * 3', $$INSERT INTO public.jobs (type, payload) SELECT 'track_citations', jsonb_build_object('expert_id', p.id) FROM public.profiles p WHERE p.is_published = TRUE AND NOT EXISTS (SELECT 1 FROM public.jobs j WHERE j.type = 'track_citations' AND j.status IN ('pending', 'processing') AND j.payload->>'expert_id' = p.id::text)$$);",
+        "SELECT cron.schedule('weekly-serp', '0 5 * * 4', $$INSERT INTO public.jobs (type, payload) SELECT 'track_serp', jsonb_build_object('expert_id', id) FROM public.profiles WHERE is_published = TRUE$$);",
+        "SELECT cron.schedule('monthly-trust', '0 2 1 * *', $$INSERT INTO public.jobs (type, payload) SELECT 'calculate_trust_score', jsonb_build_object('expert_id', id) FROM public.profiles WHERE is_published = TRUE$$);",
+        "SELECT cron.schedule('daily-subscription-expiry', '15 0 * * *', $$UPDATE public.profiles SET subscription_tier = 'free', updated_at = now() WHERE subscription_tier <> 'free' AND subscription_expires_at IS NOT NULL AND subscription_expires_at < now()$$);",
+        "INSERT INTO public.expert_niches (expert_id, niche_id) SELECT p.id, p.niche_id FROM public.profiles p WHERE p.niche_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.expert_niches e WHERE e.expert_id = p.id) ON CONFLICT DO NOTHING;",
+        "CREATE OR REPLACE FUNCTION public.sync_expert_niche_from_profile() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$ BEGIN IF NEW.niche_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.expert_niches e WHERE e.expert_id = NEW.id) THEN INSERT INTO public.expert_niches (expert_id, niche_id) VALUES (NEW.id, NEW.niche_id) ON CONFLICT DO NOTHING; END IF; RETURN NEW; END $$;",
+        "CREATE TRIGGER profiles_sync_expert_niche AFTER INSERT OR UPDATE OF niche_id ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.sync_expert_niche_from_profile();",
+        "DO $$ BEGIN IF current_user NOT IN ('postgres', 'supabase_admin') THEN RAISE EXCEPTION 'apply as postgres'; END IF; END $$;",
+        "DROP POLICY IF EXISTS \"Users can update own profile\" ON public.profiles;",
+        "CREATE POLICY \"Users can update own profile\" ON public.profiles FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);",
+        "CREATE OR REPLACE FUNCTION public.protect_billing_columns() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF current_user NOT IN ('postgres', 'service_role', 'supabase_admin') AND (NEW.subscription_tier IS DISTINCT FROM OLD.subscription_tier OR NEW.subscription_expires_at IS DISTINCT FROM OLD.subscription_expires_at OR NEW.trust_score IS DISTINCT FROM OLD.trust_score OR NEW.is_published IS DISTINCT FROM OLD.is_published) THEN RAISE EXCEPTION 'read-only' USING ERRCODE = '42501'; END IF; RETURN NEW; END $$;",
+        "CREATE TRIGGER profiles_protect_billing BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.protect_billing_columns();",
+        "CREATE TABLE IF NOT EXISTS public.expert_package_ledger (package_id uuid PRIMARY KEY, expert_id uuid NOT NULL, created_at timestamptz NOT NULL DEFAULT now());",
+        "ALTER TABLE public.expert_package_ledger ENABLE ROW LEVEL SECURITY;",
+        "REVOKE ALL ON TABLE public.expert_package_ledger FROM PUBLIC, anon, authenticated;",
+        "CREATE OR REPLACE FUNCTION public.record_package_in_ledger() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$ BEGIN INSERT INTO public.expert_package_ledger (package_id, expert_id, created_at) VALUES (NEW.id, NEW.expert_id, now()) ON CONFLICT DO NOTHING; RETURN NEW; END $$;",
+        "REVOKE ALL ON FUNCTION public.record_package_in_ledger() FROM PUBLIC, anon, authenticated;",
+        "CREATE TRIGGER content_packages_ledger AFTER INSERT ON public.content_packages FOR EACH ROW EXECUTE FUNCTION public.record_package_in_ledger();",
+        "INSERT INTO public.expert_package_ledger (package_id, expert_id, created_at) SELECT id, expert_id, created_at FROM public.content_packages ON CONFLICT DO NOTHING;",
+        "ALTER TABLE public.expert_niches ENABLE ROW LEVEL SECURITY;",
+        "CREATE POLICY \"Expert can view own niches\" ON public.expert_niches FOR SELECT USING (auth.uid() = expert_id);",
+      ].join("\n") + "\n",
+      [B.ops]: "- **Порядок выкатки R-09: миграция 035 → worker → bot → web.**\n",
+    };
+    const GREEN_BILLING_FX = { subscribe: 401, jobs: Object.fromEntries(["weekly-citations", "weekly-serp", "monthly-trust", "daily-subscription-expiry"].map((n) => [n, { active: true, last_status: null }])) };
+    const writeBillingFx = (dir, fx) => { mkdirSync(dir, { recursive: true }); if (fx !== null) writeFileSync(join(dir, "billing.json"), JSON.stringify(fx)); };
+    const runBilling = (repo, fx) => run(["--stage=billing", "--repo-root", repo, ...(fx ? ["--fixture-dir", fx] : ["--repo-only"])]);
+    const repo = join(work, "billing-green"); writeRepo(repo, GREEN_BILLING);
+    const fx = join(work, "billing-green-fx"); writeBillingFx(fx, GREEN_BILLING_FX);
+    { const r = runBilling(repo, fx); expect("billing: зелёное репо + зелёные пробы -> exit 0", r.code, 0, r.out); }
+    { const r = runBilling(repo, null); expect("billing: --repo-only на зелёном репо -> exit 0", r.code, 0, r.out); }
+    {
+      const bare = join(work, "billing-bare"); mkdirSync(bare, { recursive: true });
+      const r = runBilling(bare, null); expect("billing: пустое репо -> exit 1", r.code, 1, r.out);
+      const m = /(\d+) finding\(s\)/.exec(r.out); expect("billing: пустое репо даёт ровно 8 групповых находок (forbid-группы молчат)", m ? Number(m[1]) : -1, 8, r.out);
+    }
+    const G = GREEN_BILLING;
+    const billingMutations = [
+      ["shared: нет лимита пакетов", { [B.limits]: G[B.limits].replace("export function checkPackageLimit(", "function limit(") }],
+      ["shared: нет форматов по тарифу", { [B.limits]: G[B.limits].replace("export function getAllowedFormats(", "function f(") }],
+      ["shared: нет сверки суммы подписки", { [B.limits]: G[B.limits].replace("export function checkSubscriptionAmount(", "function s(") }],
+      ["shared: своя таблица тарифов вместо SUBSCRIPTION_TIERS", { [B.limits]: G[B.limits].replace(/SUBSCRIPTION_TIERS/g, "TIERS") }],
+      ["shared: тариф по прототипному ключу (нет Object.hasOwn)", { [B.limits]: G[B.limits].replace("Object.hasOwn(SUBSCRIPTION_TIERS, t) ? SUBSCRIPTION_TIERS[t] : undefined", "SUBSCRIPTION_TIERS[t]") }],
+      ["shared: сумма с округлением копеек", { [B.limits]: G[B.limits] + "const same = Math.round(amountRub) === found.price;\n" }],
+      ["shared: валюта не проверяется", { [B.limits]: G[B.limits].replace("export function checkSubscriptionAmount(tier, amount, currency) { if (currency !== \"RUB\") return bad; }", "export function checkSubscriptionAmount(tier, amount) {}") }],
+      ["shared: нет расчёта срока без потери остатка", { [B.limits]: G[B.limits].replace("export function nextSubscriptionExpiry(", "function expiry(") }],
+      ["shared: счётчик исключает статус failed (владелец меняет status по RLS 002)", { [B.limits]: G[B.limits].replace(".gte(\"created_at\", monthStartUtc(now))", ".gte(\"created_at\", monthStartUtc(now)).neq(\"status\", \"failed\")") }],
+      ["shared: счётчик по content_packages (владелец удаляет свои пакеты - счётчик обнуляется)", { [B.limits]: G[B.limits].replace("db.from(\"expert_package_ledger\")", "db.from(\"content_packages\")") }],
+      ["миграция: нет леджера пакетов", { [B.mig]: G[B.mig].replace("CREATE TABLE IF NOT EXISTS public.expert_package_ledger", "CREATE TABLE IF NOT EXISTS public.x") }],
+      ["миграция: леджер читают anon/authenticated (нет REVOKE)", { [B.mig]: G[B.mig].replace("REVOKE ALL ON TABLE public.expert_package_ledger FROM PUBLIC, anon, authenticated;\n", "") }],
+      ["миграция: леджер без RLS", { [B.mig]: G[B.mig].replace("ALTER TABLE public.expert_package_ledger ENABLE ROW LEVEL SECURITY;\n", "") }],
+      ["миграция: нет триггера леджера на вставку пакета", { [B.mig]: G[B.mig].replace("CREATE TRIGGER content_packages_ledger AFTER INSERT ON public.content_packages", "CREATE TRIGGER y BEFORE UPDATE ON public.content_packages") }],
+      ["миграция: леджер без backfill (текущий месяц не считается)", { [B.mig]: G[B.mig].replace("SELECT id, expert_id, created_at FROM public.content_packages", "SELECT 1 WHERE false") }],
+      ["миграция: леджер берёт created_at из клиентской строки (вставка задним числом обходит лимит)", { [B.mig]: G[B.mig].replace("VALUES (NEW.id, NEW.expert_id, now())", "VALUES (NEW.id, NEW.expert_id, NEW.created_at)") }],
+      ["миграция: функция леджера без SECURITY DEFINER", { [B.mig]: G[B.mig].replace("record_package_in_ledger() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS", "record_package_in_ledger() RETURNS trigger LANGUAGE plpgsql AS") }],
+      ["миграция: нет REVOKE на функции леджера", { [B.mig]: G[B.mig].replace("REVOKE ALL ON FUNCTION public.record_package_in_ledger() FROM PUBLIC, anon, authenticated;\n", "") }],
+      ["миграция: функции защиты биллинга нет вовсе (проверка DEFINER была бы вакуумной)", { [B.mig]: G[B.mig].replace("CREATE OR REPLACE FUNCTION public.protect_billing_columns()", "CREATE OR REPLACE FUNCTION public.x()") }],
+      ["webhook: повтор payment.succeeded после возврата снова выдаёт тариф", { [B.webhook]: G[B.webhook].replace("if (priorPayment?.status === \"refunded\") { return NextResponse.json({ ok: true }); }\n", "") }],
+      ["webhook: ошибка чтения платежа игнорируется (fail-open)", { [B.webhook]: G[B.webhook].replace("if (priorErr) { return NextResponse.json({ error: \"x\" }, { status: 503 }); }\n", "") }],
+      ["webhook: ошибка записи маркера не проверяется", { [B.webhook]: G[B.webhook].replace("const { error: markErr } = await", "await") }],
+      ["миграция: защита не проверяет is_published (самопубликация -> аналитика за счёт владельца)", { [B.mig]: G[B.mig].replace(" OR NEW.is_published IS DISTINCT FROM OLD.is_published", "") }],
+      ["миграция: защита биллинга объявлена SECURITY DEFINER (проверка роли пуста)", { [B.mig]: G[B.mig].replace("public.protect_billing_columns() RETURNS trigger LANGUAGE plpgsql AS", "public.protect_billing_columns() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS") }],
+      ["миграция: нет guard роли применения (cron от чужой роли молча упадёт на триггере)", { [B.mig]: G[B.mig].replace("IF current_user NOT IN ('postgres', 'supabase_admin') THEN", "IF false THEN") }],
+      ["миграция: expert_niches без RLS (любой меняет ниши любого эксперта)", { [B.mig]: G[B.mig].replace("ALTER TABLE public.expert_niches ENABLE ROW LEVEL SECURITY;\n", "") }],
+      ["миграция: expert_niches - владелец не видит свои ниши", { [B.mig]: G[B.mig].replace("ON public.expert_niches FOR SELECT USING (auth.uid() = expert_id)", "ON public.expert_niches FOR SELECT USING (true)") }],
+      ["webhook: повтор payment.succeeded продлевает тариф снова", { [B.webhook]: G[B.webhook].replace("const alreadyApplied = priorPayment?.status === \"succeeded\" && typeof priorMeta.tier_applied_at === \"string\";\n", "").replace("!alreadyApplied && ", "") }],
+      ["webhook: признак применения - статус платежа, а не факт записи профиля (сбой профиля теряет тариф)", { [B.webhook]: G[B.webhook].replace(" && typeof priorMeta.tier_applied_at === \"string\"", "") }],
+      ["миграция: защита не проверяет срок подписки", { [B.mig]: G[B.mig].replace(" OR NEW.subscription_expires_at IS DISTINCT FROM OLD.subscription_expires_at", "") }],
+      ["webhook: срок setMonth от now (остаток теряется, 31-е переполняется)", { [B.webhook]: G[B.webhook].replace("nextSubscriptionExpiry(new Date(), current?.subscription_expires_at)", "new Date(Date.now() + 2592000000)") }],
+      ["webhook: возврат не отзывает тариф", { [B.webhook]: G[B.webhook].replace("if (event === \"refund.succeeded\" && legacy?.type === \"subscription\") { await admin.from(\"profiles\").update({ subscription_tier: \"free\" }); }\n", "") }],
+      ["миграция: политика профиля без WITH CHECK", { [B.mig]: G[B.mig].replace(" WITH CHECK (auth.uid() = id)", "") }],
+      ["миграция: нет защиты колонок тарифа (пользователь сам ставит enterprise)", { [B.mig]: G[B.mig].replace("CREATE TRIGGER profiles_protect_billing", "CREATE TRIGGER x") }],
+      ["миграция: защита не проверяет subscription_tier", { [B.mig]: G[B.mig].replace("NEW.subscription_tier IS DISTINCT FROM OLD.subscription_tier OR ", "") }],
+      ["миграция: защита пропускает всех (нет проверки роли)", { [B.mig]: G[B.mig].replace(/current_user NOT IN \('postgres', 'service_role', 'supabase_admin'\)/g, "false") }],
+      ["миграция: нет guard очереди у расписаний аналитики", { [B.mig]: G[B.mig].replace(" AND NOT EXISTS (SELECT 1 FROM public.jobs j WHERE j.type = 'track_citations' AND j.status IN ('pending', 'processing') AND j.payload->>'expert_id' = p.id::text)", "") }],
+      ["миграция: триггер ниши дописывает вторую нишу (лимит free 1)", { [B.mig]: G[B.mig].replace("IF NEW.niche_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.expert_niches e WHERE e.expert_id = NEW.id) THEN", "IF NEW.niche_id IS NOT NULL THEN") }],
+      ["shared: модуль не экспортирован", { [B.index]: "export {};\n" }],
+      ["shared: нет unit-тестов", { [B.test]: "// todo\n" }],
+      ["web: вторая таблица цен (E-AUTO-14, копия расходится)", { [B.webSub]: "export const TIER_CONFIG = { free: { price: 0, packagesPerMonth: 3, maxNiches: 1 }, starter: { price: 1490 } };\n" }],
+      ["web: accept без лимита пакетов", { [B.ordersLib]: "if (action === \"accept\") { /* без лимита */ }\n" }],
+      ["web: отказ по лимиту без подписи на дашборде", { [B.ordersPage]: "const NOTICES = { conflict: { tone: \"warn\", text: \"x\" } };\n" }],
+      ["web: подпись без ссылки на тарифы", { [B.ordersPage]: G[B.ordersPage].replace("/billing", "/orders") }],
+      ["web: запись голоса без лимита", { [B.voice]: "// без лимита\n" }],
+      ["web: отказ голоса без кода и 402", { [B.voice]: G[B.voice].replace("code: \"package_limit\" }, { status: 402 }", "}, { status: 500 }") }],
+      ["worker: генерирует все 5 форматов всем", { [B.gen]: G[B.gen].replace("const allowed = new Set(getAllowedFormats(expert.subscription_tier));\n", "").replace("allowed.has(\"cards\") ? ", "").replace("allowed.has(\"reels_script\") ? ", "") }],
+      ["worker: reels генерируется вне тарифа", { [B.gen]: G[B.gen].replace("allowed.has(\"reels_script\") ? ", "") }],
+      ["worker: нет страховки лимита", { [B.gen]: G[B.gen].replace("const allowance = await packageAllowance(supabase, expert.subscription_tier, expertId);\n", "") }],
+      ["worker: превышение роняет job (повторы)", { [B.gen]: G[B.gen].replace("return { content_package_id: null, skipped: \"package_limit\" }", "throw new Error(\"limit\")") }],
+      ["worker: тариф не читается", { [B.gen]: G[B.gen].replace(/subscription_tier/g, "tier") }],
+      ["бот: принять тему без лимита", { [B.botCb]: "nicheKeyboard(selectedIds, maxNiches)\notherNichesKeyboard(selectedIds, maxNiches)\n" }],
+      ["бот: голосовое без лимита", { [B.botVoice]: "// без лимита\n" }],
+      ["бот: отказ без ссылки на тарифы", { [B.botVoice]: G[B.botVoice].replace("/billing", "/orders") }],
+      ["бот: клавиатура ниш с жёстким лимитом 3", { [B.botKeys]: "const MAX_NICHES = 3;\nexport function nicheKeyboard(selectedIds = [], maxNiches: number = 1) {}\n" }],
+      ["бот: клавиатура не принимает лимит тарифа", { [B.botKeys]: "export function nicheKeyboard(selectedIds = []) {}\n" }],
+      ["бот: колбэки не передают лимит в клавиатуру", { [B.botCb]: G[B.botCb].replace("nicheKeyboard(selectedIds, maxNiches)", "nicheKeyboard(selectedIds)") }],
+      ["webhook: тариф выдаётся без сверки суммы (E-AUTO-15)", { [B.webhook]: "if (paymentType === \"subscription\" && verifiedMetadata.tier) { await admin.from(\"profiles\").update({ subscription_tier: verifiedMetadata.tier }); }\n" }],
+      ["webhook: сверка есть, но результат не используется", { [B.webhook]: G[B.webhook].replace("&& amountCheck.ok", "") }],
+      ["биллинг: «Отменить подписку» ведёт в /api/subscribe с free", { [B.billing]: G[B.billing] + "<Button onClick={() => subscribe(\"free\")}>Отменить подписку</Button>\n" }],
+      ["биллинг: нет честного текста о сроке", { [B.billing]: "<p>Подписка активна.</p>\n" }],
+      ["миграция: нет sweep срока подписки (платный тариф навсегда)", { [B.mig]: G[B.mig].replace("SELECT cron.schedule('daily-subscription-expiry'", "SELECT cron.schedule('daily-x'") }],
+      ["миграция: sweep не сравнивает срок", { [B.mig]: G[B.mig].replace("subscription_expires_at < now()", "subscription_expires_at IS NULL") }],
+      ["миграция: sweep не возвращает free", { [B.mig]: G[B.mig].replace("SET subscription_tier = 'free'", "SET subscription_tier = 'starter'") }],
+      ["миграция: нет weekly-citations (E-AUTO-11, на проде никогда не было)", { [B.mig]: G[B.mig].replace("cron.schedule('weekly-citations'", "cron.schedule('weekly-cit'") }],
+      ["миграция: нет weekly-serp", { [B.mig]: G[B.mig].replace("cron.schedule('weekly-serp'", "cron.schedule('weekly-x'") }],
+      ["миграция: нет monthly-trust (trust score всегда 0)", { [B.mig]: G[B.mig].replace("cron.schedule('monthly-trust'", "cron.schedule('monthly-x'") }],
+      ["миграция: аналитика снова только платным", { [B.mig]: G[B.mig].replace("FROM public.profiles p WHERE p.is_published = TRUE AND NOT EXISTS", "FROM public.profiles p WHERE p.subscription_tier NOT IN ('free') AND p.is_published = TRUE AND NOT EXISTS") }],
+      ["миграция: serp только expert+", { [B.mig]: G[B.mig].replace("'track_serp', jsonb_build_object('expert_id', id) FROM public.profiles WHERE is_published = TRUE", "'track_serp', jsonb_build_object('expert_id', id) FROM public.profiles WHERE subscription_tier IN ('expert','business','enterprise') AND is_published = TRUE") }],
+      ["миграция: расписания не идемпотентны", { [B.mig]: G[B.mig].replace("SELECT cron.unschedule(jobid) FROM cron.job WHERE jobname IN (", "SELECT 1 WHERE false AND (") }],
+      ["миграция: нет guard cron.database_name", { [B.mig]: G[B.mig].replace("current_setting('cron.database_name', true)", "current_setting('cron.db', true)") }],
+      ["миграция: ниши с сайта не дописываются (тем не будет никогда)", { [B.mig]: G[B.mig].replace("SELECT p.id, p.niche_id FROM public.profiles p", "SELECT 1 WHERE false") }],
+      ["миграция: backfill падает на дублях (нет ON CONFLICT)", { [B.mig]: G[B.mig].replace(/ ON CONFLICT DO NOTHING/g, "") }],
+      ["миграция: нет триггера синхронизации ниши", { [B.mig]: G[B.mig].replace("CREATE TRIGGER profiles_sync_expert_niche", "CREATE TRIGGER x") }],
+      ["миграция: триггер не на смену niche_id", { [B.mig]: G[B.mig].replace("AFTER INSERT OR UPDATE OF niche_id ON public.profiles", "AFTER INSERT ON public.profiles") }],
+      ["миграция: функция триггера ниш без SECURITY DEFINER (RLS пользователя)", { [B.mig]: G[B.mig].replace("sync_expert_niche_from_profile() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS", "sync_expert_niche_from_profile() RETURNS trigger LANGUAGE plpgsql AS") }],
+      ["аналитика: читает несуществующую колонку tier", { [B.analytics]: G[B.analytics].replace("trust_score, subscription_tier", "trust_score, tier") }],
+      ["runbook: порядок выкатки не записан", { [B.ops]: "выкатывать как обычно\n" }],
+      ["runbook: web раньше worker", { [B.ops]: "- **Порядок выкатки R-09: web → миграция 035 → worker → bot.**\n" }],
+    ];
+    billingMutations.forEach(([label, ov], i) => {
+      const d = join(work, `billing-m${i}`); writeRepo(d, { ...GREEN_BILLING, ...ov });
+      const r = runBilling(d, null); expect(`billing мутация репо: ${label}`, r.code, 1, r.out);
+    });
+    const FXJ = GREEN_BILLING_FX.jobs;
+    const billingLiveMutations = [
+      ["/api/subscribe открыт без сессии", { ...GREEN_BILLING_FX, subscribe: 200 }],
+      ["weekly-citations отсутствует (035 не применена)", { ...GREEN_BILLING_FX, jobs: Object.fromEntries(Object.entries(FXJ).filter(([k]) => k !== "weekly-citations")) }],
+      ["daily-subscription-expiry неактивен", { ...GREEN_BILLING_FX, jobs: { ...FXJ, "daily-subscription-expiry": { active: false } } }],
+      ["последний запуск weekly-serp failed", { ...GREEN_BILLING_FX, jobs: { ...FXJ, "weekly-serp": { active: true, last_status: "failed" } } }],
+      ["блока cron.jobs нет", { subscribe: 401 }],
+      ["фикстура billing.json отсутствует", null],
+    ];
+    billingLiveMutations.forEach(([label, fxRows], i) => {
+      const d = join(work, `billing-fx-m${i}`); writeBillingFx(d, fxRows);
+      const r = runBilling(repo, d); expect(`billing мутация live: ${label}`, r.code, 1, r.out);
+    });
+  }
 } finally {
   rmSync(work, { recursive: true, force: true });
 }

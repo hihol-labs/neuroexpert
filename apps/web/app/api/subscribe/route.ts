@@ -15,7 +15,8 @@ export async function POST(request: NextRequest) {
 
   const { tier } = await request.json() as { tier: string };
 
-  const config = TIER_CONFIG[tier as TierName];
+  // Только собственные ключи таблицы (constructor/toString - не тариф) и только платные.
+  const config = typeof tier === "string" && Object.hasOwn(TIER_CONFIG, tier) ? TIER_CONFIG[tier as TierName] : undefined;
   if (!config || config.price === 0) {
     return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
   }

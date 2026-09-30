@@ -1,8 +1,12 @@
 import type { Bot } from "grammy";
 import { randomUUID } from "node:crypto";
 import { supabase } from "../supabase";
-import { getSTT } from "shared";
+import { getSTT, packageAllowance, packageLimitMessage } from "shared";
 import { tgFetch } from "shared/http/telegram-fetch";
+
+function appUrl(): string {
+  return (process.env["APP_URL"] || process.env["NEXT_PUBLIC_APP_URL"] || "https://neuroexpertise.ru").replace(/\/+$/, "");
+}
 
 export function registerVoiceHandler(bot: Bot): void {
   bot.on("message:voice", async (ctx) => {
@@ -11,12 +15,20 @@ export function registerVoiceHandler(bot: Bot): void {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("id")
+      .select("id, subscription_tier")
       .eq("telegram_id", telegramId)
       .single();
 
     if (!profile) {
       await ctx.reply("Сначала зарегистрируйтесь: /start");
+      return;
+    }
+
+    // R-09 (E-AUTO-14): голосовое = будущий пакет контента; при исчерпанном лимите месяца отказ до
+    // скачивания файла и загрузки в Storage.
+    const allowance = await packageAllowance(supabase, (profile.subscription_tier as string | null) ?? "free", profile.id);
+    if (!allowance.allowed) {
+      await ctx.reply(packageLimitMessage(allowance, `${appUrl()}/billing`));
       return;
     }
 

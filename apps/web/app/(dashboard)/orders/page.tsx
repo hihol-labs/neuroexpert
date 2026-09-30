@@ -61,6 +61,9 @@ const NOTICES: Record<string, { tone: "ok" | "warn"; text: string }> = {
   generate_cooldown: { tone: "warn", text: "Подбор уже запускался за последние сутки." },
   generate_no_niche: { tone: "warn", text: "Сначала выберите нишу в профиле — темы подбираются по ней." },
   generate_failed: { tone: "warn", text: "Не удалось запустить подбор, попробуйте позже." },
+  // R-09: лимит бесплатного тарифа - 3 пакета контента в месяц; ссылка на тарифы в разметке ниже.
+  package_limit: { tone: "warn", text: "Лимит бесплатного тарифа исчерпан: 3 пакета контента в месяц. Новые темы откроются с 1-го числа следующего месяца или на платном тарифе." },
+  package_check_failed: { tone: "warn", text: "Не удалось проверить лимит тарифа, тема не выбрана. Попробуйте ещё раз через минуту." },
 };
 
 function extractMentionedExperts(text: string): string[] {
@@ -177,6 +180,7 @@ export default async function OrdersPage({
         >
           {notice.text}
           {searchParams.notice === "generate_cooldown" && retryAt ? ` Следующий запуск — после ${retryAt.toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })} (мск).` : ""}
+          {searchParams.notice === "package_limit" ? <> <Link href="/billing" className="underline font-medium">Посмотреть тарифы</Link></> : null}
         </p>
       )}
 

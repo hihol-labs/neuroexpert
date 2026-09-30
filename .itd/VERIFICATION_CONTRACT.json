@@ -2,8 +2,8 @@
   "version": 1,
   "purpose": "Executable verification contract for the active unit.",
   "unitId": "R-09",
-  "createdAt": "2026-09-26",
-  "note": "node scripts/verify-expert-path.mjs --stage=billing — стадия НЕ СОЗДАНА, оракул пишется первым",
+  "createdAt": "2026-09-30",
+  "note": "node scripts/verify-expert-path.mjs --stage=billing — стадия создана, repo-only exit 0; живой слой после выкатки",
   "commandSchema": {
     "requiredFields": [
       "id",

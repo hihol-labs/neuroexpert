@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { resolveVoiceOrder } from "@/lib/expert-orders";
+import { packageAllowance, packageLimitMessage } from "shared";
 
 function getAdmin() {
   return createSupabaseClient(
@@ -24,12 +25,20 @@ export async function POST(request: NextRequest) {
     const admin = getAdmin();
     const { data: profile } = await admin
       .from("profiles")
-      .select("id")
+      .select("id, subscription_tier")
       .eq("id", user.id)
       .single();
 
     if (!profile) {
       return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    }
+
+    // R-09 (E-AUTO-14): запись = будущий пакет контента; при исчерпанном лимите месяца отказ до
+    // чтения файла и до загрузки в Storage. 402 - «нужен платный тариф», код для клиента.
+    const allowance = await packageAllowance(admin, (profile.subscription_tier as string | null) ?? "free", profile.id);
+    if (!allowance.allowed) {
+      const billingUrl = `${(process.env["APP_URL"] || process.env["NEXT_PUBLIC_APP_URL"] || "https://neuroexpertise.ru").replace(/\/+$/, "")}/billing`;
+      return NextResponse.json({ error: packageLimitMessage(allowance, billingUrl), code: "package_limit" }, { status: 402 });
     }
 
     const formData = await request.formData();

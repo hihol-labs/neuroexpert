@@ -28,6 +28,7 @@ commands = [
     ['node', 'scripts/verify-expert-path.mjs', '--stage=demand', '--repo-only'],
     ['node', 'scripts/verify-expert-path.mjs', '--stage=publish', '--repo-only'],
     ['node', 'scripts/verify-expert-path.mjs', '--stage=notify', '--repo-only'],
+    ['node', 'scripts/verify-expert-path.mjs', '--stage=billing', '--repo-only'],
     ['pnpm', '--filter', 'bot', 'build'],
     ['node', 'scripts/verify-selfserve-path.mjs', '--stage=delivery', '--check-details', '--repo-only'],
     ['node', 'scripts/verify-selfserve-path.mjs', '--stage=delivery', '--check-money', '--repo-only'],

@@ -540,6 +540,62 @@ empty` ставит новый `collect_demand`, если `demand_collected_at` 
 - **Проверка:** `node scripts/verify-expert-path.mjs --stage=notify` (живой слой: `POST` и `DELETE`
   `/api/telegram/link` без сессии — 401).
 
+### 9i. Тарифы, срок подписки, аналитика для всех (R-09, 2026-09-30)
+
+- **Порядок выкатки R-09: миграция 035 → worker → bot → web.** Миграция первой: расписания аналитики
+  и sweep срока не зависят от кода, backfill ниш нужен подбору тем уже сейчас. Worker раньше web и bot:
+  старый worker генерирует 5 форматов всем, а новые web/bot уже отказывают по лимиту — иначе окно, где
+  сайт считает пакеты, а worker их не ограничивает. Откат: web → bot → worker; 035 можно оставить.
+- **Одна таблица тарифов** — `SUBSCRIPTION_TIERS` в shared (`packages/shared/src/constants.ts`),
+  проверки — `shared/billing/limits.ts` (`checkPackageLimit`, `getAllowedFormats`, `checkNicheLimit`,
+  `checkSubscriptionAmount`, `packageAllowance`). Web `lib/subscription.ts` берёт цены и лимиты оттуда.
+  Цены и состав тарифов заморожены (2026-03-19) — менять только по решению владельца.
+- **Лимит пакетов в месяц** (free — 3, календарный месяц по UTC, считаются `content_packages` эксперта
+  кроме `failed`): проверяется при выборе темы (сайт `/api/expert-orders/[id]/accept`, бот «Принять»),
+  при записи голоса (сайт `/api/voice` → 402 `package_limit`, бот — ответ до скачивания файла) и
+  страховкой в `generate_content` (превышение → job `completed` с `result.skipped = package_limit`,
+  без повторов). Отказ всегда со ссылкой на `/billing`. Сбой чтения счётчика — отказ (fail-closed).
+- **Форматы по тарифу:** free — Telegram-пост и SEO-статья; `cards` и `reels_script` у free не
+  генерируются (пустые поля, LLM не вызывается). **FAQ генерируется всем**: он часть SEO-страницы и
+  гейт публикации R-07 (`faq_required`), а не отдельный формат.
+- **Ниши:** лимит из тарифа (free 1, starter 2, pro 3, expert 5, business 10, enterprise 20) — и в
+  проверке бота, и в клавиатуре. Регистрация на сайте пишет `profiles.niche_id`; триггер
+  `profiles_sync_expert_niche` (035) дописывает строку в `expert_niches` (подбор тем читает её).
+  035 сделала backfill существующих профилей. Проверка: `SELECT count(*) FROM profiles p WHERE
+  niche_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM expert_niches e WHERE e.expert_id = p.id);` → 0.
+- **Подписка:** автопродления нет (тикет SUB-1 в BACKLOG). Webhook выдаёт тариф только если сумма,
+  подтверждённая кассой, равна цене тарифа точно и в рублях; иначе платёж сохраняется, тариф не
+  меняется, оператору уходит алерт `reconcile_mismatch` (платёж, эксперт, тариф, сумма, ожидалось).
+  Повторная доставка того же `payment.succeeded` тариф не продлевает. Срок — календарный месяц от
+  текущего срока (досрочная оплата того же тарифа не теряет остаток) или от оплаты; 31-е число
+  обрезается по длине месяца. Возврат (`refund.succeeded`) платежа подписки отзывает тариф → `free`.
+  Cron `daily-subscription-expiry` (00:15 UTC) возвращает `free` по истечении
+  `subscription_expires_at` (NULL-срок не трогается). На `/billing` вместо «Отменить подписку» —
+  текст о дате окончания. «Тариф не выдан после оплаты» → лог web `[yukassa] subscription payment …
+  not applied` и алерт.
+- **Биллинг меняют только серверные роли.** Триггер 035 `profiles_protect_billing`
+  (`subscription_tier`, `subscription_expires_at`, `trust_score`, `is_published`, `is_verified`)
+  отклоняет изменения от anon/authenticated (ошибка 42501); политика «Users can update own profile»
+  пересоздана с WITH CHECK. Правка тарифа вручную — только через service role или psql
+  (`UPDATE profiles SET subscription_tier = 'pro', subscription_expires_at = …`). 035 применять
+  как `postgres` (guard в начале миграции): расписания cron исполняются от роли, создавшей задание.
+- **Счётчик пакетов — леджер `expert_package_ledger`** (строка на каждый созданный пакет, пишет
+  триггер `content_packages_ledger`, доступ только service role). Удаление пакета владельцем счётчик
+  не уменьшает. Проверка за месяц: `SELECT expert_id, count(*) FROM expert_package_ledger WHERE
+  created_at >= date_trunc('month', now()) GROUP BY 1;`
+- **`expert_niches` под RLS** (035): владелец читает свои ниши, пишут только бот и триггер
+  (service role / postgres). Остальные таблицы без RLS (`jobs`, `voice_recordings`, `citation_checks`,
+  `serp_positions`, `cwv_metrics`, `questions`, `sub_queries`, `email_subscribers`, `niches`) —
+  тикет RLS-1 (P0) в BACKLOG, вне R-09.
+- **Аналитика для всех опубликованных** (решение владельца 2026-09-06): cron `weekly-citations`
+  (ср 04:00 UTC), `weekly-serp` (чт 05:00 UTC), `monthly-trust` (1-е число 02:00 UTC) без гейта по
+  тарифу; до 035 их на проде не существовало. Guard: новый job не ставится, пока предыдущий того же
+  эксперта pending/processing. Стоимость: `track_citations` — до 30 запросов к LLM-платформам на
+  эксперта в неделю, `track_serp` — до 20 запросов XMLRiver; расходы растут с числом опубликованных.
+  Страница аналитики читает `profiles.subscription_tier` (раньше — несуществующую `tier`).
+- **Проверка:** `node scripts/verify-expert-path.mjs --stage=billing` (живой слой: `POST /api/subscribe`
+  без сессии — 401; `/api/health` → `cron.jobs` содержит четыре расписания выше, все `active`).
+
 ## 10. Регулярные процедуры (playbooks)
 
 ### Проверка AI-цитирования
