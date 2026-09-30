@@ -2,14 +2,21 @@
 
 ## Current Task
 
-- **R-09** — активирован 2026-09-26 после verified R-08, tier **high**, стадия **ПЛАНИРОВАНИЕ**.
-  Тарифы: `checkPackageLimit` / `getAllowedFormats` / `checkNicheLimit` применяются в generate-content
-  и accept; `tier=free` без платежа (downgrade); аналитика цитирования доступна для любой опубликованной
-  статьи (READINESS_PLAN R-09). Оракул `node scripts/verify-expert-path.mjs --stage=billing` пишется
-  первым; контракт `.itd-memory/contracts/R-09.md` — первый шаг (диагноз по коду), затем утверждение
-  владельца. Разрешены после плана: файлы, названные контрактом, `scripts/verify-expert-path.mjs`
-  (+ тест), `.itd*`, BACKLOG, CURRENT_PLAN, READINESS_PLAN, OPERATIONS. Запрещены: изменение цен и
-  состава тарифов без решения владельца, касса Audit Start, checkout-флаг.
+- **R-10** — активирован 2026-09-30 после verified R-09, tier **medium**, стадия **ПЛАНИРОВАНИЕ**.
+  Source-backed контракт и защита метрик: промпт content-gen запрещает выдумывать регалии/отзывы/цифры,
+  схема содержит `sources[]`, валидатор отклоняет claims без источника; `/api/page-events` — rate-limit
+  по IP и только для опубликованного `content_id`; пустой каталог TG-чатов не рендерит блок
+  (READINESS_PLAN R-10, E-AUTO-16/19/20). Оракул `node --test scripts/tests/content-contract.test.mjs`
+  пишется первым; контракт `.itd-memory/contracts/R-10.md` — первый шаг (диагноз по коду), затем
+  утверждение владельца. Разрешены после плана: файлы, названные контрактом, `scripts/tests/
+  content-contract.test.mjs`, `.itd*`, BACKLOG, CURRENT_PLAN, READINESS_PLAN, OPERATIONS. Запрещены:
+  тарифы и цены (R-09 закрыт), касса Audit Start, checkout-флаг.
+
+Предыдущий юнит: **R-09 — VERIFIED 2026-09-30** (ОТК exit 0 через проброс: «Expert-path billing stage
+verification passed»; коммит `7e52f6a`; миграция 035 применена с бэкапом profiles/expert_niches/
+content_packages; выкатка 035 → worker → bot → web; live-оракулы ALL_GREEN; 4 раунда full + security
+чекеров (Critical в RLS 002 закрыт триггером защиты биллинга и WITH CHECK, счётчик пакетов по леджеру);
+бот по-прежнему не стартует из-за прокси Telegram — TG-PROXY-1; см. DECISIONS 2026-09-30 и OPERATIONS 9i).
 
 Предыдущий юнит: **R-08 — VERIFIED 2026-09-26** (ОТК exit 0 через проброс: «Expert-path notify stage
 verification passed»; коммит `8b52daa`, docs `9be798a`; миграция 034 применена; выкатка 034 → worker →

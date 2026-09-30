@@ -1,9 +1,9 @@
 {
   "version": 1,
   "purpose": "Executable verification contract for the active unit.",
-  "unitId": "R-09",
+  "unitId": "R-10",
   "createdAt": "2026-09-30",
-  "note": "node scripts/verify-expert-path.mjs --stage=billing — стадия создана, repo-only exit 0; живой слой после выкатки",
+  "note": "node --test scripts/tests/content-contract.test.mjs — тест НЕ СОЗДАН, оракул юнита пишется первым",
   "commandSchema": {
     "requiredFields": [
       "id",
@@ -21,8 +21,8 @@
   },
   "commands": [
     {
-      "id": "r-09-unit",
-      "command": "node scripts/verify-expert-path.mjs --stage=billing",
+      "id": "r-10-unit",
+      "command": "node --test scripts/tests/content-contract.test.mjs",
       "timeoutSeconds": 600,
       "expectedOutput": "exit 0",
       "passFailParser": "exit_code_zero",
@@ -220,6 +220,13 @@
     {
       "id": "r08-expert-notify",
       "command": "node scripts/verify-expert-path.mjs --stage=notify --repo-only",
+      "timeoutSeconds": 300,
+      "expectedOutput": "exit 0",
+      "passFailParser": "exit_code_zero"
+    },
+    {
+      "id": "r09-expert-billing",
+      "command": "node scripts/verify-expert-path.mjs --stage=billing --repo-only",
       "timeoutSeconds": 300,
       "expectedOutput": "exit 0",
       "passFailParser": "exit_code_zero"
