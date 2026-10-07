@@ -373,6 +373,7 @@ export function registerCallbackHandler(bot: Bot): void {
       conflict: "Материал уже опубликован или изменён - обновите список.",
       no_slug: `У материала нет адреса страницы. Откройте редактор: ${editor}`,
       faq_required: `Перед публикацией нужно дополнить FAQ:\n${(data.problems ?? []).map((p) => `- ${p}`).join("\n")}\n\nРедактор: ${editor}`,
+      unsupported_claims: `В тексте есть утверждения, которых нет в вашей записи. Уберите или исправьте их в редакторе:\n${(data.problems ?? []).map((p) => `- ${p}`).join("\n")}\n\nРедактор: ${editor}`,
     };
     await ctx.answerCallbackQuery({ text: "Не опубликовано" });
     await ctx.reply(reasons[data.code ?? ""] ?? `Не удалось опубликовать, попробуйте позже или на сайте: ${editor}`);

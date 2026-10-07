@@ -11,7 +11,7 @@ export type PublishResult =
   | { ok: false; code: PublishCode | "conflict" | "error"; problems?: string[] };
 
 export const PUBLISH_HTTP_STATUS: Record<string, number> = {
-  not_found: 404, already_published: 409, bad_status: 409, conflict: 409, no_slug: 422, faq_required: 422, error: 500,
+  not_found: 404, already_published: 409, bad_status: 409, conflict: 409, no_slug: 422, faq_required: 422, unsupported_claims: 422, error: 500,
 };
 
 export function publishAdmin(): SupabaseClient {
@@ -29,7 +29,7 @@ export async function publishContent(admin: SupabaseClient, contentId: string, e
   // отклоняет (PGRST201) - раньше это превращало любую публикацию в «пакет не найден».
   const { data: pkg, error: pkgErr } = await admin
     .from("content_packages")
-    .select("id, expert_id, order_id, title, slug, status, format_faq, profiles!inner(slug, telegram_id, is_published, niches!profiles_niche_id_fkey(slug))")
+    .select("id, expert_id, order_id, voice_id, title, slug, status, format_faq, format_seo_article, format_telegram_post, profiles!inner(slug, telegram_id, is_published, niches!profiles_niche_id_fkey(slug))")
     .eq("id", contentId)
     .maybeSingle();
   if (pkgErr) {
@@ -38,7 +38,19 @@ export async function publishContent(admin: SupabaseClient, contentId: string, e
     return { ok: false, code: "error" };
   }
 
-  const decision = decidePublish(pkg, expertId);
+  // R-10 (E-AUTO-20): гейт сверяет публикуемый текст с расшифровкой голоса - отдельным запросом, без embed
+  // (у voice_recordings и content_packages несколько связей, подсказка PostgREST не нужна).
+  let transcript: string | null = null;
+  if (pkg?.voice_id) {
+    const { data: rec, error: recErr } = await admin.from("voice_recordings").select("transcript").eq("id", pkg.voice_id).maybeSingle();
+    if (recErr) {
+      console.error("[publish] transcript select failed", { contentId, error: recErr.message });
+      return { ok: false, code: "error" };
+    }
+    transcript = typeof rec?.transcript === "string" ? rec.transcript : null;
+  }
+
+  const decision = decidePublish(pkg ? { ...pkg, transcript } : pkg, expertId);
   if (!decision.ok) return decision;
 
   const profile = pkg!.profiles as unknown as { slug: string; telegram_id: number | null; is_published: boolean | null; niches: { slug: string } | null };

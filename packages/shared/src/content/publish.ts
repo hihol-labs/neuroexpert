@@ -2,8 +2,17 @@
  * R-07 «Approval -> публикация»: чистое решение «можно ли публиковать пакет». Одно для сайта и для
  * Telegram-бота (исполняет apps/web/lib/publish-service.ts). Без ввода-вывода.
  */
-export type PublishCode = "not_found" | "already_published" | "bad_status" | "no_slug" | "faq_required";
-export interface PublishablePackage { expert_id: string; status: string; slug: string | null; format_faq: unknown }
+import { checkClaims, publishableText } from "./claims.js";
+
+export type PublishCode = "not_found" | "already_published" | "bad_status" | "no_slug" | "faq_required" | "unsupported_claims";
+/**
+ * transcript - расшифровка голоса (voice_recordings.transcript по voice_id). R-10: если она есть, публикуемые
+ * форматы проверяются на утверждения без опоры в ней; пакеты без расшифровки (до R-10) проверку не проходят.
+ */
+export interface PublishablePackage {
+  expert_id: string; status: string; slug: string | null; format_faq: unknown;
+  format_seo_article?: unknown; format_telegram_post?: unknown; transcript?: string | null;
+}
 export type PublishDecision = { ok: true } | { ok: false; code: PublishCode; problems?: string[] };
 
 /** Публиковать можно только проверенный черновик; generating / failed / rejected - нет. */
@@ -38,6 +47,14 @@ export function decidePublish(pkg: PublishablePackage | null | undefined, expert
   if (typeof pkg.slug !== "string" || !pkg.slug.trim()) return { ok: false, code: "no_slug" };
   const problems = faqProblems(pkg.format_faq);
   if (problems.length > 0) return { ok: false, code: "faq_required", problems };
+  if (typeof pkg.transcript === "string" && pkg.transcript.trim()) {
+    const { unsupported } = checkClaims(publishableText(pkg), pkg.transcript);
+    if (unsupported.length > 0) {
+      const seen = new Set<string>();
+      const claims = unsupported.filter((c) => !seen.has(c.text) && seen.add(c.text));
+      return { ok: false, code: "unsupported_claims", problems: claims.map((c) => `Нет опоры в расшифровке: «${c.text}»`) };
+    }
+  }
   return { ok: true };
 }
 

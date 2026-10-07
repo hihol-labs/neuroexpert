@@ -3,7 +3,7 @@
   "purpose": "Executable verification contract for the active unit.",
   "unitId": "R-10",
   "createdAt": "2026-09-30",
-  "note": "node --test scripts/tests/content-contract.test.mjs — тест НЕ СОЗДАН, оракул юнита пишется первым",
+  "note": "node --test scripts/tests/content-contract.test.mjs — создан 2026-10-07: красный до кода (16/16 fail), зеленый после (17/17); маршрут по ADR-012 idea-to-deploy",
   "commandSchema": {
     "requiredFields": [
       "id",

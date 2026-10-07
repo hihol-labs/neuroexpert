@@ -24,5 +24,7 @@ export * from "./security/index.js";
 export * from "./providers/index.js";
 export * from "./ops/index.js";
 export * from "./content/publish.js";
+export * from "./content/claims.js";
+export * from "./content/page-events.js";
 export * from "./notify/expert.js";
 export * from "./billing/limits.js";
