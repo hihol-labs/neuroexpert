@@ -1,105 +1,77 @@
 "use client";
 
-import { useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { ArrowRight, Check, Mail } from "lucide-react";
+import { AuthFrame } from "@/components/auth/auth-frame";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const wasSent = useRef(false);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  useEffect(() => {
+    if (wasSent.current && !sent) emailRef.current?.focus();
+    wasSent.current = sent;
+  }, [sent]);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setError("");
     setLoading(true);
-
-    const response = await fetch("/api/auth/magic-link", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
-
-    setLoading(false);
-
-    if (!response.ok) {
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
-      setError(data.error ?? "Не удалось отправить ссылку для входа. Попробуйте ещё раз через минуту.");
-    } else {
+    try {
+      const response = await fetch("/api/auth/magic-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as { error?: string };
+        setError(data.error ?? "Не удалось отправить ссылку для входа. Попробуйте ещё раз через минуту.");
+        return;
+      }
       setSent(true);
+    } catch {
+      setError("Не удалось связаться с сервисом входа. Проверьте подключение и попробуйте ещё раз.");
+    } finally {
+      setLoading(false);
     }
   }
 
-  if (sent) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-50">
-            <svg className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold text-slate-950">Проверьте почту</h2>
-          <p className="mt-2 text-slate-600">
-            Мы отправили ссылку для входа на <strong className="text-slate-950">{email}</strong>
-          </p>
-          <button
-            onClick={() => setSent(false)}
-            className="mt-6 text-sm font-medium text-blue-700 hover:text-blue-900"
-          >
-            Отправить снова
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-slate-950">Вход в НейроЭксперт</h1>
-          <p className="mt-2 text-slate-600">
-            Введите email — мы отправим ссылку для входа
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-slate-700">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="expert@example.com"
-              className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-950 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
+    <AuthFrame
+      eyebrow="Вход в рабочий контур"
+      title="Вернитесь к сигналам."
+      description="Вход по magic link — без паролей, лишних экранов и компромиссов по безопасности."
+      alternateHref="/register"
+      alternateLabel="Создать аккаунт"
+    >
+      <div className="id-form-card">
+        <div className="id-form-heading"><span>ACCESS / 01</span><Mail /></div>
+        {sent ? (
+          <div className="id-state" role="status" aria-live="polite">
+            <div className="id-state-icon"><Check /></div>
+            <span className="id-state-kicker">LINK SENT</span>
+            <h2>Проверьте почту.</h2>
+            <p>Ссылка для входа отправлена на <strong>{email}</strong>.</p>
+            <button type="button" className="id-text-button" onClick={() => setSent(false)}>Отправить снова <ArrowRight /></button>
           </div>
-
-          {error && (
-            <p className="text-sm text-red-600">{error}</p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-slate-950 px-4 py-3 font-medium text-white transition-colors hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-          >
-            {loading ? "Отправляем..." : "Получить ссылку для входа"}
-          </button>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-slate-600">
-          Нет аккаунта?{" "}
-          <Link href="/register" className="font-medium text-blue-700 hover:text-blue-900">
-            Зарегистрироваться
-          </Link>
-        </p>
+        ) : (
+          <>
+            <h2>Получить ссылку для входа.</h2>
+            <p className="id-form-lede">Укажите рабочий email. Мы отправим одноразовую ссылку.</p>
+            <form onSubmit={handleSubmit} className="id-form" aria-busy={loading}>
+              <label><span>Email</span><input ref={emailRef} name="email" id="login-email" type="email" required autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@company.ru" /></label>
+              {error && <p className="id-form-error" role="alert" aria-live="assertive">{error}</p>}
+              <button type="submit" disabled={loading}>{loading ? "Отправляем..." : "Получить ссылку"}<ArrowRight /></button>
+            </form>
+            <p className="id-form-switch">Нет аккаунта? <Link href="/register">Зарегистрироваться</Link></p>
+          </>
+        )}
       </div>
-    </div>
+    </AuthFrame>
   );
 }

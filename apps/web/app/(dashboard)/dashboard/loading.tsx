@@ -2,7 +2,7 @@ import { SkeletonCard, SkeletonRow } from "@/components/ui/skeleton";
 
 export default function DashboardLoading() {
   return (
-    <div>
+    <div className="nx-loading">
       <div className="flex items-center justify-between mb-8">
         <div className="h-8 w-32 animate-pulse bg-gray-200 rounded-lg" />
         <div className="h-10 w-36 animate-pulse bg-gray-200 rounded-lg" />

@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "purpose": "Machine-readable acceptance contract derived from the original user request, written BEFORE implementation. Defines 'done' as a traceable proof checklist, not an agent's feeling.",
+  "sourceRequest": "Главная страница на 1440px и 390px использует единую editorial SaaS арт-дирекцию, проектные design tokens, профессиональную типографическую иерархию и не содержит прежнего generic card-grid hero",
+  "createdAt": "2026-08-02",
+  "criteriaSchema": {
+    "requiredFields": [
+      "id",
+      "criterion",
+      "source",
+      "evidence",
+      "verificationCommand",
+      "status"
+    ],
+    "allowedStatus": [
+      "pending",
+      "passed",
+      "failed",
+      "recovery_required"
+    ]
+  },
+  "criteria": [
+    {
+      "id": "AC-1",
+      "criterion": "Главная страница на 1440px и 390px использует единую editorial SaaS арт-дирекцию, проектные design tokens, профессиональную типографическую иерархию и не содержит прежнего generic card-grid hero",
+      "source": "Explicit --unit-criterion supplied to the approved adoption plan.",
+      "evidence": "2026-08-02: structural oracle and `pnpm --filter web build` exited 0; Playwright + local Chrome rendered 1440x1000 and 390x844 with HTTP 200, zero console/page errors, zero horizontal overflow, working primary CTA and mobile menu. Hash-bound artifacts: `.itd-memory/evidence/G-001/browser-evidence.json`.",
+      "verificationCommand": "node scripts/verify-professional-design.mjs --unit G-001",
+      "status": "passed"
+    }
+  ],
+  "doneRule": "The unit is 'done' only when every criterion is 'passed' with attached evidence. A criterion with no evidence or an un-run verification command stays 'pending' and blocks done (fail-closed)."
+}

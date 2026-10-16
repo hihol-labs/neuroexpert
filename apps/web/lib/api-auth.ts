@@ -36,6 +36,16 @@ export function hashApiKey(key: string): string {
   return createHash("sha256").update(key).digest("hex");
 }
 
+/** Проверяет, что у ключа есть одно из accepted-разрешений (или "all"). */
+export function hasPermission(permissions: unknown, accepted: string[]): boolean {
+  const list = Array.isArray(permissions)
+    ? permissions.map(String)
+    : typeof permissions === "string"
+      ? permissions.split(",").map((item) => item.trim())
+      : [];
+  return list.includes("all") || accepted.some((item) => list.includes(item));
+}
+
 export function generateApiKey(): { key: string; prefix: string; hash: string } {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);

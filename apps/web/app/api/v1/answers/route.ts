@@ -41,7 +41,6 @@ export async function GET(request: NextRequest) {
 
   const admin = getAdmin();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://neuroexpertise.ru";
-  const storageUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   let query = admin
     .from("content_packages")
@@ -78,6 +77,8 @@ export async function GET(request: NextRequest) {
 
   const { data: packages, count } = await query;
 
+  // R-05: bucket voice приватный - audio_url ведёт на стабильный /api/audio/<voice_id>, который
+  // подписывает ссылку в момент запроса (302); потребитель API может кэшировать audio_url.
   const results = (packages ?? []).map((pkg) => {
     const expert = pkg.profiles as unknown as {
       id: string;
@@ -140,9 +141,8 @@ export async function GET(request: NextRequest) {
       expert_quotes: pkg.expert_quotes,
       audio_url: (() => {
         const voice = pkg.voice_recordings as unknown as { file_path: string } | null;
-        return voice?.file_path && storageUrl
-          ? `${storageUrl}/storage/v1/object/public/voice/${voice.file_path}`
-          : null;
+        const voiceId = (pkg as { voice_id?: string | null }).voice_id ?? null;
+        return voice?.file_path && voiceId ? `${appUrl}/api/audio/${voiceId}` : null;
       })(),
       published_at: pkg.published_at,
       license: {

@@ -1,4 +1,9 @@
 FROM node:20-alpine AS base
+# Alpine CDN (dl-cdn.alpinelinux.org) блокируется из ЦОД Hostland — тот же класс,
+# что Docker Hub (нужны зеркала) и api.telegram.org (нужен прокси). Инцидент
+# 2026-08-27: apk ждал 480с и валил сборку «wget (no such package)». Зеркало
+# Яндекса отдаёт те же подписанные индексы — подмена хоста не ослабляет доверие.
+RUN sed -i 's#https://dl-cdn.alpinelinux.org#https://mirror.yandex.ru/mirrors#' /etc/apk/repositories
 RUN corepack enable
 
 # Install НУЦ Минцифры CA (root + sub) for Russian gov-signed endpoints
@@ -38,14 +43,23 @@ RUN pnpm --filter bot build
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ARG NEXT_PUBLIC_APP_URL
+# G-012: id счётчика Метрики запекается при сборке (пусто — счётчика в образе нет).
+ARG NEXT_PUBLIC_YANDEX_METRIKA_ID=
 ENV NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
 ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+ENV NEXT_PUBLIC_YANDEX_METRIKA_ID=${NEXT_PUBLIC_YANDEX_METRIKA_ID}
 RUN pnpm --filter web build
 
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+# Release identity для /api/version (ADR-002): SHA и время сборки задаются
+# deploy-скриптом через build args.
+ARG GIT_SHA=unknown
+ARG BUILD_TIME=unknown
+ENV GIT_SHA=${GIT_SHA}
+ENV BUILD_TIME=${BUILD_TIME}
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 COPY --from=builder /app/apps/web/.next/standalone ./
 COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static

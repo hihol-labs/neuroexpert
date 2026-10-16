@@ -1,22 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { reachGoal } from "@/lib/analytics";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MarketingHeader } from "@/components/marketing/nav";
+import { useRef, useState } from "react";
+import { ArrowRight, Crosshair, Radio, RotateCcw } from "lucide-react";
+import { MarketingFooter, MarketingHeader } from "@/components/marketing/nav";
+import { OfferBlock } from "@/components/marketing/offer";
 
 type Step = "form" | "loading" | "error";
+
+// Названия платформ в радаре и прогрессе — обещание клиенту, а не декорация:
+// адаптеры в app/api/scan/route.ts возвращают null без ключа, поэтому имена
+// неподключённых движков рисовать нельзя (находка раунда 23). Здесь остаются
+// нейтральные подписи стадий; фактический состав платформ виден в результате.
+const PLATFORMS = [
+  { id: "01", name: "Запрос", position: "sc-node-one" },
+  { id: "02", name: "Ответы ИИ", position: "sc-node-two" },
+  { id: "03", name: "Сравнение", position: "sc-node-three" },
+];
 
 export default function ScanPage() {
   const [query, setQuery] = useState("");
   const [competitor, setCompetitor] = useState("");
   const [step, setStep] = useState<Step>("form");
   const [error, setError] = useState("");
+  const queryInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
     const trimmed = query.trim();
-    if (!trimmed || trimmed.length < 2) {
+    if (trimmed.length < 2) {
       setError("Введите минимум 2 символа");
       return;
     }
@@ -26,165 +41,128 @@ export default function ScanPage() {
 
     try {
       const competitorTrimmed = competitor.trim();
-      const res = await fetch("/api/scan", {
+      const response = await fetch("/api/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: trimmed,
-          competitor: competitorTrimmed || undefined,
-        }),
+        body: JSON.stringify({ query: trimmed, competitor: competitorTrimmed || undefined }),
       });
 
-      if (res.status === 429) {
+      if (response.status === 429) {
         setError("Лимит проверок: 3 в час. Попробуйте позже.");
         setStep("error");
         return;
       }
 
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || "Произошла ошибка");
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.error || "Не удалось получить ответ платформ");
         setStep("error");
         return;
       }
 
-      const data = await res.json();
+      const data = await response.json();
+      reachGoal("lead_scan_submit");
       router.push(`/scan/${data.slug}`);
     } catch {
-      setError("Ошибка сети. Попробуйте позже.");
+      setError("Сеть не ответила. Попробуйте ещё раз.");
       setStep("error");
     }
   }
 
+  function retry() {
+    setError("");
+    setStep("form");
+    requestAnimationFrame(() => queryInputRef.current?.focus());
+  }
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="sr-site sc-site">
       <MarketingHeader />
+      <main>
+        <section className="sc-hero" id="scan-probe">
+          <ScanIntro />
+          <ProbeConsole step={step} query={query} competitor={competitor} error={error} inputRef={queryInputRef} onQuery={setQuery} onCompetitor={setCompetitor} onSubmit={handleSubmit} onRetry={retry} />
+        </section>
+        <OfferBlock
+          artifact="Страница результата замера по постоянной ссылке"
+          price="Бесплатно"
+          term="Сразу"
+          cta={{ href: "#scan-probe", label: "Запустить замер" }}
+        />
+        <ScanReadout />
+      </main>
+      <MarketingFooter />
+    </div>
+  );
+}
 
-      <section className="py-12 sm:py-20">
-        <div className="mx-auto max-w-2xl px-4 sm:px-6">
-          {step === "form" && (
-            <>
-              <div className="text-center">
-                <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">
-                  Проверка спроса в нейросетях
-                </h1>
-                <p className="mt-4 text-base leading-relaxed text-gray-600 sm:text-lg">
-                  Проверьте, находят ли нейросети вас, когда человек ищет
-                  эксперта, бренд или компанию. Сравните себя с конкурентом
-                  и поймите, где теряете потенциальные заявки.
-                </p>
-              </div>
+function ScanIntro() {
+  return (
+    <div className="sc-copy">
+      <div className="sr-index"><span>01</span><span>AI Visibility Probe</span></div>
+      <p className="sr-eyebrow"><span /> Live diagnostic</p>
+      <h1>Кому нейросети <em>отдают ваш спрос?</em></h1>
+      <p className="sc-lede">Один запрос проходит через подключённые ИИ-платформы. Вы видите не абстрактную «видимость», а кому достаётся внимание клиента прямо сейчас.</p>
+      <div className="sc-spec"><div><span>Режим</span><b>LIVE</b></div><div><span>Время</span><b>10–40 сек</b></div><div><span>Отчёт</span><b>ССЫЛКА</b></div></div>
+    </div>
+  );
+}
 
-              <form onSubmit={handleSubmit} className="mt-10 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Вы или ваша компания *
-                  </label>
-                  <input
-                    type="text"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Иван Петров, психолог"
-                    maxLength={200}
-                    required
-                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 sm:px-5 sm:py-4 sm:text-lg"
-                  />
-                </div>
+function ProbeConsole({ step, query, competitor, error, inputRef, onQuery, onCompetitor, onSubmit, onRetry }: {
+  step: Step; query: string; competitor: string; error: string; inputRef: React.RefObject<HTMLInputElement>;
+  onQuery: (value: string) => void; onCompetitor: (value: string) => void;
+  onSubmit: (event: React.FormEvent) => void; onRetry: () => void;
+}) {
+  return (
+    <section className="sc-console" aria-label="Проверка видимости в нейросетях">
+      <header><span>PROBE / NEW</span><span className={step === "loading" ? "is-live" : ""}><i /> {step === "loading" ? "SCANNING" : "READY"}</span></header>
+      {step === "form" && <><ProbeRadar /><form className="sc-form" onSubmit={onSubmit} noValidate>
+        <label><span>01 / Вы или ваша компания</span><input ref={inputRef} type="text" value={query} onChange={(event) => onQuery(event.target.value)} placeholder="Иван Петров, психолог" maxLength={200} required autoComplete="organization" /></label>
+        <label><span>02 / Контрольная точка · необязательно</span><input type="text" value={competitor} onChange={(event) => onCompetitor(event.target.value)} placeholder="Конкурент или альтернатива" maxLength={200} /></label>
+        {error && <p className="sc-form-error" role="alert">{error}</p>}
+        <button type="submit">Запустить проверку <ArrowRight aria-hidden="true" /></button>
+      </form></>}
+      {step === "loading" && <ScanningState query={query} competitor={competitor} />}
+      {step === "error" && <div className="sc-error" role="alert"><Radio aria-hidden="true" /><span>SIGNAL LOST</span><h2>Ответ не собран.</h2><p>{error}</p><button type="button" onClick={onRetry}><RotateCcw aria-hidden="true" /> Повторить проверку</button></div>}
+    </section>
+  );
+}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Конкурент или альтернатива (необязательно)
-                  </label>
-                  <input
-                    type="text"
-                    value={competitor}
-                    onChange={(e) => setCompetitor(e.target.value)}
-                    placeholder="Мария Сидорова, психолог"
-                    maxLength={200}
-                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 sm:px-5 sm:py-4 sm:text-lg"
-                  />
-                  <p className="mt-1 text-xs text-slate-500">
-                    Добавьте конкурента — увидите, кому нейросети отдают спрос сейчас
-                  </p>
-                </div>
+function ScanReadout() {
+  return (
+    <>
+      <section className="sc-readout"><header><p className="sr-eyebrow sr-eyebrow-dark"><span /> Readout</p><h2>Ответы платформ.<br />Одна картина спроса.</h2></header><div className="sc-readout-list">
+        <article><span>01</span><h3>Присутствие</h3><p>Появляетесь ли вы в ответе и в каком контексте.</p><b>FIND</b></article>
+        <article><span>02</span><h3>Сравнение</h3><p>Кому платформа отдаёт приоритет: вам или альтернативе.</p><b>COMPARE</b></article>
+        <article><span>03</span><h3>Следующий ход</h3><p>Какую точку входа запустить, чтобы забрать потерянный спрос.</p><b>ACT</b></article>
+      </div></section>
+      <section className="sc-audit-cta"><div><p>Нужна карта по всей нише?</p><h2>Добавьте вопросы клиентов и сравнение ответов.</h2></div><Link className="sr-button sr-button-light" href="/audit">Открыть карту спроса <ArrowRight aria-hidden="true" /></Link></section>
+    </>
+  );
+}
 
-                <button
-                  type="submit"
-                  className="w-full rounded-xl bg-blue-600 px-6 py-3.5 text-base font-semibold text-white hover:bg-blue-700 transition-colors sm:px-8 sm:py-4 sm:text-lg"
-                >
-                  Проверить спрос в нейросетях
-                </button>
+function ProbeRadar() {
+  return (
+    <div className="sc-radar" aria-hidden="true">
+      <div className="sc-orbits"><i /><i /><i /><b /></div>
+      <div className="sc-radar-core"><Crosshair /><span>YOUR SIGNAL</span></div>
+      {PLATFORMS.map((platform) => <div className={`sc-node ${platform.position}`} key={platform.name}><span>{platform.id}</span><b>{platform.name}</b><i /></div>)}
+      <div className="sc-sweep" />
+    </div>
+  );
+}
 
-                {error && (
-                  <p className="text-sm text-red-600">{error}</p>
-                )}
-              </form>
-
-              <div className="mt-12 grid gap-4 sm:mt-16 sm:grid-cols-3">
-                <div className="rounded-xl border border-gray-200 p-6 text-center">
-                  <div className="text-3xl">🔍</div>
-                  <h3 className="mt-3 font-semibold text-gray-900">
-                    3 платформы
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    ChatGPT, Perplexity, YandexGPT.{" "}
-                    <a href="/audit" className="underline hover:text-blue-600">
-                      В /audit — 4 платформы (+ GigaChat)
-                    </a>
-                  </p>
-                </div>
-                <div className="rounded-xl border border-gray-200 p-6 text-center">
-                  <div className="text-3xl">📊</div>
-                  <h3 className="mt-3 font-semibold text-gray-900">
-                    Сравнение спроса
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Вы и конкурент — кого нейросети находят чаще
-                  </p>
-                </div>
-                <div className="rounded-xl border border-gray-200 p-6 text-center">
-                  <div className="text-3xl">🚀</div>
-                  <h3 className="mt-3 font-semibold text-gray-900">
-                    Следующий шаг
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Какие страницы запускать для заявок
-                  </p>
-                </div>
-              </div>
-            </>
-          )}
-
-          {step === "loading" && (
-            <div className="flex flex-col items-center justify-center py-20">
-              <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
-              <p className="mt-6 text-lg text-gray-600">
-                Спрашиваем нейросети о &laquo;{query}&raquo;
-                {competitor && <> и &laquo;{competitor}&raquo;</>}...
-              </p>
-              <p className="mt-2 text-sm text-slate-500">
-                Проверяем ChatGPT, Perplexity и YandexGPT. Это займёт{" "}
-                {competitor ? "20-40" : "10-20"} секунд.
-              </p>
-            </div>
-          )}
-
-          {step === "error" && (
-            <div className="flex flex-col items-center justify-center py-20">
-              <p className="text-lg text-red-600">{error}</p>
-              <button
-                onClick={() => {
-                  setStep("form");
-                  setError("");
-                }}
-                className="mt-6 text-sm text-blue-600 hover:text-blue-800 transition-colors"
-              >
-                &larr; Попробовать снова
-              </button>
-            </div>
-          )}
-        </div>
-      </section>
+function ScanningState({ query, competitor }: { query: string; competitor: string }) {
+  return (
+    <div className="sc-scanning" role="status" aria-live="polite">
+      <div className="sc-scan-field" aria-hidden="true"><div className="sc-scan-ring"><Crosshair /></div><i /></div>
+      <span>QUERY LOCKED</span>
+      <h2>{query}</h2>
+      {competitor && <p>Контрольная точка: {competitor}</p>}
+      <div className="sc-progress">
+        {PLATFORMS.map((platform, index) => <div key={platform.name} style={{ animationDelay: `${index * 1.2}s` }}><span>{platform.id}</span><b>{platform.name}</b><i /></div>)}
+      </div>
+      <small>Собираем ответы и сравниваем позиции. Не закрывайте страницу.</small>
     </div>
   );
 }

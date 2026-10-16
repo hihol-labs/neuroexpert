@@ -1,6 +1,5 @@
 import { supabase } from "../supabase.js";
-import { getLLM, SYSTEM_PROMPT_CONTENT, ARTICLE_STRUCTURE } from "shared";
-import { tgFetch } from "shared/http/telegram-fetch";
+import { getLLM, SYSTEM_PROMPT_CONTENT, ARTICLE_STRUCTURE, checkClaims, type ClaimCheck } from "shared";
 
 const MAX_REWORK_ATTEMPTS = 2;
 
@@ -83,8 +82,8 @@ ${issuesList}
 ${article}
 
 Требования:
-- Сохрани весь существующий контент
-- Дополни недостающие элементы
+- Сохрани весь существующий контент, кроме утверждений, которые перечислены в проблемах как отсутствующие в расшифровке
+- Дополни недостающие элементы, не выдумывая цифры, регалии, отзывы и ссылки
 - Объём: 2900–3500 слов
 - Формат: Markdown
 - В конце: META_TITLE, META_DESCRIPTION, KEYWORDS
@@ -101,7 +100,7 @@ export async function handleValidateContent(payload: Record<string, unknown>): P
 
   const { data: pkg } = await supabase
     .from("content_packages")
-    .select("id, format_seo_article, expert_id")
+    .select("id, format_seo_article, expert_id, voice_id, generation_framework")
     .eq("id", contentPackageId)
     .single();
 
@@ -110,6 +109,27 @@ export async function handleValidateContent(payload: Record<string, unknown>): P
   }
 
   const issues = validateArticle(pkg.format_seo_article);
+
+  // R-10 (E-AUTO-20): утверждения статьи без опоры в расшифровке голоса - причина переделки, как структура.
+  // sources и unsupported_claims пишутся в generation_framework при каждом исходе (гейт публикации
+  // пересчитывает их по текущему тексту сам).
+  let transcript = "";
+  if (pkg.voice_id) {
+    const { data: rec } = await supabase.from("voice_recordings").select("transcript").eq("id", pkg.voice_id).maybeSingle();
+    transcript = typeof rec?.transcript === "string" ? rec.transcript : "";
+  }
+  const claimCheck: ClaimCheck | null = transcript ? checkClaims(pkg.format_seo_article, transcript) : null;
+  if (claimCheck && claimCheck.unsupported.length > 0) {
+    const list = [...new Set(claimCheck.unsupported.map((c) => `«${c.text}»`))].join(", ");
+    issues.push({
+      field: "unsupported_claims",
+      message: `Удали или перефразируй утверждения, которых нет в расшифровке эксперта: ${list}. Не заменяй их другими цифрами, регалиями, отзывами или ссылками.`,
+    });
+  }
+  const framework = {
+    ...((pkg.generation_framework as Record<string, unknown> | null) ?? {}),
+    ...(claimCheck ? { sources: claimCheck.sources, unsupported_claims: claimCheck.unsupported } : {}),
+  };
 
   if (issues.length === 0) {
     // Валидация пройдена
@@ -124,6 +144,7 @@ export async function handleValidateContent(payload: Record<string, unknown>): P
         has_tldr: true,
         has_table: true,
         passage_count: headings.length,
+        generation_framework: framework,
       })
       .eq("id", contentPackageId);
 
@@ -151,6 +172,7 @@ export async function handleValidateContent(payload: Record<string, unknown>): P
         has_tldr: hasTldr,
         has_table: hasTable,
         passage_count: headings.length,
+        generation_framework: framework,
       })
       .eq("id", contentPackageId);
 
@@ -190,6 +212,7 @@ export async function handleValidateContent(payload: Record<string, unknown>): P
     .from("content_packages")
     .update({
       format_seo_article: reworkedArticle,
+      generation_framework: framework,
       word_count: newWordCount,
       has_tldr: newHasTldr,
       has_table: newHasTable,
@@ -213,40 +236,12 @@ async function notifyExpertReady(
   contentPackageId: string,
   needsManualReview = false,
 ): Promise<void> {
-  const { data: expert } = await supabase
-    .from("profiles")
-    .select("telegram_id")
-    .eq("id", expertId)
-    .single();
-
-  if (!expert?.telegram_id) return;
-
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  if (!botToken) return;
-
-  const reviewNote = needsManualReview ? "\n\n⚠️ Требуется ручная проверка" : "";
-  const text = `✅ Контент готов к проверке!${reviewNote}`;
-
-  const keyboard = {
-    inline_keyboard: [
-      [
-        { text: "✅ Опубликовать", callback_data: `approve:${contentPackageId}` },
-        { text: "✏️ Редактировать", callback_data: `edit:${contentPackageId}` },
-      ],
-    ],
-  };
-
-  try {
-    await tgFetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: expert.telegram_id,
-        text,
-        reply_markup: keyboard,
-      }),
-    });
-  } catch (err) {
-    console.error("[validate_content] Telegram notification error:", err);
-  }
+  // R-08: черновик готов - job notify_expert (Telegram при наличии + e-mail всегда, дедуп, проверка
+  // ответа Telegram). Раньше - прямая отправка в Telegram только тем, у кого привязан Telegram.
+  const { error } = await supabase.from("jobs").insert({
+    type: "notify_expert",
+    payload: { kind: "draft_ready", ref_id: contentPackageId, expert_id: expertId, needs_review: needsManualReview },
+    priority: 4,
+  });
+  if (error) console.error("[validate_content] notify_expert enqueue failed:", error.message);
 }

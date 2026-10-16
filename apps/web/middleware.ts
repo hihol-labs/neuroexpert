@@ -4,6 +4,8 @@ import { NextResponse, type NextRequest } from "next/server";
 const PUBLIC_ROUTES = [
   "/",
   "/audit",
+  // G-013: публичный «пример отчёта» (proof-слой) — индексируемая страница.
+  "/audit/example",
   "/pricing",
   "/for-experts",
   "/for-business",
@@ -16,6 +18,9 @@ const PUBLIC_ROUTES = [
   "/terms",
   "/privacy",
   "/requisites",
+  // Шаг оплаты обязан быть публичным: покупатель платит по счёту ДО того, как
+  // у него появляется аккаунт (auth отложен в фазу D по ADR-002).
+  "/pay",
 ];
 
 const PUBLIC_PREFIXES = [
@@ -26,6 +31,10 @@ const PUBLIC_PREFIXES = [
   "/track",
   "/compare",
   "/api",
+  // Экран заказа пакета публичен (три поля до оплаты, email = аккаунт).
+  // Именно "/order/" со слэшем: префикс "/order" покрыл бы и "/orders/[id]" —
+  // страницу статуса, которая обязана оставаться за auth (owner-only).
+  "/order/",
   "/auth",
   "/_next",
   "/favicon.ico",

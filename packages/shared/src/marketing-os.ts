@@ -136,3 +136,101 @@ export const MARKETING_OS_AGENT_ROLES = [
 ] as const;
 
 export type MarketingOsAgentRole = (typeof MARKETING_OS_AGENT_ROLES)[number];
+
+export const MARKETING_WORKFLOW_CONTRACT_REQUIRED_FIELDS = [
+  "demand_source_id",
+  "output_type",
+  "target_page_or_task",
+  "report_id",
+  "lead_metric_key",
+  "review_required",
+] as const;
+
+export type MarketingWorkflowContractField =
+  (typeof MARKETING_WORKFLOW_CONTRACT_REQUIRED_FIELDS)[number];
+
+export type MarketingWorkflowContract = {
+  demand_source_id?: string;
+  output_type?: string;
+  target_page_or_task?: unknown;
+  report_id?: string;
+  lead_metric_key?: string;
+  review_required?: boolean;
+};
+
+export type MarketingWorkflowContractValidation = {
+  production_ready: boolean;
+  missing_fields: MarketingWorkflowContractField[];
+  contract: MarketingWorkflowContract;
+};
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function nonEmptyString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim()
+    : undefined;
+}
+
+function hasTarget(value: unknown): boolean {
+  if (nonEmptyString(value)) return true;
+  const record = asRecord(value);
+  return Boolean(nonEmptyString(record.id) || nonEmptyString(record.type));
+}
+
+export function validateMarketingWorkflowContract(
+  input: unknown,
+  options?: { humanReviewRequired?: boolean },
+): MarketingWorkflowContractValidation {
+  const root = asRecord(input);
+  const nested = asRecord(root.contract);
+  const contract: MarketingWorkflowContract = {
+    demand_source_id: nonEmptyString(nested.demand_source_id ?? root.demand_source_id),
+    output_type: nonEmptyString(nested.output_type ?? root.output_type),
+    target_page_or_task: nested.target_page_or_task ?? root.target_page_or_task,
+    report_id: nonEmptyString(nested.report_id ?? root.report_id),
+    lead_metric_key: nonEmptyString(nested.lead_metric_key ?? root.lead_metric_key),
+    review_required:
+      typeof nested.review_required === "boolean"
+        ? nested.review_required
+        : typeof root.review_required === "boolean"
+          ? root.review_required
+          : options?.humanReviewRequired,
+  };
+
+  const missing_fields: MarketingWorkflowContractField[] = [];
+  if (!contract.demand_source_id) missing_fields.push("demand_source_id");
+  if (!contract.output_type) missing_fields.push("output_type");
+  if (!hasTarget(contract.target_page_or_task)) missing_fields.push("target_page_or_task");
+  if (!contract.report_id) missing_fields.push("report_id");
+  if (!contract.lead_metric_key) missing_fields.push("lead_metric_key");
+  if (contract.review_required !== true) missing_fields.push("review_required");
+
+  return {
+    production_ready: missing_fields.length === 0,
+    missing_fields,
+    contract,
+  };
+}
+
+export function attachMarketingWorkflowContractValidation(
+  input: unknown,
+  validation: MarketingWorkflowContractValidation,
+): Record<string, unknown> {
+  const root = asRecord(input);
+  return {
+    ...root,
+    contract: {
+      ...asRecord(root.contract),
+      ...validation.contract,
+    },
+    contract_validation: {
+      production_ready: validation.production_ready,
+      missing_fields: validation.missing_fields,
+    },
+  };
+}

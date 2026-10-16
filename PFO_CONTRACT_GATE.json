@@ -1,40 +1,38 @@
 {
   "status": "PASS",
   "changedFiles": [
-    "ARCHITECTURE.md",
-    "MASTER_CONTEXT.md",
-    "PROGRESS.md",
-    "TASKS.md",
-    "TESTING.md"
+    "CURRENT_PLAN.md",
+    "NEXT_STEP.md",
+    "apps/web/app/(auth)/login/page.tsx",
+    "apps/web/app/(auth)/register/page.tsx",
+    "apps/web/app/api/auth/magic-link/route.ts",
+    "reports/stage-1-safe-auth-ux-hardening-report.md"
   ],
   "runtimeChangedFiles": [
     ".codex-memory/STATE.json",
-    ".pfo/DATA_POLICY.md",
-    ".pfo/FALLBACK_POLICY.md",
-    ".pfo/FORBIDDEN_CHANGES.md",
-    ".pfo/GOLDEN_FLOWS.md",
-    ".pfo/PROJECT_CONTRACT.md",
-    ".pfo/SCOPE_LOCK.md",
-    "AGENTS.md",
-    "CODEX.md",
+    ".codex-memory/events.jsonl",
     "PFO_CONTRACT_GATE.json",
     "PFO_EXISTING_PROJECT_ANALYSIS.json",
     "PFO_REPORT.md"
   ],
   "riskClasses": [
-    "documentation_change"
+    "provider_integration_change",
+    "user_facing_output_change"
   ],
   "missingContracts": [],
   "placeholderContracts": [],
+  "aliasTargetErrors": [],
   "blockers": [],
   "warnings": [],
   "gates": {
+    "aliasTargets": "PASS",
     "scopeLock": "PASS",
     "dataAuthenticity": "PASS",
     "goldenFlows": "PASS",
     "regressionContract": "PASS",
     "fallbackPolicy": "PASS",
     "diffRisk": "PASS",
+    "securityEvidence": "PASS",
     "noSilentSubstitution": "PASS",
     "executionPolicy": "PASS",
     "permissionMatrix": "PASS",

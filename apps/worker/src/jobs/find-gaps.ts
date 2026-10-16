@@ -5,7 +5,7 @@ import { getLLM, SYSTEM_PROMPT_FILTER, buildFilterPrompt, type FilteredQuestion 
 const PLATFORMS: Array<"chatgpt" | "yandexgpt" | "gigachat" | "perplexity"> = [
   "chatgpt",
   "yandexgpt",
-  ...(process.env.GIGACHAT_API_KEY ? ["gigachat" as const] : []),
+  ...(process.env.GIGACHAT_CLIENT_ID && process.env.GIGACHAT_CLIENT_SECRET ? ["gigachat" as const] : []),
   ...(process.env.PERPLEXITY_API_KEY ? ["perplexity" as const] : []),
 ];
 const MAX_QUESTIONS = 50;

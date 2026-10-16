@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { Suspense, useState, useRef, useCallback, useEffect } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 
 type RecordingState = "idle" | "recording" | "uploading" | "analyzing" | "followup" | "done" | "error";
@@ -11,7 +13,35 @@ interface FollowUp {
   reason?: string;
 }
 
+// useSearchParams требует Suspense-границы при сборке клиентской страницы.
 export default function ContentNewPage() {
+  return (
+    <Suspense fallback={null}>
+      <ContentNewRecorder />
+    </Suspense>
+  );
+}
+
+type OrderTopic = { state: "none" } | { state: "loading" } | { state: "ready"; question_text: string } | { state: "invalid" };
+
+function ContentNewRecorder() {
+  // R-06 (E-AUTO-7): тема приходит из кнопки «Записать ответ» (?order_id=) - запись привязывается
+  // к ней, вопрос показан эксперту перед записью.
+  const orderId = useSearchParams().get("order_id");
+  const [topic, setTopic] = useState<OrderTopic>(orderId ? { state: "loading" } : { state: "none" });
+  useEffect(() => {
+    if (!orderId) return;
+    let cancelled = false;
+    fetch(`/api/expert-orders/${encodeURIComponent(orderId)}`)
+      .then(async (res) => {
+        const order = res.ok ? await res.json() : null;
+        if (cancelled) return;
+        setTopic(order && order.status === "accepted" ? { state: "ready", question_text: String(order.question_text ?? "") } : { state: "invalid" });
+      })
+      .catch(() => { if (!cancelled) setTopic({ state: "invalid" }); });
+    return () => { cancelled = true; };
+  }, [orderId]);
+
   const [state, setState] = useState<RecordingState>("idle");
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState("");
@@ -28,6 +58,7 @@ export default function ContentNewPage() {
       const formData = new FormData();
       formData.append("audio", blob, "recording.webm");
       formData.append("duration", String(durationRef.current));
+      if (orderId) formData.append("order_id", orderId);
 
       const res = await fetch("/api/voice", {
         method: "POST",
@@ -71,7 +102,7 @@ export default function ContentNewPage() {
       setError(err instanceof Error ? err.message : "Ошибка загрузки");
       setState("error");
     }
-  }, []);
+  }, [orderId]);
 
   const startRecording = useCallback(async () => {
     try {
@@ -154,7 +185,21 @@ export default function ContentNewPage() {
           контента.
         </p>
 
-        {state === "idle" && (
+        {topic.state === "ready" && (
+          <div className="text-left mb-8 p-4 bg-blue-50 border border-blue-100 rounded-xl" data-record-topic>
+            <p className="text-xs font-medium text-blue-700 mb-1">Вы отвечаете на вопрос</p>
+            <p className="text-gray-900">{topic.question_text}</p>
+          </div>
+        )}
+        {topic.state === "invalid" && (
+          <div className="text-left mb-8 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+            <p className="text-amber-800 text-sm">
+              Тема не найдена или уже в работе. <Link href="/orders" className="underline">Выберите тему заново</Link>.
+            </p>
+          </div>
+        )}
+
+        {state === "idle" && topic.state !== "invalid" && topic.state !== "loading" && (
           <button
             onClick={startRecording}
             className="w-24 h-24 rounded-full bg-red-500 hover:bg-red-600 text-white text-lg font-medium mx-auto flex items-center justify-center transition-colors"

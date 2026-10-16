@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { createBrowserClient } from "@supabase/ssr";
+// Subpath: клиентский компонент не тянет серверные зависимости корневого входа shared.
+import { faqProblems } from "shared/content/publish";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/input";
@@ -19,6 +21,32 @@ const TABS = [
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
+// k - стабильный ключ строки формы (только на клиенте, в БД не сохраняется).
+type FaqPair = { question: string; answer: string; k?: number };
+
+// R-07 (E-AUTO-17): отказы /api/publish приходят кодом - показываем по-русски.
+const PUBLISH_ERRORS: Record<string, string> = {
+  not_found: "Материал не найден.",
+  already_published: "Материал уже опубликован.",
+  bad_status: "Материал ещё не готов к публикации (идёт генерация или он отклонён).",
+  conflict: "Материал уже опубликован или изменён — обновите страницу.",
+  no_slug: "У материала нет адреса страницы — напишите в поддержку.",
+  faq_required: "Перед публикацией дополните FAQ (вкладка «FAQ») и сохраните.",
+  unsupported_claims: "В тексте есть цифры, регалии, отзывы или ссылки, которых нет в вашей записи. Уберите или исправьте их и сохраните.",
+  error: "Не удалось опубликовать, попробуйте ещё раз.",
+};
+
+function toFaqPairs(value: unknown): FaqPair[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((item, k) => {
+    const pair = item && typeof item === "object" ? (item as { question?: unknown; answer?: unknown }) : {};
+    return {
+      question: typeof pair.question === "string" ? pair.question : "",
+      answer: typeof pair.answer === "string" ? pair.answer : "",
+      k,
+    };
+  });
+}
 
 export default function ContentDetailPage({ params }: { params: { id: string } }) {
   const [supabase] = useState(() =>
@@ -30,6 +58,7 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
   const [pkg, setPkg] = useState<Record<string, unknown> | null>(null);
   const [tab, setTab] = useState<TabKey>("seo");
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const { toast } = useToast();
   const { confirm } = useConfirm();
 
@@ -38,7 +67,10 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
   const [seoArticle, setSeoArticle] = useState("");
   const [cardsJson, setCardsJson] = useState("");
   const [reelsScript, setReelsScript] = useState("");
-  const [faqJson, setFaqJson] = useState("");
+  // FAQ - список пар «вопрос - ответ» (раньше сырой JSON с молчаливым откатом при ошибке разбора).
+  const [faq, setFaq] = useState<FaqPair[]>([]);
+  // Публикуется то, что сохранено в БД: гейт считается и по сохранённой версии.
+  const [savedFaq, setSavedFaq] = useState<FaqPair[]>([]);
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDesc, setMetaDesc] = useState("");
 
@@ -55,7 +87,8 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
           setSeoArticle((data.format_seo_article as string) ?? "");
           setCardsJson(JSON.stringify(data.format_cards ?? [], null, 2));
           setReelsScript((data.format_reels_script as string) ?? "");
-          setFaqJson(JSON.stringify(data.format_faq ?? [], null, 2));
+          setFaq(toFaqPairs(data.format_faq));
+          setSavedFaq(toFaqPairs(data.format_faq));
           setMetaTitle((data.meta_title as string) ?? "");
           setMetaDesc((data.meta_description as string) ?? "");
         }
@@ -64,11 +97,20 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
 
   if (!pkg) return <div className="py-12 text-center text-gray-500">Загрузка...</div>;
 
+  const cleanFaq = (pairs: FaqPair[]) =>
+    pairs.map((f) => ({ question: f.question.trim(), answer: f.answer.trim() })).filter((f) => f.question || f.answer);
+  const faqDirty = JSON.stringify(cleanFaq(faq)) !== JSON.stringify(cleanFaq(savedFaq));
+  // Проблемы считаются по тому, что видит эксперт; несохранённые правки - отдельная причина.
+  const faqIssues = [
+    ...faqProblems(cleanFaq(faq)),
+    ...(faqDirty ? ["FAQ изменён, но не сохранён — нажмите «Сохранить»."] : []),
+  ];
+
   const save = async () => {
     setSaving(true);
-    let cards, faq;
+    let cards;
     try { cards = JSON.parse(cardsJson); } catch { cards = pkg.format_cards; }
-    try { faq = JSON.parse(faqJson); } catch { faq = pkg.format_faq; }
+    const faqToSave = cleanFaq(faq);
 
     const { error } = await supabase
       .from("content_packages")
@@ -77,7 +119,7 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
         format_seo_article: seoArticle,
         format_cards: cards,
         format_reels_script: reelsScript,
-        format_faq: faq,
+        format_faq: faqToSave,
         meta_title: metaTitle,
         meta_description: metaDesc,
         word_count: seoArticle.split(/\s+/).filter(Boolean).length,
@@ -85,21 +127,35 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
       .eq("id", params.id);
 
     setSaving(false);
+    // Форму не пересоздаём (строки сохраняют ключи k); убираем только полностью пустые пары.
+    if (!error) { setFaq(faq.filter((f) => f.question.trim() || f.answer.trim())); setSavedFaq(faqToSave); }
     toast(error ? "Ошибка сохранения" : "Контент сохранён", error ? "error" : "success");
   };
 
   const publish = async () => {
-    const res = await fetch("/api/publish", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content_id: params.id }),
-    });
-    const data = await res.json();
-    if (data.ok) {
-      toast("Контент опубликован!", "success");
-      setPkg({ ...pkg, status: "published", published_url: data.url });
-    } else {
-      toast(data.error || "Ошибка публикации", "error");
+    setPublishing(true);
+    try {
+      const res = await fetch("/api/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content_id: params.id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) {
+        if (data.profile_visible === false) {
+          toast("Статья опубликована, но профиль не удалось сделать публичным — включите «Опубликовать профиль» в настройках профиля, иначе статья недоступна.", "error");
+        } else {
+          toast(data.profile_published_now ? "Опубликовано! Ваш профиль стал публичным." : "Контент опубликован!", "success");
+        }
+        setPkg({ ...pkg, status: "published", published_url: data.url });
+      } else {
+        const problems = Array.isArray(data.problems) && data.problems.length > 0 ? ` ${data.problems.join(" ")}` : "";
+        toast((PUBLISH_ERRORS[data.code as string] ?? PUBLISH_ERRORS.error) + problems, "error");
+      }
+    } catch {
+      toast("Сеть недоступна, попробуйте ещё раз.", "error");
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -116,6 +172,8 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
     window.location.href = "/content";
   };
 
+  const setPair = (i: number, patch: Partial<FaqPair>) => setFaq(faq.map((f, j) => (j === i ? { ...f, ...patch } : f)));
+
   return (
     <div>
       <Breadcrumbs items={[
@@ -131,10 +189,28 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
         </div>
         <div className="flex gap-2">
           <Button onClick={save} disabled={saving}>{saving ? "..." : "Сохранить"}</Button>
-          {pkg.status !== "published" && <Button variant="secondary" onClick={publish}>Опубликовать</Button>}
+          {pkg.status !== "published" && (
+            <Button variant="secondary" onClick={publish} disabled={faqIssues.length > 0 || publishing}>
+              {publishing ? "Публикуем…" : "Опубликовать"}
+            </Button>
+          )}
           <Button variant="danger" onClick={del}>Удалить</Button>
         </div>
       </div>
+
+      {/* R-07: предупреждение ДО нажатия - раньше эксперт узнавал о FAQ-гейте из ответа 422. */}
+      {pkg.status !== "published" && faqIssues.length > 0 && (
+        <div data-faq-warning className="mb-6 px-4 py-3 rounded-lg text-sm border bg-amber-50 border-amber-200 text-amber-800">
+          <p className="font-medium">Чтобы опубликовать, дополните FAQ — страница отдаёт его поисковикам и нейросетям:</p>
+          <ul className="mt-1 list-disc pl-5">
+            {faqIssues.map((issue) => <li key={issue}>{issue}</li>)}
+          </ul>
+          <button type="button" className="mt-2 underline" onClick={() => setTab("faq")}>Открыть вкладку «FAQ»</button>
+        </div>
+      )}
+      {pkg.status !== "published" && faqIssues.length === 0 && (
+        <p className="mb-6 text-xs text-gray-500">После публикации статья и ваш профиль эксперта станут видны всем. Скрыть профиль можно в настройках профиля.</p>
+      )}
 
       {/* Meta */}
       <div className="grid sm:grid-cols-2 gap-4 mb-6">
@@ -172,7 +248,20 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
           <Textarea rows={15} value={reelsScript} onChange={(e) => setReelsScript(e.target.value)} placeholder="Сценарий Reels..." />
         )}
         {tab === "faq" && (
-          <Textarea rows={15} value={faqJson} onChange={(e) => setFaqJson(e.target.value)} className="font-mono text-xs" placeholder='[{"question": "...", "answer": "..."}]' />
+          <div data-faq-form className="space-y-4">
+            <p className="text-sm text-gray-500">Не меньше 3 пар. Вопрос — как его задал бы клиент, ответ — 1–3 предложения по делу.</p>
+            {faq.map((f, i) => (
+              <div key={f.k ?? i} className="border rounded-lg p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Пара {i + 1}</span>
+                  <button type="button" className="text-xs text-red-600 hover:underline" onClick={() => setFaq(faq.filter((_, j) => j !== i))}>Удалить</button>
+                </div>
+                <Input label="Вопрос" value={f.question} onChange={(e) => setPair(i, { question: e.target.value })} />
+                <Textarea rows={3} value={f.answer} onChange={(e) => setPair(i, { answer: e.target.value })} placeholder="Ответ..." />
+              </div>
+            ))}
+            <Button variant="secondary" onClick={() => setFaq([...faq, { question: "", answer: "", k: Date.now() }])}>Добавить пару</Button>
+          </div>
         )}
       </div>
     </div>

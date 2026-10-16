@@ -19,6 +19,16 @@ export async function POST(request: NextRequest) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Playbooks — общая курируемая библиотека шаблонов: запись только администратору.
+  // Глобальный UNIQUE(key) сохраняем; гейт предотвращает cross-user перезапись (SEC-3).
+  const adminEmail = process.env.SMTP_ADMIN_EMAIL;
+  if (!adminEmail) {
+    console.warn("[SEC-3] SMTP_ADMIN_EMAIL not set — POST /api/marketing-os/playbooks недоступен всем");
+  }
+  if (!adminEmail || user.email !== adminEmail) {
+    return NextResponse.json({ error: "Forbidden: admin only" }, { status: 403 });
+  }
+
   let body: JsonRecord;
   try {
     body = await request.json();

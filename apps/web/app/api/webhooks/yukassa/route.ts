@@ -1,5 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  assessExpertPayment,
+  assessPackagePayment,
+  assessPackageRefund,
+  mayEnqueueAuditJob,
+  parsePackageMetadata,
+  selectShopForOrder,
+  transition,
+  type KassaShop,
+  type PackageOrderStatus,
+  type ReconcileOrder,
+} from "shared";
+import { activateLocalPair, checkSubscriptionAmount, nextSubscriptionExpiry } from "shared";
 import { createClient } from "@supabase/supabase-js";
+import { notifyOperator } from "@/lib/operator-alerts";
+import { KassaUnavailableError, fetchKassaPayment, fetchKassaRefund, kassaShops } from "@/lib/yukassa-verify";
 
 const WEBHOOK_SECRET = process.env.YUKASSA_WEBHOOK_SECRET || "";
 
@@ -58,6 +73,202 @@ function getAdmin() {
   );
 }
 
+type Admin = ReturnType<typeof getAdmin>;
+
+function appUrl(): string {
+  return (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "https://neuroexpertise.ru").replace(/\/$/, "");
+}
+
+/**
+ * SEC-1: IP-allowlist и секрет в URL — первый рубеж; источник истины — API кассы.
+ * Любая смена состояния заказа (paid / failed / refunded) делается только после
+ * перечитывания платежа (и возврата) из ЮKassa по магазину заказа и сравнения
+ * с заказом (`assessPackagePayment` / `assessPackageRefund`). Подделанное тело
+ * уведомления, прошедшее allowlist (например, через X-Forwarded-For), ничего
+ * не меняет. Недоступность API кассы → 503, касса повторит уведомление.
+ */
+const PACKAGE_ORDER_FIELDS = "id, owner_id, email, package, amount_rub, niche_id, city, status, job_id, yukassa_payment_id, payment_test, payment_shop_id";
+
+type PackageOrderRow = ReconcileOrder & {
+  email: string;
+  niche_id: string;
+  city: string;
+  status: string;
+  job_id: string | null;
+};
+
+function shopForOrder(order: ReconcileOrder, context: string): KassaShop | null {
+  const shop = selectShopForOrder(order, kassaShops());
+  if (!shop) console.error(`[yukassa] ${context}: shop for order ${order.id} is not configured — event ignored`);
+  return shop;
+}
+
+/**
+ * Пакетный заказ оплачен (G-018). Инварианты: статус меняется только через
+ * машину состояний; job аудита ставится ровно один раз (guard `job_id IS NULL`
+ * на UPDATE — параллельный повтор webhook не создаст второй job); письмо со
+ * ссылкой на статус уходит сразу после оплаты (решение AF-1 №2) как magic link
+ * — без отдельного почтового транспорта.
+ */
+async function handlePackagePaymentSucceeded(
+  admin: Admin,
+  orderId: string,
+  paymentId: string,
+): Promise<void> {
+  const { data } = await admin
+    .from("package_orders")
+    .select(PACKAGE_ORDER_FIELDS)
+    .eq("id", orderId)
+    .maybeSingle();
+  const order = data as PackageOrderRow | null;
+  if (!order) {
+    console.error(`[yukassa] package order ${orderId} not found for payment ${paymentId}`);
+    return;
+  }
+  if (order.yukassa_payment_id && order.yukassa_payment_id !== paymentId) {
+    console.error(`[yukassa] payment ${paymentId} does not match order ${orderId} (${order.yukassa_payment_id})`);
+    return;
+  }
+
+  // Сверка с API кассы: id, статус succeeded, режим магазина, сумма пакета, metadata заказа.
+  const shop = shopForOrder(order, "payment.succeeded");
+  if (!shop) return;
+  const verified = await fetchKassaPayment(shop, paymentId);
+  const check = assessPackagePayment(order, verified, { status: "succeeded", shop });
+  if (!check.ok) {
+    console.warn(`[yukassa] payment.succeeded for order ${orderId} rejected by kassa reconciliation: ${check.reason}`);
+    return;
+  }
+
+  const t = transition(order.status as PackageOrderStatus, "payment.succeeded");
+  if (!t.ok) {
+    console.error(`[yukassa] order ${orderId}: ${t.error}`);
+    return;
+  }
+  if (t.changed) {
+    const { error } = await admin
+      .from("package_orders")
+      .update({ status: "paid", paid_at: new Date().toISOString(), yukassa_payment_id: paymentId })
+      .eq("id", orderId)
+      // R-01: оплата по старой ссылке после протухания (expired) тоже принимается.
+      .in("status", ["pending", "expired"]);
+    if (error) throw new Error("Package payment database update failed");
+    // R-03: оплаченная локальная пара попадает в еженедельный сбор спроса (только при реальном
+    // переходе в paid — повтор webhook не делает лишний UPDATE); ошибка активации не ломает оплату.
+    try { await activateLocalPair(admin, order.niche_id); }
+    catch (err) { console.error(`[yukassa] pair activation for order ${orderId} failed:`, err instanceof Error ? err.message : err); }
+    // R-04' (R-04b): триггер ручного чека самозанятого - ЮKassa чеки самозанятых не формирует.
+    // Только при реальном переходе в paid; fire-and-forget, оплату не задерживает и не ломает.
+    try {
+      void notifyOperator("order_paid", orderId, {
+        заказ: orderId, сумма: `${order.amount_rub} руб`, email: order.email, пакет: order.package,
+        ссылка: `${appUrl()}/orders/${orderId}`, тест: order.payment_test ? "да (тестовый магазин, чек не нужен)" : "",
+      });
+    } catch (err) {
+      // Ленивая инициализация адаптера может бросить синхронно (env) - оплату это не касается.
+      console.error(`[yukassa] order_paid alert for order ${orderId} failed:`, err instanceof Error ? err.message : err);
+    }
+  }
+
+  if (mayEnqueueAuditJob("paid", order.job_id)) {
+    const { data: job, error: jobError } = await admin
+      .from("jobs")
+      .insert({
+        type: "run_audit",
+        priority: 1,
+        payload: { order_id: orderId, package: order.package, niche_id: order.niche_id, city: order.city, owner_id: order.owner_id },
+      })
+      .select("id")
+      .single();
+    if (jobError) throw new Error("Package audit job insert failed");
+    if (job?.id) {
+      const { data: claimed, error: claimError } = await admin
+        .from("package_orders")
+        .update({ job_id: job.id })
+        .eq("id", orderId)
+        .eq("status", "paid")
+        .is("job_id", null)
+        .select("id");
+      if (claimError) throw new Error("Package audit job attach failed");
+      if (!claimed || claimed.length === 0) {
+        // Параллельный повтор webhook успел раньше — наш job лишний.
+        await admin.from("jobs").delete().eq("id", job.id);
+      }
+    }
+  }
+
+  if (t.changed) {
+    // Письмо со ссылкой на статус = magic link на /orders/{id}; отправляет
+    // Supabase Auth через сконфигурированный SMTP. Ошибка отправки не откатывает
+    // оплату — заказ уже paid, ссылка доступна и по возврату с кассы.
+    try {
+      const { createClient } = await import("@supabase/supabase-js");
+      const anon = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+      const { error } = await anon.auth.signInWithOtp({
+        email: order.email,
+        options: { emailRedirectTo: `${appUrl()}/auth/callback?next=/orders/${orderId}`, shouldCreateUser: false },
+      });
+      if (error) console.error(`[yukassa] status email for order ${orderId} failed:`, error.message);
+    } catch (err) {
+      console.error(`[yukassa] status email for order ${orderId} threw:`, err instanceof Error ? err.message : err);
+    }
+  }
+}
+
+/**
+ * payment.canceled / refund.succeeded для пакетного заказа; true — если заказ найден
+ * (событие относится к пакетному контуру), независимо от того, изменил ли он статус.
+ */
+async function handlePackageTerminalEvent(
+  admin: Admin,
+  paymentId: string,
+  event: "payment.canceled" | "refund.succeeded",
+  refundId?: string,
+): Promise<boolean> {
+  const { data, error: readError } = await admin
+    .from("package_orders")
+    .select(PACKAGE_ORDER_FIELDS)
+    .eq("yukassa_payment_id", paymentId)
+    .maybeSingle();
+  if (readError) throw new Error("Package terminal lookup failed");
+  const order = data as PackageOrderRow | null;
+  if (!order) return false;
+
+  const shop = shopForOrder(order, event);
+  if (!shop) return true;
+  const payment = await fetchKassaPayment(shop, paymentId);
+  const check = event === "refund.succeeded"
+    ? assessPackageRefund(order, refundId ? await fetchKassaRefund(shop, refundId) : null, payment, shop)
+    : assessPackagePayment(order, payment, { status: "canceled", shop });
+  if (!check.ok) {
+    console.warn(`[yukassa] ${event} for order ${order.id} rejected by kassa reconciliation: ${check.reason}`);
+    return true;
+  }
+
+  const t = transition(order.status as PackageOrderStatus, event);
+  if (!t.ok) {
+    console.error(`[yukassa] order ${order.id}: ${t.error}`);
+    return true;
+  }
+  if (t.changed) {
+    const patch = event === "refund.succeeded"
+      ? { status: "refunded", refunded_at: new Date().toISOString(), ...(refundId ? { refund_id: refundId } : {}) }
+      : { status: "failed", failure_reason: "payment.canceled" };
+    const { error } = await admin.from("package_orders").update(patch).eq("id", order.id).eq("status", order.status);
+    if (error) throw new Error("Package terminal update failed");
+  }
+  return true;
+}
+
+/** Legacy-контур экспертов: платёж перечитывается из боевого магазина. */
+function liveShop(context: string): KassaShop | null {
+  const shop = kassaShops().find((s) => !s.test) ?? null;
+  if (!shop) console.error(`[yukassa] ${context}: live shop is not configured — event ignored`);
+  return shop;
+}
+
 export async function POST(request: NextRequest) {
   // 1) IP-проверка. Работает поверх Traefik (он передаёт X-Forwarded-For).
   const allowlist = allowlistedIps();
@@ -83,7 +294,7 @@ export async function POST(request: NextRequest) {
     const event = body.event as string;
     const object = body.object as Record<string, unknown>;
 
-    if (!event || !object) {
+    if (!event || !object || typeof object.id !== "string") {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
 
@@ -97,9 +308,16 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: true });
       }
 
-      const paymentId = object.id as string;
-      const amount = object.amount as { value: string; currency: string };
+      const paymentId = object.id;
       const metadata = (object.metadata ?? {}) as Record<string, string>;
+
+      // Пакетный заказ (G-018): отдельный контур, expert_id не нужен.
+      const packageMeta = parsePackageMetadata(metadata);
+      if (packageMeta) {
+        await handlePackagePaymentSucceeded(admin, packageMeta.order_id, paymentId);
+        return NextResponse.json({ ok: true });
+      }
+
       const expertId = metadata.expert_id;
       const paymentType = metadata.type || "subscription"; // audit | subscription
 
@@ -108,32 +326,91 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: true });
       }
 
+      // 3) Сверка с API кассы: сохраняем только то, что касса подтверждает.
+      const shop = liveShop("payment.succeeded");
+      if (!shop) return NextResponse.json({ ok: true });
+      const verified = await fetchKassaPayment(shop, paymentId);
+      const check = assessExpertPayment(verified, { paymentId, expertId, status: "succeeded" });
+      if (!check.ok || !verified?.amount) {
+        console.warn(`[yukassa] payment.succeeded ${paymentId} rejected by kassa reconciliation: ${check.ok ? "amount missing" : check.reason}`);
+        return NextResponse.json({ ok: true });
+      }
+      const verifiedMetadata = (verified.metadata ?? {}) as Record<string, string>;
+
+      // R-09: повторная доставка того же payment.succeeded не выдаёт и не продлевает тариф второй раз.
+      // Признак - metadata.tier_applied_at, который ставится ТОЛЬКО после успешного обновления профиля:
+      // сбой записи профиля оставляет платёж «не применённым», и повтор webhook выдаст тариф.
+      const { data: priorPayment, error: priorErr } = await admin.from("payments").select("status, metadata").eq("yukassa_payment_id", paymentId).maybeSingle();
+      if (priorErr) {
+        // Fail-closed: не зная, применён ли платёж, тариф не трогаем; 503 - касса повторит уведомление.
+        console.error(`[yukassa] payments read failed for ${paymentId}: ${priorErr.message}`);
+        return NextResponse.json({ error: "payments unavailable" }, { status: 503 });
+      }
+      if (priorPayment?.status === "refunded") {
+        // Запоздалый повтор payment.succeeded после возврата: платёж уже закрыт, тариф не выдаём.
+        console.warn(`[yukassa] payment.succeeded ${paymentId} after refund, ignoring`);
+        return NextResponse.json({ ok: true });
+      }
+      const priorMeta = (priorPayment?.metadata ?? {}) as Record<string, unknown>;
+      const alreadyApplied = priorPayment?.status === "succeeded" && typeof priorMeta.tier_applied_at === "string";
+
       // Save payment
       await admin.from("payments").upsert({
         expert_id: expertId,
         type: paymentType,
-        amount: Math.round(parseFloat(amount.value)),
-        currency: amount.currency,
+        amount: Math.round(parseFloat(verified.amount.value)),
+        currency: verified.amount.currency,
         status: "succeeded",
         yukassa_payment_id: paymentId,
-        description: metadata.description || `${paymentType} payment`,
-        metadata,
+        description: verifiedMetadata.description || `${paymentType} payment`,
+        metadata: alreadyApplied ? { ...verifiedMetadata, tier_applied_at: priorMeta.tier_applied_at } : verifiedMetadata,
       }, { onConflict: "yukassa_payment_id" });
 
-      // Update subscription if applicable
-      if (paymentType === "subscription" && metadata.tier) {
-        const expiresAt = new Date();
-        expiresAt.setMonth(expiresAt.getMonth() + 1);
+      // R-09 (E-AUTO-15): тариф выдаётся только за подтверждённую кассой сумму, равную цене тарифа
+      // из единой таблицы (shared). Платёж уже сохранён; расхождение - алерт оператору, тариф не меняется.
+      const amountRub = parseFloat(verified.amount.value);
+      const amountCheck = checkSubscriptionAmount(verifiedMetadata.tier, amountRub, verified.amount.currency);
+      if (paymentType === "subscription" && alreadyApplied) {
+        console.log(`[yukassa] subscription payment ${paymentId} already applied, skipping tier update`);
+      } else if (paymentType === "subscription" && !amountCheck.ok) {
+        console.warn(`[yukassa] subscription payment ${paymentId} not applied: ${amountCheck.reason} (tier=${String(verifiedMetadata.tier)}, amount=${amountRub}, expected=${String(amountCheck.expected)})`);
+        try {
+          void notifyOperator("reconcile_mismatch", paymentId, {
+            платёж: paymentId, эксперт: expertId, тариф: String(verifiedMetadata.tier ?? ""), сумма: `${amountRub} руб`,
+            ожидалось: amountCheck.expected === null ? "тариф неизвестен" : `${amountCheck.expected} руб`, причина: amountCheck.reason,
+          });
+        } catch (err) {
+          console.error(`[yukassa] reconcile_mismatch alert for ${paymentId} failed:`, err instanceof Error ? err.message : err);
+        }
+      } else if (paymentType === "subscription" && amountCheck.ok) {
+        // Срок - календарный месяц от текущего срока (досрочное продление не теряет остаток) или от
+        // оплаты; по его истечении cron daily-subscription-expiry (035) возвращает free.
+        const { data: current } = await admin.from("profiles").select("subscription_tier, subscription_expires_at").eq("id", expertId).maybeSingle();
+        const sameTier = current?.subscription_tier === amountCheck.tier.id;
+        const expiresAt = nextSubscriptionExpiry(new Date(), sameTier ? (current?.subscription_expires_at as string | null) : null);
 
-        await admin
+        const { error: tierErr } = await admin
           .from("profiles")
           .update({
-            subscription_tier: metadata.tier,
+            subscription_tier: amountCheck.tier.id,
             subscription_expires_at: expiresAt.toISOString(),
           })
           .eq("id", expertId);
 
-        console.log(`[yukassa] Subscription updated: ${expertId} → ${metadata.tier}`);
+        if (tierErr) {
+          console.error(`[yukassa] Subscription update failed for ${expertId}: ${tierErr.message}`);
+          try {
+            void notifyOperator("reconcile_mismatch", paymentId, { платёж: paymentId, эксперт: expertId, тариф: amountCheck.tier.id, причина: `profile update failed: ${tierErr.message}` });
+          } catch (err) {
+            console.error(`[yukassa] alert for ${paymentId} failed:`, err instanceof Error ? err.message : err);
+          }
+        } else {
+          const appliedAt = new Date().toISOString();
+          const { error: markErr } = await admin.from("payments").update({ metadata: { ...verifiedMetadata, tier_applied_at: appliedAt } }).eq("yukassa_payment_id", paymentId);
+          // Маркер не записан - повтор webhook продлил бы тариф второй раз; это видно в логе и оператору.
+          if (markErr) console.error(`[yukassa] tier_applied_at mark failed for ${paymentId}: ${markErr.message} (повтор webhook продлит срок повторно)`);
+          console.log(`[yukassa] Subscription updated: ${expertId} → ${amountCheck.tier.id} until ${expiresAt.toISOString()}`);
+        }
       }
 
       // Save payment method for recurring
@@ -147,13 +424,48 @@ export async function POST(request: NextRequest) {
     }
 
     if (event === "payment.canceled" || event === "refund.succeeded") {
-      const paymentId = object.id as string;
+      // refund.succeeded несёт объект возврата: платёж — в payment_id; для
+      // payment.canceled объект — сам платёж.
+      const refundId = event === "refund.succeeded" ? object.id : undefined;
+      const paymentId = event === "refund.succeeded"
+        ? (typeof object.payment_id === "string" ? object.payment_id : object.id)
+        : object.id;
       const status = event === "refund.succeeded" ? "refunded" : "failed";
 
-      await admin
-        .from("payments")
-        .update({ status })
-        .eq("yukassa_payment_id", paymentId);
+      const handledPackage = await handlePackageTerminalEvent(admin, paymentId, event, refundId);
+      if (!handledPackage) {
+        const { data: legacy } = await admin
+          .from("payments")
+          .select("expert_id, type, status")
+          .eq("yukassa_payment_id", paymentId)
+          .maybeSingle();
+        const expertId = legacy?.expert_id as string | undefined;
+        const shop = expertId ? liveShop(event) : null;
+        if (expertId && shop) {
+          const payment = await fetchKassaPayment(shop, paymentId);
+          const check = event === "refund.succeeded"
+            ? (async () => {
+                const base = assessExpertPayment(payment, { paymentId, expertId, status: "succeeded" });
+                if (!base.ok) return base;
+                const refund = refundId ? await fetchKassaRefund(shop, refundId) : null;
+                if (!refund || refund.status !== "succeeded" || refund.payment_id !== paymentId) return { ok: false as const, reason: "refund not confirmed by kassa" };
+                return { ok: true as const };
+              })()
+            : Promise.resolve(assessExpertPayment(payment, { paymentId, expertId, status: "canceled" }));
+          const verdict = await check;
+          if (verdict.ok) {
+            await admin.from("payments").update({ status }).eq("yukassa_payment_id", paymentId);
+            // R-09: возврат подтверждённого платежа подписки отзывает тариф - деньги вернулись, доступ тоже.
+            if (event === "refund.succeeded" && legacy?.type === "subscription" && legacy?.status === "succeeded") {
+              const { error: revokeErr } = await admin.from("profiles").update({ subscription_tier: "free", subscription_expires_at: null }).eq("id", expertId);
+              if (revokeErr) console.error(`[yukassa] subscription revoke after refund failed for ${expertId}: ${revokeErr.message}`);
+              else console.log(`[yukassa] subscription revoked after refund ${paymentId}: ${expertId} → free`);
+            }
+          } else {
+            console.warn(`[yukassa] ${event} ${paymentId} rejected by kassa reconciliation: ${verdict.reason}`);
+          }
+        }
+      }
     }
 
     // Catch-all: события которые мы не обрабатываем (payment.waiting_for_capture,
@@ -166,7 +478,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
+    if (err instanceof KassaUnavailableError) {
+      // Касса недоступна для сверки — не решаем вслепую; 503 заставит ЮKassa повторить.
+      console.error("[yukassa] Webhook deferred, kassa API unavailable:", err.message);
+      return NextResponse.json({ error: "Verification unavailable" }, { status: 503 });
+    }
     console.error("[yukassa] Webhook error:", err);
-    return NextResponse.json({ ok: true }); // Always 200 to avoid retries
+    return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 });
   }
 }

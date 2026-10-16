@@ -1,660 +1,97 @@
-"use client";
-
+import type { Metadata } from "next";
 import Link from "next/link";
-import { useState } from "react";
-import type { LucideIcon } from "lucide-react";
-import {
-  ArrowRight,
-  BarChart3,
-  CheckCircle2,
-  CircleDollarSign,
-  ClipboardCheck,
-  FileText,
-  ListChecks,
-  MapPinned,
-  Megaphone,
-  Mic2,
-  PhoneMissed,
-  Radar,
-  Search,
-  Star,
-  TrendingUp,
-  UserCheck,
-  Users,
-} from "lucide-react";
+import { ArrowRight, Check, Minus } from "lucide-react";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/nav";
-import {
-  LocalSalesCockpitMockup,
-  SevenDayResultPanel,
-  SoloDemandSignalMockup,
-} from "@/components/marketing/product-mockups";
+import { SystemProtocol } from "@/components/marketing/system-protocol";
+import { auditStartHref } from "@/lib/checkout";
+import { OfferBlock } from "@/components/marketing/offer";
 
-type Audience = "business" | "expert";
-
-type Step = {
-  title: string;
-  desc: string;
-  icon: LucideIcon;
+export const metadata: Metadata = {
+  title: "Как работает Local Sales OS | НейроЭксперт",
+  description: "От сигнала спроса до измеримого действия: наблюдение, интерпретация, приоритет и обучение системы.",
+  alternates: { canonical: "/how-it-works" },
 };
 
-type Mechanism = {
-  title: string;
-  promise: string;
-  icon: LucideIcon;
-  sources: string[];
-  checks: string[];
-  tools: string[];
-  output: string[];
-  metrics: string[];
-};
+const layers = [
+  ["01", "Наблюдает", "Карты, поиск, отзывы, страницы, звонки и формы", "Собирает факты, а не ощущения"],
+  ["02", "Связывает", "Спрос → точка входа → действие → исход", "Находит место разрыва"],
+  ["03", "Решает", "Оценивает влияние, скорость и стоимость исправления", "Выдаёт один приоритет"],
+  ["04", "Учится", "Сравнивает действие с кликами, обращениями и продажами", "Обновляет следующий шаг"],
+] as const;
 
-const businessSteps: Step[] = [
-  {
-    title: "Собираем точки входа",
-    desc: "Карты, 2ГИС, Авито, сайт, отзывы, мессенджеры, звонки, формы, конкуренты и ответы нейросетей.",
-    icon: Search,
-  },
-  {
-    title: "Выбираем точки роста",
-    desc: "Показываем, где конкурент выглядит сильнее, где карточка слабая, где нет ответа и какие обращения можно вернуть в продажу.",
-    icon: MapPinned,
-  },
-  {
-    title: "Собираем страницы под спрос",
-    desc: "Услуги, районы, цены и вопросы клиентов превращаем в страницы для поиска, нейросетей, звонка и записи.",
-    icon: FileText,
-  },
-  {
-    title: "Смотрим поведение клиентов",
-    desc: "Фиксируем просмотры, клики, заявки, звонки и повторяющиеся вопросы, чтобы понять, где интерес не стал продажей.",
-    icon: BarChart3,
-  },
-  {
-    title: "Превращаем выводы в задачи",
-    desc: "Владелец получает не длинный отчёт, а список действий на сегодня: фото, услуги, цены, отзывы, оффер, перезвон.",
-    icon: ListChecks,
-  },
-  {
-    title: "Измеряем изменения",
-    desc: "Каждую неделю видно, что исправлено, где выросла видимость, какие обращения вернули и что усиливать дальше.",
-    icon: BarChart3,
-  },
-];
+const guardrails = [
+  ["Не генерирует работу ради работы", "Каждая задача связана с наблюдаемым сигналом и ожидаемым результатом."],
+  ["Не прячет решение в дашборде", "Собственник видит приоритет, причину и способ проверить эффект."],
+  ["Не масштабирует слабую страницу", "Без спроса, оффера, доказательств и метрик публикация не проходит gate."],
+] as const;
 
-const businessModules: Mechanism[] = [
-  {
-    title: "Аудит видимости",
-    promise: "Показывает, где бизнес уже проигрывает выбор клиента: в картах, отзывах, Авито, поиске, нейросетях и обработке обращений.",
-    icon: Radar,
-    sources: ["Яндекс Карты", "2ГИС", "Авито", "сайт", "отзывы", "формы и мессенджеры", "поиск", "ответы нейросетей"],
-    checks: ["заполненность услуг, цен и рубрик", "свежесть фото и отзывов", "ответы на негатив", "наличие FAQ и оффера", "ошибки контактов и кнопок записи"],
-    tools: ["чек-лист карточек", "сравнение с конкурентами", "ручная проверка площадок", "снимки доказательств", "таблица каналов привлечения"],
-    output: ["индекс локальной видимости", "карта слабых мест", "приоритеты на 7 дней", "план исправлений на 30 дней"],
-    metrics: ["заполненность карточек", "количество свежих отзывов", "рейтинг", "видимость по запросам", "клики по звонку/маршруту/записи"],
-  },
-  {
-    title: "Конкуренты и нейросети",
-    promise: "Объясняет, почему клиент видит и слышит о конкурентах раньше, чем о вас.",
-    icon: Users,
-    sources: ["локальная выдача", "карты", "карточки конкурентов", "ответы ChatGPT, Алисы, Perplexity, YandexGPT и GigaChat", "публичные страницы конкурентов", "рекламные офферы"],
-    checks: ["кто выше по запросам “рядом”, “цена”, “срочно”", "кого чаще называют нейросети", "какие аргументы и офферы сильнее", "где у конкурентов больше доверия", "какие услуги закрыты лучше"],
-    tools: ["матрица конкурентов", "проверка нейросетевых ответов", "гео-запросы по районам", "разбор офферов", "лёгкая рекламная разведка"],
-    output: ["топ конкурентов", "причины отставания", "что нужно усилить в карточках, страницах и отзывах", "гипотезы офферов"],
-    metrics: ["место в выдаче", "доля упоминаний в нейросетях", "рейтинг и отзывы конкурентов", "сила оффера", "покрытие услуг"],
-  },
-  {
-    title: "Страницы под локальный спрос",
-    promise: "Создаёт новые точки входа для клиентов: не статьи ради SEO, а страницы под реальные услуги, районы, цены и вопросы перед обращением.",
-    icon: FileText,
-    sources: ["локальные запросы", "услуги и цены бизнеса", "районы и филиалы", "FAQ клиентов", "отзывы", "офферы конкурентов", "трендовые сигналы"],
-    checks: ["есть ли подтверждённый спрос", "какая услуга и район за ним стоят", "какой призыв к действию нужен", "какие отзывы и доказательства добавить", "нужна ли ручная проверка перед публикацией"],
-    tools: ["генератор структуры страницы", "разметка для поисковиков", "FAQ-блок", "редактор страницы", "проверка качества и уникальности"],
-    output: ["страница услуги/района/вопроса", "SEO-заголовок", "мета-описание", "FAQ", "кнопка звонка/записи/маршрута", "задача на обновление"],
-    metrics: ["индексация", "просмотры", "клики по звонку", "клики по записи", "заявки", "упоминания в нейросетях"],
-  },
-  {
-    title: "Сигналы поведения клиентов",
-    promise: "Показывает, где клиент уже проявил интерес, но не дошёл до заявки, записи или продажи.",
-    icon: BarChart3,
-    sources: ["события страниц", "клики по звонку", "клики по записи", "формы", "мессенджеры", "телефония", "статусы лидов", "повторяющиеся вопросы"],
-    checks: ["какие страницы смотрят без заявки", "какие кнопки видят, но не нажимают", "где кликают по телефону без продажи", "какие вопросы повторяются", "какие заявки зависли без ответа"],
-    tools: ["сбор событий", "воронка страницы", "правила поведения", "ИИ-разбор причин", "генератор задач роста"],
-    output: ["сигналы поведения", "задачи на усиление страницы", "задачи на звонки и формы", "задачи на FAQ", "задачи на повторное касание"],
-    metrics: ["просмотры", "клики", "доля кликов", "заявки", "скорость ответа", "возвращённые обращения"],
-  },
-  {
-    title: "Ежедневные задачи",
-    promise: "Превращает аудит в работу: владелец видит не “маркетинг вообще”, а конкретные действия на сегодня.",
-    icon: ClipboardCheck,
-    sources: ["карта каналов привлечения", "сравнение конкурентов", "динамика отзывов", "новые вопросы клиентов", "данные по обращениям"],
-    checks: ["что быстрее влияет на обращения", "какая задача имеет доказательство выполнения", "кто отвечает", "какой срок", "какую метрику смотрим после выполнения"],
-    tools: ["приоритизация задач", "недельный план", "статусы выполнения", "ответственные", "шаблоны описаний, FAQ, ответов и офферов"],
-    output: ["5-10 задач на неделю", "задачи на сегодня", "ожидаемый эффект", "доказательство выполнения", "недельный отчёт"],
-    metrics: ["выполненные задачи", "изменение карточек", "новые отзывы", "обновлённые услуги", "клики и обращения после правок"],
-  },
-  {
-    title: "Отзывы и доверие",
-    promise: "Строит доверие там, где клиент сравнивает бизнес перед звонком или записью.",
-    icon: Star,
-    sources: ["Яндекс Карты", "2ГИС", "отзовики", "сообщения клиентов", "CRM или таблица клиентов после услуги"],
-    checks: ["где отзывов мало", "какой негатив не закрыт", "где нет ответа владельца", "какие услуги не подтверждены отзывами", "кого просить об отзыве первым"],
-    tools: ["сценарий запроса отзыва", "маршрут довольный/недовольный", "шаблоны ответов", "список клиентов для запроса", "график обновления отзывов"],
-    output: ["план сбора отзывов", "ответы на негатив", "список площадок", "шаблоны сообщений клиентам"],
-    metrics: ["свежие отзывы", "средний рейтинг", "скорость ответа на отзыв", "доля негатива без реакции", "упоминания услуг в отзывах"],
-  },
-  {
-    title: "Повторные касания",
-    promise: "Возвращает в работу обращения, которые уже были рядом: пропущенные звонки, поздние ответы, забытые переписки и клиентов без возврата.",
-    icon: PhoneMissed,
-    sources: ["телефония", "CRM", "формы сайта", "мессенджеры", "таблицы обращений", "старые обращения", "администраторские заметки"],
-    checks: ["кому не ответили", "кто ждал слишком долго", "кому не перезвонили", "кто получил цену и пропал", "какое обращение ещё можно вернуть"],
-    tools: ["реестр обращений для возврата", "оценка коммерческого потенциала", "сценарии повторного касания", "задачи на перезвон", "недельный разбор возврата"],
-    output: ["список возврата", "оценка потенциала в рублях", "скрипты сообщений", "задачи администраторам"],
-    metrics: ["обращения для возврата", "средний чек", "скорость ответа", "возвращённые клиенты", "потенциал выручки"],
-  },
-];
+const horizons = [
+  ["07", "дней", "Первый разрыв найден", "есть список быстрых действий"],
+  ["30", "дней", "Контур запущен", "источники и события связаны"],
+  ["90", "дней", "Система учится", "видно, что масштабировать"],
+] as const;
 
-const expertModules: Mechanism[] = [
-  {
-    title: "Карта спроса",
-    promise: "Находит не темы “для контента”, а реальные вопросы людей, где есть шанс на консультацию, запись или обращение.",
-    icon: Radar,
-    sources: ["Wordstat/XMLRiver", "Яндекс Кью через SerpAPI", "поисковые подсказки", "похожие вопросы", "ответы нейросетей", "база вопросов по 20 нишам"],
-    checks: ["сколько людей ищут вопрос", "есть ли коммерческое намерение", "насколько слаб текущий ответ", "есть ли экспертные страницы в выдаче", "видны ли конкуренты"],
-    tools: ["расширение запроса", "фильтрация LLM", "проверка 4 нейросетевых платформ", "маркеры слабого ответа", "оценка возможности спроса"],
-    output: ["карточка темы", "спрос в месяц", "намерение пользователя", "балл слабости ответа", "рекомендованное действие"],
-    metrics: ["estimated_monthly_volume", "search_intent", "gap_score", "opportunity_score", "приоритет темы"],
-  },
-  {
-    title: "Голос эксперта",
-    promise: "Сохраняет авторскую экспертизу: материал строится не из пересказа интернета, а из живого ответа специалиста.",
-    icon: Mic2,
-    sources: ["голосовое сообщение в Telegram", "запись на сайте", "дозапись после уточняющих вопросов", "профиль эксперта", "кейсы и ограничения из практики"],
-    checks: ["есть ли конкретные примеры", "понятен ли ответ человеку", "есть ли ограничения и честные нюансы", "достаточно ли фактуры для страницы", "нужно ли задать уточняющий вопрос"],
-    tools: ["Telegram-бот", "Web Audio", "Whisper", "Yandex SpeechKit", "модуль уточняющих вопросов", "режим минимальной обработки"],
-    output: ["транскрипт", "структура ответа", "авторские цитаты", "фактура для FAQ", "основа будущей страницы"],
-    metrics: ["длина ответа", "качество транскрипта", "наличие примеров", "доля авторского текста", "готовность к публикации"],
-  },
-  {
-    title: "Страница под вопрос",
-    promise: "Превращает экспертный ответ в страницу, которую понимают человек, поиск и нейросети.",
-    icon: FileText,
-    sources: ["транскрипт эксперта", "карточка спроса", "профиль специалиста", "источники и уточнения", "FAQ из подзапросов"],
-    checks: ["отвечает ли страница на один конкретный вопрос", "есть ли E-E-A-T", "понятна ли кнопка записи", "есть ли FAQ, таблицы и короткое резюме", "нет ли пустых обещаний"],
-    tools: ["Next.js SSR", "Schema.org Article/Person/FAQPage/BreadcrumbList", "генератор FAQ", "редактор страницы", "проверка структуры"],
-    output: ["публичная страница", "SEO-заголовок", "мета-описание", "FAQ", "кнопка записи/разбора", "аудиооснова"],
-    metrics: ["индексация", "показы", "CTR", "клики по записи", "обращения со страницы"],
-  },
-  {
-    title: "Публикация и распространение",
-    promise: "Даёт странице первые точки входа: индексацию, внутренние ссылки, кросспост и доступность для поисковых и нейросетевых систем.",
-    icon: Megaphone,
-    sources: ["sitemap", "robots.txt", "профиль эксперта", "каталог экспертов", "страницы ниш", "Telegram/VK/Дзен/Хабр/Яндекс Кью"],
-    checks: ["страница доступна без авторизации", "есть внутренняя перелинковка", "есть разметка", "отправлена ли страница в поисковые системы", "нужен ли кросспост"],
-    tools: ["динамический sitemap", "submit-sitemap jobs", "Google/Yandex/Bing webmaster", "кросспостинг", "нишевые каналы"],
-    output: ["опубликованная страница", "запись в sitemap", "материалы для каналов", "уведомление эксперту", "связанные страницы"],
-    metrics: ["статус публикации", "индексация", "первые показы", "переходы из каналов", "внутренние переходы"],
-  },
-  {
-    title: "Аналитика результата",
-    promise: "Показывает не “мы что-то опубликовали”, а путь от спроса к просмотрам, кликам по записи и обращениям.",
-    icon: BarChart3,
-    sources: ["page_events", "leads", "citation_checks", "serp_positions", "cwv_metrics", "content_packages"],
-    checks: ["какие страницы получают показы", "где есть клики по записи", "появился ли эксперт в ответах нейросетей", "какие темы нужно обновить", "какие страницы стоит усилить"],
-    tools: ["воронка результата", "отслеживание цитирований", "мониторинг поисковых позиций", "Trust Score", "задачи на обновление"],
-    output: ["личный кабинет", "топ страниц", "рекомендации", "сигналы обновления", "сравнение с конкурентами"],
-    metrics: ["просмотры", "клики по записи", "обращения", "Share of Voice", "позиции", "Trust Score"],
-  },
-];
-
-const expertSteps: Step[] = [
-  {
-    title: "Находим спрос",
-    desc: "Система собирает вопросы людей из поиска, Яндекс Кью, подсказок и ответов нейросетей.",
-    icon: Search,
-  },
-  {
-    title: "Выбираем темы ближе к записи",
-    desc: "Отделяем информационные вопросы от тех, где человек уже выбирает специалиста, цену, услугу или формат помощи.",
-    icon: TrendingUp,
-  },
-  {
-    title: "Записываем голос эксперта",
-    desc: "Эксперт наговаривает ответ в Telegram или на сайте. Содержание остаётся авторским: кейсы, опыт, ограничения, нюансы.",
-    icon: Mic2,
-  },
-  {
-    title: "Собираем страницу под вопрос",
-    desc: "Из ответа получается страница для поиска и нейросетей: структура, FAQ, таблицы, источники и кнопка записи.",
-    icon: FileText,
-  },
-  {
-    title: "Распространяем и измеряем",
-    desc: "Страница индексируется, получает первые показы, клики и обращения. Сильные темы обновляются и продвигаются дальше.",
-    icon: Megaphone,
-  },
-];
-
-const resultRows = [
-  ["0-7 дней", "аудит, карта спроса, первые задачи", "понятно, откуда привлекать клиентов"],
-  ["7-30 дней", "исправления, страницы, отзывы, повторные касания", "запущены быстрые точки входа"],
-  ["30-90 дней", "динамика видимости, клики, обращения, сильные темы", "видно, что усиливать дальше"],
-];
-
-const antiSeoLoop = [
-  ["1", "Подтверждённый спрос", "Есть источник, intent, услуга, регион или ниша, конкурентный контекст и будущий CTA."],
-  ["2", "Quality Gate", "Страница не публикуется без пользы, фактов, авторской экспертизы, FAQ, CTA и метрик."],
-  ["3", "Измерение", "Считаем индексацию, показы, клики, CTA views, CTA clicks, заявки, звонки и исход заявки."],
-  ["4", "Решение 2-4 недели", "Страница получает статус: работает, доработать, объединить, обновить или архивировать."],
-];
-
-const diagnosticRows = [
-  ["Показы есть, кликов нет", "переписать title, description, H1 и оффер"],
-  ["Клики есть, заявок нет", "усилить CTA, цену, FAQ, отзывы и доверие"],
-  ["CTA кликают, продаж нет", "проверить форму, телефон, скорость ответа и follow-up"],
-  ["Показов нет", "проверить спрос, индексацию, перелинковку или объединить страницу"],
-];
-
-function AudienceSwitch({ audience, onChange }: { audience: Audience; onChange: (value: Audience) => void }) {
+export default function HowItWorksPage() {
   return (
-    <div className="mx-auto mt-8 grid max-w-xl gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-sm sm:grid-cols-2">
-      {[
-        ["business", "Для бизнеса", "карты, отзывы, обращения, продажи"],
-        ["expert", "Для эксперта", "спрос, ответы, страницы, запись"],
-      ].map(([value, label, hint]) => {
-        const active = audience === value;
-        return (
-          <button
-            key={value}
-            type="button"
-            onClick={() => onChange(value as Audience)}
-            className={`rounded-md px-5 py-4 text-left transition ${
-              active
-                ? "bg-blue-700 text-white"
-                : "text-slate-700 hover:bg-blue-50 hover:text-blue-800"
-            }`}
-          >
-            <span className="block text-sm font-bold">{label}</span>
-            <span className={`mt-1 block text-xs ${active ? "text-blue-100" : "text-slate-500"}`}>{hint}</span>
-          </button>
-        );
-      })}
+    <div className="sr-site hiw-site">
+      <MarketingHeader />
+      <main>
+        <SystemProtocol />
+        <OfferBlock
+          artifact="Карта спроса с приоритетами, план работ и пакеты сопровождения"
+          price="от 7 900 ₽"
+          term="3–7 дней / 30 дней"
+          cta={{ href: auditStartHref(), label: "Заказать карту спроса" }}
+        />
+        <ArchitectureSection />
+        <GuardrailSection />
+        <HorizonSection />
+        <SystemCta />
+      </main>
+      <MarketingFooter />
     </div>
   );
 }
 
-function StepList({ steps }: { steps: Step[] }) {
+function ArchitectureSection() {
   return (
-    <div className="space-y-3">
-      {steps.map((step, index) => {
-        const Icon = step.icon;
-        return (
-          <div key={step.title} className="grid gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-[64px_1fr]">
-            <div className="flex h-12 w-12 items-center justify-center rounded-md bg-slate-100 text-slate-700 ring-1 ring-slate-200">
-              <Icon className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{String(index + 1).padStart(2, "0")}</span>
-                <h3 className="font-semibold text-slate-950">{step.title}</h3>
-              </div>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">{step.desc}</p>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function MechanismGrid({ modules, accent = "neutral" }: { modules: Mechanism[]; accent?: "neutral" | "blue" }) {
-  const accentClass = accent === "blue" ? "bg-blue-50 text-blue-700 ring-blue-200" : "bg-slate-100 text-slate-700 ring-slate-200";
-  const summaryClass = accent === "blue" ? "text-blue-800" : "text-slate-800";
-  const badgeClass =
-    accent === "blue"
-      ? "border-blue-200 bg-blue-50 text-blue-800"
-      : "border-slate-200 bg-slate-100 text-slate-700";
-
-  return (
-    <div className="space-y-4">
-      {modules.map((item, index) => {
-        const Icon = item.icon;
-        return (
-          <details
-            key={item.title}
-            open={index === 0}
-            className="group rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
-          >
-            <summary className="flex cursor-pointer list-none items-start gap-4">
-              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 ${accentClass}`}>
-                <Icon className="h-5 w-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <h3 className="text-lg font-semibold text-slate-950">{item.title}</h3>
-                  <span className={`w-fit rounded-md border px-2.5 py-1 text-xs font-semibold ${badgeClass}`}>
-                    раскрыть механику
-                  </span>
-                </div>
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">{item.promise}</p>
-              </div>
-            </summary>
-
-            <div className="mt-5 grid gap-4 border-t border-slate-200 pt-5 lg:grid-cols-5">
-              {[
-                ["Источники", item.sources],
-                ["Что проверяем", item.checks],
-                ["Инструменты", item.tools],
-                ["Что получает пользователь", item.output],
-                ["Метрики", item.metrics],
-              ].map(([title, values]) => (
-                <div key={title as string} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                  <h4 className={`text-sm font-semibold ${summaryClass}`}>{title as string}</h4>
-                  <ul className="mt-3 space-y-2">
-                    {(values as string[]).map((value) => (
-                      <li key={value} className="text-sm leading-relaxed text-slate-600">
-                        {value}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          </details>
-        );
-      })}
-    </div>
-  );
-}
-
-function ResultsTable() {
-  return (
-    <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="space-y-3 p-4 sm:hidden">
-        {resultRows.map(([period, work, result]) => (
-          <div key={period} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <p className="text-sm font-semibold text-slate-950">{period}</p>
-            <p className="mt-2 text-sm text-slate-600">{work}</p>
-            <p className="mt-3 rounded-md border border-blue-200 bg-white px-3 py-2 text-sm text-blue-900">
-              {result}
-            </p>
-          </div>
-        ))}
-      </div>
-      <div className="hidden overflow-x-auto sm:block">
-        <div className="min-w-[680px]">
-        <div className="grid grid-cols-[0.7fr_1.2fr_1fr] gap-4 bg-slate-50 px-5 py-4 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-          <span>Период</span>
-          <span>Что делаем</span>
-          <span>Что становится видно</span>
-        </div>
-        {resultRows.map(([period, work, result]) => (
-          <div key={period} className="grid grid-cols-[0.7fr_1.2fr_1fr] gap-4 border-t border-slate-200 px-5 py-4 text-sm">
-            <span className="font-semibold text-slate-950">{period}</span>
-            <span className="text-slate-600">{work}</span>
-            <span className="text-slate-800">{result}</span>
-          </div>
-        ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function AntiSeoFrameworkSection() {
-  return (
-    <section className="border-y border-slate-200 bg-white py-14">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="mb-8 max-w-3xl">
-          <p className="text-sm font-semibold text-blue-700">Anti-SEO-Failure Framework</p>
-          <h2 className="mt-3 text-3xl font-bold text-slate-950">
-            Система не считает страницу результатом, пока нет пути к заявке
-          </h2>
-          <p className="mt-3 text-slate-600">
-            Главный предохранитель — измерять не объём контента, а цепочку:
-            спрос → точка входа → действие клиента → заявка, продажа или задача роста.
-          </p>
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-4">
-          {antiSeoLoop.map(([number, title, desc]) => (
-            <div key={title} className="rounded-lg border border-slate-200 bg-slate-50 p-5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-md bg-blue-700 text-sm font-bold text-white">
-                {number}
-              </span>
-              <h3 className="mt-4 text-lg font-semibold text-slate-950">{title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">{desc}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-8 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-6">
-            <h3 className="text-xl font-bold text-slate-950">Правило продукта</h3>
-            <p className="mt-3 leading-relaxed text-amber-900">
-              Если страница не ведёт к действию клиента, это не актив. Это просто контент.
-              Поэтому слабая страница дорабатывается, объединяется или убирается.
-            </p>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-6">
-            <h3 className="text-xl font-bold text-slate-950">Диагностика вместо отчёта</h3>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {diagnosticRows.map(([signal, task]) => (
-                <div key={signal} className="rounded-md border border-slate-200 bg-white p-4">
-                  <p className="text-sm font-semibold text-slate-950">{signal}</p>
-                  <p className="mt-1 text-sm text-slate-600">{task}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+    <section className="hiw-architecture">
+      <div className="hiw-section-head"><p className="sr-eyebrow">01 / АРХИТЕКТУРА РЕШЕНИЯ</p><h2>Четыре слоя. Один непрерывный цикл.</h2><p>Данные не заканчиваются отчётом. Каждый слой передаёт следующему контекст, а результат возвращается в систему новым сигналом.</p></div>
+      <div className="hiw-layer-list">
+        <div className="hiw-layer-labels"><span>Слой</span><span>Что читает</span><span>Что отдаёт</span></div>
+        {layers.map(([index, title, input, output]) => <article key={index}><span>{index}</span><h3>{title}</h3><p>{input}</p><div><ArrowRight /><strong>{output}</strong></div></article>)}
       </div>
     </section>
   );
 }
 
-export default function HowItWorksPage() {
-  const [audience, setAudience] = useState<Audience>("business");
-  const isBusiness = audience === "business";
-
+function GuardrailSection() {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-950">
-      <MarketingHeader />
+    <section className="hiw-guardrails">
+      <div><p className="sr-eyebrow">02 / ОГРАНИЧЕНИЯ</p><h2>Сильная система знает, чего не делать.</h2></div>
+      <div className="hiw-guardrail-list">
+        {guardrails.map(([title, copy], index) => <article key={title}><span>0{index + 1}</span><Minus /><div><h3>{title}</h3><p>{copy}</p></div></article>)}
+      </div>
+    </section>
+  );
+}
 
-      <section className="border-b border-blue-100 bg-gradient-to-br from-blue-50 via-white to-emerald-50 py-12 sm:pb-12 sm:pt-16">
-        <div className="mx-auto max-w-4xl px-4 text-center sm:px-6">
-          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-blue-700">
-            Два сценария в одном проекте
-          </p>
-          <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-5xl">
-            Как спрос превращается в заявки для бизнеса и экспертов
-          </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-700">
-            Выберите свой сценарий. Для бизнеса мы показываем, откуда быстрее привлекать клиентов.
-            Для эксперта — какие вопросы уже ведут к записи и как превратить опыт в страницы,
-            которые находят люди и нейросети. Общая формула: спрос → точка входа →
-            действие клиента → заявка, запись или продажа.
-          </p>
-          <AudienceSwitch audience={audience} onChange={setAudience} />
-        </div>
-      </section>
+function HorizonSection() {
+  return (
+    <section className="hiw-horizons">
+      <div className="hiw-section-head"><p className="sr-eyebrow">03 / ГОРИЗОНТ РЕЗУЛЬТАТА</p><h2>Сначала ясность. Затем система. Потом масштаб.</h2><p>Срок зависит от данных и скорости внедрения. Логика движения остаётся одинаковой.</p></div>
+      <div className="hiw-horizon-line">
+        {horizons.map(([value, unit, title, copy]) => <article key={value}><div><strong>{value}</strong><span>{unit}</span></div><i /><h3>{title}</h3><p>{copy}</p></article>)}
+      </div>
+    </section>
+  );
+}
 
-      {isBusiness ? (
-        <>
-          <section className="py-14">
-            <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[0.88fr_1.12fr] lg:items-start">
-              <div>
-                <p className="text-sm font-semibold text-blue-700">Для бизнеса</p>
-                <h2 className="mt-3 text-3xl font-bold text-slate-950">Система локальных продаж</h2>
-                <p className="mt-4 leading-relaxed text-slate-600">
-                  Главная задача — не выдать владельцу ещё один сложный отчёт,
-                  а показать конкретные места, где бизнес может быстрее получить клиентов:
-                  видимость, отзывы, конкуренты, нейросети, звонки и переписки.
-                </p>
-                <div className="mt-7">
-                  <StepList steps={businessSteps} />
-                </div>
-              </div>
-              <LocalSalesCockpitMockup />
-            </div>
-          </section>
-
-          <section className="py-14">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6">
-              <div className="mb-8 max-w-3xl">
-                <p className="text-sm font-semibold text-blue-700">5 рабочих модулей</p>
-                <h2 className="mt-3 text-3xl font-bold text-slate-950">
-                  За счёт чего система двигает обращения и продажи
-                </h2>
-                <p className="mt-3 text-slate-600">
-                  Ниже не обещания, а механика: какие источники проверяются,
-                  какие инструменты используются, что получает собственник и по каким метрикам видно движение.
-                </p>
-              </div>
-              <MechanismGrid modules={businessModules} />
-            </div>
-          </section>
-
-          <section className="py-14">
-            <div className="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
-              <SevenDayResultPanel />
-              <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="flex items-center gap-2 text-sm font-semibold text-blue-700">
-                  <CircleDollarSign className="h-4 w-4" />
-                  Почему это понятно собственнику
-                </div>
-                <h3 className="mt-3 text-2xl font-bold text-slate-950">
-                  Каждый вывод связан с выручкой
-                </h3>
-                <p className="mt-4 leading-relaxed text-slate-600">
-                  Мы не говорим “у вас слабый маркетинг”. Мы показываем:
-                  карточка не заполнена, нейросети советуют конкурента,
-                  12 обращений не получили повторного контакта, а средний чек
-                  показывает коммерческий потенциал возврата.
-                </p>
-                <div className="mt-6 space-y-3">
-                  {["где клиент не увидел бизнес", "где клиент выбрал конкурента", "какие обращения можно вернуть"].map((item) => (
-                    <div key={item} className="flex items-center gap-3 text-sm text-slate-700">
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-green-700" />
-                      {item}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="py-14">
-            <div className="mx-auto max-w-5xl px-4 sm:px-6">
-              <ResultsTable />
-            </div>
-          </section>
-
-          <section className="py-16">
-            <div className="mx-4 rounded-lg border border-slate-200 bg-white px-4 py-8 text-center shadow-sm sm:mx-auto sm:max-w-4xl sm:px-6 sm:py-10">
-              <h2 className="text-3xl font-bold text-slate-950">Начните с аудита продаж</h2>
-              <p className="mx-auto mt-4 max-w-2xl text-slate-600">
-                За первые 7 дней станет видно, откуда бизнесу быстрее привлекать клиентов,
-                что исправить первым и какие обращения ещё можно вернуть.
-              </p>
-              <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-                <Link href="/for-business" className="inline-flex items-center justify-center gap-2 rounded-md bg-blue-700 px-7 py-3 font-semibold text-white transition hover:bg-blue-800">
-                  Посмотреть сценарий для бизнеса
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-                <Link href="/pricing" className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-7 py-3 font-semibold text-slate-950 transition hover:bg-slate-100">
-                  Смотреть тарифы
-                </Link>
-              </div>
-            </div>
-          </section>
-        </>
-      ) : (
-        <>
-          <section className="py-14">
-            <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-              <div>
-                <p className="text-sm font-semibold text-blue-700">Для эксперта</p>
-                <h2 className="mt-3 text-3xl font-bold text-slate-950">
-                  Спрос превращается в страницу, страница — в запись
-                </h2>
-                <p className="mt-4 leading-relaxed text-slate-600">
-                  Эксперту не нужно угадывать темы для контента. Система показывает,
-                  что люди уже спрашивают, где ответы слабые, и помогает быстро
-                  собрать страницу на основе живого экспертного голоса.
-                </p>
-                <div className="mt-7">
-                  <StepList steps={expertSteps} />
-                </div>
-              </div>
-              <SoloDemandSignalMockup />
-            </div>
-          </section>
-
-          <section className="py-14">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6">
-              <div className="mb-8 max-w-3xl">
-                <p className="text-sm font-semibold text-blue-700">5 рабочих блоков</p>
-                <h2 className="mt-3 text-3xl font-bold text-slate-950">
-                  За счёт чего эксперт получает видимость и записи
-                </h2>
-                <p className="mt-3 text-slate-600">
-                  Здесь раскрыта внутренняя логика платформы: от сбора массовых запросов
-                  до страницы, индексации, упоминаний в нейросетях и кликов по записи.
-                </p>
-              </div>
-              <MechanismGrid modules={expertModules} accent="blue" />
-            </div>
-          </section>
-
-          <section className="py-14">
-            <div className="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-3">
-              {[
-                ["Что ищут", "вопросы, цены, сравнения, симптомы, ситуации выбора"],
-                ["Что публикуем", "страницы с ответом, FAQ, таблицами, источниками и кнопкой записи"],
-                ["Что измеряем", "показы, клики, записи, позиции и упоминания в нейросетях"],
-              ].map(([title, desc]) => (
-                <div key={title} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-blue-50 text-blue-700 ring-1 ring-blue-200">
-                    <UserCheck className="h-5 w-5" />
-                  </div>
-                  <h3 className="mt-4 text-xl font-semibold text-slate-950">{title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{desc}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="py-14">
-            <div className="mx-auto max-w-5xl px-4 sm:px-6">
-              <ResultsTable />
-            </div>
-          </section>
-
-          <section className="py-16">
-            <div className="mx-4 rounded-lg border border-slate-200 bg-white px-4 py-8 text-center shadow-sm sm:mx-auto sm:max-w-4xl sm:px-6 sm:py-10">
-              <h2 className="text-3xl font-bold text-slate-950">Начните с карты спроса</h2>
-              <p className="mx-auto mt-4 max-w-2xl text-slate-600">
-                Вы увидите вопросы, по которым люди уже ищут помощь,
-                и поймёте, какие страницы стоит запускать первыми.
-              </p>
-              <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-                <Link href="/audit" className="inline-flex items-center justify-center gap-2 rounded-md bg-blue-700 px-7 py-3 font-semibold text-white transition hover:bg-blue-800">
-                  Получить карту спроса
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-                <Link href="/for-experts" className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-7 py-3 font-semibold text-slate-950 transition hover:bg-slate-100">
-                  Подробнее для экспертов
-                </Link>
-              </div>
-            </div>
-          </section>
-        </>
-      )}
-
-      <AntiSeoFrameworkSection />
-
-      <MarketingFooter />
-    </div>
+function SystemCta() {
+  return (
+    <section className="hiw-cta">
+      <div><p className="sr-eyebrow">Запустить первый цикл</p><h2>Начнём с сигнала, который уже есть у вашего бизнеса.</h2></div>
+      <div><Link className="sr-button sr-button-light" href="/for-business">Получить диагностику <ArrowRight /></Link><span><Check /> без интеграций на первом этапе</span></div>
+    </section>
   );
 }

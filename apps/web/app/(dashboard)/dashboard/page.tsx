@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import { Card, CardTitle, CardValue } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Circle } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, Circle, Gauge, Layers3, Target, Users } from "lucide-react";
 import { buildResultLoopSummary } from "shared";
 
 function getSupabase() {
@@ -39,12 +37,25 @@ async function getDashboardData(userId: string) {
   ]);
 
   const profile = profileResult.data;
+  const queryErrors = [
+    pubResult,
+    leadsResult,
+    profileResult,
+    ordersResult,
+    recentLeadsResult,
+    contentListResult,
+    pageMetricsResult,
+    demandCountResult,
+    resultLoopResult,
+  ].filter((result) => result.error).map((result) => result.error?.message || "Неизвестная ошибка источника данных");
   const hasProfile = !!(profile?.full_name && profile?.bio && profile?.qualification);
   const contentIds = (contentListResult.data ?? []).map((item) => item.id as string);
   const totalContent = contentIds.length;
-  const { data: indexedRows } = contentIds.length
+  const { data: indexedRows, error: indexedError } = contentIds.length
     ? await supabase.from("serp_positions").select("content_id").in("content_id", contentIds)
-    : { data: [] };
+    : { data: [], error: null };
+
+  if (indexedError) queryErrors.push(indexedError.message || "Неизвестная ошибка источника индексации");
 
   const indexedCount = new Set((indexedRows ?? []).map((row) => row.content_id as string)).size;
   const pageMetrics = pageMetricsResult.data ?? [];
@@ -76,6 +87,13 @@ async function getDashboardData(userId: string) {
     recentLeads: recentLeadsResult.data ?? [],
     hasProfile,
     totalContent,
+    queryErrors,
+    trustBreakdown: [
+      ["Proof", hasProfile ? 100 : 0],
+      ["AI visibility", totalContent ? Math.round(Math.min(100, (indexedCount / Math.max(totalContent, 1)) * 100)) : 0],
+      ["Demand", Math.min(100, (demandCountResult.count ?? 0) * 10)],
+      ["Conversion", Math.min(100, (leadsResult.count ?? 0) * 12)],
+    ],
     resultLoop,
   };
 }
@@ -87,26 +105,37 @@ export default async function DashboardPage() {
   if (!user) return null;
 
   const data = await getDashboardData(user.id);
+  const activeLoopStage = { demand: 0, action: 1, traffic: 2, lead: 3, revenue: 5 }[data.resultLoop.stage] ?? 0;
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
+    <div className="db-page">
+      <header className="db-hero">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Дашборд результата</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Воронка: спрос → страница → индексация → трафик → клики → заявки.
-          </p>
+          <p className="db-kicker"><span /> WORKSPACE / 01 · RESULT ROOM</p>
+          <h1 className="db-title">Сигналы,<br /><em>которые двигают</em><br />практику.</h1>
+          <p className="db-lede">Одна спокойная панель для спроса, контента и заявок. Сегодня важен следующий наблюдаемый шаг.</p>
         </div>
-        <Link href="/orders" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-          Выбрать возможность спроса
-        </Link>
-      </div>
+        <div className="db-hero-aside">
+          <div><span className="db-online-dot" /> Signal Room online</div>
+          <Link href="/orders" className="db-action">Найти возможность <ArrowUpRight /></Link>
+        </div>
+      </header>
+
+      {data.queryErrors.length > 0 && (
+        <section className="db-data-warning" role="status" aria-live="polite">
+          <span>PARTIAL SIGNAL</span>
+          <p>Часть источников временно недоступна. Показатели ниже могут быть неполными.</p>
+          <small>{data.queryErrors.length} источника требуют повторной синхронизации.</small>
+        </section>
+      )}
 
       {/* Onboarding checklist — hide when all steps done */}
       {(!data.hasProfile || data.totalContent === 0 || data.publishedCount === 0) && (
-        <div className="bg-white rounded-xl border border-blue-200 p-6 mb-8">
-          <h2 className="font-semibold text-gray-900 mb-3">Начните работу</h2>
-          <div className="space-y-2">
+        <section className="db-onboarding">
+          <div className="db-panel-kicker">FIRST SIGNAL / SETUP</div>
+          <h2>Соберите рабочий контур.</h2>
+          <p>Пять шагов до первого устойчивого цикла спрос → ответ → заявка.</p>
+          <div className="db-checklist">
             {[
               { done: true, label: "Зарегистрироваться", href: "" },
               { done: data.hasProfile, label: "Заполнить профиль", href: "/profile" },
@@ -114,124 +143,93 @@ export default async function DashboardPage() {
               { done: data.totalContent > 0, label: "Записать первый ответ", href: "/content/new" },
               { done: data.publishedCount > 0, label: "Опубликовать страницу", href: "/content" },
             ].map((step) => (
-              <div key={step.label} className="flex items-center gap-3">
+              <div key={step.label} className="db-check-item">
                 {step.done ? (
-                  <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                  <CheckCircle2 />
                 ) : (
-                  <Circle className="w-5 h-5 text-gray-300 flex-shrink-0" />
+                  <Circle />
                 )}
                 {step.done || !step.href ? (
-                  <span className={`text-sm ${step.done ? "text-gray-500 line-through" : "text-gray-900"}`}>{step.label}</span>
+                  <span className={step.done ? "is-done" : ""}>{step.label}</span>
                 ) : (
-                  <Link href={step.href} className="text-sm text-blue-600 hover:underline">{step.label}</Link>
+                  <Link href={step.href}>{step.label}<ArrowUpRight /></Link>
                 )}
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Metrics */}
-      <div className="grid grid-cols-2 xl:grid-cols-6 gap-4 mb-8">
-        <Card>
-          <CardTitle>Возможности</CardTitle>
-          <CardValue>{data.demandOpportunitiesCount}</CardValue>
-        </Card>
-        <Card>
-          <CardTitle>Страницы</CardTitle>
-          <CardValue>{data.publishedCount}</CardValue>
-        </Card>
-        <Card>
-          <CardTitle>Проиндексировано</CardTitle>
-          <CardValue>{data.indexedCount}</CardValue>
-        </Card>
-        <Card>
-          <CardTitle>Просмотры</CardTitle>
-          <CardValue>{data.pageViews}</CardValue>
-        </Card>
-        <Card>
-          <CardTitle>Клики записи</CardTitle>
-          <CardValue>{data.ctaClicks}</CardValue>
-        </Card>
-        <Card>
-          <CardTitle>Заявки</CardTitle>
-          <CardValue>{data.leadsCount}</CardValue>
-        </Card>
-      </div>
+      <section className="db-stat-grid" aria-label="Ключевые показатели">
+        {[
+          ["01", "Возможности", data.demandOpportunitiesCount, "новые точки спроса"],
+          ["02", "Публичные страницы", data.publishedCount, "готовы встречать трафик"],
+          ["03", "Индексация", data.indexedCount, "страниц в сигнале"],
+          ["04", "Просмотры", data.pageViews, "за всё время"],
+          ["05", "Клики записи", data.ctaClicks, "сигнал намерения"],
+          ["06", "Заявки", data.leadsCount, "контактов в контуре"],
+        ].map(([index, label, value, note]) => (
+          <article className="db-stat" key={String(index)}>
+            <div className="db-stat-head"><span>{index}</span><i /></div>
+            <p>{String(label)}</p>
+            <strong>{String(value)}</strong>
+            <small>{String(note)}</small>
+          </article>
+        ))}
+      </section>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Card>
-          <CardTitle>Trust Score</CardTitle>
-          <CardValue>{data.trustScore.toFixed(1)}</CardValue>
-        </Card>
-        <Card>
-          <CardTitle>Тариф</CardTitle>
-          <CardValue><Badge status={data.tier} /></CardValue>
-        </Card>
-      </div>
+      <section className="db-result-grid">
+        <article className="db-result-panel db-result-main">
+          <header className="db-panel-head"><div><span className="db-panel-kicker">RESULT LOOP / LIVE</span><h2>От спроса к доверию.</h2></div><Gauge /></header>
+          <p className="db-result-copy">{data.resultLoop.bottleneck}</p>
+          <div className="db-flow" aria-label="Цикл результата">
+            {["Спрос", "Ответ", "Страница", "Трафик", "Клик", "Заявка"].map((step, index) => <div key={step} className={index <= activeLoopStage ? "is-live" : ""}><span>0{index + 1}</span><b>{step}</b>{index < 5 && <i />}</div>)}
+          </div>
+          <div className="db-result-foot"><span>Следующий шаг</span><strong>{data.resultLoop.next_action}</strong><b>{data.resultLoop.score}<small>/100</small></b></div>
+        </article>
+        <article className="db-result-panel db-trust-panel">
+          <header className="db-panel-head"><div><span className="db-panel-kicker">TRUST / SIGNAL</span><h2>Trust score</h2></div><Target /></header>
+          <strong className="db-trust-score">{data.trustScore.toFixed(1)}<small>/ 100</small></strong>
+          <div className="db-trust-bars">
+            {data.trustBreakdown.map(([label, value]) => <div key={String(label)}><span>{String(label)}</span><b>{String(value)}</b><i><em style={{ width: `${Number(value)}%` }} /></i></div>)}
+          </div>
+          <Link href="/today" className="db-panel-link">Открыть карту доверия <ArrowUpRight /></Link>
+        </article>
+      </section>
 
-      <div className="bg-white rounded-xl border p-6 mb-8">
-        <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="font-semibold text-gray-900">Result Loop</h2>
-            <p className="mt-1 text-sm text-gray-500">
-              {data.resultLoop.bottleneck}
-            </p>
-          </div>
-          <div className="text-left lg:text-right">
-            <p className="text-2xl font-bold text-gray-900">{data.resultLoop.score}</p>
-            <p className="text-xs text-gray-500">{data.resultLoop.stage}</p>
-          </div>
-        </div>
-        <p className="mt-4 text-sm text-blue-700">{data.resultLoop.next_action}</p>
-      </div>
-
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Recent orders */}
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-gray-900">Возможности спроса</h2>
-            <Link href="/orders" className="text-sm text-blue-600 hover:underline">Все</Link>
-          </div>
+      <section className="db-bottom-grid">
+        <article className="db-list-panel">
+          <header className="db-panel-head"><div><span className="db-panel-kicker">INBOX / DEMAND</span><h2>Возможности спроса</h2></div><Layers3 /></header>
           {data.recentOrders.length === 0 ? (
-            <p className="text-sm text-gray-500">Возможностей спроса пока нет</p>
+            <div className="db-empty"><span>NO SIGNAL</span><p>Возможностей спроса пока нет.</p><Link href="/orders">Открыть сбор спроса <ArrowUpRight /></Link></div>
           ) : (
-            <div className="space-y-3">
+            <div className="db-list">
               {data.recentOrders.map((o: Record<string, unknown>) => (
-                <div key={o.id as string} className="flex items-center justify-between">
-                  <p className="text-sm text-gray-900 truncate flex-1 mr-2">
-                    {(o.questions as Record<string, string>)?.question_text ?? "Без вопроса"}
-                  </p>
-                  <Badge status={o.status as string} />
+                <div key={o.id as string} className="db-list-row">
+                  <span className="db-list-index">↗</span><p>{(o.questions as Record<string, string>)?.question_text ?? "Без вопроса"}</p><span className="db-status">{String(o.status)}</span>
                 </div>
               ))}
             </div>
           )}
-        </Card>
+          <Link href="/orders" className="db-panel-link">Все возможности <ArrowUpRight /></Link>
+        </article>
 
-        {/* Recent leads */}
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-gray-900">Последние заявки</h2>
-            <Link href="/leads" className="text-sm text-blue-600 hover:underline">Все</Link>
-          </div>
+        <article className="db-list-panel">
+          <header className="db-panel-head"><div><span className="db-panel-kicker">INBOX / LEADS</span><h2>Последние заявки</h2></div><Users /></header>
           {data.recentLeads.length === 0 ? (
-            <p className="text-sm text-gray-500">Заявок пока нет</p>
+            <div className="db-empty"><span>AWAITING CONTACT</span><p>Заявок пока нет. Первый ответ создаёт точку входа.</p><Link href="/content/new">Записать ответ <ArrowUpRight /></Link></div>
           ) : (
-            <div className="space-y-3">
+            <div className="db-list">
               {data.recentLeads.map((l: Record<string, unknown>) => (
-                <div key={l.id as string} className="flex items-center justify-between">
-                  <div className="flex-1 mr-2 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{l.client_name as string}</p>
-                    <p className="text-xs text-gray-500 truncate">{(l.client_message as string) || l.client_contact as string}</p>
-                  </div>
-                  <Badge status={l.status as string} />
+                <div key={l.id as string} className="db-list-row">
+                  <span className="db-list-index">↗</span><div><p>{l.client_name as string}</p><small>{(l.client_message as string) || l.client_contact as string}</small></div><span className="db-status">{String(l.status)}</span>
                 </div>
               ))}
             </div>
           )}
-        </Card>
-      </div>
+          <Link href="/leads" className="db-panel-link">Открыть inbox <ArrowUpRight /></Link>
+        </article>
+      </section>
     </div>
   );
 }

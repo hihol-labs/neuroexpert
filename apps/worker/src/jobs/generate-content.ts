@@ -12,6 +12,9 @@ import {
   buildVoiceProfilePrompt,
   formatVoiceProfileForPrompt,
   slugifyLatin,
+  uniqueSlug,
+  getAllowedFormats,
+  packageAllowance,
   type VoiceProfile,
 } from "shared";
 
@@ -78,7 +81,7 @@ async function callLLMJson<T>(prompt: string): Promise<T> {
   }
 }
 
-export async function handleGenerateContent(payload: Record<string, unknown>): Promise<{ content_package_id: string }> {
+export async function handleGenerateContent(payload: Record<string, unknown>): Promise<{ content_package_id: string | null; skipped?: "package_limit" }> {
   const voiceId = payload.voice_recording_id as string ?? payload.voice_id as string;
   const expertId = payload.expert_id as string;
   const orderId = (payload.order_id as string) ?? null;
@@ -101,11 +104,29 @@ export async function handleGenerateContent(payload: Record<string, unknown>): P
 
   const { data: expert } = await supabase
     .from("profiles")
-    .select("full_name, qualification, niche_id, telegram_id, voice_profile")
+    .select("full_name, qualification, niche_id, telegram_id, voice_profile, subscription_tier")
     .eq("id", expertId)
     .single();
 
   if (!expert) throw new Error(`Expert ${expertId} not found`);
+
+  // R-09 (E-AUTO-14): страховка лимита «пакетов в месяц» - входы (сайт/бот) уже отказали, но гонка
+  // двух записей могла пройти. Превышение - не ошибка job (повторы бессмысленны): завершаем с причиной,
+  // а тему возвращаем в accepted (иначе она зависла бы в processing без пакета); запись остаётся.
+  const tier = (expert.subscription_tier as string | null) ?? "free";
+  const allowance = await packageAllowance(supabase, tier, expertId);
+  if (!allowance.allowed) {
+    console.warn(`[generate_content] Package limit reached for expert ${expertId} (tier ${tier}: ${allowance.used}/${allowance.limit}${allowance.error ? `, error: ${allowance.error}` : ""}), skipping`);
+    const stuckOrderId = orderId ?? recording.order_id;
+    if (stuckOrderId) {
+      await supabase.from("orders").update({ status: "accepted", updated_at: new Date().toISOString() })
+        .eq("id", stuckOrderId).eq("expert_id", expertId).eq("status", "processing");
+    }
+    return { content_package_id: null, skipped: "package_limit" };
+  }
+  // Форматы по тарифу: free - Telegram-пост и SEO-статья; cards и reels_script не вызывают LLM.
+  // FAQ генерируется всегда: он часть SEO-страницы (гейт публикации R-07 faq_required), а не отдельный формат.
+  const allowed = new Set(getAllowedFormats(tier));
 
   // Вопрос из заказа
   const effectiveOrderId = orderId ?? recording.order_id;
@@ -152,7 +173,8 @@ export async function handleGenerateContent(payload: Record<string, unknown>): P
   };
 
   const isMinimal = processingMode === "minimal";
-  console.log(`[generate_content] Generating ${isMinimal ? "minimal" : "5 formats"} for expert ${expertId}`);
+  const formatCount = 3 + (allowed.has("cards") ? 1 : 0) + (allowed.has("reels_script") ? 1 : 0);
+  console.log(`[generate_content] Generating ${isMinimal ? "minimal" : `${formatCount} formats`} (tier ${tier}) for expert ${expertId}`);
 
   // Генерация контента
   let telegramPost: string;
@@ -160,6 +182,8 @@ export async function handleGenerateContent(payload: Record<string, unknown>): P
   let cards: Array<{ title: string; text: string }>;
   let reelsScript: string;
   let faq: Array<{ question: string; answer: string }>;
+  const genCards = () => (allowed.has("cards") ? callLLMJson<Array<{ title: string; text: string }>>(buildCardsPrompt(params)) : Promise.resolve([]));
+  const genReels = () => (allowed.has("reels_script") ? callLLM(buildReelsScriptPrompt(params)) : Promise.resolve(""));
 
   if (isMinimal) {
     // Режим минимальной обработки: только чистка текста
@@ -177,20 +201,20 @@ export async function handleGenerateContent(payload: Record<string, unknown>): P
         temperature: 0.3,
       });
     }
-    // Остальные форматы генерируем стандартно
+    // Остальные форматы - по тарифу
     [telegramPost, cards, reelsScript, faq] = await Promise.all([
       callLLM(buildTelegramPostPrompt(params)),
-      callLLMJson<Array<{ title: string; text: string }>>(buildCardsPrompt(params)),
-      callLLM(buildReelsScriptPrompt(params)),
+      genCards(),
+      genReels(),
       callLLMJson<Array<{ question: string; answer: string }>>(buildFaqPrompt(params)),
     ]);
   } else {
-    // Полная обработка: 5 форматов параллельно
+    // Полная обработка: форматы тарифа параллельно
     [telegramPost, seoArticle, cards, reelsScript, faq] = await Promise.all([
       callLLM(buildTelegramPostPrompt(params)),
       callLLM(buildSeoArticlePrompt(params), { maxTokens: 8192 }),
-      callLLMJson<Array<{ title: string; text: string }>>(buildCardsPrompt(params)),
-      callLLM(buildReelsScriptPrompt(params)),
+      genCards(),
+      genReels(),
       callLLMJson<Array<{ question: string; answer: string }>>(buildFaqPrompt(params)),
     ]);
   }
@@ -198,7 +222,9 @@ export async function handleGenerateContent(payload: Record<string, unknown>): P
   // Извлекаем мета из SEO-статьи
   const meta = extractMeta(seoArticle);
   const expertQuotes = extractQuotes(seoArticle, expert.full_name);
-  const slug = slugifyLatin(meta.metaTitle || questionText);
+  // R-07: slug уникален в пределах эксперта (миграция 033) - повторная тема получает суффикс -2, -3…
+  const { data: takenSlugs } = await supabase.from("content_packages").select("slug").eq("expert_id", expertId).not("slug", "is", null);
+  const slug = uniqueSlug(slugifyLatin(meta.metaTitle || questionText), (takenSlugs ?? []).map((r) => r.slug as string));
 
   // Считаем метрики
   const wordCount = seoArticle.split(/\s+/).filter(Boolean).length;
@@ -208,7 +234,7 @@ export async function handleGenerateContent(payload: Record<string, unknown>): P
   const passageCount = headingMatches.length;
 
   // Сохраняем
-  const { data: contentPkg, error: cpErr } = await supabase
+  const insertPackage = (slugValue: string) => supabase
     .from("content_packages")
     .insert({
       expert_id: expertId,
@@ -217,7 +243,7 @@ export async function handleGenerateContent(payload: Record<string, unknown>): P
       question_id: questionId,
       status: "generating",
       title: meta.metaTitle || questionText,
-      slug,
+      slug: slugValue,
       format_telegram_post: telegramPost,
       format_seo_article: seoArticle,
       format_cards: cards,
@@ -242,6 +268,14 @@ export async function handleGenerateContent(payload: Record<string, unknown>): P
     })
     .select("id")
     .single();
+
+  // Гонка двух генераций с одной основой slug: индекс 033 отклоняет вторую вставку (23505) -
+  // пересчитываем суффикс от уже занятых и повторяем, а не роняем job с готовым контентом.
+  let { data: contentPkg, error: cpErr } = await insertPackage(slug);
+  for (let attempt = 0; attempt < 3 && cpErr?.code === "23505"; attempt += 1) {
+    const { data: again } = await supabase.from("content_packages").select("slug").eq("expert_id", expertId).not("slug", "is", null);
+    ({ data: contentPkg, error: cpErr } = await insertPackage(uniqueSlug(slug, (again ?? []).map((r) => r.slug as string))));
+  }
 
   if (cpErr || !contentPkg) {
     throw new Error(`Failed to save content package: ${cpErr?.message}`);

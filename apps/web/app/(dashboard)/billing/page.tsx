@@ -78,7 +78,7 @@ export default function BillingPage() {
         <Card>
           <CardTitle>Действует до</CardTitle>
           <CardValue>
-            {expiresAt ? new Date(expiresAt).toLocaleDateString("ru-RU") : "Бессрочно"}
+            {tier === "free" ? "Бесплатный тариф без срока" : expiresAt ? new Date(expiresAt).toLocaleDateString("ru-RU") : "Бессрочно"}
           </CardValue>
         </Card>
       </div>
@@ -101,15 +101,17 @@ export default function BillingPage() {
       {tier !== "free" && (
         <div className="bg-gray-50 rounded-xl p-6 mb-8">
           <h2 className="font-semibold text-gray-900 mb-2">Управление подпиской</h2>
+          {/* R-09 (E-AUTO-15): автосписаний нет - отменять нечего. Честный текст вместо кнопки, которая ничего не делала. */}
+          <p className="text-sm text-gray-600 mb-4">
+            Подписка не продлевается автоматически: после {expiresAt ? new Date(expiresAt).toLocaleDateString("ru-RU") : "окончания срока"} тариф
+            станет бесплатным. Чтобы продлить, оплатите тариф заново.
+          </p>
           <div className="flex gap-3">
             {tier !== "expert" && (
               <Button variant="primary" onClick={() => subscribe("expert")} disabled={loading}>
                 Перейти на Expert
               </Button>
             )}
-            <Button variant="ghost" onClick={() => subscribe("free")} disabled={loading}>
-              Отменить подписку
-            </Button>
           </div>
         </div>
       )}

@@ -1,4 +1,7 @@
 FROM node:20-alpine AS base
+# Alpine CDN блокируется из ЦОД Hostland (инцидент 2026-08-27, см. web.Dockerfile) —
+# зеркало Яндекса, индексы те же подписанные.
+RUN sed -i 's#https://dl-cdn.alpinelinux.org#https://mirror.yandex.ru/mirrors#' /etc/apk/repositories
 RUN corepack enable && apk add --no-cache chromium
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 

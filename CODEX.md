@@ -8,7 +8,7 @@ This project is adopted into the Product Factory OS workspace methodology.
 - Save significant session context in `.codex-memory/`.
 - Run review and tests before deploy or broad changes.
 - Work on this project must follow `CURRENT_PLAN.md`.
-- At the start of every NeuroExpert task, read `AGENTS.md` and `CURRENT_PLAN.md`, identify the active stage, and work only inside that stage until its gate passes.
+- At the start of every NeuroExpert task, read `CURRENT_PLAN.md` (and `OPERATIONS.md` for deploy/ops), identify the active stage, and work only inside that stage until its gate passes.
 - Do not skip ahead: complete the current stage gates in `CURRENT_PLAN.md` before moving to the next stage.
 - Scope lock: do not change audit/Wordstat/AI-answer behavior while working on auth, billing, deployment, or unrelated modules unless the user explicitly requests it.
 
@@ -27,5 +27,5 @@ Before implementation, Codex must enforce full PFO adoption automatically:
 pfo adopt /home/hihol/projects/neuroexpert
 ```
 
-Then route work through `/task`, write `HANDOFF.md` before session or role transfer, update `.codex-memory/STATE.json`, and respect `.pfo/` contracts. Project-local rules may add constraints, but they do not replace PFO gates, memory, or scope/data/fallback contracts.
+Then route work through `/task`, write `HANDOFF.md` before session or role transfer, update `.codex-memory/STATE.json`, and respect `.pfo/` contracts. Codex `/goal` mode is default-on for non-trivial work: create or continue the goal before implementation, and keep it active through gates, verification, and state-save. Project-local rules may add constraints, but they do not replace PFO gates, memory, or scope/data/degraded-mode contracts. Keep local rules short and earned: add them only for observed failures or hard external constraints.
 <!-- PFO_PROJECT_RUNTIME_END -->

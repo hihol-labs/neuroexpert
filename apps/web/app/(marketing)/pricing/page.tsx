@@ -2,11 +2,18 @@ import type { Metadata } from "next";
 import { MarketingHeader, MarketingFooter } from "@/components/marketing/nav";
 import { PricingContent } from "./pricing-content";
 import { generateServiceSchema } from "@/lib/schema-org";
+import { OfferBlock } from "@/components/marketing/offer";
+import { auditStartHref } from "@/lib/checkout";
 
 const TITLE = "Тарифы НейроЭксперт — Local Sales OS, заявки и продажи";
 const DESCRIPTION =
   "Выберите тариф для бизнеса или эксперта: спрос → точка входа → действие клиента → заявка, запись или продажа.";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://neuroexpertise.ru";
+
+// Флаг SELF_SERVE_CHECKOUT читается на каждый запрос, а не при сборке образа:
+// статический пререндер запекал dark-значение и CTA «Аудит Старт» оставался на
+// /launch после включения checkout (найдено оракулом --checkout live, AF-1 2026-09-05).
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -16,7 +23,12 @@ export const metadata: Metadata = {
   twitter: { title: TITLE, description: DESCRIPTION },
 };
 
-export default function PricingPage() {
+export default function PricingPage({ searchParams }: { searchParams?: { for?: string } }) {
+  // Аудитория приходит query-параметром, а не якорем: hash браузер серверу не
+  // отправляет, поэтому при hash-подходе страница успевала отрисовать бизнес-
+  // пакеты и только потом переключиться (находка раунда 24). С параметром
+  // выбор известен уже на сервере — переключения на глазах у клиента нет.
+  const initialAudience = searchParams?.for === "expert" ? "expert" : "business";
   const schemas = [
     generateServiceSchema({
       name: "Тарифы НейроЭксперт",
@@ -28,7 +40,7 @@ export default function PricingPage() {
         { name: "Starter", price: "1490", url: `${APP_URL}/pricing` },
         { name: "Pro", price: "2990", url: `${APP_URL}/pricing` },
         { name: "Expert", price: "4990", url: `${APP_URL}/pricing` },
-        { name: "Аудит Старт", price: "7900", url: `${APP_URL}/launch?package=audit_start` },
+        { name: "Аудит Старт", price: "7900", url: `${APP_URL}${auditStartHref()}` },
         { name: "Запуск Старт", price: "31100", url: `${APP_URL}/launch?package=launch_start` },
         { name: "Сопровождение Лайт", price: "29000", url: `${APP_URL}/launch?package=support_control` },
       ],
@@ -36,7 +48,7 @@ export default function PricingPage() {
   ];
 
   return (
-    <div className="min-h-screen">
+    <div className="sr-site pricing-site">
       {schemas.map((schema, i) => (
         <script
           key={i}
@@ -46,7 +58,14 @@ export default function PricingPage() {
       ))}
 
       <MarketingHeader />
-      <PricingContent />
+      <PricingContent initialAudience={initialAudience} auditStartHref={auditStartHref()}>
+        <OfferBlock
+          artifact="Аудит, запуск или сопровождение — по выбранному пакету"
+          price="7 900 ₽ аудит · 31 100 ₽ запуск · 29 000 ₽/мес сопровождение"
+          term="3–7 дней · 30 дней · ежемесячно"
+          cta={{ href: auditStartHref(), label: "Начать с аудита за 7 900 ₽" }}
+        />
+      </PricingContent>
       <MarketingFooter />
     </div>
   );

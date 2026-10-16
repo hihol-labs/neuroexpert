@@ -1,5 +1,5 @@
 import { supabase } from "../supabase.js";
-import { SUBSCRIPTION_TIERS } from "shared";
+import { SUBSCRIPTION_TIERS, planExpertOrders } from "shared";
 import { tgFetch } from "shared/http/telegram-fetch";
 
 export async function handleGenerateOrders(payload: Record<string, unknown>): Promise<{ created: number }> {
@@ -56,55 +56,24 @@ export async function handleGenerateOrders(payload: Record<string, unknown>): Pr
   );
 
   const expiresAt = new Date(now.getTime() + 7 * 86400000).toISOString();
-  const TOP_PRIORITY_COUNT = 10; // Топ-10 = «Высокий приоритет»
-  const ordersToInsert: Array<{
-    expert_id: string;
-    question_id: string;
-    status: string;
-    week_number: number;
-    expires_at: string;
-    is_priority: boolean;
-  }> = [];
 
-  // Собираем подзапросы для уведомлений
-  const questionTexts = new Map<string, string>();
-  for (const q of questions) questionTexts.set(q.id, q.question_text);
-
-  const expertsToNotify: Array<{ telegramId: number; count: number; sampleQuestions: string[] }> = [];
-
-  // Показываем ВСЕ подходящие темы без лимита (лимит на accept, не на показ)
-  // Это бесплатно — эксперт видит возможности и мотивируется на апгрейд
-  const MAX_TOPICS_PER_EXPERT = 20; // Максимум тем на показ за неделю
-
-  for (const expert of experts) {
-    const tier = SUBSCRIPTION_TIERS[expert.subscription_tier];
-    if (!tier) continue;
-
-    let count = 0;
-    const samples: string[] = [];
-
-    for (const q of questions) {
-      if (count >= MAX_TOPICS_PER_EXPERT) break;
-      const key = `${expert.id}:${q.id}`;
-      if (existingSet.has(key)) continue;
-
-      ordersToInsert.push({
-        expert_id: expert.id,
-        question_id: q.id,
-        status: "pending",
-        week_number: weekNumber,
-        expires_at: expiresAt,
-        is_priority: count < TOP_PRIORITY_COUNT,
-      });
-      existingSet.add(key);
-      if (samples.length < 3) samples.push(q.question_text);
-      count++;
-    }
-
-    if (count > 0 && expert.telegram_id) {
-      expertsToNotify.push({ telegramId: expert.telegram_id, count, sampleQuestions: samples });
-    }
-  }
+  // Показываем подходящие темы (лимит на показ, не на accept) - план считает shared/planExpertOrders.
+  // R-06: expert_id в payload - ручной запуск «Подобрать темы сейчас», темы только этому эксперту;
+  // без него - недельный cron по всем экспертам ниши.
+  const onlyExpertId = typeof payload["expert_id"] === "string" && payload["expert_id"] ? (payload.expert_id as string) : null;
+  const plan = planExpertOrders({
+    questions,
+    experts: experts.map((e) => ({ id: e.id, eligible: Boolean(SUBSCRIPTION_TIERS[e.subscription_tier]), telegram_id: e.telegram_id })),
+    existing: existingSet,
+    onlyExpertId,
+  });
+  const ordersToInsert = plan.orders.map((o) => ({
+    ...o,
+    status: "pending",
+    week_number: weekNumber,
+    expires_at: expiresAt,
+  }));
+  const expertsToNotify = plan.notify.map((n) => ({ telegramId: n.telegram_id, count: n.count, sampleQuestions: n.samples }));
 
   if (ordersToInsert.length === 0) return { created: 0 };
 

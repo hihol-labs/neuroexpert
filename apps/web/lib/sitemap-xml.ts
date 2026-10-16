@@ -117,6 +117,8 @@ export async function getSitemapUrls(kind: SitemapKind): Promise<SitemapUrl[]> {
       { loc: `${APP_URL}/experts`, lastmod: now, changefreq: "daily", priority: 0.9 },
       { loc: `${APP_URL}/find-expert`, lastmod: now, changefreq: "weekly", priority: 0.8 },
       { loc: `${APP_URL}/audit`, lastmod: now, changefreq: "monthly", priority: 0.8 },
+      // G-013: публичный пример отчёта — proof-контент для AEO.
+      { loc: `${APP_URL}/audit/example`, lastmod: now, changefreq: "monthly", priority: 0.8 },
       { loc: `${APP_URL}/scan`, lastmod: now, changefreq: "monthly", priority: 0.8 },
       { loc: `${APP_URL}/for-experts`, lastmod: now, changefreq: "monthly", priority: 0.7 },
       { loc: `${APP_URL}/for-business`, lastmod: now, changefreq: "monthly", priority: 0.7 },
@@ -124,6 +126,7 @@ export async function getSitemapUrls(kind: SitemapKind): Promise<SitemapUrl[]> {
       { loc: `${APP_URL}/questions`, lastmod: now, changefreq: "daily", priority: 0.7 },
       { loc: `${APP_URL}/compare`, lastmod: now, changefreq: "monthly", priority: 0.5 },
       { loc: `${APP_URL}/pricing`, lastmod: now, changefreq: "monthly", priority: 0.5 },
+      { loc: `${APP_URL}/pay`, lastmod: now, changefreq: "monthly", priority: 0.4 },
     ];
   }
 

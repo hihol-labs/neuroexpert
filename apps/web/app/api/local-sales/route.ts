@@ -3,9 +3,9 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import {
   LOCAL_SALES_EMPTY_STATE_TASKS,
+  buildLocalSalesOverview,
   buildMachineReadableProfile,
   calculateDemandOpportunityScore,
-  calculateLocalSalesIndex,
   estimateLostRevenue,
 } from "shared";
 
@@ -52,12 +52,6 @@ function toStringArray(value: unknown): string[] {
       .filter(Boolean);
   }
   return [];
-}
-
-function avg(values: number[]): number {
-  const clean = values.filter((value) => Number.isFinite(value));
-  if (!clean.length) return 0;
-  return clean.reduce((sum, value) => sum + value, 0) / clean.length;
 }
 
 async function getUser() {
@@ -107,120 +101,6 @@ async function assertBusinessAccess(
     .single();
 
   return membership ? (account as JsonRecord) : null;
-}
-
-function buildOverview(account: JsonRecord, data: Record<string, JsonRecord[]>) {
-  const localProfiles = data.local_profiles ?? [];
-  const lostLeads = data.lost_leads ?? [];
-  const leadOutcomes = data.lead_outcomes ?? [];
-  const tasks = data.growth_tasks ?? [];
-  const competitors = data.local_competitors ?? [];
-
-  const visibilityScore = avg(
-    localProfiles.map((item) => toNumber(item.visibility_score)),
-  );
-  const conversionScore = avg(
-    localProfiles.map((item) => toNumber(item.conversion_score)),
-  );
-  const reviewScore = avg(
-    localProfiles
-      .filter((item) => item.rating)
-      .map((item) => Math.min(100, (toNumber(item.rating) / 5) * 100)),
-  );
-  const aiVisibilityScore = Math.max(
-    avg(competitors.map((item) => toNumber(item.ai_visibility_score))),
-    avg(
-      localProfiles
-        .filter((item) => item.channel === "ai_answer")
-        .map((item) => toNumber(item.visibility_score)),
-    ),
-  );
-
-  const openLostLeads = lostLeads.filter((lead) =>
-    [
-      "new",
-      "missed",
-      "no_answer",
-      "waiting_reply",
-      "price_sent",
-      "not_closed",
-      "repeat_touch_needed",
-      "lost",
-    ].includes(String(lead.lead_status)),
-  );
-  const recoveredLeads = lostLeads.filter(
-    (lead) => lead.lead_status === "recovered",
-  );
-  const lostLeadRecoveryScore = lostLeads.length
-    ? (recoveredLeads.length / lostLeads.length) * 100
-    : 0;
-
-  const taskCompletionScore = tasks.length
-    ? (tasks.filter((task) => task.status === "done").length / tasks.length) *
-      100
-    : 0;
-
-  const localSalesIndex = calculateLocalSalesIndex({
-    localVisibilityScore: visibilityScore,
-    reviewScore,
-    conversionScore,
-    aiVisibilityScore,
-    lostLeadRecoveryScore,
-    taskCompletionScore,
-  });
-
-  const avgCheck = toNumber(account.avg_check);
-  const lostRevenue = openLostLeads.reduce((sum, lead) => {
-    const explicit = toNumber(lead.potential_revenue);
-    if (explicit > 0) return sum + explicit;
-    return (
-      sum +
-      estimateLostRevenue({
-        avgCheck: toNumber(lead.avg_check, avgCheck),
-        leadsCount: 1,
-        conversionProbability: toNumber(lead.conversion_probability, 0.2),
-      })
-    );
-  }, 0);
-
-  return {
-    local_sales_index: localSalesIndex,
-    scores: {
-      local_visibility: Math.round(visibilityScore),
-      reviews: Math.round(reviewScore),
-      conversion: Math.round(conversionScore),
-      ai_visibility: Math.round(aiVisibilityScore),
-      lost_lead_recovery: Math.round(lostLeadRecoveryScore),
-      task_completion: Math.round(taskCompletionScore),
-    },
-    counters: {
-      locations: data.business_locations?.length ?? 0,
-      channels: localProfiles.length,
-      competitors: competitors.length,
-      local_queries: data.local_queries?.length ?? 0,
-      open_lost_leads: openLostLeads.length,
-      open_tasks: tasks.filter((task) => task.status !== "done").length,
-      weekly_reports: data.local_weekly_reports?.length ?? 0,
-      behavior_signals: data.behavior_signals?.length ?? 0,
-      generated_pages: data.local_generated_pages?.length ?? 0,
-    },
-    money: {
-      estimated_lost_revenue: Math.round(lostRevenue),
-      recovered_revenue: Math.round(
-        lostLeads.reduce(
-          (sum, lead) => sum + toNumber(lead.recovered_revenue),
-          0,
-        ),
-      ),
-      revenue_won: Math.round(
-        leadOutcomes.reduce(
-          (sum, outcome) => sum + toNumber(outcome.amount),
-          0,
-        ),
-      ),
-    },
-    empty_state_tasks: LOCAL_SALES_EMPTY_STATE_TASKS,
-  };
 }
 
 export async function GET(request: NextRequest) {
@@ -365,7 +245,9 @@ export async function GET(request: NextRequest) {
     local_generated_pages: (generatedPages ?? []) as JsonRecord[],
     channel_unit_economics: (unitEconomics ?? []) as JsonRecord[],
   };
-  const overview = activeBusiness ? buildOverview(activeBusiness, data) : null;
+  const overview = activeBusiness
+    ? buildLocalSalesOverview(activeBusiness, data)
+    : null;
 
   if (overview) {
     await admin

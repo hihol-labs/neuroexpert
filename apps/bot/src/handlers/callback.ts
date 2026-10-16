@@ -1,17 +1,21 @@
 import type { Bot } from "grammy";
 import { supabase } from "../supabase";
 import { nicheKeyboard, otherNichesKeyboard } from "../keyboards";
-import { NICHES, SUBSCRIPTION_TIERS } from "shared";
+import { NICHES, getMaxNiches as tierMaxNiches, packageAllowance, packageLimitMessage } from "shared";
 
-/** Получает лимит ниш по тарифу эксперта */
-async function getMaxNiches(profileId: string): Promise<number> {
+/** Тариф эксперта (неизвестный / пустой -> free, fail-closed в shared). */
+async function getTier(profileId: string): Promise<string> {
   const { data } = await supabase
     .from("profiles")
     .select("subscription_tier")
     .eq("id", profileId)
     .single();
-  const tier = data?.subscription_tier ?? "free";
-  return SUBSCRIPTION_TIERS[tier]?.maxNiches ?? 1;
+  return (data?.subscription_tier as string | null) ?? "free";
+}
+
+/** Получает лимит ниш по тарифу эксперта (R-09: единая таблица shared) */
+async function getMaxNiches(profileId: string): Promise<number> {
+  return tierMaxNiches(await getTier(profileId));
 }
 
 /** Получает выбранные ниши эксперта */
@@ -31,6 +35,10 @@ async function getProfileId(telegramId: number): Promise<string | null> {
     .eq("telegram_id", telegramId)
     .single();
   return data?.id ?? null;
+}
+
+function appUrl(): string {
+  return (process.env["APP_URL"] || process.env["NEXT_PUBLIC_APP_URL"] || "https://neuroexpertise.ru").replace(/\/+$/, "");
 }
 
 export function registerCallbackHandler(bot: Bot): void {
@@ -81,8 +89,8 @@ export function registerCallbackHandler(bot: Bot): void {
     // Определяем, какую клавиатуру показывать (фокусные или другие)
     const isFocusNiche = NICHES.find((n) => n.id === nicheId)?.isFocus;
     const keyboard = isFocusNiche
-      ? nicheKeyboard(selectedIds)
-      : otherNichesKeyboard(selectedIds);
+      ? nicheKeyboard(selectedIds, maxNiches)
+      : otherNichesKeyboard(selectedIds, maxNiches);
 
     const selectedNames = selectedIds
       .map((id) => NICHES.find((n) => n.id === id))
@@ -117,7 +125,7 @@ export function registerCallbackHandler(bot: Bot): void {
       ? `Выберите ниши (до ${maxNiches}):\n\nВыбрано: ${selectedNames.join(", ")}`
       : `Выберите ниши (до ${maxNiches}):`;
 
-    await ctx.editMessageText(text, { reply_markup: nicheKeyboard(selectedIds) });
+    await ctx.editMessageText(text, { reply_markup: nicheKeyboard(selectedIds, maxNiches) });
   });
 
   // Лимит достигнут — нажатие на неактивную кнопку
@@ -151,7 +159,7 @@ export function registerCallbackHandler(bot: Bot): void {
       ? `Выберите ниши (до ${maxNiches}):\n\nВыбрано: ${selectedNames.join(", ")}`
       : `Выберите ниши (до ${maxNiches}):`;
 
-    await ctx.editMessageText(text, { reply_markup: otherNichesKeyboard(selectedIds) });
+    await ctx.editMessageText(text, { reply_markup: otherNichesKeyboard(selectedIds, maxNiches) });
   });
 
   // Показать основные ниши (назад)
@@ -175,7 +183,7 @@ export function registerCallbackHandler(bot: Bot): void {
       ? `Выберите ниши (до ${maxNiches}):\n\nВыбрано: ${selectedNames.join(", ")}`
       : `Выберите ниши (до ${maxNiches}):`;
 
-    await ctx.editMessageText(text, { reply_markup: nicheKeyboard(selectedIds) });
+    await ctx.editMessageText(text, { reply_markup: nicheKeyboard(selectedIds, maxNiches) });
   });
 
   // Подтвердить выбор ниш
@@ -223,9 +231,18 @@ export function registerCallbackHandler(bot: Bot): void {
       return;
     }
 
+    // R-09 (E-AUTO-14): выбор темы = будущий пакет; при исчерпанном лимите месяца тема не принимается.
+    const allowance = await packageAllowance(supabase, await getTier(profileId), profileId);
+    if (!allowance.allowed) {
+      await ctx.answerCallbackQuery({ text: "Лимит пакетов на этот месяц исчерпан", show_alert: true });
+      await ctx.reply(packageLimitMessage(allowance, `${appUrl()}/billing`));
+      return;
+    }
+
     const { error } = await supabase
       .from("orders")
-      .update({ status: "accepted" })
+      // R-06: updated_at - время выбора темы; голосовое привязывается к последней выбранной.
+      .update({ status: "accepted", updated_at: new Date().toISOString() })
       .eq("id", orderId)
       .eq("expert_id", profileId)
       .eq("status", "pending");
@@ -242,6 +259,35 @@ export function registerCallbackHandler(bot: Bot): void {
     await ctx.reply(
       "Заказ принят! Запишите голосовое с ответом:\n/record",
     );
+  });
+
+  // R-06 (E-AUTO-7): выбрать тему для записи, когда принятых несколько. Состояние не храним:
+  // выбранная тема становится «последней выбранной» (updated_at), к ней привяжется следующее голосовое.
+  bot.callbackQuery(/^record_order:(.+)$/, async (ctx) => {
+    const orderId = ctx.match[1];
+    const profileId = await getProfileId(ctx.from.id);
+
+    if (!profileId) {
+      await ctx.answerCallbackQuery({ text: "Профиль не найден" });
+      return;
+    }
+
+    const { data: touched, error } = await supabase
+      .from("orders")
+      .update({ updated_at: new Date().toISOString() })
+      .eq("id", orderId)
+      .eq("expert_id", profileId)
+      .eq("status", "accepted")
+      .select("id, questions(question_text)");
+
+    if (error || !touched || touched.length === 0) {
+      await ctx.answerCallbackQuery({ text: "Тема уже в работе или не найдена" });
+      return;
+    }
+
+    const question = (touched[0] as any).questions?.question_text ?? "";
+    await ctx.answerCallbackQuery({ text: "Тема выбрана" });
+    await ctx.reply(`Вопрос: ${question}\n\nЗапишите голосовое сообщение прямо здесь — ответ будет привязан к этой теме.`);
   });
 
   // Пропустить заказ
@@ -272,35 +318,72 @@ export function registerCallbackHandler(bot: Bot): void {
     );
   });
 
-  // Одобрить контент
+  // R-07 (E-AUTO-3): «Опубликовать» публикует через общий сервис web (/api/internal/publish) - там
+  // проверка владельца, FAQ-гейт, публикация профиля и ревалидация страниц. Раньше колбэк писал
+  // статус-тупик без проверки владельца: любой пользователь бота мог одобрить чужой пакет.
   bot.callbackQuery(/^approve:(.+)$/, async (ctx) => {
     const contentId = ctx.match[1];
-
-    const { error } = await supabase
-      .from("content_packages")
-      .update({ status: "approved" })
-      .eq("id", contentId)
-      .eq("status", "review");
-
-    if (error) {
-      await ctx.answerCallbackQuery({ text: "Ошибка" });
+    const profileId = await getProfileId(ctx.from.id);
+    if (!profileId) {
+      await ctx.answerCallbackQuery({ text: "Профиль не найден" });
       return;
     }
 
-    await ctx.answerCallbackQuery({ text: "Контент одобрен!" });
-    await ctx.editMessageText(
-      ctx.callbackQuery.message?.text + "\n\nСтатус: Одобрен к публикации",
-    );
+    const token = process.env["PUBLISH_INTERNAL_TOKEN"];
+    if (!token) {
+      console.error("[callback] PUBLISH_INTERNAL_TOKEN is missing");
+      await ctx.answerCallbackQuery({ text: "Публикация из Telegram временно недоступна" });
+      await ctx.reply(`Опубликуйте на сайте: ${appUrl()}/content/${contentId}`);
+      return;
+    }
+
+    let status = 0;
+    let data: { ok?: boolean; code?: string; problems?: string[]; url?: string; profile_url?: string; profile_published_now?: boolean; profile_visible?: boolean } = {};
+    try {
+      // Внутренний адрес web в сети compose; глобальный fetch - без Telegram-прокси.
+      const res = await fetch(new URL("/api/internal/publish", process.env["PUBLISH_INTERNAL_URL"] || "http://web:3000"), {
+        method: "POST",
+        redirect: "error",
+        signal: AbortSignal.timeout(30_000),
+        headers: { "Content-Type": "application/json", "x-internal-token": token },
+        body: JSON.stringify({ content_id: contentId, expert_id: profileId }),
+      });
+      status = res.status;
+      data = await res.json().catch(() => ({}));
+    } catch (err) {
+      console.error("[callback] internal publish failed:", err);
+    }
+
+    if (status === 200 && data.ok) {
+      await ctx.answerCallbackQuery({ text: "Опубликовано!" });
+      await ctx.editMessageText(ctx.callbackQuery.message?.text + "\n\nСтатус: Опубликовано");
+      if (data.profile_visible === false) {
+        await ctx.reply(`Статья опубликована, но профиль не удалось сделать публичным - без этого статья недоступна. Включите публикацию профиля на сайте: ${appUrl()}/profile`);
+      } else if (data.profile_published_now) {
+        await ctx.reply(`Ваш профиль стал публичным: ${data.profile_url}\nСкрыть его можно в настройках профиля на сайте.`);
+      }
+      return;
+    }
+
+    const editor = `${appUrl()}/content/${contentId}`;
+    const reasons: Record<string, string> = {
+      not_found: "Материал не найден.",
+      already_published: "Материал уже опубликован.",
+      bad_status: "Материал ещё не готов к публикации.",
+      conflict: "Материал уже опубликован или изменён - обновите список.",
+      no_slug: `У материала нет адреса страницы. Откройте редактор: ${editor}`,
+      faq_required: `Перед публикацией нужно дополнить FAQ:\n${(data.problems ?? []).map((p) => `- ${p}`).join("\n")}\n\nРедактор: ${editor}`,
+      unsupported_claims: `В тексте есть утверждения, которых нет в вашей записи. Уберите или исправьте их в редакторе:\n${(data.problems ?? []).map((p) => `- ${p}`).join("\n")}\n\nРедактор: ${editor}`,
+    };
+    await ctx.answerCallbackQuery({ text: "Не опубликовано" });
+    await ctx.reply(reasons[data.code ?? ""] ?? `Не удалось опубликовать, попробуйте позже или на сайте: ${editor}`);
   });
 
-  // Редактировать контент
+  // R-07 (E-AUTO-4): правка текста - в веб-редакторе; прежняя заглушка обещала то, чего бот не умеет.
   bot.callbackQuery(/^edit:(.+)$/, async (ctx) => {
     const contentId = ctx.match[1];
 
     await ctx.answerCallbackQuery();
-    await ctx.reply(
-      "Отправьте текстом, что нужно изменить в контенте.\n" +
-        `(ID: ${contentId})`,
-    );
+    await ctx.reply(`Отредактировать материал можно на сайте:\n${appUrl()}/content/${contentId}`);
   });
 }

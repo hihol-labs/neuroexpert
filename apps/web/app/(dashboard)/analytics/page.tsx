@@ -124,9 +124,10 @@ export default function AnalyticsPage() {
     }
 
     // Trust score
-    const { data: profile } = await supabase.from("profiles").select("trust_score, tier").eq("id", user.id).single();
+    // R-09: колонка тарифа - subscription_tier (раньше читалась несуществующая tier -> запрос падал, trust score всегда 0).
+    const { data: profile } = await supabase.from("profiles").select("trust_score, subscription_tier").eq("id", user.id).single();
     setTrustScore(profile?.trust_score ?? 0);
-    setTier((profile?.tier as string) ?? "free");
+    setTier((profile?.subscription_tier as string) ?? "free");
 
     // Citations
     const { data: citations } = await supabase

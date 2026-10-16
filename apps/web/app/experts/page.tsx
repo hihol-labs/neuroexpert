@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { ExpertFilters } from "@/components/experts/expert-filters";
 import { CompareBar, CompareCheckbox } from "@/components/experts/compare-bar";
+import { CatalogFooter, CatalogHeader } from "@/components/catalog/catalog-shell";
 import { generateItemListSchema } from "@/lib/schema-org";
 
 function getAdmin() {
@@ -41,7 +42,7 @@ async function getExperts(searchParams: SearchParams) {
   let query = supabase
     .from("profiles")
     .select(
-      "id, full_name, slug, qualification, city, avatar_url, trust_score, niche_id, years_experience, is_verified, is_featured, avg_rating, review_count, niches(name, icon)",
+      "id, full_name, slug, qualification, city, avatar_url, trust_score, niche_id, years_experience, is_verified, is_featured, avg_rating, review_count, niches!profiles_niche_id_fkey(name, icon)",
     )
     .eq("is_published", true);
 
@@ -146,7 +147,7 @@ async function getExperts(searchParams: SearchParams) {
     const { data: featuredData } = await supabase
       .from("profiles")
       .select(
-        "id, full_name, slug, qualification, city, avatar_url, trust_score, niche_id, years_experience, is_verified, is_featured, avg_rating, review_count, niches(name, icon)",
+        "id, full_name, slug, qualification, city, avatar_url, trust_score, niche_id, years_experience, is_verified, is_featured, avg_rating, review_count, niches!profiles_niche_id_fkey(name, icon)",
       )
       .eq("is_published", true)
       .eq("is_featured", true)
@@ -286,7 +287,7 @@ export default async function ExpertsPage({
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="catalog-shell catalog-index">
       {schemas.map((schema, i) => (
         <script
           key={i}
@@ -295,26 +296,9 @@ export default async function ExpertsPage({
         />
       ))}
 
-      <header className="border-b bg-white">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-          <Link href="/" className="text-lg font-bold text-gray-900">
-            НейроЭксперт
-          </Link>
-          <div className="flex gap-4 text-sm">
-            <Link href="/experts" className="text-blue-600 font-medium">
-              Эксперты
-            </Link>
-            <Link
-              href="/audit"
-              className="text-gray-600 hover:text-gray-900"
-            >
-              Аудит
-            </Link>
-          </div>
-        </nav>
-      </header>
+      <CatalogHeader active="experts" />
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+      <main className="catalog-main mx-auto max-w-7xl px-4 py-8 sm:px-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
           Каталог экспертов
         </h1>
@@ -372,11 +356,7 @@ export default async function ExpertsPage({
 
       <CompareBar />
 
-      <footer className="bg-gray-900 py-8 mt-12">
-        <div className="mx-auto max-w-7xl px-4 text-center text-sm text-gray-400 sm:px-6">
-          &copy; {new Date().getFullYear()} НейроЭксперт
-        </div>
-      </footer>
+      <CatalogFooter />
     </div>
   );
 }

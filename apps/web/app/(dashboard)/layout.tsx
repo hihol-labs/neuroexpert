@@ -2,79 +2,65 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { LayoutDashboard, ClipboardList, FileText, Inbox, Users, Key, UserCircle, BriefcaseBusiness, Mic, Workflow, Layers3 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowUpRight, BriefcaseBusiness, ClipboardList, FileText, Inbox, Key, Layers3, LayoutDashboard, Menu, Mic, UserCircle, Users, Workflow, X } from "lucide-react";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Дашборд", icon: LayoutDashboard },
-  { href: "/today", label: "Сегодня", icon: Mic },
-  { href: "/orders", label: "Возможности спроса", icon: ClipboardList },
-  { href: "/content", label: "Контент", icon: FileText },
-  { href: "/leads", label: "Заявки", icon: Inbox },
-  { href: "/local-sales", label: "Local Sales", icon: BriefcaseBusiness },
-  { href: "/marketing-os", label: "Marketing OS", icon: Workflow },
-  { href: "/agency", label: "Agencies", icon: Layers3 },
-  { href: "/team", label: "Команда", icon: Users },
-  { href: "/api-keys", label: "API", icon: Key },
-  { href: "/profile", label: "Профиль", icon: UserCircle },
+  { href: "/dashboard", label: "Дашборд", section: "Overview", icon: LayoutDashboard },
+  { href: "/today", label: "Сегодня", section: "Overview", icon: Mic },
+  { href: "/orders", label: "Возможности спроса", section: "Growth", icon: ClipboardList },
+  { href: "/content", label: "Контент", section: "Growth", icon: FileText },
+  { href: "/leads", label: "Заявки", section: "Growth", icon: Inbox },
+  { href: "/local-sales", label: "Local Sales", section: "Growth", icon: BriefcaseBusiness },
+  { href: "/marketing-os", label: "Marketing OS", section: "Operations", icon: Workflow },
+  { href: "/agency", label: "Agencies", section: "Operations", icon: Layers3 },
+  { href: "/team", label: "Команда", section: "Operations", icon: Users },
+  { href: "/api-keys", label: "API", section: "System", icon: Key },
+  { href: "/profile", label: "Профиль", section: "System", icon: UserCircle },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const sidebarRef = useRef<HTMLElement>(null);
+  let currentSection = "";
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 760px)");
+    const update = () => setIsMobile(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    if (sidebarRef.current) sidebarRef.current.inert = isMobile && !sidebarOpen;
+  }, [isMobile, sidebarOpen]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Mobile header */}
-      <header className="lg:hidden bg-white border-b px-4 py-3 flex items-center justify-between sticky top-0 z-20">
-        <Link href="/dashboard" className="font-bold text-gray-900">НейроЭксперт</Link>
-        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 rounded-lg hover:bg-gray-100" aria-label="Меню" aria-expanded={sidebarOpen}>
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sidebarOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
-          </svg>
-        </button>
+    <div className="nx-shell">
+      <header className="nx-mobilebar">
+        <Link href="/dashboard" className="nx-brand" aria-label="НейроЭксперт — дашборд"><span className="nx-brand-mark">N<i /></span><span>НейроЭксперт<small>Signal Room</small></span></Link>
+        <button type="button" onClick={() => setSidebarOpen((value) => !value)} className="nx-menu-button" aria-label="Меню" aria-expanded={sidebarOpen}>{sidebarOpen ? <X /> : <Menu />}</button>
       </header>
 
-      {/* Sidebar overlay */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />
-      )}
+      {sidebarOpen && <button type="button" className="nx-overlay" aria-label="Закрыть меню" onClick={() => setSidebarOpen(false)} />}
 
-      {/* Sidebar */}
-      <aside role="navigation" aria-label="Навигация" className={`fixed top-0 left-0 z-40 h-full w-64 bg-white border-r transform transition-transform lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        <div className="p-6">
-          <Link href="/dashboard" className="text-xl font-bold text-gray-900">НейроЭксперт</Link>
-        </div>
-        <nav className="px-3 space-y-1">
+      <aside ref={sidebarRef} className={`nx-sidebar ${sidebarOpen ? "is-open" : ""}`} aria-hidden={isMobile && !sidebarOpen ? true : undefined}>
+        <div className="nx-sidebar-head"><Link href="/dashboard" className="nx-brand" aria-label="НейроЭксперт — дашборд"><span className="nx-brand-mark">N<i /></span><span>НейроЭксперт<small>Signal Room</small></span></Link><span className="nx-sidebar-code">WORKSPACE / 01</span></div>
+        <nav className="nx-nav" aria-label="Навигация">
           {NAV_ITEMS.map((item) => {
             const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setSidebarOpen(false)}
-                aria-current={active ? "page" : undefined}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  active ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                <item.icon className="w-5 h-5 flex-shrink-0" />
-                {item.label}
-              </Link>
-            );
+            const showSection = currentSection !== item.section;
+            currentSection = item.section;
+            return <div key={item.href}>{showSection && <span className="nx-nav-section">{item.section}</span>}<Link href={item.href} onClick={() => setSidebarOpen(false)} aria-current={active ? "page" : undefined} className={`nx-nav-link ${active ? "is-active" : ""}`}><item.icon /><span>{item.label}</span>{active && <i />}</Link></div>;
           })}
         </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
-          <Link href="/content/new" className="block w-full text-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
-            Записать ответ
-          </Link>
-        </div>
+        <div className="nx-sidebar-foot"><div><span className="nx-live-dot" />Signal Room online</div><Link href="/content/new" className="nx-compose">Записать ответ <ArrowUpRight /></Link></div>
       </aside>
 
-      {/* Main content */}
-      <main className="lg:ml-64 p-6 lg:p-8">
-        {children}
-      </main>
+      <main className="nx-main"><div className="nx-page">{children}</div></main>
     </div>
   );
 }

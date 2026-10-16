@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { resolveVoiceOrder } from "@/lib/expert-orders";
+import { packageAllowance, packageLimitMessage } from "shared";
 
 function getAdmin() {
   return createSupabaseClient(
@@ -22,12 +25,20 @@ export async function POST(request: NextRequest) {
     const admin = getAdmin();
     const { data: profile } = await admin
       .from("profiles")
-      .select("id")
+      .select("id, subscription_tier")
       .eq("id", user.id)
       .single();
 
     if (!profile) {
       return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    }
+
+    // R-09 (E-AUTO-14): запись = будущий пакет контента; при исчерпанном лимите месяца отказ до
+    // чтения файла и до загрузки в Storage. 402 - «нужен платный тариф», код для клиента.
+    const allowance = await packageAllowance(admin, (profile.subscription_tier as string | null) ?? "free", profile.id);
+    if (!allowance.allowed) {
+      const billingUrl = `${(process.env["APP_URL"] || process.env["NEXT_PUBLIC_APP_URL"] || "https://neuroexpertise.ru").replace(/\/+$/, "")}/billing`;
+      return NextResponse.json({ error: packageLimitMessage(allowance, billingUrl), code: "package_limit" }, { status: 402 });
     }
 
     const formData = await request.formData();
@@ -37,26 +48,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No audio file" }, { status: 400 });
     }
 
-    const buffer = Buffer.from(await audioFile.arrayBuffer());
-    const filePath = `voice/${profile.id}/${Date.now()}.webm`;
+    // R-06 (E-AUTO-7): запись привязывается к теме, которую выбрал эксперт, а не к «первому принятому
+    // заказу». Проверка - ДО загрузки файла: отклонённая запись не оставляет объект в Storage.
+    const orderIdRaw = formData.get("order_id");
+    const resolved = await resolveVoiceOrder(admin, profile.id, typeof orderIdRaw === "string" && orderIdRaw ? orderIdRaw : null);
+    if (!resolved.ok) {
+      const error = resolved.code === "order_required"
+        ? "У вас есть выбранные темы — откройте «Возможности спроса» и нажмите «Записать ответ» у нужной темы."
+        : "Тема не найдена или уже в работе. Выберите тему заново.";
+      return NextResponse.json({ error, code: resolved.code }, { status: resolved.status });
+    }
 
-    // Сохраняем в Supabase Storage (best effort)
-    await admin.storage
+    const buffer = Buffer.from(await audioFile.arrayBuffer());
+    // Суффикс от коллизий в одну миллисекунду при upsert:false (двойной submit / ретрай).
+    const filePath = `voice/${profile.id}/${Date.now()}-${randomUUID().slice(0, 8)}.webm`;
+
+    // R-05: файл обязателен - transcribe читает его из bucket voice по file_path. Ошибка upload ->
+    // 500 до создания voice_recordings (раньше best effort: запись без файла и «Запись принята»).
+    // Браузер шлёт "audio/webm;codecs=opus" - в Storage и в voice_recordings кладём чистый тип.
+    const contentType = (audioFile.type || "audio/webm").split(";")[0].trim() || "audio/webm";
+    const { error: uploadError } = await admin.storage
       .from("voice")
       .upload(filePath, buffer, {
-        contentType: audioFile.type || "audio/webm",
+        contentType,
         upsert: false,
       });
-
-    // Находим принятый заказ
-    const { data: acceptedOrder } = await admin
-      .from("orders")
-      .select("id")
-      .eq("expert_id", profile.id)
-      .eq("status", "accepted")
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .single();
+    if (uploadError) {
+      console.error("[voice/route] Upload error:", uploadError.message);
+      return NextResponse.json({ error: "Failed to store audio" }, { status: 500 });
+    }
 
     // Длительность записи (передаётся с фронтенда)
     const durationRaw = formData.get("duration");
@@ -67,12 +87,12 @@ export async function POST(request: NextRequest) {
       .from("voice_recordings")
       .insert({
         expert_id: profile.id,
-        order_id: acceptedOrder?.id ?? null,
+        order_id: resolved.orderId,
         file_path: filePath,
         file_size: buffer.length,
         duration_seconds: durationSeconds,
         source: "web" as const,
-        mime_type: audioFile.type || "audio/webm",
+        mime_type: contentType,
         transcription_status: "pending",
       })
       .select("id")

@@ -1,188 +1,121 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { ArrowUpRight, Menu, X } from "lucide-react";
 import { useState } from "react";
 
+// Две первые ссылки — точки входа воронки (бесплатный замер и карта спроса).
+// Они обязаны быть в шапке и в подвале каждого лендинга: клиент должен видеть
+// первый шаг, не считывая структуру сайта. Проверяется scripts/verify-funnel.mjs.
 const NAV_LINKS = [
+  { href: "/scan", label: "Замер в ИИ" },
+  { href: "/audit", label: "Карта спроса" },
   { href: "/for-business", label: "Бизнесу" },
+  { href: "/how-it-works", label: "Система" },
   { href: "/launch", label: "Запуск" },
-  { href: "/for-experts", label: "Экспертам" },
-  { href: "/how-it-works", label: "Как работает" },
   { href: "/pricing", label: "Тарифы" },
-  { href: "/audit", label: "Аудит" },
-];
+] as const;
 
-function LogoMark({ className = "h-9 w-9" }: { className?: string }) {
-  return (
-    <div className={`${className} flex shrink-0 items-center justify-center rounded-lg bg-blue-700 text-sm font-bold tracking-tight text-white shadow-sm shadow-blue-700/20`}>
-      НЭ
-    </div>
-  );
+function LogoMark() {
+  return <span className="sr-logo-mark">N<span /></span>;
 }
 
 export function MarketingHeader() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:py-4">
-        <Link href="/" className="flex min-w-0 items-center gap-3 text-lg font-bold text-slate-950 sm:text-xl">
+    <header className="sr-header">
+      <nav>
+        <Link href="/" className="sr-logo" aria-label="НейроЭксперт — главная">
           <LogoMark />
-          <div className="flex min-w-0 flex-col">
-            <span className="truncate">НейроЭксперт</span>
-            <span className="-mt-0.5 hidden text-[10px] font-medium tracking-wide text-slate-500 sm:block">
-              Спрос → заявка → продажа
-            </span>
-          </div>
+          <span>НейроЭксперт<small>Local Sales OS</small></span>
         </Link>
 
-        <div className="hidden flex-1 items-center justify-center gap-1 lg:flex">
-          {NAV_LINKS.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950"
-            >
-              {l.label}
-            </Link>
-          ))}
+        <div className="sr-nav-links">
+          {NAV_LINKS.map((link) => <Link href={link.href} key={link.href}>{link.label}</Link>)}
         </div>
 
-        <Link
-          href="/login"
-          className="hidden rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-800 lg:inline-flex"
-        >
-          Войти
-        </Link>
+        <div className="sr-nav-actions">
+          {/* Вход для действующих клиентов — навигация, а не CTA воронки:
+              размечен data-funnel-exempt, чтобы исключение было видно в коде. */}
+          <Link href="/login" data-funnel-exempt="auth-nav">Войти</Link>
+          <Link href="/scan" className="sr-nav-cta">Бесплатный замер <ArrowUpRight /></Link>
+        </div>
 
-        <button
-          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-slate-200 text-slate-700 transition-colors hover:bg-slate-100 lg:hidden"
-          onClick={() => setOpen(!open)}
-          aria-expanded={open}
-          aria-label="Меню"
-        >
-          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        <button className="sr-menu-button" onClick={() => setOpen((value) => !value)} aria-label="Меню" aria-expanded={open}>
+          {open ? <X /> : <Menu />}
         </button>
       </nav>
 
       {open && (
-        <div className="border-t border-slate-200 bg-white shadow-lg lg:hidden">
-          <div className="max-h-[calc(100dvh-69px)] space-y-1 overflow-y-auto px-4 py-4 sm:px-6">
-            {NAV_LINKS.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className="block rounded-md px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950"
-                onClick={() => setOpen(false)}
-              >
-                {l.label}
-              </Link>
-            ))}
-            <Link
-              href="/login"
-              className="mt-2 block rounded-md bg-blue-700 px-4 py-2.5 text-center text-sm font-semibold text-white"
-              onClick={() => setOpen(false)}
-            >
-              Войти
-            </Link>
-          </div>
+        <div className="sr-mobile-menu">
+          {NAV_LINKS.map((link) => <Link href={link.href} key={link.href} onClick={() => setOpen(false)}>{link.label}</Link>)}
+          <Link href="/login" data-funnel-exempt="auth-nav" onClick={() => setOpen(false)}>Войти</Link>
+          <Link href="/scan" className="sr-mobile-cta" onClick={() => setOpen(false)}>Бесплатный замер в ИИ</Link>
         </div>
       )}
     </header>
   );
 }
 
+/**
+ * Живой канал связи в теле страницы (не внутри <footer>): клиент, который
+ * дочитал лендинг, должен иметь возможность написать или позвонить сразу, а не
+ * искать контакты в подвале. Рендерится на каждом маркетинговом маршруте.
+ */
+export function FunnelContactBand() {
+  return (
+    <section className="sr-contact-band" id="funnel-contact">
+      <div className="sr-contact-copy">
+        <p className="sr-eyebrow"><span /> Следующий шаг</p>
+        <h2>Начните с бесплатного замера — или спросите нас напрямую.</h2>
+        {/* Имена платформ здесь не перечисляются: адаптеры в apps/web/app/api/scan/route.ts
+            возвращают null без ключа, поэтому состав известен только в рантайме, а этот
+            подвал рендерится на всех 9 маршрутах (находка раунда 25). */}
+        <p>Зададим ваш запрос подключённым ИИ-платформам и покажем ответы тех, кто ответил: кого называют и попадаете ли туда вы.</p>
+      </div>
+      <div className="sr-contact-actions">
+        <Link href="/scan" className="sr-button sr-button-primary">Бесплатный замер <ArrowUpRight /></Link>
+        <a href="https://t.me/neuroexpertise" target="_blank" rel="noopener noreferrer">Написать в Telegram</a>
+        <a href="tel:+79051238877">+7 905 123-88-77</a>
+      </div>
+    </section>
+  );
+}
+
 export function MarketingFooter() {
   return (
-    <footer className="border-t border-slate-200 bg-white pb-6 pt-10">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-5">
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-2">
-              <LogoMark className="h-7 w-7" />
-              <span className="text-base font-semibold text-slate-950">НейроЭксперт</span>
-            </div>
-            <p className="text-sm leading-relaxed text-slate-600">
-              Local Sales OS: спрос → точка входа → действие клиента →
-              заявка, запись или продажа.
-            </p>
-            <Link
-              href="/for-business"
-              className="mt-2 inline-flex w-fit items-center rounded-md bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-800"
-            >
-              Получить аудит
-            </Link>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            <span className="text-sm font-semibold text-slate-950">Возможности</span>
-            <Link href="/how-it-works" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
-              Как это работает
-            </Link>
-            <Link href="/launch" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
-              Запуск
-            </Link>
-            <Link href="/for-business" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
-              Бизнесу
-            </Link>
-            <Link href="/scan" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
-              Проверка спроса
-            </Link>
-            <Link href="/for-experts" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
-              Экспертам
-            </Link>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            <span className="text-sm font-semibold text-slate-950">Партнёрам</span>
-            <Link href="/for-agencies" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
-              Агентствам
-            </Link>
-            <Link href="/for-agencies" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
-              API спроса
-            </Link>
-            <Link href="/api/v1/docs" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
-              OpenAPI docs
-            </Link>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            <span className="text-sm font-semibold text-slate-950">Информация</span>
-            <Link href="/pricing" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
-              Тарифы
-            </Link>
-            <Link href="/privacy" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
-              Политика конфиденциальности
-            </Link>
-            <Link href="/terms" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
-              Публичная оферта
-            </Link>
-            <Link href="/requisites" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
-              Реквизиты
-            </Link>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            <span className="text-sm font-semibold text-slate-950">Контакты</span>
-            <a href="mailto:info@neuroexpertise.ru" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
-              info@neuroexpertise.ru
-            </a>
-            <a href="https://t.me/neuroexpertise" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
-              Telegram-канал
-            </a>
-            <a href="https://t.me/neuroexpertise_bot" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-600 transition-colors hover:text-slate-950">
-              Telegram-бот
-            </a>
-          </div>
+    <>
+      <FunnelContactBand />
+    <footer className="sr-footer">
+      <div className="sr-footer-top">
+        <div className="sr-footer-brand">
+          <div className="sr-logo"><LogoMark /><span>НейроЭксперт<small>Local Sales OS</small></span></div>
+          <p>Система, которая превращает локальный спрос в понятные действия команды.</p>
         </div>
-
-        <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-slate-200 pt-5 sm:flex-row">
-          <span className="text-xs text-slate-500">
-            &copy; {new Date().getFullYear()} НейроЭксперт. Все права защищены.
-          </span>
+        <FooterColumn title="Продукт" links={[["Замер в ИИ", "/scan"], ["Карта спроса", "/audit"], ["Как работает", "/how-it-works"], ["Для бизнеса", "/for-business"], ["Запуск", "/launch"], ["Тарифы", "/pricing"]]} />
+        <FooterColumn title="Компания" links={[["Экспертам", "/for-experts"], ["Агентствам", "/for-agencies"], ["Документация API", "/api/v1/docs"], ["Оплата", "/pay"], ["Реквизиты", "/requisites"]]} />
+        <div className="sr-footer-column">
+          <span>Контакт</span>
+          <a href="tel:+79051238877">+7 905 123-88-77</a>
+          <a href="mailto:info@neuroexpertise.ru">info@neuroexpertise.ru</a>
+          <a href="https://t.me/neuroexpertise" target="_blank" rel="noopener noreferrer">Telegram</a>
         </div>
       </div>
+      <div className="sr-footer-bottom">
+        <span>© {new Date().getFullYear()} НейроЭксперт</span>
+        <div><Link href="/privacy">Конфиденциальность</Link><Link href="/terms">Оферта</Link></div>
+      </div>
     </footer>
+    </>
+  );
+}
+
+function FooterColumn({ title, links }: { title: string; links: ReadonlyArray<readonly [string, string]> }) {
+  return (
+    <div className="sr-footer-column">
+      <span>{title}</span>
+      {links.map(([label, href]) => <Link href={href} key={href}>{label}</Link>)}
+    </div>
   );
 }

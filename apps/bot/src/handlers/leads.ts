@@ -1,46 +1,39 @@
 import type { Bot } from "grammy";
 import { supabase } from "../supabase";
 
+/**
+ * Кнопки заявки в Telegram. R-08: запись только в заявку эксперта, нажавшего кнопку (профиль по
+ * telegram_id) - раньше любой пользователь бота мог принять/отклонить чужую заявку по её id.
+ */
+async function getProfileId(telegramId: number): Promise<string | null> {
+  const { data } = await supabase.from("profiles").select("id").eq("telegram_id", telegramId).maybeSingle();
+  return data?.id ?? null;
+}
+
 export function registerLeadsHandler(bot: Bot): void {
-  // Accept lead
-  bot.callbackQuery(/^accept_lead:(.+)$/, async (ctx) => {
-    const leadId = ctx.match[1];
-
-    const { error } = await supabase
-      .from("leads")
-      .update({ status: "accepted", notified_at: new Date().toISOString() })
-      .eq("id", leadId)
-      .eq("status", "new");
-
-    if (error) {
-      await ctx.answerCallbackQuery({ text: "Ошибка" });
+  bot.callbackQuery(/^(accept|reject)_lead:(.+)$/, async (ctx) => {
+    const accept = ctx.match[1] === "accept";
+    const leadId = ctx.match[2];
+    const profileId = await getProfileId(ctx.from.id);
+    if (!profileId) {
+      await ctx.answerCallbackQuery({ text: "Профиль не найден" });
       return;
     }
 
-    await ctx.answerCallbackQuery({ text: "Заявка принята!" });
-    await ctx.editMessageText(
-      (ctx.callbackQuery.message?.text ?? "") + "\n\n✅ Принята",
-    );
-  });
-
-  // Reject lead
-  bot.callbackQuery(/^reject_lead:(.+)$/, async (ctx) => {
-    const leadId = ctx.match[1];
-
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
       .from("leads")
-      .update({ status: "rejected" })
+      .update(accept ? { status: "accepted", notified_at: new Date().toISOString() } : { status: "rejected" })
       .eq("id", leadId)
-      .eq("status", "new");
+      .eq("expert_id", profileId)
+      .eq("status", "new")
+      .select("id");
 
-    if (error) {
-      await ctx.answerCallbackQuery({ text: "Ошибка" });
+    if (error || !updated || updated.length === 0) {
+      await ctx.answerCallbackQuery({ text: error ? "Ошибка" : "Заявка уже обработана или не найдена" });
       return;
     }
 
-    await ctx.answerCallbackQuery({ text: "Заявка отклонена" });
-    await ctx.editMessageText(
-      (ctx.callbackQuery.message?.text ?? "") + "\n\n❌ Отклонена",
-    );
+    await ctx.answerCallbackQuery({ text: accept ? "Заявка принята!" : "Заявка отклонена" });
+    await ctx.editMessageText((ctx.callbackQuery.message?.text ?? "") + (accept ? "\n\n✅ Принята" : "\n\n❌ Отклонена"));
   });
 }

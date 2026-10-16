@@ -1,12 +1,43 @@
 {
   "version": 1,
   "purpose": "Executable verification contract for the active unit.",
-  "unitId": "",
-  "createdAt": "",
-  "commands": [],
+  "unitId": "stage-1-technical-stabilization",
+  "createdAt": "2026-06-13",
+  "commands": [
+    {
+      "id": "shared-build",
+      "command": "env PATH=/home/hihol/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin pnpm --dir packages/shared build",
+      "timeoutSeconds": 180,
+      "expectedOutput": "tsc",
+      "passFailParser": "exit_code_zero"
+    },
+    {
+      "id": "monorepo-build",
+      "command": "env PATH=/home/hihol/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin pnpm build",
+      "timeoutSeconds": 600,
+      "expectedOutput": "Tasks:",
+      "passFailParser": "exit_code_zero"
+    },
+    {
+      "id": "aeo-smoke-production",
+      "command": "AEO_SITE_URL=https://neuroexpertise.ru pnpm aeo:smoke",
+      "timeoutSeconds": 180,
+      "expectedOutput": "OK sitemap has urls",
+      "passFailParser": "exit_code_zero"
+    },
+    {
+      "id": "pfo-analyze-gates",
+      "command": "env PATH=/home/hihol/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin pfo analyze /home/hihol/projects/neuroexpert --run-gates --report",
+      "timeoutSeconds": 900,
+      "expectedOutput": "OK: wrote /home/hihol/projects/neuroexpert/PFO_REPORT.md",
+      "passFailParser": "manual_evidence"
+    }
+  ],
   "requiredArtifacts": [
     ".codex-memory/STATE.json",
-    "PFO_REPORT.md"
+    "PFO_REPORT.md",
+    "PFO_EXISTING_PROJECT_ANALYSIS.json",
+    "PFO_CONTRACT_GATE.json"
   ],
   "passCriteria": [
     "All required commands exit 0.",
@@ -14,5 +45,44 @@
     "Required artifacts exist.",
     "Failures are recorded as recovery, not success."
   ],
-  "failureMode": "RECOVERY_REQUIRED"
+  "failureMode": "RECOVERY_REQUIRED",
+  "sensorPolicy": {
+    "qualityLeft": "Run fast computational sensors locally before broader or inferential gates.",
+    "regulates": [
+      "maintainability",
+      "architecture_fitness",
+      "behaviour"
+    ],
+    "localFastSensors": [
+      "targeted tests",
+      "validators",
+      "lint or schema checks",
+      "contract gates"
+    ],
+    "pipelineSensors": [
+      "full fixture suite",
+      "production readiness",
+      "security/dependency gates when applicable"
+    ],
+    "continuousSensors": [
+      "state freshness",
+      "dependency drift",
+      "benchmarks or runtime health when available"
+    ]
+  },
+  "commandSchema": {
+    "requiredFields": [
+      "id",
+      "command",
+      "timeoutSeconds",
+      "expectedOutput",
+      "passFailParser"
+    ],
+    "allowedPassFailParsers": [
+      "exit_code_zero",
+      "stdout_contains",
+      "json_field_equals",
+      "manual_evidence"
+    ]
+  }
 }

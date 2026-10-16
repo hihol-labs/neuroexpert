@@ -13,6 +13,7 @@ function getAdmin() {
 }
 import { generateArticleMetadata } from "@/lib/seo";
 import { BookingForm } from "@/components/experts/booking-form";
+import { CatalogFooter, CatalogHeader } from "@/components/catalog/catalog-shell";
 import { ArticleAnalytics } from "@/components/article/analytics";
 import {
   generateArticleSchema,
@@ -116,9 +117,16 @@ const getArticleData = cache(async (expertSlug: string, articleSlug: string) => 
     .eq("expert_id", expert.id)
     .eq("is_cited", true);
 
+  // R-05: bucket voice приватный. В ISR-страницу запекается СТАБИЛЬНАЯ ссылка /api/audio/<voice_id>,
+  // а подписанный URL создаётся роутом в момент запроса (302) - иначе подпись протухала бы в
+  // закэшированной странице редко посещаемой статьи.
+  const voice = article.voice_recordings as unknown as { file_path: string; mime_type: string | null } | null;
+  const voiceId = (article as { voice_id?: string | null }).voice_id ?? null;
+  const audioUrl = voice?.file_path && voiceId ? `/api/audio/${voiceId}` : null;
+
   return {
     expert, article, related: related ?? [], relatedQuestions, otherExperts,
-    niche, pubCount: pubCount ?? 0, reviews: reviews ?? [], citationCount: citationCount ?? 0,
+    niche, pubCount: pubCount ?? 0, reviews: reviews ?? [], citationCount: citationCount ?? 0, audioUrl,
   };
 });
 
@@ -192,7 +200,7 @@ export default async function ArticlePage({ params }: Props) {
   const data = await getArticleData(params.slug, params.articleSlug);
   if (!data) notFound();
 
-  const { expert, article, related, relatedQuestions, otherExperts, niche, pubCount, reviews, citationCount } = data;
+  const { expert, article, related, relatedQuestions, otherExperts, niche, pubCount, reviews, citationCount, audioUrl } = data;
   const questionText = (article.questions as unknown as { question_text: string } | null)?.question_text ?? article.title;
   const faqItems = (article.format_faq as Array<{ question: string; answer: string }>) ?? [];
   const tldr = extractTldr(article.format_seo_article ?? "");
@@ -216,7 +224,7 @@ export default async function ArticlePage({ params }: Props) {
   ].filter(Boolean);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="catalog-shell catalog-article">
       {/* JSON-LD */}
       {schemas.map((schema, i) => (
         <script
@@ -227,18 +235,10 @@ export default async function ArticlePage({ params }: Props) {
       ))}
 
       {/* Header */}
-      <header className="border-b bg-white sticky top-0 z-10">
-        <nav className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3 sm:px-6">
-          <Link href="/" className="text-lg font-bold text-gray-900">НейроЭксперт</Link>
-          <div className="flex gap-4 text-sm">
-            <Link href="/experts" className="text-gray-600 hover:text-gray-900">Эксперты</Link>
-            <Link href="/audit" className="text-gray-600 hover:text-gray-900">Аудит</Link>
-          </div>
-        </nav>
-      </header>
+      <CatalogHeader active="articles" />
 
       <ArticleAnalytics expertSlug={expert.slug} articleSlug={article.slug} contentId={article.id} />
-      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+      <main className="catalog-main mx-auto max-w-4xl px-4 py-8 sm:px-6">
         {/* Breadcrumbs */}
         <nav className="text-sm text-gray-500 mb-6">
           <Link href="/" className="hover:text-gray-700">Главная</Link>
@@ -341,10 +341,9 @@ export default async function ArticlePage({ params }: Props) {
         {/* Audio player */}
         {(() => {
           const voice = article.voice_recordings as unknown as { file_path: string; mime_type: string | null } | null;
-          if (!voice?.file_path) return null;
-          // file_path hrанится с префиксом "voice/..." (historic upload path),
-          // bucket тоже "voice" → URL: .../object/public/voice/voice/uuid/ts.webm
-          const audioUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/voice/${voice.file_path}`;
+          // file_path хранится с префиксом "voice/..." (historic upload path) внутри bucket voice;
+          // R-05: bucket приватный, плеер идёт через /api/audio/<voice_id> (подпись в момент запроса).
+          if (!voice?.file_path || !audioUrl) return null;
           return (
             <div className="bg-gray-50 rounded-xl p-4 mb-8">
               <p className="text-sm font-medium text-gray-700 mb-2">Послушать оригинальный ответ эксперта</p>
@@ -522,11 +521,7 @@ export default async function ArticlePage({ params }: Props) {
         </div>
       </main>
 
-      <footer className="bg-gray-900 py-8">
-        <div className="mx-auto max-w-4xl px-4 text-center text-sm text-gray-400 sm:px-6">
-          &copy; {new Date().getFullYear()} НейроЭксперт
-        </div>
-      </footer>
+      <CatalogFooter />
     </div>
   );
 }

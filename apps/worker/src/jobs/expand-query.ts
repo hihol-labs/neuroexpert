@@ -1,13 +1,10 @@
 import { supabase } from "../supabase.js";
-import { getLLM, buildQueryFanoutPrompt } from "shared";
+import { getLLM, buildQueryFanoutPrompt, normalizeFanoutResponse } from "shared";
+import type { FanoutItem } from "shared";
 
-type FanoutItem = string | {
-  query?: string;
-  cluster?: string;
-  user_intent?: string;
-  desired_answer?: string;
-  next_cta?: string;
-};
+function describeError(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
 
 export async function handleExpandQuery(payload: Record<string, unknown>): Promise<{ subqueries: number }> {
   const questionId = payload.question_id as string;
@@ -32,28 +29,42 @@ export async function handleExpandQuery(payload: Record<string, unknown>): Promi
     return { subqueries: count };
   }
 
-  // LLM: разбиваем на подзапросы
+  // LLM: разбиваем на подзапросы. Ответ каждого провайдера нормализуется:
+  // OpenAI в json_object-режиме заворачивает массив в объект (QUEUE-4).
   const { primary, fallback } = getLLM();
-  let subqueries: FanoutItem[];
+  const prompt = buildQueryFanoutPrompt(question.question_text);
+  const llmOptions = { maxTokens: 512, temperature: 0.3 };
+
+  let subqueries: FanoutItem[] = [];
+  let primaryError: string | null = null;
+  let fallbackError: string | null = null;
 
   try {
-    subqueries = await primary.generateJSON<FanoutItem[]>(
-      buildQueryFanoutPrompt(question.question_text),
-      { maxTokens: 512, temperature: 0.3 },
-    );
-  } catch {
-    subqueries = await fallback.generateJSON<FanoutItem[]>(
-      buildQueryFanoutPrompt(question.question_text),
-      { maxTokens: 512, temperature: 0.3 },
+    subqueries = normalizeFanoutResponse(await primary.generateJSON<unknown>(prompt, llmOptions));
+    if (subqueries.length === 0) primaryError = "empty fan-out";
+  } catch (err) {
+    primaryError = describeError(err);
+    console.error(`[expand_query] Primary LLM failed for ${questionId}:`, primaryError);
+  }
+
+  if (subqueries.length === 0) {
+    try {
+      subqueries = normalizeFanoutResponse(await fallback.generateJSON<unknown>(prompt, llmOptions));
+      if (subqueries.length === 0) fallbackError = "empty fan-out";
+    } catch (err) {
+      fallbackError = describeError(err);
+      console.error(`[expand_query] Fallback LLM failed for ${questionId}:`, fallbackError);
+    }
+  }
+
+  // Пустой fan-out — провал, а не «успех с нулём»: job обязан уйти в failed
+  // с ошибками ОБОИХ провайдеров (QUEUE-2/QUEUE-4), иначе падение невидимо.
+  if (subqueries.length === 0) {
+    throw new Error(
+      `expand_query fan-out empty for ${questionId}: primary=${primaryError ?? "n/a"}; fallback=${fallbackError ?? "n/a"}`,
     );
   }
 
-  if (!Array.isArray(subqueries) || subqueries.length === 0) {
-    console.log(`[expand_query] No subqueries generated for "${question.question_text.slice(0, 50)}"`);
-    return { subqueries: 0 };
-  }
-
-  // Сохраняем
   const rows = subqueries.slice(0, 5).map((sq) => ({
     parent_question_id: questionId,
     sub_query_text: typeof sq === "string" ? sq : String(sq.query ?? ""),
@@ -65,16 +76,12 @@ export async function handleExpandQuery(payload: Record<string, unknown>): Promi
           desired_answer: sq.desired_answer ?? null,
           next_cta: sq.next_cta ?? null,
         }),
-  })).filter((row) => row.sub_query_text.trim().length > 0);
-
-  if (rows.length === 0) {
-    console.log(`[expand_query] No usable subqueries generated for "${question.question_text.slice(0, 50)}"`);
-    return { subqueries: 0 };
-  }
+  }));
 
   const { error } = await supabase.from("sub_queries").insert(rows);
   if (error) {
-    console.error(`[expand_query] Insert error:`, error.message);
+    // Ошибка записи раньше только логировалась, а job закрывался успехом.
+    throw new Error(`expand_query insert failed for ${questionId}: ${error.message}`);
   }
 
   console.log(`[expand_query] Created ${rows.length} subqueries for "${question.question_text.slice(0, 50)}"`);

@@ -71,7 +71,11 @@ services:
       GOTRUE_SMTP_USER: ${SMTP_USER:-}
       GOTRUE_SMTP_PASS: ${SMTP_PASS:-}
       GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL:-noreply@neuroexpertise.ru}
-      GOTRUE_SMTP_MAX_FREQUENCY: "1ns"
+      # SEC-1: пауза между письмами на один адрес и часовой бюджет писем — публичный
+      # signInWithOtp не должен выжигать SMTP-квоту (письма оплаты/готовности идут
+      # тем же каналом; worker повторяет уведомление при отказе).
+      GOTRUE_SMTP_MAX_FREQUENCY: ${GOTRUE_SMTP_MAX_FREQUENCY:-15s}
+      GOTRUE_RATE_LIMIT_EMAIL_SENT: ${GOTRUE_RATE_LIMIT_EMAIL_SENT:-60}
       GOTRUE_MAILER_URLPATHS_INVITE: "/supabase/auth/v1/verify"
       GOTRUE_MAILER_URLPATHS_CONFIRMATION: "/supabase/auth/v1/verify"
       GOTRUE_MAILER_URLPATHS_RECOVERY: "/supabase/auth/v1/verify"
@@ -146,6 +150,9 @@ services:
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+        NEXT_PUBLIC_YANDEX_METRIKA_ID: ${NEXT_PUBLIC_YANDEX_METRIKA_ID:-}
+        GIT_SHA: ${GIT_SHA:-unknown}
+        BUILD_TIME: ${BUILD_TIME:-unknown}
     depends_on:
       supabase-kong:
         condition: service_started

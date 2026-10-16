@@ -1,0 +1,5 @@
+path,change_type,risk,review_note
+CURRENT_PLAN.md,documentation,planning,"Synthetic Audience Signals are documented as hypotheses requiring real-event calibration."
+scripts/validate-aeo-site.js,verifier,low,"Curl fallback is an explicit documented verifier transport fallback preserving assertions and failure output."
+packages/shared/src/types/database.ts,generated-types,low,"Generated type surface only; no runtime query/auth behavior changed."
+.pfo/VERIFICATION_CONTRACT.json,pfo-runtime,low,"Verification commands and timeouts documented for Stage 1 technical stabilization."
